@@ -72,7 +72,12 @@ export function CsAddLocationDialog({
       ) {
         throw new Error(t("cs.addLocation.errors.noChanges"))
       }
-      const coords = parseCoordinatesFromLocationInput(trimmedLink)
+      const coords =
+        parseCoordinatesFromLocationInput(trimmedLink) ??
+        parseCoordinatesFromLocationInput(trimmedText)
+      if (trimmedLink && !coords) {
+        throw new Error(t("cs.addLocation.errors.invalidLink"))
+      }
       const nextNotes = upsertShipmentLocationNotes(row.notes, {
         locationText: trimmedText,
         locationLink: trimmedLink || null,
@@ -123,8 +128,11 @@ export function CsAddLocationDialog({
         return current
       })
       void qc.invalidateQueries({ queryKey: listQueryKey })
-      showToast("تم حفظ الموقع بنجاح", "success")
+      showToast(t("cs.addLocation.saved"), "success")
       onOpenChange(false)
+    },
+    onError: () => {
+      showToast(t("cs.addLocation.errors.saveFailed"), "error")
     },
   })
 
@@ -135,7 +143,7 @@ export function CsAddLocationDialog({
     }
     try {
       await navigator.clipboard.writeText(copyPayload)
-      showToast("تم نسخ الموقع", "success")
+      showToast(t("cs.addLocation.copied"), "success")
     } catch {
       showToast(t("cs.addLocation.errors.copyFailed"), "error")
     }

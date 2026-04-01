@@ -204,9 +204,23 @@ export async function getDashboardKpis(
     trendDays: p.trendDays,
     recentTake: p.recentTake,
   })
-  return apiFetch<DashboardKpisResponse>(`/api/shipments/dashboard/kpis${query}`, {
-    token: p.token,
-  })
+  const data = await apiFetch<DashboardKpisResponse>(
+    `/api/shipments/dashboard/kpis${query}`,
+    {
+      token: p.token,
+    },
+  )
+  return {
+    ...data,
+    recentShipments: data.recentShipments.map((s) => {
+      const location = extractShipmentLocation(s.notes)
+      return {
+        ...s,
+        locationText: location.locationText,
+        locationLink: location.locationLink,
+      }
+    }),
+  }
 }
 
 export type TimelineEventRow = {

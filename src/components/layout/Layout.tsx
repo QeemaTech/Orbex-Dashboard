@@ -27,7 +27,7 @@ function LayoutInner({ title, children }: LayoutProps) {
   }, [open, setOpen])
 
   return (
-    <div className="bg-background min-h-dvh">
+    <div className="bg-background bg-dashboard-surface min-h-dvh">
       <Sidebar />
       {open ? (
         <button
@@ -37,9 +37,9 @@ function LayoutInner({ title, children }: LayoutProps) {
           onClick={() => setOpen(false)}
         />
       ) : null}
-      <div className="flex min-h-dvh flex-col lg:ms-[260px]">
+      <div className="flex min-h-dvh flex-col lg:ms-[280px]">
         <Header title={title} />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 xl:p-8">{children}</main>
       </div>
     </div>
   )

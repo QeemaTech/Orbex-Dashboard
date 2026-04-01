@@ -3,7 +3,8 @@ export type StatAccent = "primary" | "success" | "warning" | "destructive";
 export interface StatCardProps {
     title: string;
     value: number | string;
+    percentage?: number;
     icon: LucideIcon;
     accent: StatAccent;
 }
-export declare function StatCard({ title, value, icon: Icon, accent }: StatCardProps): import("react/jsx-runtime").JSX.Element;
+export declare function StatCard({ title, value, percentage, icon: Icon, accent, }: StatCardProps): import("react/jsx-runtime").JSX.Element;

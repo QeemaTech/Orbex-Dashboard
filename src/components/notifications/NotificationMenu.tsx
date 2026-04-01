@@ -57,7 +57,7 @@ export function NotificationMenu({ token }: NotificationMenuProps) {
           type="button"
           variant="ghost"
           size="icon"
-          className="text-muted-foreground relative shrink-0"
+          className="text-muted-foreground relative shrink-0 border border-border/75 bg-white/80"
           aria-label={t("a11y.notifications")}
         >
           <Bell className="size-5" aria-hidden />

@@ -57,7 +57,7 @@ export function CsShipmentTable({
           <TableHead>{t("cs.table.customer")}</TableHead>
           <TableHead>{t("cs.table.phone")}</TableHead>
           <TableHead>{t("cs.table.status")}</TableHead>
-          <TableHead className="w-24">{t("cs.table.customerLocation")}</TableHead>
+          <TableHead className="w-24">{t("cs.table.gpsLocation")}</TableHead>
           {showActions ? (
             <TableHead className="w-[300px]">{t("cs.table.actions")}</TableHead>
           ) : null}
@@ -87,20 +87,15 @@ export function CsShipmentTable({
                 {coordinates ? (
                   <a
                     href={`https://www.google.com/maps?q=${encodeURIComponent(`${coordinates.lat},${coordinates.lng}`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-green-700 dark:text-green-400"
-                  title={
-                    row.customerLocationReceivedAt
-                      ? new Date(
-                          row.customerLocationReceivedAt,
-                        ).toLocaleString()
-                      : undefined
-                  }
-                >
-                  <MapPin className="size-4 shrink-0" aria-hidden />
-                  <span className="sr-only">{t("cs.table.customerLocation")}</span>
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-primary hover:bg-primary/10 inline-flex size-8 items-center justify-center rounded-full transition-colors"
+                    title={t("cs.table.viewLocation")}
+                    aria-label={t("cs.table.viewLocation")}
+                  >
+                    <MapPin className="size-4 shrink-0" aria-hidden />
+                    <span className="sr-only">{t("cs.table.viewLocation")}</span>
                   </a>
                 ) : (
                   "—"
