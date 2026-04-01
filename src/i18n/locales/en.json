@@ -1,0 +1,271 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "shipments": "Shipments",
+    "warehouse": "Warehouse",
+    "couriers": "Couriers",
+    "collections": "Collections",
+    "customerService": "Customer service",
+    "csDashboard": "CS dashboard"
+  },
+  "auth": {
+    "loginTitle": "Sign in to Orbex",
+    "loginSubtitle": "Operations dashboard for Orbex logistics.",
+    "username": "Username",
+    "password": "Password",
+    "signIn": "Sign in",
+    "loginError": "Could not sign in. Check your credentials."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "loading": "Loading…",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all read"
+  },
+  "a11y": {
+    "mainNav": "Main navigation",
+    "openNav": "Open navigation menu",
+    "closeNav": "Close navigation menu",
+    "closeNavBackdrop": "Close navigation menu",
+    "notifications": "Notifications",
+    "userMenu": "User menu",
+    "search": "Search"
+  },
+  "header": {
+    "searchPlaceholder": "Search…",
+    "account": "Account",
+    "profile": "Profile",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "placeholder": {
+    "comingSoon": "This section is coming soon."
+  },
+  "status": {
+    "delivered": "Delivered",
+    "rejected": "Rejected",
+    "postponed": "Postponed",
+    "in_transit": "In transit"
+  },
+  "payment": {
+    "COD": "COD",
+    "Card": "Card",
+    "Wallet": "Wallet"
+  },
+  "dashboard": {
+    "stats": {
+      "totalShipments": "Total Shipments",
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed"
+    },
+    "chart": {
+      "lineTitle": "Shipments over time",
+      "lineDescription": "Last 7 days",
+      "lineSeriesName": "Shipments",
+      "pieTitle": "Status distribution",
+      "pieDescription": "All shipments by status",
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
+    },
+    "quickActions": {
+      "title": "Quick actions",
+      "description": "Common shipment tasks",
+      "createShipment": "Create Shipment",
+      "viewAllShipments": "View All Shipments"
+    },
+    "language": {
+      "label": "Language",
+      "en": "English",
+      "ar": "العربية"
+    },
+    "recent": {
+      "title": "Recent shipments",
+      "description": "Latest activity in your network"
+    },
+    "table": {
+      "customerName": "Customer Name",
+      "phone": "Phone",
+      "status": "Status",
+      "paymentMethod": "Payment Method",
+      "amount": "Amount"
+    }
+  },
+  "shipments": {
+    "pageTitle": "Shipments",
+    "detailTitle": "Shipment details",
+    "back": "Back",
+    "description": "Shipments visible for your account. Use filters to narrow the list.",
+    "tableCardTitle": "All shipments",
+    "tableCardDescription": "Results respect your role and permissions from the API.",
+    "loading": "Loading shipments…",
+    "detail": {
+      "courierPhone": "Courier phone",
+      "shippingFee": "Shipping fee",
+      "timelineTitle": "Timeline",
+      "timelineEmpty": "No timeline events yet.",
+      "timelineStart": "START",
+      "currencyLocale": "en-EG"
+    }
+  },
+  "cs": {
+    "pageTitle": "Customer service — Shipments",
+    "dashboardTitle": "Customer service dashboard",
+    "dashboardSubtitle": "Confirm orders, reach customers, and track couriers. The queue defaults to today and refreshes every 25 seconds.",
+    "shipmentsQueueTitle": "Shipments queue",
+    "shipmentsQueueDescription": "Filter by phone, status, or creation time. Actions apply CS workflows only from this dashboard.",
+    "loading": "Loading shipments…",
+    "filters": {
+      "phone": "Phone search",
+      "phonePlaceholder": "Customer phone",
+      "status": "Status",
+      "anyStatus": "Any status",
+      "from": "Created from",
+      "to": "Created to",
+      "today": "Today"
+    },
+    "table": {
+      "merchant": "Merchant",
+      "brand": "Brand",
+      "customer": "Customer",
+      "phone": "Phone",
+      "product": "Product type",
+      "value": "Value",
+      "address": "Address",
+      "openLocationLink": "Open location link",
+      "customerLocation": "Customer GPS",
+      "courier": "Courier",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "actions": {
+      "confirm": "Confirm",
+      "whatsappApi": "WhatsApp API",
+      "whatsappApiTitle": "Send via WhatsApp Business (Cloud API)",
+      "whatsappWeb": "WhatsApp Web",
+      "addLocation": "Add location",
+      "callCustomer": "Call",
+      "callCourier": "Courier",
+      "track": "Map"
+    },
+    "addLocation": {
+      "title": "Add customer location",
+      "close": "Close",
+      "description": "Capture and save customer location for {{customerName}}.",
+      "locationTextLabel": "Address / location description",
+      "locationTextPlaceholder": "Enter location description",
+      "locationLinkLabel": "Location link",
+      "locationLinkPlaceholder": "https://www.google.com/maps?q=30.0444,31.2357",
+      "copy": "Copy",
+      "cancel": "Cancel",
+      "save": "Save location",
+      "saving": "Saving…",
+      "errors": {
+        "noShipment": "Shipment is not available.",
+        "emptyLocation": "Enter location text or a Google Maps link.",
+        "noChanges": "No location changes to save.",
+        "copyFailed": "Unable to copy location.",
+        "invalidLink": "Enter a valid maps link that includes coordinates.",
+        "geolocationUnsupported": "Geolocation is not supported by this browser.",
+        "geolocationDenied": "Unable to access location. Check browser permissions."
+      }
+    },
+    "pagination": {
+      "summary": "{{total}} total · page {{page}}",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "map": {
+      "title": "Courier location",
+      "close": "Close",
+      "loading": "Fetching location…",
+      "error": "No location available.",
+      "openExternal": "Open in Google Maps"
+    },
+    "whatsappProductFallback": "Your order",
+    "whatsappAddressFallback": "Not specified",
+    "whatsappBody": "Hello {{customerName}},\n\nThis is Orbex shipping. We will deliver your shipment as requested.\n\n• Product: {{productDescription}}\n• Address: {{address}}\n• Total (including shipping fees): {{totalFormatted}}\n• Tracking: {{tracking}}\n\nTo confirm, reply with 1 and share your location in this WhatsApp chat (use the attachment / location button). Our delivery courier will call you to agree on a suitable time and address.\n\nIf you need any change to the time or address, the courier will contact you to arrange delivery.\n\nThank you for choosing Orbex.",
+    "shipmentStatus": {
+      "PENDING_ASSIGNMENT": "Pending assignment",
+      "CONFIRMED_BY_CS": "Confirmed (CS)",
+      "IN_WAREHOUSE": "In warehouse",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "ASSIGNED": "Assigned",
+      "DELIVERED": "Delivered",
+      "REJECTED": "Rejected",
+      "POSTPONED": "Postponed"
+    },
+    "couriers": {
+      "pageTitle": "Customer service - Couriers",
+      "subtitle": "Monitor all active couriers and quickly open their latest location.",
+      "listTitle": "Couriers list",
+      "listDescription": "Courier queue refreshes every 25 seconds based on live assignment data.",
+      "loading": "Loading couriers...",
+      "empty": "No couriers available right now.",
+      "table": {
+        "name": "Courier",
+        "assignedCount": "Assigned shipments",
+        "location": "Location",
+        "unknownCourier": "Unknown courier"
+      },
+      "actions": {
+        "viewMap": "View courier location"
+      }
+    }
+  },
+  "warehouse": {
+    "pageTitle": "Warehouse operations",
+    "subtitle": "Run scanning, tracking, assignment, and return receiving workflows from one dashboard.",
+    "loading": "Loading warehouse data…",
+    "stats": {
+      "awaitingScanIn": "Awaiting scan in",
+      "inWarehouse": "In warehouse",
+      "readyForAssignment": "Ready for assignment",
+      "assigned": "Assigned to courier",
+      "returnsPending": "Returns pending receive",
+      "returnsReceivedToday": "Returns received today"
+    },
+    "operations": {
+      "title": "Scan and returns",
+      "description": "Use a tracking number to process inbound/outbound scans, mark returns, or quickly track a shipment.",
+      "trackingPlaceholder": "Tracking number",
+      "discountPlaceholder": "Return discount amount (optional)",
+      "scanIn": "Scan in",
+      "scanOut": "Scan out",
+      "receiveReturn": "Receive return",
+      "track": "Track"
+    },
+    "queue": {
+      "title": "Warehouse queue",
+      "description": "Monitor shipments and assign couriers directly from warehouse operations.",
+      "searchPlaceholder": "Search by tracking, customer, or phone",
+      "allStatuses": "All statuses",
+      "returnsOnly": "Returns only",
+      "courierIdPlaceholder": "Courier ID",
+      "assign": "Assign",
+      "pagination": "Total {{total}} · page {{page}}"
+    },
+    "table": {
+      "trackingNumber": "Tracking #",
+      "customer": "Customer",
+      "merchant": "Merchant",
+      "status": "Status",
+      "courier": "Courier",
+      "updatedAt": "Updated",
+      "actions": "Actions"
+    },
+    "feedback": {
+      "scanInSuccess": "Shipment scanned into warehouse.",
+      "scanOutSuccess": "Shipment scanned out for delivery.",
+      "assignmentSuccess": "Courier assigned successfully.",
+      "returnSuccess": "Return received and recorded."
+    }
+  }
+}

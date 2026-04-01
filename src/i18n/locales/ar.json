@@ -1,0 +1,271 @@
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "shipments": "الشحنات",
+    "warehouse": "المخزن",
+    "couriers": "المناديب",
+    "collections": "التحصيل",
+    "customerService": "خدمة العملاء",
+    "csDashboard": "لوحة خدمة العملاء"
+  },
+  "auth": {
+    "loginTitle": "تسجيل الدخول — Orbex",
+    "loginSubtitle": "لوحة عمليات لوجستيات Orbex.",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "signIn": "دخول",
+    "loginError": "تعذّر تسجيل الدخول. تحقق من البيانات."
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "loading": "جاري التحميل…",
+    "empty": "لا إشعارات",
+    "markAllRead": "تعليم الكل كمقروء"
+  },
+  "a11y": {
+    "mainNav": "التنقل الرئيسي",
+    "openNav": "فتح قائمة التنقل",
+    "closeNav": "إغلاق قائمة التنقل",
+    "closeNavBackdrop": "إغلاق قائمة التنقل",
+    "notifications": "الإشعارات",
+    "userMenu": "قائمة المستخدم",
+    "search": "بحث"
+  },
+  "header": {
+    "searchPlaceholder": "بحث…",
+    "account": "الحساب",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج"
+  },
+  "placeholder": {
+    "comingSoon": "هذا القسم قيد الإعداد."
+  },
+  "status": {
+    "delivered": "تم التسليم",
+    "rejected": "مرفوض",
+    "postponed": "مؤجل",
+    "in_transit": "قيد النقل"
+  },
+  "payment": {
+    "COD": "الدفع عند الاستلام",
+    "Card": "بطاقة",
+    "Wallet": "محفظة"
+  },
+  "dashboard": {
+    "stats": {
+      "totalShipments": "إجمالي الشحنات",
+      "delivered": "تم التسليم",
+      "rejected": "مرفوض",
+      "postponed": "مؤجل"
+    },
+    "chart": {
+      "lineTitle": "الشحنات عبر الوقت",
+      "lineDescription": "آخر 7 أيام",
+      "lineSeriesName": "الشحنات",
+      "pieTitle": "توزيع الحالات",
+      "pieDescription": "جميع الشحنات حسب الحالة",
+      "days": {
+        "mon": "الإثنين",
+        "tue": "الثلاثاء",
+        "wed": "الأربعاء",
+        "thu": "الخميس",
+        "fri": "الجمعة",
+        "sat": "السبت",
+        "sun": "الأحد"
+      }
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "description": "مهام الشحن الشائعة",
+      "createShipment": "إنشاء شحنة",
+      "viewAllShipments": "عرض كل الشحنات"
+    },
+    "language": {
+      "label": "اللغة",
+      "en": "English",
+      "ar": "العربية"
+    },
+    "recent": {
+      "title": "أحدث الشحنات",
+      "description": "آخر النشاط على الشبكة"
+    },
+    "table": {
+      "customerName": "اسم العميل",
+      "phone": "الهاتف",
+      "status": "الحالة",
+      "paymentMethod": "طريقة الدفع",
+      "amount": "المبلغ"
+    }
+  },
+  "shipments": {
+    "pageTitle": "الشحنات",
+    "detailTitle": "تفاصيل الشحنة",
+    "back": "رجوع",
+    "description": "الشحنات الظاهرة لحسابك. استخدم المرشحات لتضييق القائمة.",
+    "tableCardTitle": "كل الشحنات",
+    "tableCardDescription": "النتائج تخضع لصلاحيات دورك من الخادم.",
+    "loading": "جاري تحميل الشحنات…",
+    "detail": {
+      "courierPhone": "رقم موبايل المندوب",
+      "shippingFee": "مصاريف الشحن",
+      "timelineTitle": "سجل الحالة",
+      "timelineEmpty": "لا توجد أحداث بعد.",
+      "timelineStart": "البداية",
+      "currencyLocale": "ar-EG"
+    }
+  },
+  "cs": {
+    "pageTitle": "خدمة العملاء — الشحنات",
+    "dashboardTitle": "لوحة خدمة العملاء",
+    "dashboardSubtitle": "أكّد الطلبات، تواصل مع العملاء، وتتبع المناديب. القائمة تفترض اليوم وتُحدَّث كل 25 ثانية.",
+    "shipmentsQueueTitle": "قائمة الشحنات",
+    "shipmentsQueueDescription": "رشّح بالهاتف أو الحالة أو وقت الإنشاء. إجراءات خدمة العملاء متاحة من هذه اللوحة فقط.",
+    "loading": "جاري تحميل الشحنات…",
+    "filters": {
+      "phone": "بحث بالهاتف",
+      "phonePlaceholder": "هاتف العميل",
+      "status": "الحالة",
+      "anyStatus": "أي حالة",
+      "from": "من تاريخ",
+      "to": "إلى تاريخ",
+      "today": "اليوم"
+    },
+    "table": {
+      "merchant": "التاجر",
+      "brand": "العلامة",
+      "customer": "العميل",
+      "phone": "الهاتف",
+      "product": "نوع المنتج",
+      "value": "القيمة",
+      "address": "العنوان",
+      "openLocationLink": "فتح رابط الموقع",
+      "customerLocation": "موقع العميل",
+      "courier": "المندوب",
+      "status": "الحالة",
+      "actions": "إجراءات"
+    },
+    "actions": {
+      "confirm": "تأكيد",
+      "whatsappApi": "واتساب API",
+      "whatsappApiTitle": "إرسال رسالة عبر WhatsApp Business (Cloud API)",
+      "whatsappWeb": "واتساب ويب",
+      "addLocation": "إضافة موقع",
+      "callCustomer": "اتصال",
+      "callCourier": "مندوب",
+      "track": "خريطة"
+    },
+    "addLocation": {
+      "title": "إضافة موقع العميل",
+      "close": "إغلاق",
+      "description": "التقاط وحفظ موقع العميل {{customerName}}.",
+      "locationTextLabel": "عنوان / وصف الموقع",
+      "locationTextPlaceholder": "أدخل وصف الموقع",
+      "locationLinkLabel": "رابط الموقع",
+      "locationLinkPlaceholder": "https://www.google.com/maps?q=30.0444,31.2357",
+      "copy": "نسخ",
+      "cancel": "إلغاء",
+      "save": "حفظ الموقع",
+      "saving": "جاري الحفظ…",
+      "errors": {
+        "noShipment": "الشحنة غير متاحة.",
+        "emptyLocation": "أدخل وصف الموقع أو رابط Google Maps.",
+        "noChanges": "لا توجد تغييرات جديدة للحفظ.",
+        "copyFailed": "تعذر نسخ الموقع.",
+        "invalidLink": "أدخل رابط خرائط صالح يحتوي على الإحداثيات.",
+        "geolocationUnsupported": "المتصفح لا يدعم الوصول للموقع.",
+        "geolocationDenied": "تعذر الوصول للموقع. تحقق من صلاحيات المتصفح."
+      }
+    },
+    "pagination": {
+      "summary": "{{total}} إجمالي · صفحة {{page}}",
+      "prev": "السابق",
+      "next": "التالي"
+    },
+    "map": {
+      "title": "موقع المندوب",
+      "close": "إغلاق",
+      "loading": "جاري جلب الموقع…",
+      "error": "لا يوجد موقع.",
+      "openExternal": "فتح في خرائط Google"
+    },
+    "whatsappProductFallback": "طلبك",
+    "whatsappAddressFallback": "غير محدد",
+    "whatsappBody": "مرحبًا {{customerName}}،\n\nنحن شركة Orbex للشحن. سنقوم بتوصيل الشحنة التي تم طلبها.\n\n• المنتج: {{productDescription}}\n• العنوان: {{address}}\n• الإجمالي (شامل مصاريف الشحن): {{totalFormatted}}\n• رقم التتبع: {{tracking}}\n\nللتأكيد يرجى الرد برقم 1 ومشاركة موقعك عبر واتساب (أرسل الموقع من المرفقات). سيتصل بك مندوب التوصيل لتحديد الموعد والعنوان المناسبين.\n\nإذا احتجت أي تعديل على الموعد أو العنوان، سيقوم المندوب بالاتصال بك لترتيب وقت التسليم.\n\nشكرًا لاختيارك Orbex.",
+    "shipmentStatus": {
+      "PENDING_ASSIGNMENT": "بانتظار التعيين",
+      "CONFIRMED_BY_CS": "مؤكد (خدمة العملاء)",
+      "IN_WAREHOUSE": "في المخزن",
+      "OUT_FOR_DELIVERY": "جاهز للتسليم",
+      "ASSIGNED": "مُسند",
+      "DELIVERED": "تم التسليم",
+      "REJECTED": "مرفوض",
+      "POSTPONED": "مؤجل"
+    },
+    "couriers": {
+      "pageTitle": "خدمة العملاء - المناديب",
+      "subtitle": "تابع كل المناديب النشطين وافتح آخر موقع لكل مندوب بسرعة.",
+      "listTitle": "قائمة المناديب",
+      "listDescription": "يتم تحديث القائمة كل 25 ثانية بناء على بيانات التعيين المباشرة.",
+      "loading": "جاري تحميل المناديب...",
+      "empty": "لا يوجد مناديب حاليا.",
+      "table": {
+        "name": "المندوب",
+        "assignedCount": "الشحنات المسندة",
+        "location": "الموقع",
+        "unknownCourier": "مندوب غير معروف"
+      },
+      "actions": {
+        "viewMap": "عرض موقع المندوب"
+      }
+    }
+  },
+  "warehouse": {
+    "pageTitle": "عمليات المخزن",
+    "subtitle": "نفّذ المسح، التتبع، التعيين، واستلام المرتجعات من لوحة واحدة.",
+    "loading": "جاري تحميل بيانات المخزن…",
+    "stats": {
+      "awaitingScanIn": "بانتظار مسح الدخول",
+      "inWarehouse": "داخل المخزن",
+      "readyForAssignment": "جاهزة للتعيين",
+      "assigned": "مُسندة لمندوب",
+      "returnsPending": "مرتجعات بانتظار الاستلام",
+      "returnsReceivedToday": "مرتجعات تم استلامها اليوم"
+    },
+    "operations": {
+      "title": "المسح والمرتجعات",
+      "description": "استخدم رقم التتبع لتنفيذ مسح الدخول/الخروج، تسجيل المرتجع، أو تتبع الشحنة سريعًا.",
+      "trackingPlaceholder": "رقم التتبع",
+      "discountPlaceholder": "قيمة خصم المرتجع (اختياري)",
+      "scanIn": "مسح دخول",
+      "scanOut": "مسح خروج",
+      "receiveReturn": "استلام مرتجع",
+      "track": "تتبع"
+    },
+    "queue": {
+      "title": "قائمة المخزن",
+      "description": "تابع الشحنات وعيّن المناديب مباشرة من عمليات المخزن.",
+      "searchPlaceholder": "بحث برقم التتبع أو العميل أو الهاتف",
+      "allStatuses": "كل الحالات",
+      "returnsOnly": "المرتجعات فقط",
+      "courierIdPlaceholder": "معرّف المندوب",
+      "assign": "تعيين",
+      "pagination": "الإجمالي {{total}} · صفحة {{page}}"
+    },
+    "table": {
+      "trackingNumber": "رقم التتبع",
+      "customer": "العميل",
+      "merchant": "التاجر",
+      "status": "الحالة",
+      "courier": "المندوب",
+      "updatedAt": "آخر تحديث",
+      "actions": "الإجراءات"
+    },
+    "feedback": {
+      "scanInSuccess": "تم تسجيل دخول الشحنة إلى المخزن.",
+      "scanOutSuccess": "تم تسجيل خروج الشحنة للتسليم.",
+      "assignmentSuccess": "تم تعيين المندوب بنجاح.",
+      "returnSuccess": "تم استلام المرتجع وتسجيله."
+    }
+  }
+}

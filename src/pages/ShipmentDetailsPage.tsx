@@ -1,0 +1,243 @@
+import { useQuery } from "@tanstack/react-query"
+import { MapPin, PackageCheck } from "react-lucid"
+import { useState } from "react"
+import { useTranslation } from "react-i18next"
+import { useNavigate, useParams } from "react-router-dom"
+
+import { getShipmentById, listShipments } from "@/api/shipments-api"
+import { Layout } from "@/components/layout/Layout"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { CsAddLocationDialog } from "@/features/customer-service/components/CsAddLocationDialog"
+import { CsCourierMapDialog } from "@/features/customer-service/components/CsCourierMapDialog"
+import { CsShipmentRowActions } from "@/features/customer-service/components/CsShipmentRowActions"
+import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
+import { useAuth } from "@/lib/auth-context"
+
+export function ShipmentDetailsPage() {
+  const { t } = useTranslation()
+  const nav = useNavigate()
+  const { shipmentId: shipmentParam = "" } = useParams()
+  const { accessToken } = useAuth()
+  const token = accessToken ?? ""
+  const [mapCourierId, setMapCourierId] = useState<string | null>(null)
+  const [mapOpen, setMapOpen] = useState(false)
+  const [locationOpen, setLocationOpen] = useState(false)
+  const currencyLocale = t("shipments.detail.currencyLocale", { defaultValue: "en-EG" })
+
+  const formatMoney = (raw: string | null | undefined): string => {
+    const n = Number.parseFloat(String(raw ?? "").replace(/,/g, "").trim())
+    if (!Number.isFinite(n)) return "—"
+    return new Intl.NumberFormat(currencyLocale, {
+      style: "currency",
+      currency: "EGP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(n)
+  }
+
+  const shipmentName = (() => {
+    try {
+      return decodeURIComponent(shipmentParam).trim()
+    } catch {
+      return shipmentParam.trim()
+    }
+  })()
+  const matchedShipmentQuery = useQuery({
+    queryKey: ["shipment-detail-match", shipmentName, token],
+    queryFn: async () => {
+      const result = await listShipments({
+        token,
+        page: 1,
+        pageSize: 1,
+        customerName: shipmentName,
+      })
+      return result.shipments[0] ?? null
+    },
+    enabled: !!token && !!shipmentName,
+  })
+  const matchedShipmentId = matchedShipmentQuery.data?.id ?? ""
+  const q = useQuery({
+    queryKey: ["shipment-detail", matchedShipmentId, token],
+    queryFn: () =>
+      getShipmentById({ token, shipmentId: matchedShipmentId, includeEvents: true }),
+    enabled: !!token && !!matchedShipmentId,
+  })
+
+  return (
+    <Layout title={t("shipments.detailTitle")}>
+      <div className="space-y-4">
+        <Button type="button" variant="outline" size="sm" onClick={() => nav(-1)}>
+          {t("shipments.back")}
+        </Button>
+        <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PackageCheck className="text-primary size-5" aria-hidden />
+              {t("shipments.detailTitle")}
+            </CardTitle>
+            <CardDescription>
+              {shipmentName || "—"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {matchedShipmentQuery.isLoading || q.isLoading ? (
+              <p>{t("shipments.loading")}</p>
+            ) : null}
+            {matchedShipmentQuery.error ? (
+              <p className="text-destructive">
+                {(matchedShipmentQuery.error as Error).message}
+              </p>
+            ) : null}
+            {!matchedShipmentQuery.isLoading &&
+            !matchedShipmentQuery.error &&
+            !matchedShipmentQuery.data ? (
+              <p className="text-destructive">
+                {t("shipments.detail.notFound", { defaultValue: "Shipment not found." })}
+              </p>
+            ) : null}
+            {q.error ? (
+              <p className="text-destructive">{(q.error as Error).message}</p>
+            ) : null}
+            {q.data ? (
+              <>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <p>
+                    <strong>{t("cs.table.merchant")}:</strong>{" "}
+                    {q.data.merchant?.displayName || "—"}
+                  </p>
+                  <p>
+                    <strong>{t("cs.table.brand")}:</strong>{" "}
+                    {q.data.merchant?.businessName || "—"}
+                  </p>
+                  <p>
+                    <strong>{t("cs.table.customer")}:</strong> {q.data.customerName}
+                  </p>
+                  <p>
+                    <strong>{t("cs.table.phone")}:</strong> {q.data.phonePrimary}
+                  </p>
+                  <p>
+                    <strong>{t("cs.table.product")}:</strong> {q.data.productType || "—"}
+                  </p>
+                  <p>
+                    <strong>{t("cs.table.value")}:</strong> {formatMoney(q.data.shipmentValue)}
+                  </p>
+                  <p>
+                    <strong>{t("shipments.detail.shippingFee")}:</strong>{" "}
+                    {formatMoney(q.data.shippingFee)}
+                  </p>
+                  <p>
+                    <strong>{t("warehouse.table.trackingNumber")}:</strong>{" "}
+                    {q.data.trackingNumber || "—"}
+                  </p>
+                  <p>
+                    <strong>{t("cs.table.courier")}:</strong>{" "}
+                    {q.data.courier?.fullName || "—"}
+                  </p>
+                  <p>
+                    <strong>{t("shipments.detail.courierPhone")}:</strong>{" "}
+                    {q.data.courier?.contactPhone || "—"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <strong>{t("cs.table.status")}:</strong>
+                  <ShipmentStatusBadge status={q.data.currentStatus} />
+                </div>
+                <p><strong>{t("cs.table.address")}:</strong> {q.data.addressText}</p>
+                {q.data.locationText ? (
+                  <p><strong>{t("cs.addLocation.locationTextLabel")}:</strong> {q.data.locationText}</p>
+                ) : null}
+                {q.data.customerLat != null &&
+                q.data.customerLng != null &&
+                q.data.customerLat !== "" &&
+                q.data.customerLng !== "" ? (
+                  <p>
+                    <strong>{t("cs.table.customerLocation")}:</strong>{" "}
+                    <a
+                      href={`https://www.google.com/maps?q=${encodeURIComponent(`${q.data.customerLat},${q.data.customerLng}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary inline-flex items-center gap-1 underline"
+                    >
+                      <MapPin className="size-4 shrink-0" aria-hidden />
+                      <span>{t("shipments.detail.viewLocation", { defaultValue: "Open in Google Maps" })}</span>
+                    </a>
+                  </p>
+                ) : null}
+                {q.data.locationLink ? (
+                  <p>
+                    <strong>{t("cs.addLocation.locationLinkLabel")}:</strong>{" "}
+                    <a
+                      href={q.data.locationLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline"
+                    >
+                      {q.data.locationLink}
+                    </a>
+                  </p>
+                ) : null}
+                <div className="rounded-lg border bg-card p-3">
+                  <CsShipmentRowActions
+                    row={q.data}
+                    token={token}
+                    listQueryKey={["shipment-detail", matchedShipmentId, token]}
+                    onOpenMap={(courierId) => {
+                      setMapCourierId(courierId)
+                      setMapOpen(true)
+                    }}
+                    onOpenAddLocation={() => setLocationOpen(true)}
+                  />
+                </div>
+                <div className="space-y-2 rounded-lg border bg-card p-3">
+                  <h3 className="font-semibold">{t("shipments.detail.timelineTitle")}</h3>
+                  {(q.data.statusEvents ?? []).length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      {t("shipments.detail.timelineEmpty")}
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {(q.data.statusEvents ?? []).map((event) => (
+                        <li key={event.id} className="rounded border p-2 text-sm">
+                          <div className="font-medium">
+                            {event.fromStatus ?? t("shipments.detail.timelineStart")} {"->"}{" "}
+                            {event.toStatus}
+                          </div>
+                          {event.note ? (
+                            <p className="text-muted-foreground">{event.note}</p>
+                          ) : null}
+                          <p className="text-muted-foreground text-xs">
+                            {new Date(event.createdAt).toLocaleString()}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+      <CsCourierMapDialog
+        open={mapOpen}
+        onOpenChange={setMapOpen}
+        courierId={mapCourierId}
+        token={token}
+      />
+      <CsAddLocationDialog
+        open={locationOpen}
+        onOpenChange={setLocationOpen}
+        row={q.data ?? null}
+        token={token}
+        listQueryKey={["shipment-detail", matchedShipmentId, token]}
+      />
+    </Layout>
+  )
+}

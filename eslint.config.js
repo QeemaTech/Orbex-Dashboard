@@ -20,4 +20,16 @@ export default tseslint.config([
       globals: globals.browser,
     },
   },
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['src/components/layout/sidebar-context.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

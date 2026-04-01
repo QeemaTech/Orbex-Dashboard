@@ -4,6 +4,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "react-lucid": [
+        "./node_modules/lucide-react/dist/lucide-react.d.ts"
       ]
     },
     "composite": true,
@@ -22,6 +25,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "resolveJsonModule": true,
     "noEmit": false,
     "emitDeclarationOnly": true,
     "jsx": "react-jsx",
