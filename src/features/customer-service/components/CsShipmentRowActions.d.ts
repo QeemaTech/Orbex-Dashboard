@@ -5,5 +5,7 @@ export interface CsShipmentRowActionsProps {
     listQueryKey: unknown[];
     onOpenMap: (courierId: string) => void;
     onOpenAddLocation: (row: CsShipmentRow) => void;
+    showWhatsApp?: boolean;
+    showAddLocation?: boolean;
 }
-export declare function CsShipmentRowActions({ row, token, listQueryKey, onOpenMap, onOpenAddLocation, }: CsShipmentRowActionsProps): import("react/jsx-runtime").JSX.Element;
+export declare function CsShipmentRowActions({ row, token, listQueryKey, onOpenMap, onOpenAddLocation, showWhatsApp, showAddLocation, }: CsShipmentRowActionsProps): import("react/jsx-runtime").JSX.Element;

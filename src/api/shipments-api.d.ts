@@ -36,6 +36,9 @@ export type CsShipmentRow = {
     paymentMethod: string;
     productType: string;
     currentStatus: string;
+    status?: string;
+    subStatus?: string;
+    paymentStatus?: string;
     merchant?: CsMerchant;
     courier?: CsCourier | null;
     createdAt: string;
@@ -47,6 +50,12 @@ export type CsShipmentStatusEvent = {
     shipmentId: string;
     fromStatus: string | null;
     toStatus: string;
+    fromCoreStatus?: string | null;
+    toCoreStatus?: string;
+    fromSubStatus?: string | null;
+    toSubStatus?: string;
+    fromPaymentStatus?: string | null;
+    toPaymentStatus?: string;
     receivedByCustomer: boolean | null;
     paymentCollected: boolean | null;
     note: string | null;
@@ -71,6 +80,9 @@ export type ListShipmentsParams = {
     customerName?: string;
     currentStatus?: string;
     currentStatusIn?: string[];
+    status?: string;
+    subStatus?: string;
+    paymentStatus?: string;
     createdFrom?: string;
     createdTo?: string;
     overdueOnly?: boolean;

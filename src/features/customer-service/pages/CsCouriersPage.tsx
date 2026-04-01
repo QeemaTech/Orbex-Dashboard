@@ -58,8 +58,8 @@ export function CsCouriersPage() {
       <div className="space-y-6">
         <Card className="from-primary/8 border-primary/15 bg-gradient-to-br via-card to-card shadow-md">
           <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
-            <div className="bg-primary/12 text-primary flex size-12 shrink-0 items-center justify-center rounded-xl">
-              <Truck className="size-6" aria-hidden />
+            <div className="bg-primary/12 text-primary flex size-14 shrink-0 items-center justify-center rounded-xl">
+              <Truck className="size-7" aria-hidden />
             </div>
             <div className="min-w-0 space-y-1">
               <CardTitle className="text-xl font-semibold tracking-tight">
@@ -124,12 +124,12 @@ export function CsCouriersPage() {
                             type="button"
                             size="icon"
                             variant="outline"
-                            className="size-8"
+                            className="size-9"
                             title={t("cs.couriers.actions.viewMap")}
                             aria-label={t("cs.couriers.actions.viewMap")}
                             onClick={() => openMap(row.courierId)}
                           >
-                            <MapPin className="size-4" aria-hidden />
+                            <MapPin className="size-5" aria-hidden />
                           </Button>
                         </td>
                       </tr>

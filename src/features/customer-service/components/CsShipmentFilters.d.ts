@@ -7,6 +7,9 @@ export type CsFilterValues = {
     trackingNumber: string;
     currentStatus: string;
     currentStatusIn: string;
+    status: string;
+    subStatus: string;
+    paymentStatus: string;
     createdFrom: string;
     createdTo: string;
     overdueOnly: boolean;

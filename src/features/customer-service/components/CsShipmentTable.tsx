@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { parseCoordinatesFromLocationInput } from "@/features/customer-service/lib/location"
+import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
+import type { DashboardPerspective } from "@/features/shipment-status/status-types"
 
 import { CsShipmentRowActions } from "./CsShipmentRowActions"
 import { ShipmentStatusBadge } from "./ShipmentStatusBadge"
@@ -25,6 +27,7 @@ export interface CsShipmentTableProps {
   detailBasePath?: string
   /** When false, hides the actions column (e.g. general Shipments list). Default true. */
   showActions?: boolean
+  perspective?: DashboardPerspective
 }
 
 export function CsShipmentTable({
@@ -35,6 +38,7 @@ export function CsShipmentTable({
   onOpenAddLocation,
   detailBasePath = "/shipments",
   showActions = true,
+  perspective = "operations",
 }: CsShipmentTableProps) {
   const { t } = useTranslation()
   const nav = useNavigate()
@@ -81,7 +85,9 @@ export function CsShipmentTable({
               {row.phonePrimary}
             </TableCell>
             <TableCell>
-              <ShipmentStatusBadge status={row.currentStatus} />
+              <ShipmentStatusBadge
+                status={getPerspectiveStatusKey(perspective, row)}
+              />
             </TableCell>
               <TableCell>
                 {coordinates ? (
@@ -90,11 +96,11 @@ export function CsShipmentTable({
                     target="_blank"
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="text-primary hover:bg-primary/10 inline-flex size-8 items-center justify-center rounded-full transition-colors"
+                    className="text-primary hover:bg-primary/10 inline-flex size-9 items-center justify-center rounded-full transition-colors"
                     title={t("cs.table.viewLocation")}
                     aria-label={t("cs.table.viewLocation")}
                   >
-                    <MapPin className="size-4 shrink-0" aria-hidden />
+                    <MapPin className="size-5 shrink-0" aria-hidden />
                     <span className="sr-only">{t("cs.table.viewLocation")}</span>
                   </a>
                 ) : (

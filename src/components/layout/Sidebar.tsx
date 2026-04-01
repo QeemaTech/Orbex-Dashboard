@@ -18,6 +18,7 @@ const adminNavConfig = [
   { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false },
   { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: false },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
+  { to: "/merchants", labelKey: "nav.merchants", icon: Package, end: false },
   {
     to: "/collections",
     labelKey: "nav.collections",
@@ -52,18 +53,21 @@ export function Sidebar() {
       id="app-sidebar"
       aria-label={t("a11y.mainNav")}
       className={cn(
-        "border-sidebar-border text-sidebar-foreground fixed top-0 start-0 z-50 flex h-dvh w-[min(280px,88vw)] flex-col border-e bg-gradient-to-b from-white via-[#f8faff] to-[#f1f5ff] shadow-xl transition-transform duration-300 ease-out lg:w-[280px] lg:shadow-none",
+        "nav-shell border-sidebar-border text-sidebar-foreground fixed top-0 start-0 z-50 flex h-dvh w-[min(286px,88vw)] flex-col border-e shadow-xl transition-transform duration-300 ease-out lg:w-[286px] lg:shadow-none",
         open
           ? "translate-x-0"
           : "max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full"
       )}
     >
-      <div className="flex h-[72px] shrink-0 items-center border-b border-sidebar-border/90 px-5 sm:px-6">
-        <span className="text-primary text-2xl font-bold tracking-tight">
-          Orbex
-        </span>
+      <div className="flex h-[76px] shrink-0 items-center border-b border-sidebar-border/90 px-5 sm:px-6">
+        <img
+          src="/logo.svg"
+          alt="Orbex"
+          className="h-9 w-auto object-contain"
+          loading="eager"
+        />
       </div>
-      <nav className="flex flex-1 flex-col gap-2 overflow-y-auto p-4 sm:p-5">
+      <nav className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-4 sm:p-5">
         {navConfig.map(({ to, labelKey, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -72,10 +76,10 @@ export function Sidebar() {
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               cn(
-                "group flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-3 text-[0.95rem] font-medium transition-all duration-200",
+                "nav-item group flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-3 text-[0.95rem] font-medium transition-all duration-200",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-primary border border-primary/20 font-semibold shadow-sm"
-                  : "text-muted-foreground hover:bg-sidebar-accent/75 hover:text-sidebar-accent-foreground hover:-translate-y-px"
+                  ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
+                  : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
               )
             }
           >
@@ -98,7 +102,7 @@ export function Sidebar() {
             size="sm"
             variant={isEn ? "default" : "outline"}
             aria-pressed={isEn}
-            className="min-w-[5.25rem]"
+            className="min-w-[5.25rem] shadow-sm"
             onClick={() => void i18n.changeLanguage("en")}
           >
             {t("dashboard.language.en")}
@@ -108,7 +112,7 @@ export function Sidebar() {
             size="sm"
             variant={!isEn ? "default" : "outline"}
             aria-pressed={!isEn}
-            className="min-w-[5.25rem]"
+            className="min-w-[5.25rem] shadow-sm"
             onClick={() => void i18n.changeLanguage("ar")}
           >
             {t("dashboard.language.ar")}

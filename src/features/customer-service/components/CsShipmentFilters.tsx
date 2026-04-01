@@ -16,6 +16,9 @@ export type CsFilterValues = {
   trackingNumber: string
   currentStatus: string
   currentStatusIn: string
+  status: string
+  subStatus: string
+  paymentStatus: string
   createdFrom: string
   createdTo: string
   overdueOnly: boolean
@@ -112,6 +115,33 @@ export function CsShipmentFilters({
           </option>
           <option value="ASSIGNED">{t("cs.shipmentStatus.ASSIGNED")}</option>
         </select>
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Core status</span>
+        <Input
+          value={values.status}
+          placeholder="PENDING"
+          onChange={(e) => onChange({ ...values, status: e.target.value })}
+          className="min-w-[160px]"
+        />
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Sub status</span>
+        <Input
+          value={values.subStatus}
+          placeholder="DELAYED"
+          onChange={(e) => onChange({ ...values, subStatus: e.target.value })}
+          className="min-w-[160px]"
+        />
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Payment status</span>
+        <Input
+          value={values.paymentStatus}
+          placeholder="COLLECTED"
+          onChange={(e) => onChange({ ...values, paymentStatus: e.target.value })}
+          className="min-w-[180px]"
+        />
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Status set (CSV)</span>

@@ -12,6 +12,11 @@ export type LoginResponse = {
   user: AuthUser
 }
 
+export type RefreshResponse = {
+  accessToken: string
+  refreshToken: string
+}
+
 export async function loginRequest(
   body: LoginBody,
 ): Promise<LoginResponse> {
@@ -23,4 +28,13 @@ export async function loginRequest(
 
 export async function meRequest(token: string): Promise<AuthUser> {
   return apiFetch<AuthUser>("/api/auth/me", { token })
+}
+
+export async function refreshRequest(
+  refreshToken: string,
+): Promise<RefreshResponse> {
+  return apiFetch<RefreshResponse>("/api/auth/refresh", {
+    method: "POST",
+    body: JSON.stringify({ refreshToken }),
+  })
 }

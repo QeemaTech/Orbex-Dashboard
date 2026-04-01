@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Boxes, PackageCheck, RotateCcw, Search, Truck } from "react-lucid"
+import { Boxes, Search } from "react-lucid"
 import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router-dom"
 
 import {
   assignWarehouseShipment,
@@ -33,16 +34,35 @@ import {
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
+import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 
-const statuses = [
+const warehouseStatusFilters = [
   "",
-  "CONFIRMED_BY_CS",
-  "IN_WAREHOUSE",
+  "PENDING_PICKUP",
+  "RECEIVED_IN_WAREHOUSE",
   "OUT_FOR_DELIVERY",
-  "ASSIGNED",
   "REJECTED",
-  "POSTPONED",
+  "DELAYED",
 ] as const
+
+type WarehouseStatusFilter = (typeof warehouseStatusFilters)[number]
+
+function toWarehouseApiStatus(value: WarehouseStatusFilter): string | undefined {
+  switch (value) {
+    case "":
+      return undefined
+    case "PENDING_PICKUP":
+      return "CONFIRMED_BY_CS"
+    case "RECEIVED_IN_WAREHOUSE":
+      return "IN_WAREHOUSE"
+    case "OUT_FOR_DELIVERY":
+      return "OUT_FOR_DELIVERY"
+    case "REJECTED":
+      return "REJECTED"
+    case "DELAYED":
+      return "POSTPONED"
+  }
+}
 
 function formatDateTime(dateIso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
@@ -51,15 +71,53 @@ function formatDateTime(dateIso: string, locale: string): string {
   }).format(new Date(dateIso))
 }
 
+function toPercentFromMax(value: number, max: number) {
+  if (!Number.isFinite(value) || !Number.isFinite(max) || max <= 0) return 0
+  return Math.round((value / max) * 100)
+}
+
+function AwaitingScanIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M5.25 3A2.25 2.25 0 0 0 3 5.25v13.5A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V9.75a2.25 2.25 0 0 0-.659-1.591l-4.5-4.5A2.25 2.25 0 0 0 14.25 3H5.25Zm4.2 5.25a.9.9 0 1 1 0 1.8h-2.7a.9.9 0 1 1 0-1.8h2.7Zm0 3.6a.9.9 0 1 1 0 1.8h-2.7a.9.9 0 1 1 0-1.8h2.7Zm4.05-1.65a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8Z" />
+    </svg>
+  )
+}
+
+function WarehouseBoxIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M11.992 1.5a2 2 0 0 1 1.01.274l7.5 4.25A2 2 0 0 1 21.5 7.77v8.46a2 2 0 0 1-1.01 1.746l-7.5 4.25a2 2 0 0 1-1.98 0l-7.5-4.25A2 2 0 0 1 2.5 16.23V7.77a2 2 0 0 1 1.01-1.746l7.5-4.25a2 2 0 0 1 .982-.274Zm0 2.306L6.146 7.11l5.846 3.312 5.846-3.312-5.846-3.304ZM4.5 9.49v6.52l6.492 3.675v-6.519L4.5 9.49Zm15 0-6.508 3.676v6.519L19.5 16.01V9.49Z" />
+    </svg>
+  )
+}
+
+function AssignmentTruckIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M3.75 4.5A2.25 2.25 0 0 0 1.5 6.75v8.5A2.25 2.25 0 0 0 3.75 17.5h.882a2.625 2.625 0 0 1 5.236 0h3.264a2.625 2.625 0 0 1 5.236 0h1.132a1.5 1.5 0 0 0 1.5-1.5V11.7a2.25 2.25 0 0 0-.45-1.35l-2.4-3.2A2.25 2.25 0 0 0 16.35 6.3H14.25v-1.8H3.75Zm10.5 4.05h2.1l1.8 2.4h-3.9v-2.4Zm-7 10.2a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25Zm8.5 0a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25Z" />
+    </svg>
+  )
+}
+
+function ReturnsIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M12 3.75a8.25 8.25 0 1 0 6.69 13.08.9.9 0 0 0-1.46-1.05A6.45 6.45 0 1 1 18.45 12h-1.8a.9.9 0 0 0-.636 1.536l3.15 3.15a.9.9 0 0 0 1.272 0l3.15-3.15A.9.9 0 0 0 22.95 12h-2.7A8.25 8.25 0 0 0 12 3.75Zm-.9 4.2a.9.9 0 0 0-1.8 0v4.2a.9.9 0 0 0 .4.75l3 2.1a.9.9 0 0 0 1.03-1.476l-2.63-1.84V7.95Z" />
+    </svg>
+  )
+}
+
 export function WarehousePage() {
   const { t, i18n } = useTranslation()
+  const nav = useNavigate()
   const { accessToken } = useAuth()
   const queryClient = useQueryClient()
   const token = accessToken ?? ""
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
 
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState("")
+  const [status, setStatus] = useState<WarehouseStatusFilter>("")
   const [returnsOnly, setReturnsOnly] = useState(false)
   const [page, setPage] = useState(1)
   const [trackingInput, setTrackingInput] = useState("")
@@ -75,7 +133,7 @@ export function WarehousePage() {
         token,
         page,
         search,
-        status,
+        toWarehouseApiStatus(status),
         returnsOnly,
       ] as const,
     [token, page, search, status, returnsOnly],
@@ -96,7 +154,7 @@ export function WarehousePage() {
         page,
         pageSize: 20,
         search: search || undefined,
-        status: status || undefined,
+        status: toWarehouseApiStatus(status),
         returnsOnly,
       }),
     enabled: !!token,
@@ -204,14 +262,24 @@ export function WarehousePage() {
     1,
     Math.ceil((queueQuery.data?.total ?? 0) / (queueQuery.data?.pageSize ?? 20)),
   )
+  const stats = statsQuery.data
+  const statValues = [
+    stats?.awaitingScanIn ?? 0,
+    stats?.inWarehouse ?? 0,
+    stats?.readyForAssignment ?? 0,
+    stats?.assigned ?? 0,
+    stats?.returnsPending ?? 0,
+    stats?.returnsReceivedToday ?? 0,
+  ]
+  const maxStatValue = Math.max(...statValues, 0)
 
   return (
     <Layout title={t("warehouse.pageTitle")}>
       <div className="space-y-6">
         <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
           <CardHeader className="flex flex-row items-center gap-3 pb-2">
-            <div className="bg-primary/15 text-primary flex size-11 items-center justify-center rounded-xl">
-              <Boxes className="size-5" aria-hidden />
+            <div className="bg-primary/15 text-primary flex size-14 items-center justify-center rounded-xl">
+              <Boxes className="size-6" aria-hidden />
             </div>
             <div className="space-y-1">
               <CardTitle className="text-lg">{t("warehouse.pageTitle")}</CardTitle>
@@ -223,38 +291,44 @@ export function WarehousePage() {
         <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-3">
           <StatCard
             title={t("warehouse.stats.awaitingScanIn")}
-            value={statsQuery.data?.awaitingScanIn ?? 0}
-            icon={PackageCheck}
+            value={stats?.awaitingScanIn ?? 0}
+            percentage={toPercentFromMax(stats?.awaitingScanIn ?? 0, maxStatValue)}
+            icon={AwaitingScanIcon}
             accent="warning"
           />
           <StatCard
             title={t("warehouse.stats.inWarehouse")}
-            value={statsQuery.data?.inWarehouse ?? 0}
-            icon={Boxes}
+            value={stats?.inWarehouse ?? 0}
+            percentage={toPercentFromMax(stats?.inWarehouse ?? 0, maxStatValue)}
+            icon={WarehouseBoxIcon}
             accent="primary"
           />
           <StatCard
             title={t("warehouse.stats.readyForAssignment")}
-            value={statsQuery.data?.readyForAssignment ?? 0}
-            icon={Truck}
+            value={stats?.readyForAssignment ?? 0}
+            percentage={toPercentFromMax(stats?.readyForAssignment ?? 0, maxStatValue)}
+            icon={AssignmentTruckIcon}
             accent="success"
           />
           <StatCard
             title={t("warehouse.stats.assigned")}
-            value={statsQuery.data?.assigned ?? 0}
-            icon={Truck}
+            value={stats?.assigned ?? 0}
+            percentage={toPercentFromMax(stats?.assigned ?? 0, maxStatValue)}
+            icon={AssignmentTruckIcon}
             accent="primary"
           />
           <StatCard
             title={t("warehouse.stats.returnsPending")}
-            value={statsQuery.data?.returnsPending ?? 0}
-            icon={RotateCcw}
+            value={stats?.returnsPending ?? 0}
+            percentage={toPercentFromMax(stats?.returnsPending ?? 0, maxStatValue)}
+            icon={ReturnsIcon}
             accent="destructive"
           />
           <StatCard
             title={t("warehouse.stats.returnsReceivedToday")}
-            value={statsQuery.data?.returnsReceivedToday ?? 0}
-            icon={RotateCcw}
+            value={stats?.returnsReceivedToday ?? 0}
+            percentage={toPercentFromMax(stats?.returnsReceivedToday ?? 0, maxStatValue)}
+            icon={ReturnsIcon}
             accent="success"
           />
         </div>
@@ -308,7 +382,7 @@ export function WarehousePage() {
                 onClick={() => trackingMutation.mutate()}
                 disabled={!trackingInput.trim() || trackingMutation.isPending}
               >
-                <Search className="size-4" aria-hidden />
+                <Search className="size-5" aria-hidden />
                 {t("warehouse.operations.track")}
               </Button>
             </div>
@@ -338,11 +412,11 @@ export function WarehousePage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
                 value={status}
                 onChange={(e) => {
-                  setStatus(e.target.value)
+                  setStatus(e.target.value as WarehouseStatusFilter)
                   setPage(1)
                 }}
               >
-                {statuses.map((value) => (
+                {warehouseStatusFilters.map((value) => (
                   <option key={value || "all"} value={value}>
                     {value
                       ? t(`cs.shipmentStatus.${value}`)
@@ -388,11 +462,22 @@ export function WarehousePage() {
                 </TableHeader>
                 <TableBody>
                   {(queueQuery.data?.shipments ?? []).map((row) => (
-                    <TableRow key={row.id}>
+                    <TableRow
+                      key={row.id}
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => nav(`/warehouse/shipments/${encodeURIComponent(row.id)}`)}
+                    >
                       <TableCell>{row.trackingNumber ?? "—"}</TableCell>
                       <TableCell>{row.customerName}</TableCell>
                       <TableCell>{row.merchant?.displayName ?? "—"}</TableCell>
-                      <TableCell>{t(`cs.shipmentStatus.${row.currentStatus}`)}</TableCell>
+                      <TableCell>
+                        {t(
+                          `cs.shipmentStatus.${getPerspectiveStatusKey("warehouse", row)}`,
+                          {
+                            defaultValue: getPerspectiveStatusKey("warehouse", row),
+                          },
+                        )}
+                      </TableCell>
                       <TableCell>{row.courier?.fullName ?? "—"}</TableCell>
                       <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
                       <TableCell>
@@ -401,6 +486,7 @@ export function WarehousePage() {
                             className="w-36"
                             placeholder={t("warehouse.queue.courierIdPlaceholder")}
                             value={selectedShipmentId === row.id ? courierIdInput : ""}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={(e) => {
                               setSelectedShipmentId(row.id)
                               setCourierIdInput(e.target.value)
@@ -409,7 +495,8 @@ export function WarehousePage() {
                           <Button
                             type="button"
                             size="sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedShipmentId(row.id)
                               assignMutation.mutate({
                                 shipmentId: row.id,

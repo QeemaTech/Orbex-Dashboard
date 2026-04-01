@@ -12,6 +12,9 @@ export type WarehouseShipmentRow = {
     customerName: string;
     phonePrimary: string;
     currentStatus: string;
+    status?: string;
+    subStatus?: string;
+    paymentStatus?: string;
     assignedCourierId: string | null;
     returnReceivedAt: string | null;
     scannedOutAt: string | null;

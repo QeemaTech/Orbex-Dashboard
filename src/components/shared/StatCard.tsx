@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react"
+import type { ComponentType } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -55,7 +55,7 @@ export interface StatCardProps {
   title: string
   value: number | string
   percentage?: number
-  icon: LucideIcon
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>
   accent: StatAccent
 }
 
@@ -74,38 +74,34 @@ export function StatCard({
   const locale = resolveNumberLocale(i18n.language)
   const a = accentStyles[accent]
   const safePercentage = Math.max(0, Math.min(100, Number.isFinite(percentage) ? percentage : 0))
+  const badgeLabel = `${safePercentage > 0 ? "+" : ""}${safePercentage}%`
 
   return (
-    <Card className="h-full gap-0 rounded-2xl border px-6 py-5">
-      <CardHeader className="space-y-0 px-0 pb-4">
+    <Card className="dashboard-card dashboard-card-hover dashboard-animate-in h-full gap-0 rounded-[1.5rem] border px-5 py-4">
+      <CardHeader className="space-y-0 px-0 pb-3">
         <div className="flex items-center justify-between gap-3">
-          <div
-            className={cn(
-              "flex size-12 items-center justify-center rounded-full",
-              a.iconWrap
-            )}
-          >
+          <div className={cn("flex size-11 items-center justify-center rounded-full", a.iconWrap)}>
             <Icon className={cn("size-6", a.icon)} aria-hidden />
           </div>
           <span
             className={cn(
-              "inline-flex min-w-[3.25rem] items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
+              "inline-flex min-w-[3.1rem] items-center justify-center rounded-full px-2 py-1 text-xs font-semibold tabular-nums",
               a.badge
             )}
           >
-            {safePercentage}%
+            {badgeLabel}
           </span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2 px-0 pb-5">
-        <CardTitle className="text-muted-foreground line-clamp-2 text-base font-medium leading-snug">
+      <CardContent className="space-y-2 px-0 pb-4">
+        <CardTitle className="text-muted-foreground line-clamp-2 text-sm font-medium leading-snug">
           {title}
         </CardTitle>
-        <p className="text-foreground text-4xl font-bold tabular-nums tracking-tight">
+        <p className="text-foreground text-[2.1rem] leading-none font-bold tabular-nums tracking-tight">
           {typeof value === "number" ? value.toLocaleString(locale) : value}
         </p>
       </CardContent>
-      <div className={cn("h-1.5 w-full overflow-hidden rounded-full", a.progressTrack)}>
+      <div className={cn("h-1 w-full overflow-hidden rounded-full", a.progressTrack)}>
         <div
           className={cn("h-full rounded-full transition-[width] duration-500 ease-out", a.progressFill)}
           style={{ width: `${safePercentage}%` }}

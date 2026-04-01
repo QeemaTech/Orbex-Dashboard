@@ -44,6 +44,9 @@ export function ShipmentsPage() {
       trackingNumber: searchParams.get("trackingNumber") ?? "",
       currentStatus: searchParams.get("currentStatus") ?? "",
       currentStatusIn: searchParams.get("currentStatusIn") ?? "",
+      status: searchParams.get("status") ?? "",
+      subStatus: searchParams.get("subStatus") ?? "",
+      paymentStatus: searchParams.get("paymentStatus") ?? "",
       createdFrom: searchParams.get("createdFrom") ?? "",
       createdTo: searchParams.get("createdTo") ?? "",
       overdueOnly: searchParams.get("overdueOnly") === "true",
@@ -69,6 +72,9 @@ export function ShipmentsPage() {
         filters.trackingNumber,
         filters.currentStatus,
         filters.currentStatusIn,
+        filters.status,
+        filters.subStatus,
+        filters.paymentStatus,
         filters.createdFrom,
         filters.createdTo,
         filters.overdueOnly,
@@ -85,6 +91,9 @@ export function ShipmentsPage() {
       filters.trackingNumber,
       filters.currentStatus,
       filters.currentStatusIn,
+      filters.status,
+      filters.subStatus,
+      filters.paymentStatus,
       filters.createdFrom,
       filters.createdTo,
       filters.overdueOnly,
@@ -105,6 +114,9 @@ export function ShipmentsPage() {
         phoneSearch: filters.phoneSearch || undefined,
         trackingNumber: filters.trackingNumber || undefined,
         currentStatus: filters.currentStatus || undefined,
+        status: filters.status || undefined,
+        subStatus: filters.subStatus || undefined,
+        paymentStatus: filters.paymentStatus || undefined,
         currentStatusIn: filters.currentStatusIn
           ? filters.currentStatusIn
               .split(",")
@@ -141,6 +153,12 @@ export function ShipmentsPage() {
       else p.delete("currentStatus")
       if (next.currentStatusIn) p.set("currentStatusIn", next.currentStatusIn)
       else p.delete("currentStatusIn")
+      if (next.status) p.set("status", next.status)
+      else p.delete("status")
+      if (next.subStatus) p.set("subStatus", next.subStatus)
+      else p.delete("subStatus")
+      if (next.paymentStatus) p.set("paymentStatus", next.paymentStatus)
+      else p.delete("paymentStatus")
       if (next.createdFrom) p.set("createdFrom", next.createdFrom)
       else p.delete("createdFrom")
       if (next.createdTo) p.set("createdTo", next.createdTo)
@@ -217,6 +235,7 @@ export function ShipmentsPage() {
                   onOpenMap={openMap}
                   onOpenAddLocation={openAddLocation}
                   showActions
+                  perspective="operations"
                 />
               </div>
             ) : null}

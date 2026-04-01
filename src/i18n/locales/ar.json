@@ -4,6 +4,7 @@
     "shipments": "الشحنات",
     "warehouse": "المخزن",
     "couriers": "المناديب",
+    "merchants": "التجار",
     "collections": "التحصيل",
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء"
@@ -207,7 +208,29 @@
       "ASSIGNED": "مُسند",
       "DELIVERED": "تم التسليم",
       "REJECTED": "مرفوض",
-      "POSTPONED": "مؤجل"
+      "POSTPONED": "مؤجل",
+      "PENDING_CONFIRMATION": "بانتظار التأكيد",
+      "CONFIRMED": "مؤكد",
+      "DELAYED": "مؤجل",
+      "LOCATION_RECEIVED": "تم استلام الموقع",
+      "CREATED": "تم الإنشاء",
+      "PICKED_UP": "تم الاستلام",
+      "IN_TRANSIT": "قيد النقل",
+      "RETURNED": "مرتجع",
+      "PENDING_PICKUP": "بانتظار الاستلام",
+      "RECEIVED_IN_WAREHOUSE": "تم الاستلام في المخزن",
+      "READY_FOR_DISPATCH": "جاهز للخروج",
+      "RETURNED_TO_WAREHOUSE": "عاد إلى المخزن",
+      "RETURN_TO_MERCHANT": "إرجاع إلى التاجر",
+      "RESCHEDULED": "إعادة جدولة",
+      "DAMAGED_OR_MISSING": "تالف أو مفقود",
+      "OVERDUE": "متأخر",
+      "PENDING_COLLECTION": "بانتظار التحصيل",
+      "COLLECTED": "تم التحصيل",
+      "POS_PENDING": "بانتظار مراجعة POS",
+      "READY_FOR_SETTLEMENT": "جاهز للتسوية",
+      "SETTLED": "تمت التسوية",
+      "ON_HOLD": "معلق"
     },
     "couriers": {
       "pageTitle": "خدمة العملاء - المناديب",
@@ -273,6 +296,38 @@
       "scanOutSuccess": "تم تسجيل خروج الشحنة للتسليم.",
       "assignmentSuccess": "تم تعيين المندوب بنجاح.",
       "returnSuccess": "تم استلام المرتجع وتسجيله."
+    }
+  },
+  "merchants": {
+    "pageTitle": "التجار",
+    "subtitle": "راجع طلبات تسجيل التجار واعتمد الحسابات المعلقة.",
+    "tableCardTitle": "طلبات تسجيل التجار",
+    "tableCardDescription": "يجب اعتماد التاجر المعلق قبل تفعيل صلاحياته.",
+    "loading": "جاري تحميل التجار…",
+    "empty": "لا يوجد تجار بهذه التصفية.",
+    "filters": {
+      "status": "الحالة",
+      "allStatuses": "كل الحالات"
+    },
+    "status": {
+      "PENDING": "معلق",
+      "ACTIVATED": "مفعل"
+    },
+    "table": {
+      "displayName": "التاجر",
+      "owner": "المسؤول",
+      "phone": "الهاتف",
+      "businessName": "اسم النشاط",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "approve": "اعتماد"
+    },
+    "pagination": {
+      "summary": "{{total}} إجمالي · صفحة {{page}}",
+      "prev": "السابق",
+      "next": "التالي"
     }
   }
 }

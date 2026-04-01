@@ -13,6 +13,8 @@ export interface CsShipmentRowActionsProps {
   listQueryKey: unknown[]
   onOpenMap: (courierId: string) => void
   onOpenAddLocation: (row: CsShipmentRow) => void
+  showWhatsApp?: boolean
+  showAddLocation?: boolean
 }
 
 export function CsShipmentRowActions({
@@ -21,6 +23,8 @@ export function CsShipmentRowActions({
   listQueryKey,
   onOpenMap,
   onOpenAddLocation,
+  showWhatsApp = true,
+  showAddLocation = true,
 }: CsShipmentRowActionsProps) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -61,27 +65,31 @@ export function CsShipmentRowActions({
             {t("cs.actions.confirm")}
           </Button>
         ) : null}
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          title="إرسال واتساب"
-          disabled={!hasPhone}
-          className="size-9 rounded-full bg-[#25D366] text-white shadow-sm hover:bg-[#22c55e]"
-          onClick={() => openWhatsApp(row)}
-        >
-          <WhatsAppLogoIcon className="size-5" />
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-          onClick={handleLocationAction}
-        >
-          <LocateFixed className="me-1 size-4" aria-hidden />
-          {t("cs.actions.addLocation")}
-        </Button>
+        {showWhatsApp ? (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            title="إرسال واتساب"
+            disabled={!hasPhone}
+            className="size-9 rounded-full bg-[#25D366] text-white shadow-sm hover:bg-[#22c55e]"
+            onClick={() => openWhatsApp(row)}
+          >
+            <WhatsAppLogoIcon className="size-5" />
+          </Button>
+        ) : null}
+        {showAddLocation ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+            onClick={handleLocationAction}
+          >
+            <LocateFixed className="me-1 size-4" aria-hidden />
+            {t("cs.actions.addLocation")}
+          </Button>
+        ) : null}
         <Button
           type="button"
           size="sm"

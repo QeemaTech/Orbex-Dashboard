@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { MapPin, PackageCheck } from "react-lucid"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 
 import { getShipmentById, listShipments } from "@/api/shipments-api"
 import { Layout } from "@/components/layout/Layout"
@@ -18,11 +18,17 @@ import { CsAddLocationDialog } from "@/features/customer-service/components/CsAd
 import { CsCourierMapDialog } from "@/features/customer-service/components/CsCourierMapDialog"
 import { CsShipmentRowActions } from "@/features/customer-service/components/CsShipmentRowActions"
 import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
+import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
+import type { DashboardPerspective } from "@/features/shipment-status/status-types"
 import { useAuth } from "@/lib/auth-context"
+
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export function ShipmentDetailsPage() {
   const { t } = useTranslation()
   const nav = useNavigate()
+  const location = useLocation()
   const { shipmentId: shipmentParam = "" } = useParams()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
@@ -49,6 +55,13 @@ export function ShipmentDetailsPage() {
       return shipmentParam.trim()
     }
   })()
+  const isWarehouseRoute = location.pathname.startsWith("/warehouse/")
+  const isIdParam = uuidRegex.test(shipmentName)
+  const statusPerspective: DashboardPerspective = isWarehouseRoute
+    ? "warehouse"
+    : "operations"
+  const shouldUseDirectId = isWarehouseRoute || isIdParam
+
   const matchedShipmentQuery = useQuery({
     queryKey: ["shipment-detail-match", shipmentName, token],
     queryFn: async () => {
@@ -60,15 +73,23 @@ export function ShipmentDetailsPage() {
       })
       return result.shipments[0] ?? null
     },
-    enabled: !!token && !!shipmentName,
+    enabled: !!token && !!shipmentName && !shouldUseDirectId,
   })
-  const matchedShipmentId = matchedShipmentQuery.data?.id ?? ""
+  const matchedShipmentId = shouldUseDirectId
+    ? shipmentName
+    : matchedShipmentQuery.data?.id ?? ""
   const q = useQuery({
     queryKey: ["shipment-detail", matchedShipmentId, token],
     queryFn: () =>
       getShipmentById({ token, shipmentId: matchedShipmentId, includeEvents: true }),
     enabled: !!token && !!matchedShipmentId,
   })
+  const showNotFound =
+    (shouldUseDirectId && !q.isLoading && !q.error && !q.data) ||
+    (!shouldUseDirectId &&
+      !matchedShipmentQuery.isLoading &&
+      !matchedShipmentQuery.error &&
+      !matchedShipmentQuery.data)
 
   return (
     <Layout title={t("shipments.detailTitle")}>
@@ -83,7 +104,7 @@ export function ShipmentDetailsPage() {
               {t("shipments.detailTitle")}
             </CardTitle>
             <CardDescription>
-              {shipmentName || "—"}
+              {q.data?.customerName || shipmentName || "—"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -95,9 +116,7 @@ export function ShipmentDetailsPage() {
                 {(matchedShipmentQuery.error as Error).message}
               </p>
             ) : null}
-            {!matchedShipmentQuery.isLoading &&
-            !matchedShipmentQuery.error &&
-            !matchedShipmentQuery.data ? (
+            {showNotFound ? (
               <p className="text-destructive">
                 {t("shipments.detail.notFound", { defaultValue: "Shipment not found." })}
               </p>
@@ -147,7 +166,9 @@ export function ShipmentDetailsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <strong>{t("cs.table.status")}:</strong>
-                  <ShipmentStatusBadge status={q.data.currentStatus} />
+                  <ShipmentStatusBadge
+                    status={getPerspectiveStatusKey(statusPerspective, q.data)}
+                  />
                 </div>
                 <p><strong>{t("cs.table.address")}:</strong> {q.data.addressText}</p>
                 {q.data.locationText ? (
@@ -193,6 +214,8 @@ export function ShipmentDetailsPage() {
                       setMapOpen(true)
                     }}
                     onOpenAddLocation={() => setLocationOpen(true)}
+                    showWhatsApp={!isWarehouseRoute}
+                    showAddLocation={!isWarehouseRoute}
                   />
                 </div>
                 <div className="space-y-2 rounded-lg border bg-card p-3">
@@ -231,13 +254,15 @@ export function ShipmentDetailsPage() {
         courierId={mapCourierId}
         token={token}
       />
-      <CsAddLocationDialog
-        open={locationOpen}
-        onOpenChange={setLocationOpen}
-        row={q.data ?? null}
-        token={token}
-        listQueryKey={["shipment-detail", matchedShipmentId, token]}
-      />
+      {!isWarehouseRoute ? (
+        <CsAddLocationDialog
+          open={locationOpen}
+          onOpenChange={setLocationOpen}
+          row={q.data ?? null}
+          token={token}
+          listQueryKey={["shipment-detail", matchedShipmentId, token]}
+        />
+      ) : null}
     </Layout>
   )
 }

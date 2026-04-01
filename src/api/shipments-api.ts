@@ -1,6 +1,9 @@
 import { apiFetch } from "@/api/client"
 import { extractShipmentLocation } from "@/features/customer-service/lib/location"
 
+const useDashboardSeedData =
+  String(import.meta.env.VITE_DASHBOARD_SEED ?? "").toLowerCase() === "true"
+
 export type ShipmentListResponse = {
   shipments: CsShipmentRow[]
   total: number
@@ -42,6 +45,9 @@ export type CsShipmentRow = {
   paymentMethod: string
   productType: string
   currentStatus: string
+  status?: string
+  subStatus?: string
+  paymentStatus?: string
   merchant?: CsMerchant
   courier?: CsCourier | null
   createdAt: string
@@ -54,6 +60,12 @@ export type CsShipmentStatusEvent = {
   shipmentId: string
   fromStatus: string | null
   toStatus: string
+  fromCoreStatus?: string | null
+  toCoreStatus?: string
+  fromSubStatus?: string | null
+  toSubStatus?: string
+  fromPaymentStatus?: string | null
+  toPaymentStatus?: string
   receivedByCustomer: boolean | null
   paymentCollected: boolean | null
   note: string | null
@@ -79,6 +91,9 @@ export type ListShipmentsParams = {
   customerName?: string
   currentStatus?: string
   currentStatusIn?: string[]
+  status?: string
+  subStatus?: string
+  paymentStatus?: string
   createdFrom?: string
   createdTo?: string
   overdueOnly?: boolean
@@ -112,6 +127,9 @@ export async function listShipments(
     trackingNumber: p.trackingNumber,
     customerName: p.customerName,
     currentStatus: p.currentStatus,
+    status: p.status,
+    subStatus: p.subStatus,
+    paymentStatus: p.paymentStatus,
     currentStatusIn:
       p.currentStatusIn && p.currentStatusIn.length > 0
         ? p.currentStatusIn.join(",")
@@ -177,12 +195,218 @@ export type DashboardKpisResponse = {
   recentShipments: CsShipmentRow[]
 }
 
+function subtractDaysIso(daysAgo: number): string {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - daysAgo)
+  return d.toISOString().slice(0, 10)
+}
+
+function buildSeedRecentShipments(take: number): CsShipmentRow[] {
+  const base: CsShipmentRow[] = [
+    {
+      id: "seed-shp-1001",
+      merchantId: "mrc-01",
+      assignedCourierId: "cr-01",
+      trackingNumber: "ORX-1001",
+      customerName: "Ahmed Hassan",
+      phonePrimary: "+20 100 123 4567",
+      phoneSecondary: null,
+      addressText: "Nasr City, Cairo",
+      notes: "Building 5, floor 2",
+      locationText: "Nasr City",
+      locationLink: "https://maps.google.com/?q=30.0617,31.3300",
+      addressConfirmed: true,
+      customerLat: "30.0617",
+      customerLng: "31.3300",
+      customerLocationReceivedAt: new Date().toISOString(),
+      shipmentValue: "1250",
+      shippingFee: "60",
+      paymentMethod: "COD",
+      productType: "Electronics",
+      currentStatus: "DELIVERED",
+      status: "DELIVERED",
+      subStatus: "NONE",
+      paymentStatus: "COLLECTED",
+      merchant: {
+        id: "mrc-01",
+        displayName: "Delta Store",
+        businessName: "Delta Store LLC",
+      },
+      courier: {
+        id: "cr-01",
+        fullName: "Omar Adel",
+        userId: "u-cr-01",
+        contactPhone: "+20 111 111 1111",
+      },
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      statusEvents: [],
+    },
+    {
+      id: "seed-shp-1002",
+      merchantId: "mrc-02",
+      assignedCourierId: "cr-02",
+      trackingNumber: "ORX-1002",
+      customerName: "Sara Mahmoud",
+      phonePrimary: "+20 111 987 6543",
+      phoneSecondary: null,
+      addressText: "Smouha, Alexandria",
+      notes: "Call before arrival",
+      locationText: "Smouha",
+      locationLink: "https://maps.google.com/?q=31.2156,29.9553",
+      addressConfirmed: true,
+      customerLat: "31.2156",
+      customerLng: "29.9553",
+      customerLocationReceivedAt: new Date().toISOString(),
+      shipmentValue: "940",
+      shippingFee: "55",
+      paymentMethod: "Card",
+      productType: "Fashion",
+      currentStatus: "POSTPONED",
+      status: "RETURNED",
+      subStatus: "DELAYED",
+      paymentStatus: "PENDING",
+      merchant: {
+        id: "mrc-02",
+        displayName: "Urban Wear",
+        businessName: "Urban Wear Co.",
+      },
+      courier: {
+        id: "cr-02",
+        fullName: "Mona Tarek",
+        userId: "u-cr-02",
+        contactPhone: "+20 112 222 3333",
+      },
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      statusEvents: [],
+    },
+    {
+      id: "seed-shp-1003",
+      merchantId: "mrc-03",
+      assignedCourierId: null,
+      trackingNumber: "ORX-1003",
+      customerName: "Nour Khaled",
+      phonePrimary: "+20 109 888 7777",
+      phoneSecondary: null,
+      addressText: "6th of October, Giza",
+      notes: "Gate B",
+      locationText: "6th of October",
+      locationLink: "https://maps.google.com/?q=29.9720,30.9449",
+      addressConfirmed: false,
+      customerLat: "29.9720",
+      customerLng: "30.9449",
+      customerLocationReceivedAt: new Date().toISOString(),
+      shipmentValue: "1860",
+      shippingFee: "70",
+      paymentMethod: "Wallet",
+      productType: "Home",
+      currentStatus: "REJECTED",
+      status: "RETURNED",
+      subStatus: "REJECTED",
+      paymentStatus: "FAILED",
+      merchant: {
+        id: "mrc-03",
+        displayName: "Home Plus",
+        businessName: "Home Plus Egypt",
+      },
+      courier: null,
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      statusEvents: [],
+    },
+    {
+      id: "seed-shp-1004",
+      merchantId: "mrc-01",
+      assignedCourierId: "cr-03",
+      trackingNumber: "ORX-1004",
+      customerName: "Youssef Nabil",
+      phonePrimary: "+20 122 555 0101",
+      phoneSecondary: null,
+      addressText: "Zagazig, Sharqia",
+      notes: "Near university gate",
+      locationText: "Zagazig",
+      locationLink: "https://maps.google.com/?q=30.5877,31.5020",
+      addressConfirmed: true,
+      customerLat: "30.5877",
+      customerLng: "31.5020",
+      customerLocationReceivedAt: new Date().toISOString(),
+      shipmentValue: "720",
+      shippingFee: "45",
+      paymentMethod: "COD",
+      productType: "Accessories",
+      currentStatus: "OUT_FOR_DELIVERY",
+      status: "OUT_FOR_DELIVERY",
+      subStatus: "NONE",
+      paymentStatus: "PENDING",
+      merchant: {
+        id: "mrc-01",
+        displayName: "Delta Store",
+        businessName: "Delta Store LLC",
+      },
+      courier: {
+        id: "cr-03",
+        fullName: "Kareem Fathy",
+        userId: "u-cr-03",
+        contactPhone: "+20 114 444 5555",
+      },
+      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      statusEvents: [],
+    },
+  ]
+  return base.slice(0, Math.max(1, Math.min(take, base.length)))
+}
+
+function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisResponse {
+  const normalizedDays = Math.max(5, Math.min(trendDays, 30))
+  const timeline = Array.from({ length: normalizedDays }, (_, i) => {
+    const dayIndex = normalizedDays - i - 1
+    return {
+      date: subtractDaysIso(dayIndex),
+      count: 70 + ((i * 13) % 52) + (i % 3 === 0 ? 18 : 0),
+    }
+  })
+
+  const totals = {
+    totalShipments: 1264,
+    delivered: 914,
+    rejected: 83,
+    postponed: 129,
+    pendingAssignment: 46,
+    inProgress: 92,
+  }
+
+  return {
+    totals,
+    statusDistribution: [
+      { status: "DELIVERED", value: totals.delivered },
+      { status: "REJECTED", value: totals.rejected },
+      { status: "POSTPONED", value: totals.postponed },
+      { status: "IN_TRANSIT", value: totals.inProgress },
+    ],
+    shipmentsOverTime: timeline,
+    courierWorkload: [
+      { courierId: "cr-01", courierName: "Omar Adel", assignedCount: 28 },
+      { courierId: "cr-02", courierName: "Mona Tarek", assignedCount: 23 },
+      { courierId: "cr-03", courierName: "Kareem Fathy", assignedCount: 19 },
+      { courierId: "cr-04", courierName: "Heba Yasser", assignedCount: 16 },
+    ],
+    recentShipments: buildSeedRecentShipments(recentTake),
+  }
+}
+
 export async function getDashboardKpis(
   p: Omit<ListShipmentsParams, "page" | "pageSize" | "expand"> & {
     trendDays?: number
     recentTake?: number
   },
 ): Promise<DashboardKpisResponse> {
+  if (useDashboardSeedData) {
+    return buildSeedDashboardKpis(p.trendDays, p.recentTake)
+  }
+
   const query = qs({
     merchantId: p.merchantId,
     merchantName: p.merchantName,
@@ -194,6 +418,9 @@ export async function getDashboardKpis(
     customerName: p.customerName,
     phoneSearch: p.phoneSearch,
     currentStatus: p.currentStatus,
+    status: p.status,
+    subStatus: p.subStatus,
+    paymentStatus: p.paymentStatus,
     currentStatusIn:
       p.currentStatusIn && p.currentStatusIn.length > 0
         ? p.currentStatusIn.join(",")
@@ -266,6 +493,9 @@ export async function listShipmentTimeline(
     customerName: p.customerName,
     phoneSearch: p.phoneSearch,
     currentStatus: p.currentStatus,
+    status: p.status,
+    subStatus: p.subStatus,
+    paymentStatus: p.paymentStatus,
     currentStatusIn:
       p.currentStatusIn && p.currentStatusIn.length > 0
         ? p.currentStatusIn.join(",")

@@ -32,6 +32,7 @@ export type AuthUser = {
 const STORAGE_ACCESS = "orbex_access_token"
 const STORAGE_REFRESH = "orbex_refresh_token"
 const STORAGE_USER = "orbex_user"
+const AUTH_CHANGED_EVENT = "orbex-auth-changed"
 
 type AuthState = {
   user: AuthUser | null
@@ -89,6 +90,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false))
   }, [])
 
+  useEffect(() => {
+    const onAuthChanged = () => {
+      setAccessToken(localStorage.getItem(STORAGE_ACCESS))
+      setRefreshToken(localStorage.getItem(STORAGE_REFRESH))
+      setUser(readStoredUser())
+    }
+
+    window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
+  }, [])
+
   const login = useCallback(async (username: string, password: string) => {
     const res = await loginRequest({ username, password })
     localStorage.setItem(STORAGE_ACCESS, res.accessToken)
@@ -104,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_ACCESS)
     localStorage.removeItem(STORAGE_REFRESH)
     localStorage.removeItem(STORAGE_USER)
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
     setUser(null)
     setAccessToken(null)
     setRefreshToken(null)

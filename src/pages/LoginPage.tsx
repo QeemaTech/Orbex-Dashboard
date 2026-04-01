@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Eye, EyeOff, Lock, Package } from "react-lucid"
+import { Eye, EyeOff, Lock } from "react-lucid"
 import { Navigate, useNavigate } from "react-router-dom"
 
 import { ApiError } from "@/api/client"
@@ -55,12 +55,12 @@ export function LoginPage() {
 
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="border-border/60 bg-card mb-4 flex size-14 items-center justify-center rounded-2xl border shadow-sm">
-            <Package className="text-primary size-8" aria-hidden />
-          </div>
-          <h1 className="text-foreground text-2xl font-bold tracking-tight">
-            Orbex
-          </h1>
+          <img
+            src="/logo.svg"
+            alt="Orbex"
+            className="mb-3 h-12 w-auto object-contain"
+            loading="eager"
+          />
           <p className="text-muted-foreground mt-1 max-w-sm text-sm leading-relaxed">
             {t("auth.loginSubtitle")}
           </p>

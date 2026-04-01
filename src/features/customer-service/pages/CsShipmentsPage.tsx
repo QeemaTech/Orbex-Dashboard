@@ -44,6 +44,9 @@ export function CsShipmentsPage() {
       trackingNumber: searchParams.get("trackingNumber") ?? "",
       currentStatus: searchParams.get("currentStatus") ?? "",
       currentStatusIn: searchParams.get("currentStatusIn") ?? "",
+      status: searchParams.get("status") ?? "",
+      subStatus: searchParams.get("subStatus") ?? "",
+      paymentStatus: searchParams.get("paymentStatus") ?? "",
       createdFrom: searchParams.get("createdFrom") ?? "",
       createdTo: searchParams.get("createdTo") ?? "",
       overdueOnly: searchParams.get("overdueOnly") === "true",
@@ -69,6 +72,9 @@ export function CsShipmentsPage() {
         filters.trackingNumber,
         filters.currentStatus,
         filters.currentStatusIn,
+        filters.status,
+        filters.subStatus,
+        filters.paymentStatus,
         filters.createdFrom,
         filters.createdTo,
         filters.overdueOnly,
@@ -85,6 +91,9 @@ export function CsShipmentsPage() {
       filters.trackingNumber,
       filters.currentStatus,
       filters.currentStatusIn,
+      filters.status,
+      filters.subStatus,
+      filters.paymentStatus,
       filters.createdFrom,
       filters.createdTo,
       filters.overdueOnly,
@@ -105,6 +114,9 @@ export function CsShipmentsPage() {
         phoneSearch: filters.phoneSearch || undefined,
         trackingNumber: filters.trackingNumber || undefined,
         currentStatus: filters.currentStatus || undefined,
+        status: filters.status || undefined,
+        subStatus: filters.subStatus || undefined,
+        paymentStatus: filters.paymentStatus || undefined,
         currentStatusIn: filters.currentStatusIn
           ? filters.currentStatusIn
               .split(",")
@@ -142,6 +154,12 @@ export function CsShipmentsPage() {
       else p.delete("currentStatus")
       if (next.currentStatusIn) p.set("currentStatusIn", next.currentStatusIn)
       else p.delete("currentStatusIn")
+      if (next.status) p.set("status", next.status)
+      else p.delete("status")
+      if (next.subStatus) p.set("subStatus", next.subStatus)
+      else p.delete("subStatus")
+      if (next.paymentStatus) p.set("paymentStatus", next.paymentStatus)
+      else p.delete("paymentStatus")
       if (next.createdFrom) p.set("createdFrom", next.createdFrom)
       else p.delete("createdFrom")
       if (next.createdTo) p.set("createdTo", next.createdTo)
@@ -180,8 +198,8 @@ export function CsShipmentsPage() {
       <div className="space-y-6">
         <Card className="from-primary/8 border-primary/15 bg-gradient-to-br via-card to-card shadow-md">
           <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
-            <div className="bg-primary/12 text-primary flex size-12 shrink-0 items-center justify-center rounded-xl">
-              <Headphones className="size-6" aria-hidden />
+            <div className="bg-primary/12 text-primary flex size-14 shrink-0 items-center justify-center rounded-xl">
+              <Headphones className="size-7" aria-hidden />
             </div>
             <div className="min-w-0 space-y-1">
               <CardTitle className="text-xl font-semibold tracking-tight">
@@ -223,6 +241,7 @@ export function CsShipmentsPage() {
                   onOpenMap={openMap}
                   onOpenAddLocation={openAddLocation}
                   detailBasePath="/cs/shipments"
+                  perspective="operations"
                 />
               </div>
             ) : null}

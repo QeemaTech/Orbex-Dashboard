@@ -14,8 +14,9 @@ import {
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
 import { CsShipmentsPage } from "@/features/customer-service/pages/CsShipmentsPage"
 import { DashboardPage } from "@/pages/Dashboard/DashboardPage"
+import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
-import { PlaceholderPage } from "@/pages/PlaceholderPage"
+import { MerchantsPage } from "@/pages/MerchantsPage"
 import { ShipmentDetailsPage } from "@/pages/ShipmentDetailsPage"
 import { ShipmentsPage } from "@/pages/ShipmentsPage"
 import { WarehousePage } from "@/pages/WarehousePage"
@@ -104,10 +105,20 @@ export default function App() {
           }
         />
         <Route
+          path="/merchants"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN"]}>
+                <MerchantsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/collections"
           element={
             <Protected>
-              <PlaceholderPage titleKey="nav.collections" />
+              <CollectionsPage />
             </Protected>
           }
         />
@@ -117,6 +128,16 @@ export default function App() {
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE"]}>
                 <WarehousePage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouse/shipments/:shipmentId"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "WAREHOUSE"]}>
+                <ShipmentDetailsPage />
               </ProtectedRole>
             </Protected>
           }

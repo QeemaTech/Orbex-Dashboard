@@ -4,6 +4,7 @@
     "shipments": "Shipments",
     "warehouse": "Warehouse",
     "couriers": "Couriers",
+    "merchants": "Merchants",
     "collections": "Collections",
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
@@ -207,7 +208,29 @@
       "ASSIGNED": "Assigned",
       "DELIVERED": "Delivered",
       "REJECTED": "Rejected",
-      "POSTPONED": "Postponed"
+      "POSTPONED": "Postponed",
+      "PENDING_CONFIRMATION": "Pending confirmation",
+      "CONFIRMED": "Confirmed",
+      "DELAYED": "Delayed",
+      "LOCATION_RECEIVED": "Location received",
+      "CREATED": "Created",
+      "PICKED_UP": "Picked up",
+      "IN_TRANSIT": "In transit",
+      "RETURNED": "Returned",
+      "PENDING_PICKUP": "Pending pickup",
+      "RECEIVED_IN_WAREHOUSE": "Received in warehouse",
+      "READY_FOR_DISPATCH": "Ready for dispatch",
+      "RETURNED_TO_WAREHOUSE": "Returned to warehouse",
+      "RETURN_TO_MERCHANT": "Return to merchant",
+      "RESCHEDULED": "Rescheduled",
+      "DAMAGED_OR_MISSING": "Damaged or missing",
+      "OVERDUE": "Overdue",
+      "PENDING_COLLECTION": "Pending collection",
+      "COLLECTED": "Collected",
+      "POS_PENDING": "POS pending",
+      "READY_FOR_SETTLEMENT": "Ready for settlement",
+      "SETTLED": "Settled",
+      "ON_HOLD": "On hold"
     },
     "couriers": {
       "pageTitle": "Customer service - Couriers",
@@ -273,6 +296,38 @@
       "scanOutSuccess": "Shipment scanned out for delivery.",
       "assignmentSuccess": "Courier assigned successfully.",
       "returnSuccess": "Return received and recorded."
+    }
+  },
+  "merchants": {
+    "pageTitle": "Merchants",
+    "subtitle": "Review merchant registrations and approve pending accounts.",
+    "tableCardTitle": "Merchant registrations",
+    "tableCardDescription": "Approve pending merchants before they can access merchant functionality.",
+    "loading": "Loading merchants…",
+    "empty": "No merchants found for this filter.",
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "ACTIVATED": "Activated"
+    },
+    "table": {
+      "displayName": "Merchant",
+      "owner": "Owner",
+      "phone": "Phone",
+      "businessName": "Business name",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "actions": {
+      "approve": "Approve"
+    },
+    "pagination": {
+      "summary": "{{total}} total · page {{page}}",
+      "prev": "Previous",
+      "next": "Next"
     }
   }
 }
