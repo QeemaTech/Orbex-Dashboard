@@ -27,6 +27,7 @@ export type CsCourier = {
 export type CsShipmentRow = {
   id: string
   merchantId: string
+  customerId: string
   assignedCourierId: string | null
   trackingNumber: string | null
   customerName: string
@@ -207,6 +208,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1001",
       merchantId: "mrc-01",
+      customerId: "seed-cust-1001",
       assignedCourierId: "cr-01",
       trackingNumber: "ORX-1001",
       customerName: "Ahmed Hassan",
@@ -246,6 +248,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1002",
       merchantId: "mrc-02",
+      customerId: "seed-cust-1002",
       assignedCourierId: "cr-02",
       trackingNumber: "ORX-1002",
       customerName: "Sara Mahmoud",
@@ -285,6 +288,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1003",
       merchantId: "mrc-03",
+      customerId: "seed-cust-1003",
       assignedCourierId: null,
       trackingNumber: "ORX-1003",
       customerName: "Nour Khaled",
@@ -319,6 +323,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1004",
       merchantId: "mrc-01",
+      customerId: "seed-cust-1004",
       assignedCourierId: "cr-03",
       trackingNumber: "ORX-1004",
       customerName: "Youssef Nabil",

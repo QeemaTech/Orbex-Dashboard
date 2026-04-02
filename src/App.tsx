@@ -13,7 +13,7 @@ import {
 } from "@/lib/auth-context"
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
 import { CsShipmentsPage } from "@/features/customer-service/pages/CsShipmentsPage"
-import { DashboardPage } from "@/pages/Dashboard/DashboardPage"
+import { DashboardPage } from "@/pages/DashboardPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
