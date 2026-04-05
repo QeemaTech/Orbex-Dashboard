@@ -12,7 +12,7 @@ export function LoginPage() {
   const { t } = useTranslation()
   const { user, login, loading } = useAuth()
   const nav = useNavigate()
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +27,7 @@ export function LoginPage() {
     setError(null)
     setPending(true)
     try {
-      const loggedInUser = await login(username, password)
+      const loggedInUser = await login(email, password)
       nav(getDefaultDashboardRoute(loggedInUser.role), { replace: true })
     } catch (err) {
       const msg =
@@ -79,13 +79,14 @@ export function LoginPage() {
 
           <label className="grid gap-2 text-sm">
             <span className="text-foreground font-medium">
-              {t("auth.username")}
+              {t("auth.email")}
             </span>
             <Input
-              name="username"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="h-11"
               required
             />

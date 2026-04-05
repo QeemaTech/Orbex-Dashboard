@@ -6,14 +6,16 @@
     "warehouseSites": "Warehouse sites",
     "couriers": "Couriers",
     "merchants": "Merchants",
+    "users": "Users",
     "collections": "Collections",
+    "warehouses": "Warehouses",
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
   },
   "auth": {
     "loginTitle": "Sign in to Orbex",
     "loginSubtitle": "Operations dashboard for Orbex logistics.",
-    "username": "Username",
+    "email": "Email",
     "password": "Password",
     "signIn": "Sign in",
     "loginError": "Could not sign in. Check your credentials."
@@ -61,6 +63,12 @@
       "rejected": "Rejected",
       "postponed": "Postponed"
     },
+    "adminStats": {
+      "users": "Users",
+      "shipments": "Shipments",
+      "packages": "Packages",
+      "warehouses": "Warehouses"
+    },
     "chart": {
       "lineTitle": "Shipments over time",
       "lineDescription": "Last 7 days",
@@ -92,6 +100,12 @@
       "title": "Recent shipments",
       "description": "Latest activity in your network"
     },
+    "warehouses": {
+      "title": "Warehouse hubs",
+      "description": "Open a site for full details, admin contact, and staff count.",
+      "viewAll": "View all warehouses",
+      "empty": "No warehouse sites registered yet."
+    },
     "table": {
       "customerName": "Customer Name",
       "phone": "Phone",
@@ -117,7 +131,8 @@
       "timelineEmpty": "No timeline events yet.",
       "timelineStart": "START",
       "currencyLocale": "en-EG"
-    }
+    },
+    "packagesWarehouseSubtitle": "Each row is a package line from the batch, with delivery and payment states as stored in Orbex."
   },
   "cs": {
     "pageTitle": "Customer service — Shipments",
@@ -131,6 +146,7 @@
       "phonePlaceholder": "Customer phone",
       "status": "Status",
       "anyStatus": "Any status",
+      "anyPaymentStatus": "Any payment status",
       "from": "Created from",
       "to": "Created to",
       "today": "Today",
@@ -155,12 +171,17 @@
     "actions": {
       "confirm": "Confirm",
       "confirmOutbound": "Confirm outbound",
+      "menu": "Actions",
+      "menuAriaLabel": "Open shipment actions menu",
       "whatsappApi": "WhatsApp API",
       "whatsappApiTitle": "Send via WhatsApp Business (Cloud API)",
       "whatsappWeb": "WhatsApp Web",
+      "whatsappMenu": "WhatsApp",
+      "whatsappTooltip": "Send WhatsApp",
+      "whatsappDisabledHint": "No phone number on file",
       "addLocation": "Add location",
-      "callCustomer": "Call",
-      "callCourier": "Courier",
+      "callCustomer": "Call customer",
+      "callCourier": "Call courier",
       "track": "Map"
     },
     "addLocation": {
@@ -261,6 +282,7 @@
     "filter": {
       "title": "Shipments scope",
       "description": "Warehouse administrators can narrow the queue and KPI cards to a single hub.",
+      "descriptionAdmin": "Admins can narrow the queue and KPI cards to a single hub.",
       "warehouseLabel": "Warehouse",
       "allWarehouses": "All warehouses"
     },
@@ -268,15 +290,38 @@
       "pageTitle": "Warehouse sites",
       "subtitle": "Directory of hubs used for first-mile intake and last-mile staging.",
       "tableTitle": "Sites",
-      "tableDescription": "Active and inactive warehouses registered in Orbex.",
+      "tableDescription": "Full warehouse registry: location, coordinates, lifecycle timestamps, and status.",
+      "colId": "ID",
       "colName": "Name",
       "colGovernorate": "Governorate",
       "colZone": "Zone",
       "colCode": "Code",
+      "colAddress": "Address",
+      "colCoordinates": "Latitude / longitude",
       "colStatus": "Status",
+      "colCreatedAt": "Created",
+      "colUpdatedAt": "Updated",
       "statusActive": "Active",
       "statusInactive": "Inactive",
-      "openDirectory": "Open warehouse directory →"
+      "openDirectory": "Open warehouse directory →",
+      "colActions": "Actions",
+      "viewDetails": "View",
+      "viewShipmentsQueue": "Shipments"
+    },
+    "siteDetail": {
+      "pageTitle": "Warehouse details",
+      "loadingTitle": "Warehouse",
+      "subtitle": "Hub profile, designated admin, and operator headcount.",
+      "backToDirectory": "Back to warehouse directory",
+      "hubCardTitle": "Site information",
+      "hubCardDescription": "Location, codes, and lifecycle metadata.",
+      "adminCardTitle": "Warehouse admin",
+      "adminCardDescription": "User designated to oversee this hub.",
+      "staffCount": "Warehouse staff (operators)",
+      "adminInactive": "This user account is inactive.",
+      "noAdmin": "No warehouse admin is assigned yet.",
+      "linkFromOperations": "My warehouse details →",
+      "viewShipmentsAtHub": "View shipments at this warehouse →"
     },
     "stats": {
       "totalWarehouses": "Warehouses (total)",
@@ -288,6 +333,11 @@
       "assigned": "Assigned to courier",
       "returnsPending": "Returns pending receive",
       "returnsReceivedToday": "Returns received today"
+    },
+    "hubSnapshot": {
+      "title": "Warehouse profile",
+      "description": "Site metadata, warehouse admin, and operator headcount for this hub.",
+      "fullDetailsLink": "Full warehouse details →"
     },
     "operations": {
       "title": "Scan and returns",
@@ -303,6 +353,9 @@
     "queue": {
       "title": "Warehouse queue",
       "description": "Monitor shipments and assign couriers directly from warehouse operations.",
+      "descriptionExtended": "Live shipment batches for your hub from the warehouse API. Click a row to open every package in that batch; use the link under the tracking number for the batch summary.",
+      "descriptionTransfers": "Each row is a merchant transfer (batch). Open a row to see every customer package, assign couriers per package, and run line-level operations.",
+      "openBatchSummary": "Batch summary",
       "searchPlaceholder": "Search by tracking, customer, or phone",
       "allStatuses": "All statuses",
       "returnsOnly": "Returns only",
@@ -320,16 +373,56 @@
       "trackingNumber": "Tracking #",
       "customer": "Customer",
       "merchant": "Merchant",
+      "packageCount": "Packages",
+      "totalValue": "Total value",
+      "batchTransfer": "Transfer status",
+      "pickupCourier": "Pickup courier",
+      "packageProgressHint": "{{delivered}} delivered · {{out}} out · {{csPending}} CS pending",
+      "lineDelivery": "Line delivery",
+      "linePayment": "Line payment",
       "status": "Status",
       "courier": "Courier",
       "updatedAt": "Updated",
       "actions": "Actions"
+    },
+    "transferDetailTitle": "Transfer (batch) detail",
+    "transferDetailSubtitle": "Merchant transfer — open packages for recipients and assignments.",
+    "transferPackagesHint": "Recipient and courier assignment are managed per package — use “View packages” above.",
+    "packages": {
+      "assignColumn": "Assign courier"
     },
     "feedback": {
       "scanInSuccess": "Shipment scanned into warehouse.",
       "scanOutSuccess": "Shipment scanned out for delivery.",
       "assignmentSuccess": "Courier assigned successfully.",
       "returnSuccess": "Return received and recorded."
+    }
+  },
+  "backend": {
+    "shipmentTransferStatus": {
+      "PENDING": "Pending (batch)",
+      "ASSIGNED": "Assigned (batch)",
+      "ON_THE_WAY_TO_WAREHOUSE": "On the way to warehouse",
+      "IN_WAREHOUSE": "In warehouse (batch)",
+      "PARTIALLY_DELIVERED": "Partially delivered",
+      "DELIVERED": "Delivered (batch)"
+    },
+    "packageDeliveryStatus": {
+      "PENDING": "Pending",
+      "CONFIRMED_BY_CS": "Confirmed by CS",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "DELIVERED": "Delivered",
+      "REJECTED": "Rejected",
+      "RETURNED": "Returned to warehouse",
+      "POSTPONED": "Postponed"
+    },
+    "packagePaymentStatus": {
+      "PENDING_COLLECTION": "Pending collection",
+      "COLLECTED": "Collected",
+      "POS_PENDING": "POS pending",
+      "READY_FOR_SETTLEMENT": "Ready for settlement",
+      "SETTLED": "Settled",
+      "ON_HOLD": "On hold"
     }
   },
   "merchants": {
@@ -362,6 +455,101 @@
       "summary": "{{total}} total · page {{page}}",
       "prev": "Previous",
       "next": "Next"
+    }
+  },
+  "users": {
+    "pageTitle": "Users",
+    "subtitle": "Create and manage warehouse, operations, and back-office staff accounts.",
+    "stats": {
+      "activeOnlyHint": "Active users only"
+    },
+    "roles": {
+      "WAREHOUSE": "Warehouse",
+      "WAREHOUSE_ADMIN": "Warehouse admin",
+      "CUSTOMER_SERVICE": "Customer service",
+      "ACCOUNTS": "Accounts",
+      "SALES": "Sales"
+    },
+    "tableCardTitle": "Staff users",
+    "tableCardDescription": "Users with roles managed from this page (excludes merchants, couriers, and admins).",
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Email or full name",
+      "applySearch": "Apply",
+      "role": "Role",
+      "allRoles": "All roles",
+      "activeStatus": "Account status",
+      "allActive": "All",
+      "activeOnly": "Active only",
+      "inactiveOnly": "Inactive only",
+      "clear": "Clear filters"
+    },
+    "loading": "Loading users…",
+    "empty": "No users found.",
+    "table": {
+      "email": "Email",
+      "fullName": "Full name",
+      "role": "Role",
+      "warehouse": "Warehouse site",
+      "adminWarehouse": "Admin site",
+      "active": "Active",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "active": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "actions": {
+      "addUser": "Add user",
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "activate": "Activate"
+    },
+    "pagination": {
+      "summary": "{{total}} total · page {{page}}",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "form": {
+      "createTitle": "Create user",
+      "editTitle": "Edit user",
+      "close": "Close",
+      "email": "Email",
+      "fullName": "Full name",
+      "password": "Password",
+      "passwordOptional": "New password (optional, min 8 characters)",
+      "role": "Role",
+      "warehouse": "Warehouse site",
+      "adminWarehouse": "Warehouse to administer",
+      "selectWarehouse": "Select a site…",
+      "loadingSites": "Loading sites…",
+      "active": "Account active",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "errors": {
+        "warehouseRequired": "Select a warehouse site for this role.",
+        "adminWarehouseRequired": "Select the warehouse this admin will manage.",
+        "passwordMin": "Password must be at least 8 characters."
+      }
+    },
+    "deactivate": {
+      "title": "Deactivate user",
+      "body": "This will sign {{email}} out and block login until reactivated.",
+      "cannotSelf": "You cannot deactivate your own account.",
+      "cancel": "Cancel",
+      "confirm": "Deactivate",
+      "working": "Working…"
+    },
+    "feedback": {
+      "created": "User created.",
+      "updated": "User updated.",
+      "saveFailed": "Could not save user.",
+      "deactivated": "User deactivated.",
+      "deactivateFailed": "Could not deactivate user.",
+      "activated": "User activated.",
+      "activateFailed": "Could not activate user."
     }
   }
 }

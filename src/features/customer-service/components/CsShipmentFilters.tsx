@@ -2,10 +2,27 @@ import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { backendPackagePaymentLabel } from "@/features/warehouse/backend-labels"
 import {
   endOfTodayIso,
   startOfTodayIso,
 } from "@/features/customer-service/lib/date-range"
+
+const PACKAGE_PAYMENT_FILTER_VALUES = [
+  "PENDING_COLLECTION",
+  "COLLECTED",
+  "POS_PENDING",
+  "READY_FOR_SETTLEMENT",
+  "SETTLED",
+  "ON_HOLD",
+] as const
+
+function packagePaymentSelectValue(raw: string): string {
+  const u = raw.trim().toUpperCase()
+  return (PACKAGE_PAYMENT_FILTER_VALUES as readonly string[]).includes(u)
+    ? u
+    : ""
+}
 
 function workflowPresetValue(status: string, subStatus: string): string {
   const s = status.trim().toUpperCase()
@@ -21,8 +38,6 @@ export type CsFilterValues = {
   regionName: string
   phoneSearch: string
   trackingNumber: string
-  /** Backend `coreSubIn` (comma-separated core or core:sub). */
-  coreSubIn: string
   status: string
   subStatus: string
   paymentStatus: string
@@ -34,11 +49,14 @@ export type CsFilterValues = {
 export interface CsShipmentFiltersProps {
   values: CsFilterValues
   onChange: (next: CsFilterValues) => void
+  /** When true, shows free-text Core status / Sub status fields (workflow preset always shown). */
+  showCoreSubTextInputs?: boolean
 }
 
 export function CsShipmentFilters({
   values,
   onChange,
+  showCoreSubTextInputs = false,
 }: CsShipmentFiltersProps) {
   const { t } = useTranslation()
 
@@ -141,43 +159,46 @@ export function CsShipmentFilters({
           </option>
         </select>
       </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Core status</span>
-        <Input
-          value={values.status}
-          placeholder="PENDING"
-          onChange={(e) => onChange({ ...values, status: e.target.value })}
-          className="min-w-[160px]"
-        />
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Sub status</span>
-        <Input
-          value={values.subStatus}
-          placeholder="DELAYED"
-          onChange={(e) => onChange({ ...values, subStatus: e.target.value })}
-          className="min-w-[160px]"
-        />
-      </label>
+      {showCoreSubTextInputs ? (
+        <>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Core status</span>
+            <Input
+              value={values.status}
+              placeholder="PENDING"
+              onChange={(e) => onChange({ ...values, status: e.target.value })}
+              className="min-w-[160px]"
+            />
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Sub status</span>
+            <Input
+              value={values.subStatus}
+              placeholder="DELAYED"
+              onChange={(e) =>
+                onChange({ ...values, subStatus: e.target.value })
+              }
+              className="min-w-[160px]"
+            />
+          </label>
+        </>
+      ) : null}
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Payment status</span>
-        <Input
-          value={values.paymentStatus}
-          placeholder="COLLECTED"
-          onChange={(e) => onChange({ ...values, paymentStatus: e.target.value })}
-          className="min-w-[180px]"
-        />
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">coreSubIn (CSV)</span>
-        <Input
-          value={values.coreSubIn}
-          placeholder="OUT_FOR_DELIVERY:ASSIGNED,RETURNED:DELAYED"
+        <select
+          className="border-input bg-background h-9 min-w-[200px] rounded-md border px-3 text-sm"
+          value={packagePaymentSelectValue(values.paymentStatus)}
           onChange={(e) =>
-            onChange({ ...values, coreSubIn: e.target.value })
+            onChange({ ...values, paymentStatus: e.target.value })
           }
-          className="min-w-[210px]"
-        />
+        >
+          <option value="">{t("cs.filters.anyPaymentStatus")}</option>
+          {PACKAGE_PAYMENT_FILTER_VALUES.map((ps) => (
+            <option key={ps} value={ps}>
+              {backendPackagePaymentLabel(t, ps)}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">{t("cs.filters.from")}</span>

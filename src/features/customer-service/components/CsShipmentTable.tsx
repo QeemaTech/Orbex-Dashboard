@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next"
-import { MapPin } from "react-lucid"
 import { useNavigate } from "react-router-dom"
 
 import type { CsShipmentRow } from "@/api/shipments-api"
+import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import {
   Table,
   TableBody,
@@ -63,7 +63,9 @@ export function CsShipmentTable({
           <TableHead>{t("cs.table.status")}</TableHead>
           <TableHead className="w-24">{t("cs.table.gpsLocation")}</TableHead>
           {showActions ? (
-            <TableHead className="w-[300px]">{t("cs.table.actions")}</TableHead>
+            <TableHead className="w-[1%] whitespace-nowrap text-end">
+              {t("cs.table.actions")}
+            </TableHead>
           ) : null}
         </TableRow>
       </TableHeader>
@@ -75,7 +77,9 @@ export function CsShipmentTable({
               key={row.id}
               className="hover:bg-muted/50 cursor-pointer"
               onClick={() =>
-                nav(`${detailBasePath}/${encodeURIComponent(row.customerName)}`)
+                nav(
+                  `${detailBasePath}/${encodeURIComponent(row.shipmentId)}`,
+                )
               }
             >
             <TableCell className="max-w-[120px] truncate">
@@ -90,31 +94,17 @@ export function CsShipmentTable({
               />
             </TableCell>
               <TableCell>
-                {coordinates ? (
-                  <a
-                    href={`https://www.google.com/maps?q=${encodeURIComponent(`${coordinates.lat},${coordinates.lng}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-primary hover:bg-primary/10 inline-flex size-9 items-center justify-center rounded-full transition-colors"
-                    title={t("cs.table.viewLocation")}
-                    aria-label={t("cs.table.viewLocation")}
-                  >
-                    <MapPin className="size-5 shrink-0" aria-hidden />
-                    <span className="sr-only">{t("cs.table.viewLocation")}</span>
-                  </a>
-                ) : (
-                  "—"
-                )}
+                <CoordinatesMapLink coordinates={coordinates} stopPropagation />
               </TableCell>
               {showActions ? (
-                <TableCell>
+                <TableCell className="text-end align-middle">
                   <CsShipmentRowActions
                     row={row}
                     token={token}
                     listQueryKey={listQueryKey}
                     onOpenMap={onOpenMap}
                     onOpenAddLocation={onOpenAddLocation}
+                    layout="compact"
                   />
                 </TableCell>
               ) : null}

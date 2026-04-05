@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Boxes, Search } from "react-lucid"
+import { Boxes, Search, UserRound, Warehouse } from "react-lucid"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 
 import {
-  assignWarehouseShipment,
   getWarehouseCouriers,
+  getWarehouseSite,
   getWarehouseStats,
   getWarehouseTracking,
   listWarehouseQueue,
@@ -15,9 +15,10 @@ import {
   scanPayloadFromInput,
   scanShipmentIn,
   scanShipmentOut,
+  type WarehouseCourierRow,
 } from "@/api/warehouse-api"
-import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
 import { Layout } from "@/components/layout/Layout"
+import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,7 +39,7 @@ import {
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
-import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
+import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
 
 const warehouseStatusFilters = [
   "",
@@ -72,17 +73,13 @@ function toWarehouseQueueQuery(value: WarehouseStatusFilter): {
   }
 }
 
-function warehouseRowTone(row: { status?: string; subStatus?: string }): string {
-  const s = row.status?.toUpperCase() ?? ""
-  const u = row.subStatus?.toUpperCase() ?? ""
+function warehouseTransferRowTone(transferStatus: string): string {
+  const s = transferStatus.toUpperCase()
   if (s === "DELIVERED") {
     return "bg-emerald-50/80 dark:bg-emerald-950/30"
   }
-  if (s === "RETURNED" && u === "REJECTED") {
-    return "bg-rose-50/80 dark:bg-rose-950/30"
-  }
-  if (s === "RETURNED" && u === "DELAYED") {
-    return "bg-amber-50/70 dark:bg-amber-950/25"
+  if (s === "PARTIALLY_DELIVERED") {
+    return "bg-sky-50/70 dark:bg-sky-950/25"
   }
   return ""
 }
@@ -134,6 +131,7 @@ function ReturnsIcon({ className, "aria-hidden": ariaHidden }: { className?: str
 export function WarehousePage() {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { accessToken, user } = useAuth()
   const queryClient = useQueryClient()
   const token = accessToken ?? ""
@@ -145,16 +143,14 @@ export function WarehousePage() {
   const [returnsCourierFilterId, setReturnsCourierFilterId] = useState("")
   const [page, setPage] = useState(1)
   const [trackingInput, setTrackingInput] = useState("")
-  const [courierIdInput, setCourierIdInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
-  const [selectedShipmentId, setSelectedShipmentId] = useState("")
-  const [assignLeg, setAssignLeg] = useState<"delivery" | "pickup">("delivery")
   const [trackingResult, setTrackingResult] = useState<string>("")
   const [filterWarehouseId, setFilterWarehouseId] = useState("")
 
-  const canFilterByWarehouse =
-    user?.role === "WAREHOUSE_ADMIN" || user?.role === "ADMIN"
-  const isWarehouseNetworkAdmin = user?.role === "WAREHOUSE_ADMIN"
+  const canFilterByWarehouse = user?.role === "ADMIN"
+  const isWarehouseNetworkAdmin = user?.role === "ADMIN"
+  const loadWarehouseSitesForNav =
+    user?.role === "ADMIN" || user?.role === "WAREHOUSE_ADMIN"
 
   const warehouseListFilter = useMemo(() => toWarehouseQueueQuery(status), [status])
 
@@ -187,8 +183,54 @@ export function WarehousePage() {
   const sitesQuery = useQuery({
     queryKey: ["warehouse-sites", token],
     queryFn: () => listWarehouseSites(token),
-    enabled: !!token && canFilterByWarehouse,
+    enabled: !!token && loadWarehouseSitesForNav,
   })
+
+  useEffect(() => {
+    if (!canFilterByWarehouse || !sitesQuery.isSuccess) return
+    const fromUrl = searchParams.get("warehouseId")?.trim() ?? ""
+    const siteIds = new Set((sitesQuery.data?.warehouses ?? []).map((w) => w.id))
+    if (fromUrl && !siteIds.has(fromUrl)) {
+      setSearchParams(
+        (prev) => {
+          const n = new URLSearchParams(prev)
+          n.delete("warehouseId")
+          return n
+        },
+        { replace: true },
+      )
+      return
+    }
+    const next = fromUrl && siteIds.has(fromUrl) ? fromUrl : ""
+    setFilterWarehouseId((prev) => {
+      if (prev === next) return prev
+      setPage(1)
+      return next
+    })
+  }, [
+    canFilterByWarehouse,
+    sitesQuery.isSuccess,
+    sitesQuery.data?.warehouses,
+    searchParams,
+    setSearchParams,
+  ])
+
+  const myWarehouseId = sitesQuery.data?.warehouses?.[0]?.id ?? ""
+
+  const siteDetailWarehouseId = useMemo(() => {
+    if (canFilterByWarehouse && filterWarehouseId) return filterWarehouseId
+    if (user?.warehouseId) return user.warehouseId
+    if (user?.role === "WAREHOUSE_ADMIN" && myWarehouseId) return myWarehouseId
+    return ""
+  }, [canFilterByWarehouse, filterWarehouseId, user?.warehouseId, user?.role, myWarehouseId])
+
+  const siteDetailQuery = useQuery({
+    queryKey: ["warehouse-site-detail", token, siteDetailWarehouseId],
+    queryFn: () => getWarehouseSite(token, siteDetailWarehouseId),
+    enabled: !!token && !!siteDetailWarehouseId,
+  })
+
+  const hub = siteDetailQuery.data
 
   const statsQuery = useQuery({
     queryKey: ["warehouse-stats", token, canFilterByWarehouse ? filterWarehouseId : ""],
@@ -226,22 +268,6 @@ export function WarehousePage() {
       }),
     enabled: !!token,
     refetchInterval: 10000,
-  })
-
-  const assignRegionKey = useMemo(() => {
-    if (!selectedShipmentId || !queueQuery.data?.shipments) return "none"
-    const sel = queueQuery.data.shipments.find((s) => s.id === selectedShipmentId)
-    return sel?.regionId ?? "none"
-  }, [selectedShipmentId, queueQuery.data?.shipments])
-
-  const couriersForAssignQuery = useQuery({
-    queryKey: ["warehouse-couriers", token, assignRegionKey],
-    queryFn: () =>
-      getWarehouseCouriers({
-        token,
-        regionId: assignRegionKey === "none" ? undefined : assignRegionKey,
-      }),
-    enabled: !!token,
   })
 
   const couriersForReturnsFilterQuery = useQuery({
@@ -285,27 +311,6 @@ export function WarehousePage() {
     },
   })
 
-  const assignMutation = useMutation({
-    mutationFn: (payload: {
-      shipmentId: string
-      courierId: string
-      leg?: "pickup" | "delivery"
-    }) =>
-      assignWarehouseShipment({
-        token,
-        shipmentId: payload.shipmentId,
-        courierId: payload.courierId,
-        leg: payload.leg,
-      }),
-    onSuccess: async () => {
-      showToast(t("warehouse.feedback.assignmentSuccess"), "success")
-      await refreshData()
-    },
-    onError: (error) => {
-      showToast((error as Error).message, "error")
-    },
-  })
-
   const receiveReturnMutation = useMutation({
     mutationFn: () => {
       const payload = scanPayloadFromInput(trackingInput)
@@ -335,20 +340,21 @@ export function WarehousePage() {
       }),
     onSuccess: (data) => {
       const row = data as {
-        customerName: string
+        customerName?: string
+        transferStatus?: string
         status: string
         subStatus: string
         updatedAt: string
       }
-      const whKey = getPerspectiveStatusKey("warehouse", {
-        status: row.status,
-        subStatus: row.subStatus,
-      })
+      const label =
+        row.transferStatus != null
+          ? backendShipmentTransferLabel(t, row.transferStatus)
+          : t(`cs.shipmentStatus.${row.status}_${row.subStatus}`, {
+              defaultValue: `${row.status} / ${row.subStatus}`,
+            })
+      const who = row.customerName ?? "—"
       setTrackingResult(
-        `${row.customerName} · ${t(`cs.shipmentStatus.${whKey}`)} · ${formatDateTime(
-          row.updatedAt,
-          locale,
-        )}`,
+        `${who} · ${label} · ${formatDateTime(row.updatedAt, locale)}`,
       )
     },
     onError: (error) => {
@@ -397,6 +403,16 @@ export function WarehousePage() {
                   </Link>
                 </p>
               ) : null}
+              {user?.role === "WAREHOUSE_ADMIN" && myWarehouseId ? (
+                <p className="pt-1">
+                  <Link
+                    to={`/warehouse/sites/${myWarehouseId}`}
+                    className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                  >
+                    {t("warehouse.siteDetail.linkFromOperations")}
+                  </Link>
+                </p>
+              ) : null}
             </div>
           </CardHeader>
         </Card>
@@ -405,7 +421,7 @@ export function WarehousePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{t("warehouse.filter.title")}</CardTitle>
-              <CardDescription>{t("warehouse.filter.description")}</CardDescription>
+              <CardDescription>{t("warehouse.filter.descriptionAdmin")}</CardDescription>
             </CardHeader>
             <CardContent>
               <label className="text-muted-foreground mb-2 block text-sm">
@@ -415,8 +431,18 @@ export function WarehousePage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 max-w-md rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
                 value={filterWarehouseId}
                 onChange={(e) => {
-                  setFilterWarehouseId(e.target.value)
+                  const v = e.target.value
+                  setFilterWarehouseId(v)
                   setPage(1)
+                  setSearchParams(
+                    (prev) => {
+                      const n = new URLSearchParams(prev)
+                      if (v) n.set("warehouseId", v)
+                      else n.delete("warehouseId")
+                      return n
+                    },
+                    { replace: true },
+                  )
                 }}
               >
                 <option value="">{t("warehouse.filter.allWarehouses")}</option>
@@ -429,6 +455,110 @@ export function WarehousePage() {
               </select>
             </CardContent>
           </Card>
+        ) : null}
+
+        {siteDetailWarehouseId ? (
+          <div className="space-y-3">
+            <div>
+              <h2 className="text-base font-semibold">{t("warehouse.hubSnapshot.title")}</h2>
+              <p className="text-muted-foreground text-sm">{t("warehouse.hubSnapshot.description")}</p>
+            </div>
+            {siteDetailQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
+            ) : null}
+            {siteDetailQuery.error ? (
+              <p className="text-destructive text-sm">
+                {(siteDetailQuery.error as Error).message}
+              </p>
+            ) : null}
+            {hub ? (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Warehouse className="size-4" aria-hidden />
+                      {t("warehouse.siteDetail.hubCardTitle")}
+                    </CardTitle>
+                    <CardDescription>{t("warehouse.siteDetail.hubCardDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-muted-foreground space-y-2 text-sm">
+                    <p>
+                      <span className="text-foreground font-medium">{t("warehouse.sites.colName")}</span>{" "}
+                      {hub.name}
+                    </p>
+                    <p>
+                      <span className="text-foreground font-medium">
+                        {t("warehouse.sites.colGovernorate")}
+                      </span>{" "}
+                      {hub.governorate}
+                    </p>
+                    <p>
+                      <span className="text-foreground font-medium">{t("warehouse.sites.colZone")}</span>{" "}
+                      {hub.zone ?? "—"}
+                    </p>
+                    <p>
+                      <span className="text-foreground font-medium">{t("warehouse.sites.colCode")}</span>{" "}
+                      {hub.code ?? "—"}
+                    </p>
+                    <p>
+                      <span className="text-foreground font-medium">{t("warehouse.sites.colAddress")}</span>{" "}
+                      {hub.address?.trim() ? hub.address : "—"}
+                    </p>
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="text-foreground font-medium">
+                        {t("warehouse.sites.colCoordinates")}
+                      </span>
+                      <CoordinatesMapLink latitude={hub.latitude} longitude={hub.longitude} />
+                    </p>
+                    <p>
+                      <span className="text-foreground font-medium">{t("warehouse.sites.colStatus")}</span>{" "}
+                      {hub.isActive
+                        ? t("warehouse.sites.statusActive")
+                        : t("warehouse.sites.statusInactive")}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <UserRound className="size-4" aria-hidden />
+                      {t("warehouse.siteDetail.adminCardTitle")}
+                    </CardTitle>
+                    <CardDescription>{t("warehouse.siteDetail.adminCardDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">{t("warehouse.siteDetail.staffCount")}</span>
+                      <p className="text-foreground text-2xl font-semibold tabular-nums">
+                        {hub.staffCount}
+                      </p>
+                    </div>
+                    {hub.admin ? (
+                      <div className="border-border space-y-1 rounded-lg border p-3">
+                        <p className="text-foreground font-medium">{hub.admin.fullName}</p>
+                        <p className="text-muted-foreground">{hub.admin.email}</p>
+                        {!hub.admin.isActive ? (
+                          <p className="text-destructive text-xs">
+                            {t("warehouse.siteDetail.adminInactive")}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">{t("warehouse.siteDetail.noAdmin")}</p>
+                    )}
+                  </CardContent>
+                </Card>
+                <div className="lg:col-span-2">
+                  <Link
+                    to={`/warehouse/sites/${encodeURIComponent(hub.id)}`}
+                    className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                  >
+                    {t("warehouse.hubSnapshot.fullDetailsLink")}
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -577,7 +707,7 @@ export function WarehousePage() {
         <Card>
           <CardHeader>
             <CardTitle>{t("warehouse.queue.title")}</CardTitle>
-            <CardDescription>{t("warehouse.queue.description")}</CardDescription>
+            <CardDescription>{t("warehouse.queue.descriptionTransfers")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 md:grid-cols-[2fr_1fr_auto]">
@@ -633,7 +763,7 @@ export function WarehousePage() {
                   }}
                 >
                   <option value="">{t("warehouse.queue.allCouriers")}</option>
-                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c) => (
+                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
                     <option key={c.id} value={c.id}>
                       {c.fullName ?? c.id.slice(0, 8)}
                     </option>
@@ -653,112 +783,83 @@ export function WarehousePage() {
             ) : null}
 
             <div className="overflow-x-auto rounded-lg border">
-              <Table className="min-w-[64rem]">
+              <Table className="min-w-[56rem]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("warehouse.table.trackingNumber")}</TableHead>
-                    <TableHead>{t("warehouse.table.customer")}</TableHead>
                     <TableHead>{t("warehouse.table.merchant")}</TableHead>
-                    <TableHead>{t("warehouse.table.status")}</TableHead>
-                    <TableHead>{t("warehouse.table.courier")}</TableHead>
+                    <TableHead>{t("warehouse.table.packageCount")}</TableHead>
+                    <TableHead>{t("warehouse.table.totalValue")}</TableHead>
+                    <TableHead>{t("warehouse.table.batchTransfer")}</TableHead>
+                    <TableHead>{t("warehouse.table.pickupCourier")}</TableHead>
                     <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
-                    <TableHead>{t("warehouse.table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(queueQuery.data?.shipments ?? []).map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className={`hover:bg-muted/50 cursor-pointer ${warehouseRowTone(row)}`}
-                      onClick={() => nav(`/warehouse/shipments/${encodeURIComponent(row.id)}`)}
-                    >
-                      <TableCell>{row.trackingNumber ?? "—"}</TableCell>
-                      <TableCell>{row.customerName}</TableCell>
-                      <TableCell>{row.merchant?.displayName ?? "—"}</TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <ShipmentStatusBadge
-                          status={getPerspectiveStatusKey("warehouse", {
-                            ...row,
-                            outboundCsPending: row.outboundCsPending,
-                          })}
-                        />
-                      </TableCell>
-                      <TableCell>{row.courier?.fullName ?? "—"}</TableCell>
-                      <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-                          <select
-                            className="border-input bg-background h-9 max-w-[11rem] rounded-md border px-2 text-xs"
-                            value=""
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              const v = e.target.value
-                              if (!v) return
-                              setSelectedShipmentId(row.id)
-                              setCourierIdInput(v)
-                            }}
-                          >
-                            <option value="">{t("warehouse.queue.pickCourier")}</option>
-                            {(couriersForAssignQuery.data?.couriers ?? []).map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {(c.servesShipmentRegion ? "★ " : "") +
-                                  (c.fullName ?? c.id.slice(0, 8))}
-                              </option>
-                            ))}
-                          </select>
-                          <Input
-                            className="w-36"
-                            placeholder={t("warehouse.queue.courierIdPlaceholder")}
-                            value={selectedShipmentId === row.id ? courierIdInput : ""}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              setSelectedShipmentId(row.id)
-                              setCourierIdInput(e.target.value)
-                            }}
-                          />
-                          <select
-                            className="border-input bg-background h-9 max-w-[9rem] rounded-md border px-2 text-xs"
-                            value={selectedShipmentId === row.id ? assignLeg : "delivery"}
-                            title={t("warehouse.queue.assignLegHint")}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              setSelectedShipmentId(row.id)
-                              setAssignLeg(e.target.value as "delivery" | "pickup")
-                            }}
-                          >
-                            <option value="delivery">
-                              {t("warehouse.queue.assignLegDelivery")}
-                            </option>
-                            <option value="pickup">
-                              {t("warehouse.queue.assignLegPickup")}
-                            </option>
-                          </select>
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedShipmentId(row.id)
-                              assignMutation.mutate({
-                                shipmentId: row.id,
-                                courierId: courierIdInput.trim(),
-                                leg: assignLeg,
-                              })
-                            }}
-                            disabled={
-                              assignMutation.isPending ||
-                              selectedShipmentId !== row.id ||
-                              !courierIdInput.trim()
-                            }
-                          >
-                            {t("warehouse.queue.assign")}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {(queueQuery.data?.shipments ?? []).map((row) => {
+                    const fmtMoney = (raw: string) => {
+                      const n = Number.parseFloat(
+                        String(raw ?? "").replace(/,/g, "").trim(),
+                      )
+                      if (!Number.isFinite(n)) return "—"
+                      return new Intl.NumberFormat(locale, {
+                        style: "currency",
+                        currency: "EGP",
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      }).format(n)
+                    }
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className={`hover:bg-muted/50 cursor-pointer ${warehouseTransferRowTone(row.transferStatus)}`}
+                        onClick={() =>
+                          nav(
+                            `/warehouse/shipments/${encodeURIComponent(row.shipmentId)}/packages`,
+                          )
+                        }
+                      >
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-mono text-xs">
+                              {row.trackingNumber ?? "—"}
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                              {row.shipmentId.slice(0, 8)}…
+                            </span>
+                            <Link
+                              to={`/warehouse/shipments/${encodeURIComponent(row.shipmentId)}`}
+                              className="text-primary w-fit text-xs font-medium underline-offset-4 hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {t("warehouse.queue.openBatchSummary")}
+                            </Link>
+                          </div>
+                        </TableCell>
+                        <TableCell>{row.merchant?.displayName ?? "—"}</TableCell>
+                        <TableCell>{row.packageCount}</TableCell>
+                        <TableCell>{fmtMoney(row.totalShipmentValue)}</TableCell>
+                        <TableCell className="max-w-[12rem] text-xs whitespace-normal">
+                          {backendShipmentTransferLabel(t, row.transferStatus)}
+                          {row.packagesDeliveredCount > 0 ||
+                          row.packagesOutForDeliveryCount > 0 ||
+                          row.packagesPendingCsCount > 0 ? (
+                            <span className="text-muted-foreground mt-1 block">
+                              {t("warehouse.table.packageProgressHint", {
+                                delivered: row.packagesDeliveredCount,
+                                out: row.packagesOutForDeliveryCount,
+                                csPending: row.packagesPendingCsCount,
+                              })}
+                            </span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {row.pickupCourier?.fullName ?? "—"}
+                        </TableCell>
+                        <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>

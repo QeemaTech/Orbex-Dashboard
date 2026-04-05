@@ -158,3 +158,18 @@ export function parseCoordinatesFromLocationInput(
 
   return extractFromText(decoded)
 }
+
+/** Warehouse hub coordinates from API string fields. */
+export function parseWarehouseLatLng(
+  latitude: string | null | undefined,
+  longitude: string | null | undefined,
+): GeoCoordinates | null {
+  const lat = toFiniteNumber(latitude ?? null)
+  const lng = toFiniteNumber(longitude ?? null)
+  if (lat == null || lng == null) return null
+  return isValidCoordinates(lat, lng) ? { lat, lng } : null
+}
+
+export function googleMapsSearchUrl(coords: GeoCoordinates): string {
+  return `https://www.google.com/maps?q=${encodeURIComponent(`${coords.lat},${coords.lng}`)}`
+}

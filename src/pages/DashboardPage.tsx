@@ -1,8 +1,8 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ExternalLink, TrendingUp } from "lucide-react"
+import { Boxes, Package, TrendingUp, Users, Warehouse } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
   CartesianGrid,
   Cell,
@@ -18,6 +18,7 @@ import {
 } from "recharts"
 
 import { Layout } from "@/components/layout/Layout"
+import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { StatCard } from "@/components/shared/StatCard"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { getDashboardKpis } from "@/api/shipments-api"
+import { listUsers } from "@/api/users-api"
+import { listWarehouseSites } from "@/api/warehouse-api"
 import { parseCoordinatesFromLocationInput } from "@/features/customer-service/lib/location"
 import { useAuth } from "@/lib/auth-context"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
@@ -63,73 +66,28 @@ function toDashboardStatus(status: string): DashboardShipmentStatus {
   return "in_transit"
 }
 
-function toPercent(part: number, total: number) {
-  if (!Number.isFinite(part) || !Number.isFinite(total) || total <= 0) return 0
-  return Math.round((part / total) * 100)
-}
-
-function TotalShipmentsIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      aria-hidden={ariaHidden}
-    >
-      <path d="M11.99 1.5a2 2 0 0 1 1.01.274l7.5 4.25A2 2 0 0 1 21.5 7.77v8.46a2 2 0 0 1-1.01 1.746l-7.5 4.25a2 2 0 0 1-1.98 0l-7.5-4.25A2 2 0 0 1 2.5 16.23V7.77a2 2 0 0 1 1.01-1.746l7.5-4.25a2 2 0 0 1 .98-.274Zm0 2.3L6.14 7.11l5.86 3.32 5.86-3.32-5.87-3.31ZM4.5 9.49v6.52l6.5 3.68v-6.52L4.5 9.49Zm15 0-6.5 3.68v6.52l6.5-3.68V9.49Z" />
-    </svg>
-  )
-}
-
-function DeliveredIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      aria-hidden={ariaHidden}
-    >
-      <path d="M12 2.25a9.75 9.75 0 1 0 9.75 9.75A9.75 9.75 0 0 0 12 2.25Zm4.334 7.968-4.96 5.677a1.125 1.125 0 0 1-1.66.038l-2.05-2.05a1.125 1.125 0 0 1 1.59-1.59l1.2 1.2 4.184-4.788a1.125 1.125 0 1 1 1.696 1.513Z" />
-    </svg>
-  )
-}
-
-function RejectedIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      aria-hidden={ariaHidden}
-    >
-      <path d="M12 2.25a9.75 9.75 0 1 0 9.75 9.75A9.75 9.75 0 0 0 12 2.25Zm3.53 12.22a1.125 1.125 0 1 1-1.59 1.59L12 14.06l-1.94 1.94a1.125 1.125 0 1 1-1.59-1.59L10.41 12 8.47 10.06a1.125 1.125 0 0 1 1.59-1.59L12 10.41l1.94-1.94a1.125 1.125 0 0 1 1.59 1.59L13.59 12l1.94 1.94Z" />
-    </svg>
-  )
-}
-
-function PostponedIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      aria-hidden={ariaHidden}
-    >
-      <path d="M12 2.25a9.75 9.75 0 0 0-8.44 14.63A1.5 1.5 0 0 0 4.86 17.6h14.28a1.5 1.5 0 0 0 1.3-.72A9.75 9.75 0 0 0 12 2.25Zm0 13.5a1.125 1.125 0 1 1 0-2.25 1.125 1.125 0 0 1 0 2.25Zm1.41-4.74a1.688 1.688 0 0 0-.66.8 1.125 1.125 0 1 1-2.1-.82 3.938 3.938 0 0 1 1.57-1.96c.34-.23.53-.46.53-.74a1.12 1.12 0 0 0-2.24 0 1.125 1.125 0 1 1-2.25 0 3.37 3.37 0 1 1 6.74 0 3.03 3.03 0 0 1-1.59 2.72Z" />
-    </svg>
-  )
-}
-
 export function DashboardPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isMd = useMediaQuery("(min-width: 768px)")
   const locale = resolveNumberLocale(i18n.language)
-  const { accessToken } = useAuth()
+  const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
 
+  const warehousesPreview = useQuery({
+    queryKey: ["dashboard-warehouse-sites", token],
+    queryFn: () => listWarehouseSites(token),
+    enabled: !!token && user?.role === "ADMIN",
+  })
+
+  const usersCountQuery = useQuery({
+    queryKey: ["dashboard-users-total", token],
+    queryFn: () => listUsers({ token, page: 1, pageSize: 1 }),
+    enabled: !!token && user?.role === "ADMIN",
+  })
+
   const kpiQuery = useQuery({
-    queryKey: ["dashboard-kpis", token],
+    queryKey: ["dashboard-kpis", "home", token],
     queryFn: () =>
       getDashboardKpis({
         token,
@@ -139,7 +97,7 @@ export function DashboardPage() {
     enabled: !!token,
   })
   const totals = kpiQuery.data?.totals
-  const totalShipments = totals?.totalShipments ?? 0
+  const warehouseCount = (warehousesPreview.data?.warehouses ?? []).length
 
   const lineData = useMemo(
     () =>
@@ -177,36 +135,91 @@ export function DashboardPage() {
   return (
     <Layout title={t("nav.dashboard")}>
       <div className="space-y-10">
-        <div className="grid gap-5 md:gap-6 xl:grid-cols-4">
-          <StatCard
-            title={t("dashboard.stats.totalShipments")}
-            value={totalShipments}
-            percentage={totalShipments > 0 ? 100 : 0}
-            icon={TotalShipmentsIcon}
-            accent="primary"
-          />
-          <StatCard
-            title={t("dashboard.stats.delivered")}
-            value={totals?.delivered ?? 0}
-            percentage={toPercent(totals?.delivered ?? 0, totalShipments)}
-            icon={DeliveredIcon}
-            accent="success"
-          />
-          <StatCard
-            title={t("dashboard.stats.rejected")}
-            value={totals?.rejected ?? 0}
-            percentage={toPercent(totals?.rejected ?? 0, totalShipments)}
-            icon={RejectedIcon}
-            accent="destructive"
-          />
-          <StatCard
-            title={t("dashboard.stats.postponed")}
-            value={totals?.postponed ?? 0}
-            percentage={toPercent(totals?.postponed ?? 0, totalShipments)}
-            icon={PostponedIcon}
-            accent="warning"
-          />
-        </div>
+        {user?.role === "ADMIN" ? (
+          <div className="grid gap-5 md:gap-6 xl:grid-cols-4">
+            <StatCard
+              title={t("dashboard.adminStats.users")}
+              value={usersCountQuery.data?.total ?? 0}
+              icon={Users}
+              accent="primary"
+              to="/users"
+              hideTrend
+            />
+            <StatCard
+              title={t("dashboard.adminStats.shipments")}
+              value={totals?.totalShipments ?? 0}
+              icon={Package}
+              accent="success"
+              to="/shipments"
+              hideTrend
+            />
+            <StatCard
+              title={t("dashboard.adminStats.packages")}
+              value={totals?.totalPackages ?? 0}
+              icon={Boxes}
+              accent="warning"
+              to="/shipments"
+              hideTrend
+            />
+            <StatCard
+              title={t("dashboard.adminStats.warehouses")}
+              value={warehouseCount}
+              icon={Warehouse}
+              accent="destructive"
+              to="/warehouse/sites"
+              hideTrend
+            />
+          </div>
+        ) : null}
+
+        {user?.role === "ADMIN" ? (
+          <Card className="border-border">
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Warehouse className="text-primary size-5 shrink-0" aria-hidden />
+                  {t("dashboard.warehouses.title")}
+                </CardTitle>
+                <CardDescription>{t("dashboard.warehouses.description")}</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" className="shrink-0 self-start" asChild>
+                <Link to="/warehouse/sites">{t("dashboard.warehouses.viewAll")}</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {warehousesPreview.isLoading ? (
+                <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
+              ) : null}
+              {warehousesPreview.error ? (
+                <p className="text-destructive text-sm">
+                  {(warehousesPreview.error as Error).message}
+                </p>
+              ) : null}
+              <ul className="space-y-2">
+                {(warehousesPreview.data?.warehouses ?? []).slice(0, 3).map((w) => (
+                  <li key={w.id}>
+                    <Link
+                      to={`/warehouse/sites/${w.id}`}
+                      className="text-primary font-medium underline-offset-4 hover:underline"
+                    >
+                      {w.name}
+                    </Link>
+                    <span className="text-muted-foreground text-sm">
+                      {" "}
+                      · {w.governorate}
+                      {w.code ? ` · ${w.code}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {(warehousesPreview.data?.warehouses ?? []).length === 0 &&
+              !warehousesPreview.isLoading &&
+              !warehousesPreview.error ? (
+                <p className="text-muted-foreground text-sm">{t("dashboard.warehouses.empty")}</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="grid gap-6 xl:gap-7 lg:grid-cols-5">
           <Card className="dashboard-card dashboard-card-hover dashboard-animate-in lg:col-span-3">
@@ -371,20 +384,7 @@ export function DashboardPage() {
                           {row.phonePrimary}
                         </TableCell>
                         <TableCell>
-                          {coordinates ? (
-                            <a
-                              href={`https://www.google.com/maps?q=${encodeURIComponent(`${coordinates.lat},${coordinates.lng}`)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-primary inline-flex items-center rounded-md p-1 transition-colors hover:bg-primary/12"
-                              aria-label={t("dashboard.table.viewLocation")}
-                              title={t("dashboard.table.viewLocation")}
-                            >
-                              <ExternalLink className="size-5" aria-hidden />
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          <CoordinatesMapLink coordinates={coordinates} />
                         </TableCell>
                         <TableCell>
                           <StatusBadge

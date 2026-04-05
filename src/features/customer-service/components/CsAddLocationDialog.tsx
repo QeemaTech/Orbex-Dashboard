@@ -84,7 +84,7 @@ export function CsAddLocationDialog({
       })
       return patchShipmentFields({
         token,
-        shipmentId: row.id,
+        shipmentId: row.shipmentId,
         notes: nextNotes,
         ...(coords ? { customerLat: String(coords.lat) } : {}),
         ...(coords ? { customerLng: String(coords.lng) } : {}),
@@ -103,10 +103,13 @@ export function CsAddLocationDialog({
           return {
             ...list,
             shipments: list.shipments.map((shipment) =>
-              shipment.id === updatedRow.id
+              shipment.shipmentId ===
+              (updatedRow.shipmentId ?? updatedRow.id)
                 ? {
                     ...shipment,
                     ...updatedRow,
+                    id: shipment.id,
+                    shipmentId: shipment.shipmentId,
                     locationText: parsedLocation.locationText,
                     locationLink: parsedLocation.locationLink,
                   }
@@ -115,11 +118,18 @@ export function CsAddLocationDialog({
           }
         }
 
-        if ("id" in current && (current as { id?: string }).id === updatedRow.id) {
+        if (
+          "shipmentId" in current &&
+          (current as CsShipmentRow).shipmentId ===
+            (updatedRow.shipmentId ?? updatedRow.id)
+        ) {
           const detail = current as CsShipmentRow
           return {
             ...detail,
             ...updatedRow,
+            shipmentId: detail.shipmentId,
+            primaryPackageId: detail.primaryPackageId,
+            id: detail.id,
             locationText: parsedLocation.locationText,
             locationLink: parsedLocation.locationLink,
           }

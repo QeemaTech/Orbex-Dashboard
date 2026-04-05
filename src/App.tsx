@@ -17,10 +17,12 @@ import { DashboardPage } from "@/pages/DashboardPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
+import { UsersPage } from "@/pages/UsersPage"
 import { ShipmentDetailsPage } from "@/pages/ShipmentDetailsPage"
 import { ShipmentPackagesPage } from "@/pages/ShipmentPackagesPage"
 import { ShipmentsPage } from "@/pages/ShipmentsPage"
 import { WarehousePage } from "@/pages/WarehousePage"
+import { WarehouseSiteDetailPage } from "@/pages/WarehouseSiteDetailPage"
 import { WarehouseSitesPage } from "@/pages/WarehouseSitesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 
@@ -125,6 +127,16 @@ export default function App() {
           }
         />
         <Route
+          path="/users"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN"]}>
+                <UsersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/collections"
           element={
             <Protected>
@@ -148,6 +160,16 @@ export default function App() {
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE_ADMIN"]}>
                 <WarehouseSitesPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouse/sites/:warehouseId"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "WAREHOUSE_ADMIN"]}>
+                <WarehouseSiteDetailPage />
               </ProtectedRole>
             </Protected>
           }

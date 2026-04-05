@@ -20,36 +20,51 @@ export type WarehouseSiteRow = {
   governorate: string
   zone: string | null
   code: string | null
+  latitude: string | null
+  longitude: string | null
+  address: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type WarehouseSiteAdmin = {
+  id: string
+  email: string
+  fullName: string
   isActive: boolean
 }
 
+export type WarehouseSiteDetail = WarehouseSiteRow & {
+  admin: WarehouseSiteAdmin | null
+  staffCount: number
+}
+
+/** One warehouse queue row = merchant transfer (batch), not a single customer order. */
 export type WarehouseShipmentRow = {
   id: string
+  shipmentId: string
   trackingNumber: string | null
   regionId: string | null
-  customerName: string
-  phonePrimary: string
-  status: string
-  subStatus: string
-  paymentStatus: string
-  assignedCourierId: string | null
-  returnReceivedAt: string | null
+  transferStatus: string
   scannedOutAt: string | null
+  updatedAt: string
+  packageCount: number
+  totalShipmentValue: string
+  packagesDeliveredCount: number
+  packagesOutForDeliveryCount: number
+  packagesPendingCsCount: number
   merchant?: {
     id: string
     displayName: string
     businessName: string
   }
-  courier?: {
+  pickupCourier?: {
     id: string
     fullName: string | null
     userId: string
     contactPhone: string | null
   } | null
-  updatedAt: string
-  outboundCsPending?: boolean
-  csOutboundConfirmedAt?: string | null
-  pickupCourierId?: string | null
 }
 
 export type WarehouseQueueResponse = {
@@ -189,7 +204,8 @@ export function assignWarehouseShipment(params: {
   shipmentId: string
   courierId: string
   note?: string
-  /** `pickup` assigns first-mile courier on the primary package */
+  packageId?: string
+  /** `pickup` assigns first-mile courier on the shipment (batch). */
   leg?: "pickup" | "delivery"
 }): Promise<unknown> {
   return apiFetch(`/api/warehouse/shipments/${params.shipmentId}/assignment`, {
@@ -198,6 +214,7 @@ export function assignWarehouseShipment(params: {
     body: JSON.stringify({
       courierId: params.courierId,
       note: params.note,
+      ...(params.packageId ? { packageId: params.packageId } : {}),
       ...(params.leg ? { leg: params.leg } : {}),
     }),
   })
@@ -207,6 +224,7 @@ export function receiveWarehouseReturn(params: {
   token: string
   trackingNumber?: string
   shipmentId?: string
+  packageId?: string
   returnDiscountAmount?: number
   note?: string
 }): Promise<unknown> {
@@ -217,6 +235,7 @@ export function receiveWarehouseReturn(params: {
       ...(params.shipmentId
         ? { shipmentId: params.shipmentId }
         : { trackingNumber: params.trackingNumber }),
+      ...(params.packageId ? { packageId: params.packageId } : {}),
       returnDiscountAmount: params.returnDiscountAmount,
       note: params.note,
     }),
@@ -237,4 +256,13 @@ export function listWarehouseSites(token: string): Promise<{
   warehouses: WarehouseSiteRow[]
 }> {
   return apiFetch("/api/warehouse/sites", { token })
+}
+
+export function getWarehouseSite(
+  token: string,
+  warehouseId: string,
+): Promise<WarehouseSiteDetail> {
+  return apiFetch(`/api/warehouse/sites/${encodeURIComponent(warehouseId)}`, {
+    token,
+  })
 }

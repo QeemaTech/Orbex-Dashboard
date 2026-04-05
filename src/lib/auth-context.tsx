@@ -22,7 +22,7 @@ export type UserRole =
 
 export type AuthUser = {
   id: string
-  username: string
+  email: string
   fullName: string
   role: UserRole
   warehouseId: string | null
@@ -44,7 +44,7 @@ type AuthState = {
 }
 
 type AuthContextValue = AuthState & {
-  login: (username: string, password: string) => Promise<AuthUser>
+  login: (email: string, password: string) => Promise<AuthUser>
   logout: () => void
 }
 
@@ -54,11 +54,14 @@ function readStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(STORAGE_USER)
     if (!raw) return null
-    const u = JSON.parse(raw) as AuthUser
+    const u = JSON.parse(raw) as AuthUser & { username?: string }
     if (u && u.warehouseId === undefined) {
       u.warehouseId = null
     }
-    return u
+    if (u && u.email === undefined && typeof u.username === "string") {
+      u.email = u.username
+    }
+    return u as AuthUser
   } catch {
     return null
   }
@@ -107,8 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
   }, [])
 
-  const login = useCallback(async (username: string, password: string) => {
-    const res = await loginRequest({ username, password })
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await loginRequest({ email, password })
     localStorage.setItem(STORAGE_ACCESS, res.accessToken)
     localStorage.setItem(STORAGE_REFRESH, res.refreshToken)
     localStorage.setItem(STORAGE_USER, JSON.stringify(res.user))

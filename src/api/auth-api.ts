@@ -2,7 +2,7 @@ import { apiFetch } from "@/api/client"
 import type { AuthUser } from "@/lib/auth-context"
 
 export type LoginBody = {
-  username: string
+  email: string
   password: string
 }
 

@@ -22,6 +22,7 @@ import {
   type CsFilterValues,
 } from "@/features/customer-service/components/CsShipmentFilters"
 import { CsShipmentTable } from "@/features/customer-service/components/CsShipmentTable"
+import { ShipmentKpiStatRow } from "@/features/shipments/components/ShipmentKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
 export function CsShipmentsPage() {
@@ -42,7 +43,6 @@ export function CsShipmentsPage() {
       regionName: searchParams.get("regionName") ?? "",
       phoneSearch: searchParams.get("phoneSearch") ?? "",
       trackingNumber: searchParams.get("trackingNumber") ?? "",
-      coreSubIn: searchParams.get("coreSubIn") ?? "",
       status: searchParams.get("status") ?? "",
       subStatus: searchParams.get("subStatus") ?? "",
       paymentStatus: searchParams.get("paymentStatus") ?? "",
@@ -69,7 +69,6 @@ export function CsShipmentsPage() {
         filters.regionName,
         filters.phoneSearch,
         filters.trackingNumber,
-        filters.coreSubIn,
         filters.status,
         filters.subStatus,
         filters.paymentStatus,
@@ -87,7 +86,6 @@ export function CsShipmentsPage() {
       filters.regionName,
       filters.phoneSearch,
       filters.trackingNumber,
-      filters.coreSubIn,
       filters.status,
       filters.subStatus,
       filters.paymentStatus,
@@ -113,7 +111,6 @@ export function CsShipmentsPage() {
         status: filters.status || undefined,
         subStatus: filters.subStatus || undefined,
         paymentStatus: filters.paymentStatus || undefined,
-        coreSubIn: filters.coreSubIn.trim() || undefined,
         createdFrom: filters.createdFrom,
         createdTo: filters.createdTo,
         overdueOnly: filters.overdueOnly,
@@ -141,8 +138,7 @@ export function CsShipmentsPage() {
       else p.delete("phoneSearch")
       if (next.trackingNumber) p.set("trackingNumber", next.trackingNumber)
       else p.delete("trackingNumber")
-      if (next.coreSubIn.trim()) p.set("coreSubIn", next.coreSubIn.trim())
-      else p.delete("coreSubIn")
+      p.delete("coreSubIn")
       if (next.status) p.set("status", next.status)
       else p.delete("status")
       if (next.subStatus) p.set("subStatus", next.subStatus)
@@ -200,6 +196,12 @@ export function CsShipmentsPage() {
             </div>
           </CardHeader>
         </Card>
+
+        <ShipmentKpiStatRow
+          token={token}
+          filters={filters}
+          queryKeyPrefix="cs-shipments-page"
+        />
 
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="border-border/60 border-b pb-4">

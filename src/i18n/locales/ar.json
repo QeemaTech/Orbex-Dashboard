@@ -6,14 +6,16 @@
     "warehouseSites": "مواقع المخازن",
     "couriers": "المناديب",
     "merchants": "التجار",
+    "users": "المستخدمون",
     "collections": "التحصيل",
+    "warehouses": "المخازن",
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول — Orbex",
     "loginSubtitle": "لوحة عمليات لوجستيات Orbex.",
-    "username": "اسم المستخدم",
+    "email": "البريد الإلكتروني",
     "password": "كلمة المرور",
     "signIn": "دخول",
     "loginError": "تعذّر تسجيل الدخول. تحقق من البيانات."
@@ -61,6 +63,12 @@
       "rejected": "مرفوض",
       "postponed": "مؤجل"
     },
+    "adminStats": {
+      "users": "المستخدمون",
+      "shipments": "الشحنات",
+      "packages": "الطرود",
+      "warehouses": "المخازن"
+    },
     "chart": {
       "lineTitle": "الشحنات عبر الوقت",
       "lineDescription": "آخر 7 أيام",
@@ -92,6 +100,12 @@
       "title": "أحدث الشحنات",
       "description": "آخر النشاط على الشبكة"
     },
+    "warehouses": {
+      "title": "مراكز المخازن",
+      "description": "افتح موقعًا لعرض التفاصيل ومشرف الموقع وعدد العاملين.",
+      "viewAll": "عرض كل المخازن",
+      "empty": "لا توجد مواقع مخازن مسجّلة بعد."
+    },
     "table": {
       "customerName": "اسم العميل",
       "phone": "الهاتف",
@@ -117,7 +131,8 @@
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
       "currencyLocale": "ar-EG"
-    }
+    },
+    "packagesWarehouseSubtitle": "كل صف يمثل سطر طرد داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام."
   },
   "cs": {
     "pageTitle": "خدمة العملاء — الشحنات",
@@ -131,6 +146,7 @@
       "phonePlaceholder": "هاتف العميل",
       "status": "الحالة",
       "anyStatus": "أي حالة",
+      "anyPaymentStatus": "أي حالة دفع",
       "from": "من تاريخ",
       "to": "إلى تاريخ",
       "today": "اليوم"
@@ -153,12 +169,17 @@
     },
     "actions": {
       "confirm": "تأكيد",
+      "menu": "إجراءات",
+      "menuAriaLabel": "فتح قائمة إجراءات الشحنة",
       "whatsappApi": "واتساب API",
       "whatsappApiTitle": "إرسال رسالة عبر WhatsApp Business (Cloud API)",
       "whatsappWeb": "واتساب ويب",
+      "whatsappMenu": "واتساب",
+      "whatsappTooltip": "إرسال واتساب",
+      "whatsappDisabledHint": "لا يوجد رقم هاتف",
       "addLocation": "إضافة موقع",
-      "callCustomer": "اتصال",
-      "callCourier": "مندوب",
+      "callCustomer": "اتصال بالعميل",
+      "callCourier": "اتصال بالمندوب",
       "track": "خريطة"
     },
     "addLocation": {
@@ -258,6 +279,7 @@
     "filter": {
       "title": "نطاق الشحنات",
       "description": "يمكن لمشرف المخازن تصفية القائمة ومؤشرات الأداء حسب موقع واحد.",
+      "descriptionAdmin": "يمكن للمسؤول تصفية القائمة ومؤشرات الأداء حسب موقع واحد.",
       "warehouseLabel": "المخزن",
       "allWarehouses": "كل المخازن"
     },
@@ -265,15 +287,38 @@
       "pageTitle": "مواقع المخازن",
       "subtitle": "دليل المراكز المستخدمة لاستلام الشحنات وتجهيز التسليم الأخير.",
       "tableTitle": "المواقع",
-      "tableDescription": "المخازن المفعّلة وغير المفعّلة المسجّلة في Orbex.",
+      "tableDescription": "سجل المخازن الكامل: الموقع، الإحداثيات، الطوابع الزمنية، والحالة.",
+      "colId": "المعرّف",
       "colName": "الاسم",
       "colGovernorate": "المحافظة",
       "colZone": "المنطقة",
       "colCode": "الرمز",
+      "colAddress": "العنوان",
+      "colCoordinates": "خط العرض / الطول",
       "colStatus": "الحالة",
+      "colCreatedAt": "تاريخ الإنشاء",
+      "colUpdatedAt": "آخر تحديث",
       "statusActive": "نشط",
       "statusInactive": "غير نشط",
-      "openDirectory": "فتح دليل المخازن ←"
+      "openDirectory": "فتح دليل المخازن ←",
+      "colActions": "إجراءات",
+      "viewDetails": "عرض",
+      "viewShipmentsQueue": "الشحنات"
+    },
+    "siteDetail": {
+      "pageTitle": "تفاصيل المخزن",
+      "loadingTitle": "المخزن",
+      "subtitle": "ملف المركز، المشرف المعيّن، وعدد المشغّلين.",
+      "backToDirectory": "العودة إلى دليل المخازن",
+      "hubCardTitle": "معلومات الموقع",
+      "hubCardDescription": "الموقع والرموز والبيانات الوصفية.",
+      "adminCardTitle": "مشرف المخزن",
+      "adminCardDescription": "المستخدم المعيّن للإشراف على هذا المركز.",
+      "staffCount": "عاملو المخزن (المشغّلون)",
+      "adminInactive": "حساب هذا المستخدم غير نشط.",
+      "noAdmin": "لم يُعيَّن مشرف مخزن بعد.",
+      "linkFromOperations": "تفاصيل مخزني ←",
+      "viewShipmentsAtHub": "عرض الشحنات في هذا المخزن ←"
     },
     "stats": {
       "totalWarehouses": "المخازن (الإجمالي)",
@@ -284,6 +329,11 @@
       "assigned": "مُسندة لمندوب",
       "returnsPending": "مرتجعات بانتظار الاستلام",
       "returnsReceivedToday": "مرتجعات تم استلامها اليوم"
+    },
+    "hubSnapshot": {
+      "title": "ملف المخزن",
+      "description": "بيانات الموقع، مشرف المخزن، وعدد المشغّلين لهذا المركز.",
+      "fullDetailsLink": "تفاصيل المخزن الكاملة ←"
     },
     "operations": {
       "title": "المسح والمرتجعات",
@@ -299,6 +349,8 @@
     "queue": {
       "title": "قائمة المخزن",
       "description": "تابع الشحنات وعيّن المناديب مباشرة من عمليات المخزن.",
+      "descriptionExtended": "دفعات شحن فعلية لمخزنك من واجهة المخزن. انقر الصف لعرض كل الطرود في الدفعة؛ واستخدم الرابط تحت رقم التتبع لملخص الدفعة.",
+      "openBatchSummary": "ملخص الدفعة",
       "searchPlaceholder": "بحث برقم التتبع أو العميل أو الهاتف",
       "allStatuses": "كل الحالات",
       "returnsOnly": "المرتجعات فقط",
@@ -313,6 +365,9 @@
       "trackingNumber": "رقم التتبع",
       "customer": "العميل",
       "merchant": "التاجر",
+      "batchTransfer": "حالة الدفعة (نقل)",
+      "lineDelivery": "تسليم السطر",
+      "linePayment": "دفع السطر",
       "status": "الحالة",
       "courier": "المندوب",
       "updatedAt": "آخر تحديث",
@@ -323,6 +378,33 @@
       "scanOutSuccess": "تم تسجيل خروج الشحنة للتسليم.",
       "assignmentSuccess": "تم تعيين المندوب بنجاح.",
       "returnSuccess": "تم استلام المرتجع وتسجيله."
+    }
+  },
+  "backend": {
+    "shipmentTransferStatus": {
+      "PENDING": "معلّق (دفعة)",
+      "ASSIGNED": "مُسند (دفعة)",
+      "ON_THE_WAY_TO_WAREHOUSE": "في الطريق إلى المخزن",
+      "IN_WAREHOUSE": "داخل المخزن (دفعة)",
+      "PARTIALLY_DELIVERED": "مُسلَّم جزئيًا",
+      "DELIVERED": "مُسلَّم (دفعة)"
+    },
+    "packageDeliveryStatus": {
+      "PENDING": "معلّق",
+      "CONFIRMED_BY_CS": "مؤكد من خدمة العملاء",
+      "OUT_FOR_DELIVERY": "جاري التسليم",
+      "DELIVERED": "تم التسليم",
+      "REJECTED": "مرفوض",
+      "RETURNED": "عاد للمخزن",
+      "POSTPONED": "مؤجل"
+    },
+    "packagePaymentStatus": {
+      "PENDING_COLLECTION": "بانتظار التحصيل",
+      "COLLECTED": "تم التحصيل",
+      "POS_PENDING": "بانتظار مراجعة POS",
+      "READY_FOR_SETTLEMENT": "جاهز للتسوية",
+      "SETTLED": "تمت التسوية",
+      "ON_HOLD": "معلّق مؤقتًا"
     }
   },
   "merchants": {
@@ -355,6 +437,101 @@
       "summary": "{{total}} إجمالي · صفحة {{page}}",
       "prev": "السابق",
       "next": "التالي"
+    }
+  },
+  "users": {
+    "pageTitle": "المستخدمون",
+    "subtitle": "إنشاء وإدارة حسابات المخازن والعمليات والموظفين الإداريين.",
+    "stats": {
+      "activeOnlyHint": "المستخدمون النشطون فقط"
+    },
+    "roles": {
+      "WAREHOUSE": "مخزن",
+      "WAREHOUSE_ADMIN": "مسؤول مخازن",
+      "CUSTOMER_SERVICE": "خدمة العملاء",
+      "ACCOUNTS": "الحسابات",
+      "SALES": "المبيعات"
+    },
+    "tableCardTitle": "موظفو النظام",
+    "tableCardDescription": "أدوار تُدار من هذه الصفحة (لا يشمل التجار والمناديب والمدراء).",
+    "filters": {
+      "search": "بحث",
+      "searchPlaceholder": "البريد الإلكتروني أو الاسم الكامل",
+      "applySearch": "تطبيق",
+      "role": "الدور",
+      "allRoles": "كل الأدوار",
+      "activeStatus": "حالة الحساب",
+      "allActive": "الكل",
+      "activeOnly": "نشط فقط",
+      "inactiveOnly": "غير نشط فقط",
+      "clear": "مسح التصفية"
+    },
+    "loading": "جاري تحميل المستخدمين…",
+    "empty": "لا يوجد مستخدمون.",
+    "table": {
+      "email": "البريد الإلكتروني",
+      "fullName": "الاسم الكامل",
+      "role": "الدور",
+      "warehouse": "موقع المخزن",
+      "adminWarehouse": "موقع الإشراف",
+      "active": "نشط",
+      "created": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "active": {
+      "yes": "نعم",
+      "no": "لا"
+    },
+    "actions": {
+      "addUser": "إضافة مستخدم",
+      "edit": "تعديل",
+      "deactivate": "تعطيل",
+      "activate": "تفعيل"
+    },
+    "pagination": {
+      "summary": "{{total}} إجمالي · صفحة {{page}}",
+      "prev": "السابق",
+      "next": "التالي"
+    },
+    "form": {
+      "createTitle": "إنشاء مستخدم",
+      "editTitle": "تعديل مستخدم",
+      "close": "إغلاق",
+      "email": "البريد الإلكتروني",
+      "fullName": "الاسم الكامل",
+      "password": "كلمة المرور",
+      "passwordOptional": "كلمة مرور جديدة (اختياري، 8 أحرف على الأقل)",
+      "role": "الدور",
+      "warehouse": "موقع المخزن",
+      "adminWarehouse": "المخزن الذي يُشرف عليه",
+      "selectWarehouse": "اختر موقعًا…",
+      "loadingSites": "جاري تحميل المواقع…",
+      "active": "الحساب نشط",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "saving": "جاري الحفظ…",
+      "errors": {
+        "warehouseRequired": "اختر موقع مخزن لهذا الدور.",
+        "adminWarehouseRequired": "اختر المخزن الذي سيديره هذا المشرف.",
+        "passwordMin": "كلمة المرور يجب أن تكون 8 أحرف على الأقل."
+      }
+    },
+    "deactivate": {
+      "title": "تعطيل المستخدم",
+      "body": "سيتم تسجيل خروج {{email}} ومنع الدخول حتى إعادة التفعيل.",
+      "cannotSelf": "لا يمكنك تعطيل حسابك.",
+      "cancel": "إلغاء",
+      "confirm": "تعطيل",
+      "working": "جاري التنفيذ…"
+    },
+    "feedback": {
+      "created": "تم إنشاء المستخدم.",
+      "updated": "تم تحديث المستخدم.",
+      "saveFailed": "تعذّر حفظ المستخدم.",
+      "deactivated": "تم تعطيل المستخدم.",
+      "deactivateFailed": "تعذّر تعطيل المستخدم.",
+      "activated": "تم تفعيل المستخدم.",
+      "activateFailed": "تعذّر تفعيل المستخدم."
     }
   }
 }

@@ -1,5 +1,6 @@
 import type { ComponentType } from "react"
 import { useTranslation } from "react-i18next"
+import { Link } from "react-router-dom"
 
 import {
   Card,
@@ -57,6 +58,10 @@ export interface StatCardProps {
   percentage?: number
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>
   accent: StatAccent
+  /** When set, the whole card navigates (e.g. dashboard shortcuts). */
+  to?: string
+  /** Omit percentage badge and progress bar (recommended with `to`). */
+  hideTrend?: boolean
 }
 
 function resolveNumberLocale(language: string) {
@@ -69,6 +74,8 @@ export function StatCard({
   percentage = 0,
   icon: Icon,
   accent,
+  to,
+  hideTrend = false,
 }: StatCardProps) {
   const { i18n } = useTranslation()
   const locale = resolveNumberLocale(i18n.language)
@@ -76,21 +83,33 @@ export function StatCard({
   const safePercentage = Math.max(0, Math.min(100, Number.isFinite(percentage) ? percentage : 0))
   const badgeLabel = `${safePercentage > 0 ? "+" : ""}${safePercentage}%`
 
-  return (
-    <Card className="dashboard-card dashboard-card-hover dashboard-animate-in h-full gap-0 rounded-[1.5rem] border px-5 py-4">
+  const card = (
+    <Card
+      className={cn(
+        "dashboard-card dashboard-card-hover dashboard-animate-in h-full gap-0 rounded-[1.5rem] border px-5 py-4",
+        to && "h-full",
+      )}
+    >
       <CardHeader className="space-y-0 px-0 pb-3">
-        <div className="flex items-center justify-between gap-3">
+        <div
+          className={cn(
+            "flex items-center gap-3",
+            !hideTrend ? "justify-between" : undefined,
+          )}
+        >
           <div className={cn("flex size-11 items-center justify-center rounded-full", a.iconWrap)}>
             <Icon className={cn("size-6", a.icon)} aria-hidden />
           </div>
-          <span
-            className={cn(
-              "inline-flex min-w-[3.1rem] items-center justify-center rounded-full px-2 py-1 text-xs font-semibold tabular-nums",
-              a.badge
-            )}
-          >
-            {badgeLabel}
-          </span>
+          {!hideTrend ? (
+            <span
+              className={cn(
+                "inline-flex min-w-[3.1rem] items-center justify-center rounded-full px-2 py-1 text-xs font-semibold tabular-nums",
+                a.badge,
+              )}
+            >
+              {badgeLabel}
+            </span>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-2 px-0 pb-4">
@@ -101,13 +120,28 @@ export function StatCard({
           {typeof value === "number" ? value.toLocaleString(locale) : value}
         </p>
       </CardContent>
-      <div className={cn("h-1 w-full overflow-hidden rounded-full", a.progressTrack)}>
-        <div
-          className={cn("h-full rounded-full transition-[width] duration-500 ease-out", a.progressFill)}
-          style={{ width: `${safePercentage}%` }}
-          aria-hidden
-        />
-      </div>
+      {!hideTrend ? (
+        <div className={cn("h-1 w-full overflow-hidden rounded-full", a.progressTrack)}>
+          <div
+            className={cn("h-full rounded-full transition-[width] duration-500 ease-out", a.progressFill)}
+            style={{ width: `${safePercentage}%` }}
+            aria-hidden
+          />
+        </div>
+      ) : null}
     </Card>
   )
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className="text-foreground block h-full rounded-[1.5rem] focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+      >
+        {card}
+      </Link>
+    )
+  }
+
+  return card
 }

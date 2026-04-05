@@ -1,13 +1,15 @@
+import { LogOut } from "lucide-react"
 import {
   Banknote,
   LayoutDashboard,
   MapPin,
   Package,
   Truck,
+  Users,
   Warehouse,
 } from "react-lucid"
 import { useTranslation } from "react-i18next"
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
 
 import { useSidebar } from "@/components/layout/sidebar-context"
 import { Button } from "@/components/ui/button"
@@ -16,8 +18,8 @@ import { cn } from "@/lib/utils"
 
 const adminNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
+  { to: "/users", labelKey: "nav.users", icon: Users, end: false },
   { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false },
-  { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: false },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
   { to: "/merchants", labelKey: "nav.merchants", icon: Package, end: false },
   {
@@ -26,6 +28,8 @@ const adminNavConfig = [
     icon: Banknote,
     end: false,
   },
+  { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: true },
+  { to: "/warehouse/sites", labelKey: "nav.warehouses", icon: MapPin, end: true },
 ] as const
 
 const customerServiceNavConfig = [
@@ -45,8 +49,15 @@ const warehouseAdminNavConfig = [
 export function Sidebar() {
   const { t, i18n } = useTranslation()
   const { open, setOpen } = useSidebar()
-  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const isEn = i18n.language.startsWith("en")
+
+  function onSignOut() {
+    setOpen(false)
+    logout()
+    void navigate("/login", { replace: true })
+  }
   const navConfig =
     user?.role === "CUSTOMER_SERVICE"
       ? [...customerServiceNavConfig]
@@ -96,6 +107,18 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <div className="border-sidebar-border shrink-0 border-t px-4 pt-3 pb-1.5 sm:px-5 sm:pt-4 sm:pb-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 w-full gap-1.5 px-3 text-xs shadow-sm [&_svg]:size-3.5"
+          onClick={onSignOut}
+        >
+          <LogOut className="shrink-0" aria-hidden />
+          {t("header.signOut")}
+        </Button>
+      </div>
       <div
         className="border-sidebar-border border-t p-4 sm:p-5"
         role="group"

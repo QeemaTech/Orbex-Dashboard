@@ -72,6 +72,7 @@ export function Header({ title }: HeaderProps) {
                 size="icon"
                 className="gradient-accent rounded-full border border-border/75 shadow-sm transition-transform duration-200 hover:-translate-y-px"
                 aria-label={t("a11y.userMenu")}
+                title={user?.fullName?.trim() || undefined}
               >
                 <Avatar className="size-9 ring-2 ring-primary/15">
                   <AvatarFallback className="gradient-primary text-primary-foreground text-sm font-semibold">

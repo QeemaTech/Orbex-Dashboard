@@ -1,11 +1,21 @@
+import type { MouseEvent } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { LocateFixed, MapPin, PhoneCall } from "react-lucid"
+import { LocateFixed, MapPin, MoreVertical, PhoneCall } from "react-lucid"
 import { useTranslation } from "react-i18next"
 
 import { confirmShipmentCs } from "@/api/shipments-api"
 import type { CsShipmentRow } from "@/api/shipments-api"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { openWhatsApp } from "@/features/customer-service/lib/whatsapp"
+
+export type CsShipmentRowActionsLayout = "compact" | "inline"
 
 export interface CsShipmentRowActionsProps {
   row: CsShipmentRow
@@ -15,6 +25,8 @@ export interface CsShipmentRowActionsProps {
   onOpenAddLocation: (row: CsShipmentRow) => void
   showWhatsApp?: boolean
   showAddLocation?: boolean
+  /** Table rows use compact (confirm + menu); detail page uses inline buttons. */
+  layout?: CsShipmentRowActionsLayout
 }
 
 export function CsShipmentRowActions({
@@ -25,18 +37,27 @@ export function CsShipmentRowActions({
   onOpenAddLocation,
   showWhatsApp = true,
   showAddLocation = true,
+  layout = "compact",
 }: CsShipmentRowActionsProps) {
   const { t } = useTranslation()
   const qc = useQueryClient()
 
   const confirmMut = useMutation({
-    mutationFn: () => confirmShipmentCs(token, row.id),
+    mutationFn: () =>
+      confirmShipmentCs(
+        token,
+        row.shipmentId,
+        row.primaryPackageId ?? row.id,
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: listQueryKey }),
   })
 
   const telCustomer = `tel:${row.phonePrimary}`
   const hasPhone = !!row.phonePrimary?.trim()
   const hasLocationLink = !!row.locationLink?.trim()
+  const showConfirm = row.status === "PENDING" && row.subStatus === "NONE"
+  const hasCourierMenuItems =
+    !!row.courier?.contactPhone || !!row.courier?.id
 
   const handleLocationAction = () => {
     if (hasLocationLink) {
@@ -46,36 +67,39 @@ export function CsShipmentRowActions({
     onOpenAddLocation(row)
   }
 
-  return (
-    <div
-      className="flex flex-col  items-center
-      gap-1"
-      onClick={(e) => e.stopPropagation()}
+  const confirmButton = showConfirm ? (
+    <Button
+      type="button"
+      size="sm"
+      variant="default"
+      className="bg-chart-2 text-white hover:bg-chart-2/90"
+      disabled={confirmMut.isPending}
+      onClick={() => confirmMut.mutate()}
     >
-      <div className="flex justify-center items-center gap-6">
-        {row.status === "PENDING" && row.subStatus === "NONE" ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="default"
-            className="bg-chart-2 text-white hover:bg-chart-2/90"
-            disabled={confirmMut.isPending}
-            onClick={() => confirmMut.mutate()}
-          >
-            {t("cs.actions.confirm")}
-          </Button>
-        ) : null}
+      {t("cs.actions.confirm")}
+    </Button>
+  ) : null
+
+  const stopRowClick = (e: MouseEvent<HTMLDivElement>) => e.stopPropagation()
+
+  if (layout === "inline") {
+    return (
+      <div
+        className="flex flex-wrap items-center justify-center gap-3"
+        onClick={stopRowClick}
+      >
+        {confirmButton}
         {showWhatsApp ? (
           <Button
             type="button"
             size="icon"
             variant="ghost"
-            title="إرسال واتساب"
+            title={t("cs.actions.whatsappTooltip")}
             disabled={!hasPhone}
             className="size-9 rounded-full bg-[#25D366] text-white shadow-sm hover:bg-[#22c55e]"
             onClick={() => openWhatsApp(row)}
           >
-            <WhatsAppLogoIcon className="size-5" />
+            <WhatsAppLogoIcon className="size-5 text-white" />
           </Button>
         ) : null}
         {showAddLocation ? (
@@ -126,6 +150,72 @@ export function CsShipmentRowActions({
           </Button>
         ) : null}
       </div>
+    )
+  }
+
+  return (
+    <div
+      className="flex flex-wrap items-center justify-end gap-2"
+      onClick={stopRowClick}
+    >
+      {confirmButton}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            aria-label={t("cs.actions.menuAriaLabel")}
+            aria-haspopup="menu"
+          >
+            <MoreVertical className="size-4 shrink-0" aria-hidden />
+            <span>{t("cs.actions.menu")}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[10rem]">
+          {showWhatsApp ? (
+            <DropdownMenuItem
+              disabled={!hasPhone}
+              title={
+                !hasPhone ? t("cs.actions.whatsappDisabledHint") : undefined
+              }
+              onClick={() => {
+                if (hasPhone) openWhatsApp(row)
+              }}
+            >
+              <WhatsAppLogoIcon className="size-4 shrink-0 text-[#25D366]" />
+              {t("cs.actions.whatsappMenu")}
+            </DropdownMenuItem>
+          ) : null}
+          {showAddLocation ? (
+            <DropdownMenuItem onClick={handleLocationAction}>
+              <LocateFixed className="size-4" aria-hidden />
+              {t("cs.actions.addLocation")}
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem asChild>
+            <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
+          </DropdownMenuItem>
+          {hasCourierMenuItems ? <DropdownMenuSeparator /> : null}
+          {row.courier?.contactPhone ? (
+            <DropdownMenuItem asChild>
+              <a href={`tel:${row.courier.contactPhone}`}>
+                <PhoneCall className="size-4" aria-hidden />
+                {t("cs.actions.callCourier")}
+              </a>
+            </DropdownMenuItem>
+          ) : null}
+          {row.courier?.id ? (
+            <DropdownMenuItem
+              onClick={() => onOpenMap(row.courier!.id)}
+            >
+              <MapPin className="size-4" aria-hidden />
+              {t("cs.actions.track")}
+            </DropdownMenuItem>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
@@ -140,7 +230,7 @@ function WhatsAppLogoIcon({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        fill="#fff"
+        fill="currentColor"
         d="M19.05 4.91A9.82 9.82 0 0 0 12.02 2C6.6 2 2.2 6.4 2.2 11.82c0 1.73.45 3.42 1.3 4.9L2 22l5.43-1.43a9.8 9.8 0 0 0 4.59 1.17h.01c5.42 0 9.82-4.4 9.82-9.82a9.76 9.76 0 0 0-2.8-7.01Zm-7.03 15.17h-.01a8.15 8.15 0 0 1-4.15-1.13l-.3-.18-3.22.85.86-3.14-.2-.32a8.13 8.13 0 0 1-1.25-4.34c0-4.5 3.67-8.17 8.19-8.17 2.19 0 4.24.85 5.79 2.39a8.1 8.1 0 0 1 2.4 5.77c0 4.5-3.68 8.17-8.1 8.17Zm4.47-6.12c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.93-1.18a7.16 7.16 0 0 1-1.33-1.65c-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4l-.46-.01c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.1.15 1.52.09.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"
       />
     </svg>

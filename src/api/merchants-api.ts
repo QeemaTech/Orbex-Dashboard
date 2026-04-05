@@ -5,7 +5,7 @@ export type MerchantAccountStatus = "PENDING" | "ACTIVATED"
 export type MerchantRow = {
   merchantId: string
   userId: string
-  username: string
+  userEmail: string
   fullName: string
   isActive: boolean
   displayName: string

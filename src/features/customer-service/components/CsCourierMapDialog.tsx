@@ -4,6 +4,10 @@ import { useTranslation } from "react-i18next"
 
 import { fetchCourierLatestLocation } from "@/api/couriers-api"
 import { Button } from "@/components/ui/button"
+import {
+  googleMapsSearchUrl,
+  parseWarehouseLatLng,
+} from "@/features/customer-service/lib/location"
 
 export interface CsCourierMapDialogProps {
   open: boolean
@@ -28,9 +32,10 @@ export function CsCourierMapDialog({
 
   if (!open) return null
 
-  const src =
-    q.data &&
-    `https://www.google.com/maps?q=${q.data.lat},${q.data.lng}&z=15&output=embed`
+  const mapCoords = q.data
+    ? parseWarehouseLatLng(String(q.data.lat), String(q.data.lng))
+    : null
+  const src = mapCoords && `${googleMapsSearchUrl(mapCoords)}&z=15&output=embed`
 
   return (
     <div
@@ -68,12 +73,12 @@ export function CsCourierMapDialog({
               src={src}
             />
           ) : null}
-          {q.data ? (
+          {mapCoords ? (
             <a
               className="text-primary mt-2 inline-block text-sm underline"
               target="_blank"
               rel="noreferrer"
-              href={`https://www.google.com/maps?q=${q.data.lat},${q.data.lng}`}
+              href={googleMapsSearchUrl(mapCoords)}
             >
               {t("cs.map.openExternal")}
             </a>
