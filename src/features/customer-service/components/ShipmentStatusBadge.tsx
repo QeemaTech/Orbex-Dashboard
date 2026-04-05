@@ -19,7 +19,7 @@ function statusColorClass(status: string): string {
     case "REJECTED":
       return "border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
     case "POSTPONED":
-      return "border-orange-300 bg-orange-100 text-orange-800 dark:border-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+      return "border-yellow-300 bg-yellow-100 text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/35 dark:text-yellow-200"
     case "PENDING_CONFIRMATION":
     case "PENDING_PICKUP":
     case "CREATED":
@@ -28,8 +28,10 @@ function statusColorClass(status: string): string {
     case "RECEIVED_IN_WAREHOUSE":
     case "PICKED_UP":
       return "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+    case "WH_CS_PENDING":
+      return "border-orange-300 bg-orange-100 text-orange-900 dark:border-orange-700 dark:bg-orange-950/40 dark:text-orange-200"
     case "DELAYED":
-      return "border-orange-300 bg-orange-100 text-orange-800 dark:border-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+      return "border-yellow-300 bg-yellow-100 text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/35 dark:text-yellow-200"
     case "RETURNED":
     case "RETURNED_TO_WAREHOUSE":
       return "border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-700 dark:bg-purple-900/40 dark:text-purple-300"

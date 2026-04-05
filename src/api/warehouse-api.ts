@@ -3,21 +3,35 @@ import { apiFetch } from "@/api/client"
 export type WarehouseStats = {
   awaitingScanIn: number
   inWarehouse: number
+  /** Packages physically in hub waiting for CS outbound clearance */
+  inWarehouseCsPending: number
   readyForAssignment: number
   assigned: number
   returnsPending: number
   returnsReceivedToday: number
+  /** Populated for unscoped `WAREHOUSE_ADMIN` dashboard calls */
+  totalWarehouses?: number
+  activeWarehouses?: number
+}
+
+export type WarehouseSiteRow = {
+  id: string
+  name: string
+  governorate: string
+  zone: string | null
+  code: string | null
+  isActive: boolean
 }
 
 export type WarehouseShipmentRow = {
   id: string
   trackingNumber: string | null
+  regionId: string | null
   customerName: string
   phonePrimary: string
-  currentStatus: string
-  status?: string
-  subStatus?: string
-  paymentStatus?: string
+  status: string
+  subStatus: string
+  paymentStatus: string
   assignedCourierId: string | null
   returnReceivedAt: string | null
   scannedOutAt: string | null
@@ -33,6 +47,9 @@ export type WarehouseShipmentRow = {
     contactPhone: string | null
   } | null
   updatedAt: string
+  outboundCsPending?: boolean
+  csOutboundConfirmedAt?: string | null
+  pickupCourierId?: string | null
 }
 
 export type WarehouseQueueResponse = {
@@ -42,13 +59,26 @@ export type WarehouseQueueResponse = {
   pageSize: number
 }
 
+export type WarehouseCourierRow = {
+  id: string
+  fullName: string | null
+  contactPhone: string | null
+  servesShipmentRegion: boolean
+}
+
 type WarehouseQueueParams = {
   token: string
   page?: number
   pageSize?: number
   search?: string
   status?: string
+  subStatus?: string
+  /** Comma-separated core or core:sub pairs (backend `coreSubIn`). */
+  coreSubIn?: string
   returnsOnly?: boolean
+  courierId?: string
+  /** Admin / warehouse admin: narrow queue to one hub */
+  warehouseId?: string
 }
 
 function qs(params: Record<string, string | number | boolean | undefined>): string {
@@ -61,8 +91,14 @@ function qs(params: Record<string, string | number | boolean | undefined>): stri
   return out ? `?${out}` : ""
 }
 
-export function getWarehouseStats(token: string): Promise<WarehouseStats> {
-  return apiFetch<WarehouseStats>("/api/warehouse/dashboard", { token })
+export function getWarehouseStats(
+  token: string,
+  warehouseId?: string,
+): Promise<WarehouseStats> {
+  const query = qs({ warehouseId })
+  return apiFetch<WarehouseStats>(`/api/warehouse/dashboard${query}`, {
+    token,
+  })
 }
 
 export function listWarehouseQueue(
@@ -73,23 +109,45 @@ export function listWarehouseQueue(
     pageSize: params.pageSize ?? 20,
     search: params.search,
     status: params.status,
+    subStatus: params.subStatus,
+    coreSubIn: params.coreSubIn,
     returnsOnly: params.returnsOnly,
+    courierId: params.courierId,
+    warehouseId: params.warehouseId,
   })
   return apiFetch<WarehouseQueueResponse>(`/api/warehouse/queue${query}`, {
     token: params.token,
   })
 }
 
+function scanPayloadFromInput(raw: string): {
+  trackingNumber?: string
+  shipmentId?: string
+} {
+  const t = raw.trim()
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      t,
+    )
+  ) {
+    return { shipmentId: t }
+  }
+  return { trackingNumber: t }
+}
+
 export function scanShipmentIn(params: {
   token: string
-  trackingNumber: string
+  trackingNumber?: string
+  shipmentId?: string
   note?: string
 }): Promise<unknown> {
   return apiFetch("/api/warehouse/scan-in", {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
-      trackingNumber: params.trackingNumber,
+      ...(params.shipmentId
+        ? { shipmentId: params.shipmentId }
+        : { trackingNumber: params.trackingNumber }),
       note: params.note,
     }),
   })
@@ -97,17 +155,33 @@ export function scanShipmentIn(params: {
 
 export function scanShipmentOut(params: {
   token: string
-  trackingNumber: string
+  trackingNumber?: string
+  shipmentId?: string
   note?: string
 }): Promise<unknown> {
   return apiFetch("/api/warehouse/scan-out", {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
-      trackingNumber: params.trackingNumber,
+      ...(params.shipmentId
+        ? { shipmentId: params.shipmentId }
+        : { trackingNumber: params.trackingNumber }),
       note: params.note,
     }),
   })
+}
+
+export { scanPayloadFromInput }
+
+export function getWarehouseCouriers(params: {
+  token: string
+  regionId?: string
+}): Promise<{ couriers: WarehouseCourierRow[] }> {
+  const query = qs({ regionId: params.regionId })
+  return apiFetch<{ couriers: WarehouseCourierRow[] }>(
+    `/api/warehouse/couriers${query}`,
+    { token: params.token },
+  )
 }
 
 export function assignWarehouseShipment(params: {
@@ -115,6 +189,8 @@ export function assignWarehouseShipment(params: {
   shipmentId: string
   courierId: string
   note?: string
+  /** `pickup` assigns first-mile courier on the primary package */
+  leg?: "pickup" | "delivery"
 }): Promise<unknown> {
   return apiFetch(`/api/warehouse/shipments/${params.shipmentId}/assignment`, {
     method: "PATCH",
@@ -122,13 +198,15 @@ export function assignWarehouseShipment(params: {
     body: JSON.stringify({
       courierId: params.courierId,
       note: params.note,
+      ...(params.leg ? { leg: params.leg } : {}),
     }),
   })
 }
 
 export function receiveWarehouseReturn(params: {
   token: string
-  trackingNumber: string
+  trackingNumber?: string
+  shipmentId?: string
   returnDiscountAmount?: number
   note?: string
 }): Promise<unknown> {
@@ -136,7 +214,9 @@ export function receiveWarehouseReturn(params: {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
-      trackingNumber: params.trackingNumber,
+      ...(params.shipmentId
+        ? { shipmentId: params.shipmentId }
+        : { trackingNumber: params.trackingNumber }),
       returnDiscountAmount: params.returnDiscountAmount,
       note: params.note,
     }),
@@ -151,4 +231,10 @@ export function getWarehouseTracking(params: {
   return apiFetch(`/api/warehouse/tracking/${tracking}`, {
     token: params.token,
   })
+}
+
+export function listWarehouseSites(token: string): Promise<{
+  warehouses: WarehouseSiteRow[]
+}> {
+  return apiFetch("/api/warehouse/sites", { token })
 }

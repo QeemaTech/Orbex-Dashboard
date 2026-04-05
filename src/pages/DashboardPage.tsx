@@ -156,20 +156,22 @@ export function DashboardPage() {
 
   const pieData = useMemo(
     () =>
-      (kpiQuery.data?.statusDistribution ?? []).map(({ status, value }) => ({
-        status,
-        value,
-        color:
-          status === "DELIVERED"
-            ? "var(--success)"
-            : status === "REJECTED"
-              ? "var(--error)"
-              : status === "POSTPONED"
-                ? "var(--warning)"
-                : "var(--primary)",
-        label: status,
-      })),
-    [kpiQuery.data?.statusDistribution]
+      (kpiQuery.data?.statusBreakdown ?? []).map(
+        ({ status, subStatus, count }) => ({
+          status: `${status}/${subStatus}`,
+          value: count,
+          color:
+            status === "DELIVERED"
+              ? "var(--success)"
+              : status === "RETURNED" && subStatus === "REJECTED"
+                ? "var(--error)"
+                : status === "RETURNED" && subStatus === "DELAYED"
+                  ? "var(--warning)"
+                  : "var(--primary)",
+          label: `${status}/${subStatus}`,
+        }),
+      ),
+    [kpiQuery.data?.statusBreakdown],
   )
 
   return (

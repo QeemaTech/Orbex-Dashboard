@@ -45,10 +45,9 @@ export type CsShipmentRow = {
   shippingFee: string
   paymentMethod: string
   productType: string
-  currentStatus: string
-  status?: string
-  subStatus?: string
-  paymentStatus?: string
+  status: string
+  subStatus: string
+  paymentStatus: string
   merchant?: CsMerchant
   courier?: CsCourier | null
   createdAt: string
@@ -59,14 +58,12 @@ export type CsShipmentRow = {
 export type CsShipmentStatusEvent = {
   id: string
   shipmentId: string
-  fromStatus: string | null
-  toStatus: string
-  fromCoreStatus?: string | null
-  toCoreStatus?: string
-  fromSubStatus?: string | null
-  toSubStatus?: string
-  fromPaymentStatus?: string | null
-  toPaymentStatus?: string
+  fromCoreStatus: string | null
+  toCoreStatus: string
+  fromSubStatus: string | null
+  toSubStatus: string
+  fromPaymentStatus: string | null
+  toPaymentStatus: string
   receivedByCustomer: boolean | null
   paymentCollected: boolean | null
   note: string | null
@@ -90,8 +87,8 @@ export type ListShipmentsParams = {
   phoneSearch?: string
   trackingNumber?: string
   customerName?: string
-  currentStatus?: string
-  currentStatusIn?: string[]
+  /** Comma-separated core or core:sub pairs (backend `coreSubIn`). */
+  coreSubIn?: string
   status?: string
   subStatus?: string
   paymentStatus?: string
@@ -127,14 +124,10 @@ export async function listShipments(
     phoneSearch: p.phoneSearch,
     trackingNumber: p.trackingNumber,
     customerName: p.customerName,
-    currentStatus: p.currentStatus,
+    coreSubIn: p.coreSubIn,
     status: p.status,
     subStatus: p.subStatus,
     paymentStatus: p.paymentStatus,
-    currentStatusIn:
-      p.currentStatusIn && p.currentStatusIn.length > 0
-        ? p.currentStatusIn.join(",")
-        : undefined,
     createdFrom: p.createdFrom,
     createdTo: p.createdTo,
     overdueOnly: p.overdueOnly ? "true" : undefined,
@@ -177,6 +170,60 @@ export async function getShipmentById(params: {
   }
 }
 
+export type ShipmentPackageCustomer = {
+  id: string
+  customerName: string
+  phonePrimary: string
+  phoneSecondary: string | null
+  addressText: string
+  addressConfirmed: boolean
+  customerLat: string | null
+  customerLng: string | null
+  customerLocationReceivedAt: string | null
+}
+
+export type ShipmentPackageRow = {
+  id: string
+  shipmentId: string
+  customerId: string
+  trackingNumber: string | null
+  deliveryStatus: string
+  paymentStatus: string
+  shipmentValue: string
+  shippingFee: string
+  commissionFee: string
+  paymentMethod: string
+  visaCommissionRate: string | null
+  notes: string | null
+  productType: string
+  deliveryCourierId: string | null
+  csConfirmedAt: string | null
+  scannedOutAt: string | null
+  receivedByCustomer: boolean | null
+  paymentCollected: boolean | null
+  postponedAt: string | null
+  returnReceivedAt: string | null
+  returnDiscountAmount: string | null
+  createdAt: string
+  updatedAt: string
+  customer: ShipmentPackageCustomer
+}
+
+export type ShipmentPackagesResponse = {
+  shipmentId: string
+  packages: ShipmentPackageRow[]
+}
+
+export async function getShipmentPackages(params: {
+  token: string
+  shipmentId: string
+}): Promise<ShipmentPackagesResponse> {
+  return apiFetch<ShipmentPackagesResponse>(
+    `/api/shipments/${params.shipmentId}/packages`,
+    { token: params.token },
+  )
+}
+
 export type DashboardKpisResponse = {
   totals: {
     totalShipments: number
@@ -186,7 +233,11 @@ export type DashboardKpisResponse = {
     pendingAssignment: number
     inProgress: number
   }
-  statusDistribution: Array<{ status: string; value: number }>
+  statusBreakdown: Array<{
+    status: string
+    subStatus: string
+    count: number
+  }>
   shipmentsOverTime: Array<{ date: string; count: number }>
   courierWorkload: Array<{
     courierId: string
@@ -226,7 +277,6 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "60",
       paymentMethod: "COD",
       productType: "Electronics",
-      currentStatus: "DELIVERED",
       status: "DELIVERED",
       subStatus: "NONE",
       paymentStatus: "COLLECTED",
@@ -266,10 +316,9 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "55",
       paymentMethod: "Card",
       productType: "Fashion",
-      currentStatus: "POSTPONED",
       status: "RETURNED",
       subStatus: "DELAYED",
-      paymentStatus: "PENDING",
+      paymentStatus: "PENDING_COLLECTION",
       merchant: {
         id: "mrc-02",
         displayName: "Urban Wear",
@@ -306,10 +355,9 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "70",
       paymentMethod: "Wallet",
       productType: "Home",
-      currentStatus: "REJECTED",
       status: "RETURNED",
       subStatus: "REJECTED",
-      paymentStatus: "FAILED",
+      paymentStatus: "ON_HOLD",
       merchant: {
         id: "mrc-03",
         displayName: "Home Plus",
@@ -341,10 +389,9 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "45",
       paymentMethod: "COD",
       productType: "Accessories",
-      currentStatus: "OUT_FOR_DELIVERY",
       status: "OUT_FOR_DELIVERY",
       subStatus: "NONE",
-      paymentStatus: "PENDING",
+      paymentStatus: "PENDING_COLLECTION",
       merchant: {
         id: "mrc-01",
         displayName: "Delta Store",
@@ -385,11 +432,27 @@ function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisRe
 
   return {
     totals,
-    statusDistribution: [
-      { status: "DELIVERED", value: totals.delivered },
-      { status: "REJECTED", value: totals.rejected },
-      { status: "POSTPONED", value: totals.postponed },
-      { status: "IN_TRANSIT", value: totals.inProgress },
+    statusBreakdown: [
+      {
+        status: "DELIVERED",
+        subStatus: "NONE",
+        count: totals.delivered,
+      },
+      {
+        status: "RETURNED",
+        subStatus: "REJECTED",
+        count: totals.rejected,
+      },
+      {
+        status: "RETURNED",
+        subStatus: "DELAYED",
+        count: totals.postponed,
+      },
+      {
+        status: "OUT_FOR_DELIVERY",
+        subStatus: "ASSIGNED",
+        count: totals.inProgress,
+      },
     ],
     shipmentsOverTime: timeline,
     courierWorkload: [
@@ -422,14 +485,10 @@ export async function getDashboardKpis(
     trackingNumber: p.trackingNumber,
     customerName: p.customerName,
     phoneSearch: p.phoneSearch,
-    currentStatus: p.currentStatus,
+    coreSubIn: p.coreSubIn,
     status: p.status,
     subStatus: p.subStatus,
     paymentStatus: p.paymentStatus,
-    currentStatusIn:
-      p.currentStatusIn && p.currentStatusIn.length > 0
-        ? p.currentStatusIn.join(",")
-        : undefined,
     createdFrom: p.createdFrom,
     createdTo: p.createdTo,
     overdueOnly: p.overdueOnly ? "true" : undefined,
@@ -458,8 +517,12 @@ export async function getDashboardKpis(
 export type TimelineEventRow = {
   id: string
   shipmentId: string
-  fromStatus: string | null
-  toStatus: string
+  fromCoreStatus: string | null
+  toCoreStatus: string
+  fromSubStatus: string | null
+  toSubStatus: string
+  fromPaymentStatus: string | null
+  toPaymentStatus: string
   note: string | null
   actorUserId: string | null
   createdAt: string
@@ -468,7 +531,8 @@ export type TimelineEventRow = {
     trackingNumber: string | null
     customerName: string
     phonePrimary: string
-    currentStatus: string
+    status: string
+    subStatus: string
     assignedCourierId: string | null
     createdAt: string
   }
@@ -497,14 +561,10 @@ export async function listShipmentTimeline(
     trackingNumber: p.trackingNumber,
     customerName: p.customerName,
     phoneSearch: p.phoneSearch,
-    currentStatus: p.currentStatus,
+    coreSubIn: p.coreSubIn,
     status: p.status,
     subStatus: p.subStatus,
     paymentStatus: p.paymentStatus,
-    currentStatusIn:
-      p.currentStatusIn && p.currentStatusIn.length > 0
-        ? p.currentStatusIn.join(",")
-        : undefined,
     createdFrom: p.createdFrom,
     createdTo: p.createdTo,
     overdueOnly: p.overdueOnly ? "true" : undefined,
@@ -521,7 +581,10 @@ export async function confirmShipmentCs(
   await apiFetch<unknown>(`/api/shipments/${shipmentId}/status`, {
     method: "PATCH",
     token,
-    body: JSON.stringify({ toStatus: "CONFIRMED_BY_CS" }),
+    body: JSON.stringify({
+      toCoreStatus: "PENDING",
+      toSubStatus: "CONFIRMED",
+    }),
   })
 }
 
@@ -545,25 +608,6 @@ export async function patchShipmentFields(
       ...(p.notes !== undefined ? { notes: p.notes } : {}),
       ...(p.customerLat !== undefined ? { customerLat: p.customerLat } : {}),
       ...(p.customerLng !== undefined ? { customerLng: p.customerLng } : {}),
-    }),
-  })
-}
-
-export type SendWhatsappShipmentPromptParams = {
-  token: string
-  shipmentId: string
-  locale: "ar" | "en"
-}
-
-export async function sendWhatsappShipmentPrompt(
-  p: SendWhatsappShipmentPromptParams,
-): Promise<{ sent: boolean }> {
-  return apiFetch<{ sent: boolean }>("/api/whatsapp/send-shipment-prompt", {
-    method: "POST",
-    token: p.token,
-    body: JSON.stringify({
-      shipmentId: p.shipmentId,
-      locale: p.locale,
     }),
   })
 }

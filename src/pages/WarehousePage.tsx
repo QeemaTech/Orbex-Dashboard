@@ -2,17 +2,21 @@ import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Boxes, Search } from "react-lucid"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import {
   assignWarehouseShipment,
+  getWarehouseCouriers,
   getWarehouseStats,
   getWarehouseTracking,
   listWarehouseQueue,
+  listWarehouseSites,
   receiveWarehouseReturn,
+  scanPayloadFromInput,
   scanShipmentIn,
   scanShipmentOut,
 } from "@/api/warehouse-api"
+import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
 import { Layout } from "@/components/layout/Layout"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
@@ -47,21 +51,40 @@ const warehouseStatusFilters = [
 
 type WarehouseStatusFilter = (typeof warehouseStatusFilters)[number]
 
-function toWarehouseApiStatus(value: WarehouseStatusFilter): string | undefined {
+function toWarehouseQueueQuery(value: WarehouseStatusFilter): {
+  status?: string
+  subStatus?: string
+  coreSubIn?: string
+} {
   switch (value) {
     case "":
-      return undefined
+      return {}
     case "PENDING_PICKUP":
-      return "CONFIRMED_BY_CS"
+      return { coreSubIn: "PENDING:NONE,PENDING:CONFIRMED" }
     case "RECEIVED_IN_WAREHOUSE":
-      return "IN_WAREHOUSE"
+      return { status: "IN_WAREHOUSE", subStatus: "NONE" }
     case "OUT_FOR_DELIVERY":
-      return "OUT_FOR_DELIVERY"
+      return { coreSubIn: "OUT_FOR_DELIVERY:NONE,OUT_FOR_DELIVERY:ASSIGNED" }
     case "REJECTED":
-      return "REJECTED"
+      return { status: "RETURNED", subStatus: "REJECTED" }
     case "DELAYED":
-      return "POSTPONED"
+      return { status: "RETURNED", subStatus: "DELAYED" }
   }
+}
+
+function warehouseRowTone(row: { status?: string; subStatus?: string }): string {
+  const s = row.status?.toUpperCase() ?? ""
+  const u = row.subStatus?.toUpperCase() ?? ""
+  if (s === "DELIVERED") {
+    return "bg-emerald-50/80 dark:bg-emerald-950/30"
+  }
+  if (s === "RETURNED" && u === "REJECTED") {
+    return "bg-rose-50/80 dark:bg-rose-950/30"
+  }
+  if (s === "RETURNED" && u === "DELAYED") {
+    return "bg-amber-50/70 dark:bg-amber-950/25"
+  }
+  return ""
 }
 
 function formatDateTime(dateIso: string, locale: string): string {
@@ -111,7 +134,7 @@ function ReturnsIcon({ className, "aria-hidden": ariaHidden }: { className?: str
 export function WarehousePage() {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
-  const { accessToken } = useAuth()
+  const { accessToken, user } = useAuth()
   const queryClient = useQueryClient()
   const token = accessToken ?? ""
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
@@ -119,12 +142,21 @@ export function WarehousePage() {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<WarehouseStatusFilter>("")
   const [returnsOnly, setReturnsOnly] = useState(false)
+  const [returnsCourierFilterId, setReturnsCourierFilterId] = useState("")
   const [page, setPage] = useState(1)
   const [trackingInput, setTrackingInput] = useState("")
   const [courierIdInput, setCourierIdInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
   const [selectedShipmentId, setSelectedShipmentId] = useState("")
+  const [assignLeg, setAssignLeg] = useState<"delivery" | "pickup">("delivery")
   const [trackingResult, setTrackingResult] = useState<string>("")
+  const [filterWarehouseId, setFilterWarehouseId] = useState("")
+
+  const canFilterByWarehouse =
+    user?.role === "WAREHOUSE_ADMIN" || user?.role === "ADMIN"
+  const isWarehouseNetworkAdmin = user?.role === "WAREHOUSE_ADMIN"
+
+  const warehouseListFilter = useMemo(() => toWarehouseQueueQuery(status), [status])
 
   const queueQueryKey = useMemo(
     () =>
@@ -133,15 +165,40 @@ export function WarehousePage() {
         token,
         page,
         search,
-        toWarehouseApiStatus(status),
+        warehouseListFilter.status ?? "",
+        warehouseListFilter.subStatus ?? "",
+        warehouseListFilter.coreSubIn ?? "",
         returnsOnly,
+        returnsOnly ? returnsCourierFilterId : "",
+        canFilterByWarehouse ? filterWarehouseId : "",
       ] as const,
-    [token, page, search, status, returnsOnly],
+    [
+      token,
+      page,
+      search,
+      warehouseListFilter,
+      returnsOnly,
+      returnsCourierFilterId,
+      canFilterByWarehouse,
+      filterWarehouseId,
+    ],
   )
 
+  const sitesQuery = useQuery({
+    queryKey: ["warehouse-sites", token],
+    queryFn: () => listWarehouseSites(token),
+    enabled: !!token && canFilterByWarehouse,
+  })
+
   const statsQuery = useQuery({
-    queryKey: ["warehouse-stats", token],
-    queryFn: () => getWarehouseStats(token),
+    queryKey: ["warehouse-stats", token, canFilterByWarehouse ? filterWarehouseId : ""],
+    queryFn: () =>
+      getWarehouseStats(
+        token,
+        canFilterByWarehouse && filterWarehouseId
+          ? filterWarehouseId
+          : undefined,
+      ),
     enabled: !!token,
     refetchInterval: 15000,
   })
@@ -154,11 +211,43 @@ export function WarehousePage() {
         page,
         pageSize: 20,
         search: search || undefined,
-        status: toWarehouseApiStatus(status),
+        status: warehouseListFilter.status,
+        subStatus: warehouseListFilter.subStatus,
+        coreSubIn: warehouseListFilter.coreSubIn,
         returnsOnly,
+        courierId:
+          returnsOnly && returnsCourierFilterId.trim()
+            ? returnsCourierFilterId.trim()
+            : undefined,
+        warehouseId:
+          canFilterByWarehouse && filterWarehouseId
+            ? filterWarehouseId
+            : undefined,
       }),
     enabled: !!token,
     refetchInterval: 10000,
+  })
+
+  const assignRegionKey = useMemo(() => {
+    if (!selectedShipmentId || !queueQuery.data?.shipments) return "none"
+    const sel = queueQuery.data.shipments.find((s) => s.id === selectedShipmentId)
+    return sel?.regionId ?? "none"
+  }, [selectedShipmentId, queueQuery.data?.shipments])
+
+  const couriersForAssignQuery = useQuery({
+    queryKey: ["warehouse-couriers", token, assignRegionKey],
+    queryFn: () =>
+      getWarehouseCouriers({
+        token,
+        regionId: assignRegionKey === "none" ? undefined : assignRegionKey,
+      }),
+    enabled: !!token,
+  })
+
+  const couriersForReturnsFilterQuery = useQuery({
+    queryKey: ["warehouse-couriers-returns", token],
+    queryFn: () => getWarehouseCouriers({ token }),
+    enabled: !!token && returnsOnly,
   })
 
   const refreshData = async () => {
@@ -169,11 +258,10 @@ export function WarehousePage() {
   }
 
   const scanInMutation = useMutation({
-    mutationFn: () =>
-      scanShipmentIn({
-        token,
-        trackingNumber: trackingInput.trim(),
-      }),
+    mutationFn: () => {
+      const payload = scanPayloadFromInput(trackingInput)
+      return scanShipmentIn({ token, ...payload })
+    },
     onSuccess: async () => {
       showToast(t("warehouse.feedback.scanInSuccess"), "success")
       await refreshData()
@@ -184,11 +272,10 @@ export function WarehousePage() {
   })
 
   const scanOutMutation = useMutation({
-    mutationFn: () =>
-      scanShipmentOut({
-        token,
-        trackingNumber: trackingInput.trim(),
-      }),
+    mutationFn: () => {
+      const payload = scanPayloadFromInput(trackingInput)
+      return scanShipmentOut({ token, ...payload })
+    },
     onSuccess: async () => {
       showToast(t("warehouse.feedback.scanOutSuccess"), "success")
       await refreshData()
@@ -199,11 +286,16 @@ export function WarehousePage() {
   })
 
   const assignMutation = useMutation({
-    mutationFn: (payload: { shipmentId: string; courierId: string }) =>
+    mutationFn: (payload: {
+      shipmentId: string
+      courierId: string
+      leg?: "pickup" | "delivery"
+    }) =>
       assignWarehouseShipment({
         token,
         shipmentId: payload.shipmentId,
         courierId: payload.courierId,
+        leg: payload.leg,
       }),
     onSuccess: async () => {
       showToast(t("warehouse.feedback.assignmentSuccess"), "success")
@@ -215,15 +307,17 @@ export function WarehousePage() {
   })
 
   const receiveReturnMutation = useMutation({
-    mutationFn: () =>
-      receiveWarehouseReturn({
+    mutationFn: () => {
+      const payload = scanPayloadFromInput(trackingInput)
+      return receiveWarehouseReturn({
         token,
-        trackingNumber: trackingInput.trim(),
+        ...payload,
         returnDiscountAmount:
           returnDiscountInput.trim() === ""
             ? undefined
             : Number(returnDiscountInput),
-      }),
+      })
+    },
     onSuccess: async () => {
       showToast(t("warehouse.feedback.returnSuccess"), "success")
       await refreshData()
@@ -237,16 +331,21 @@ export function WarehousePage() {
     mutationFn: () =>
       getWarehouseTracking({
         token,
-        trackingNumber: trackingInput.trim(),
+        trackingNumber: scanPayloadFromInput(trackingInput).trackingNumber ?? "",
       }),
     onSuccess: (data) => {
       const row = data as {
         customerName: string
-        currentStatus: string
+        status: string
+        subStatus: string
         updatedAt: string
       }
+      const whKey = getPerspectiveStatusKey("warehouse", {
+        status: row.status,
+        subStatus: row.subStatus,
+      })
       setTrackingResult(
-        `${row.customerName} · ${t(`cs.shipmentStatus.${row.currentStatus}`)} · ${formatDateTime(
+        `${row.customerName} · ${t(`cs.shipmentStatus.${whKey}`)} · ${formatDateTime(
           row.updatedAt,
           locale,
         )}`,
@@ -266,10 +365,14 @@ export function WarehousePage() {
   const statValues = [
     stats?.awaitingScanIn ?? 0,
     stats?.inWarehouse ?? 0,
+    stats?.inWarehouseCsPending ?? 0,
     stats?.readyForAssignment ?? 0,
     stats?.assigned ?? 0,
     stats?.returnsPending ?? 0,
     stats?.returnsReceivedToday ?? 0,
+    ...(isWarehouseNetworkAdmin && stats?.totalWarehouses !== undefined
+      ? [stats.totalWarehouses, stats.activeWarehouses ?? 0]
+      : []),
   ]
   const maxStatValue = Math.max(...statValues, 0)
 
@@ -284,11 +387,71 @@ export function WarehousePage() {
             <div className="space-y-1">
               <CardTitle className="text-lg">{t("warehouse.pageTitle")}</CardTitle>
               <CardDescription>{t("warehouse.subtitle")}</CardDescription>
+              {isWarehouseNetworkAdmin ? (
+                <p className="pt-1">
+                  <Link
+                    to="/warehouse/sites"
+                    className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                  >
+                    {t("warehouse.sites.openDirectory")}
+                  </Link>
+                </p>
+              ) : null}
             </div>
           </CardHeader>
         </Card>
 
-        <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-3">
+        {canFilterByWarehouse ? (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{t("warehouse.filter.title")}</CardTitle>
+              <CardDescription>{t("warehouse.filter.description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <label className="text-muted-foreground mb-2 block text-sm">
+                {t("warehouse.filter.warehouseLabel")}
+              </label>
+              <select
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 max-w-md rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
+                value={filterWarehouseId}
+                onChange={(e) => {
+                  setFilterWarehouseId(e.target.value)
+                  setPage(1)
+                }}
+              >
+                <option value="">{t("warehouse.filter.allWarehouses")}</option>
+                {(sitesQuery.data?.warehouses ?? []).map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({w.governorate}
+                    {w.code ? ` · ${w.code}` : ""})
+                  </option>
+                ))}
+              </select>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {isWarehouseNetworkAdmin &&
+          stats?.totalWarehouses !== undefined &&
+          !filterWarehouseId ? (
+            <>
+              <StatCard
+                title={t("warehouse.stats.totalWarehouses")}
+                value={stats.totalWarehouses}
+                percentage={toPercentFromMax(stats.totalWarehouses, maxStatValue)}
+                icon={WarehouseBoxIcon}
+                accent="primary"
+              />
+              <StatCard
+                title={t("warehouse.stats.activeWarehouses")}
+                value={stats.activeWarehouses ?? 0}
+                percentage={toPercentFromMax(stats.activeWarehouses ?? 0, maxStatValue)}
+                icon={AwaitingScanIcon}
+                accent="success"
+              />
+            </>
+          ) : null}
           <StatCard
             title={t("warehouse.stats.awaitingScanIn")}
             value={stats?.awaitingScanIn ?? 0}
@@ -302,6 +465,16 @@ export function WarehousePage() {
             percentage={toPercentFromMax(stats?.inWarehouse ?? 0, maxStatValue)}
             icon={WarehouseBoxIcon}
             accent="primary"
+          />
+          <StatCard
+            title={t("warehouse.stats.inWarehouseCsPending")}
+            value={stats?.inWarehouseCsPending ?? 0}
+            percentage={toPercentFromMax(
+              stats?.inWarehouseCsPending ?? 0,
+              maxStatValue,
+            )}
+            icon={AwaitingScanIcon}
+            accent="warning"
           />
           <StatCard
             title={t("warehouse.stats.readyForAssignment")}
@@ -379,7 +552,15 @@ export function WarehousePage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => trackingMutation.mutate()}
+                onClick={() => {
+                  const p = scanPayloadFromInput(trackingInput)
+                  if (p.shipmentId) {
+                    showToast(t("warehouse.operations.trackNeedsTracking"), "error")
+                    return
+                  }
+                  if (!p.trackingNumber) return
+                  trackingMutation.mutate()
+                }}
                 disabled={!trackingInput.trim() || trackingMutation.isPending}
               >
                 <Search className="size-5" aria-hidden />
@@ -430,12 +611,36 @@ export function WarehousePage() {
                   checked={returnsOnly}
                   onChange={(e) => {
                     setReturnsOnly(e.target.checked)
+                    if (!e.target.checked) setReturnsCourierFilterId("")
                     setPage(1)
                   }}
                 />
                 {t("warehouse.queue.returnsOnly")}
               </label>
             </div>
+
+            {returnsOnly ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-muted-foreground text-sm whitespace-nowrap">
+                  {t("warehouse.queue.filterReturnsByCourier")}
+                </label>
+                <select
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 min-w-[12rem] rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
+                  value={returnsCourierFilterId}
+                  onChange={(e) => {
+                    setReturnsCourierFilterId(e.target.value)
+                    setPage(1)
+                  }}
+                >
+                  <option value="">{t("warehouse.queue.allCouriers")}</option>
+                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.fullName ?? c.id.slice(0, 8)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
             {queueQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
@@ -464,24 +669,44 @@ export function WarehousePage() {
                   {(queueQuery.data?.shipments ?? []).map((row) => (
                     <TableRow
                       key={row.id}
-                      className="hover:bg-muted/50 cursor-pointer"
+                      className={`hover:bg-muted/50 cursor-pointer ${warehouseRowTone(row)}`}
                       onClick={() => nav(`/warehouse/shipments/${encodeURIComponent(row.id)}`)}
                     >
                       <TableCell>{row.trackingNumber ?? "—"}</TableCell>
                       <TableCell>{row.customerName}</TableCell>
                       <TableCell>{row.merchant?.displayName ?? "—"}</TableCell>
-                      <TableCell>
-                        {t(
-                          `cs.shipmentStatus.${getPerspectiveStatusKey("warehouse", row)}`,
-                          {
-                            defaultValue: getPerspectiveStatusKey("warehouse", row),
-                          },
-                        )}
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <ShipmentStatusBadge
+                          status={getPerspectiveStatusKey("warehouse", {
+                            ...row,
+                            outboundCsPending: row.outboundCsPending,
+                          })}
+                        />
                       </TableCell>
                       <TableCell>{row.courier?.fullName ?? "—"}</TableCell>
                       <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                          <select
+                            className="border-input bg-background h-9 max-w-[11rem] rounded-md border px-2 text-xs"
+                            value=""
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              const v = e.target.value
+                              if (!v) return
+                              setSelectedShipmentId(row.id)
+                              setCourierIdInput(v)
+                            }}
+                          >
+                            <option value="">{t("warehouse.queue.pickCourier")}</option>
+                            {(couriersForAssignQuery.data?.couriers ?? []).map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {(c.servesShipmentRegion ? "★ " : "") +
+                                  (c.fullName ?? c.id.slice(0, 8))}
+                              </option>
+                            ))}
+                          </select>
                           <Input
                             className="w-36"
                             placeholder={t("warehouse.queue.courierIdPlaceholder")}
@@ -492,6 +717,24 @@ export function WarehousePage() {
                               setCourierIdInput(e.target.value)
                             }}
                           />
+                          <select
+                            className="border-input bg-background h-9 max-w-[9rem] rounded-md border px-2 text-xs"
+                            value={selectedShipmentId === row.id ? assignLeg : "delivery"}
+                            title={t("warehouse.queue.assignLegHint")}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              setSelectedShipmentId(row.id)
+                              setAssignLeg(e.target.value as "delivery" | "pickup")
+                            }}
+                          >
+                            <option value="delivery">
+                              {t("warehouse.queue.assignLegDelivery")}
+                            </option>
+                            <option value="pickup">
+                              {t("warehouse.queue.assignLegPickup")}
+                            </option>
+                          </select>
                           <Button
                             type="button"
                             size="sm"
@@ -501,6 +744,7 @@ export function WarehousePage() {
                               assignMutation.mutate({
                                 shipmentId: row.id,
                                 courierId: courierIdInput.trim(),
+                                leg: assignLeg,
                               })
                             }}
                             disabled={

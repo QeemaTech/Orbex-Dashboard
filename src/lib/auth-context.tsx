@@ -16,6 +16,7 @@ export type UserRole =
   | "SALES"
   | "ACCOUNTS"
   | "WAREHOUSE"
+  | "WAREHOUSE_ADMIN"
   | "COURIER"
   | "MERCHANT"
 
@@ -24,6 +25,7 @@ export type AuthUser = {
   username: string
   fullName: string
   role: UserRole
+  warehouseId: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -52,7 +54,11 @@ function readStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(STORAGE_USER)
     if (!raw) return null
-    return JSON.parse(raw) as AuthUser
+    const u = JSON.parse(raw) as AuthUser
+    if (u && u.warehouseId === undefined) {
+      u.warehouseId = null
+    }
+    return u
   } catch {
     return null
   }
@@ -151,6 +157,6 @@ export function canAccessCustomerService(role: UserRole | undefined): boolean {
 
 export function getDefaultDashboardRoute(role: UserRole | undefined): string {
   if (role === "CUSTOMER_SERVICE") return "/cs/shipments"
-  if (role === "WAREHOUSE") return "/warehouse"
+  if (role === "WAREHOUSE" || role === "WAREHOUSE_ADMIN") return "/warehouse"
   return "/dashboard"
 }

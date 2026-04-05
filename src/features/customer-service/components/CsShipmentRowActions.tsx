@@ -53,7 +53,7 @@ export function CsShipmentRowActions({
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex justify-center items-center gap-6">
-        {row.currentStatus === "PENDING_ASSIGNMENT" ? (
+        {row.status === "PENDING" && row.subStatus === "NONE" ? (
           <Button
             type="button"
             size="sm"

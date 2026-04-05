@@ -20,6 +20,12 @@ import { cn } from "@/lib/utils"
 
 const NOTIF_QK = ["notifications", "inbox"] as const
 
+function payloadActionHint(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null
+  const h = (payload as { actionHint?: unknown }).actionHint
+  return typeof h === "string" && h.trim() ? h.trim() : null
+}
+
 export interface NotificationMenuProps {
   token: string | null
 }
@@ -97,26 +103,34 @@ export function NotificationMenu({ token }: NotificationMenuProps) {
             {t("notifications.empty")}
           </div>
         ) : null}
-        {q.data?.notifications.map((n) => (
-          <DropdownMenuItem
-            key={n.id}
-            className={cn(
-              "flex cursor-pointer flex-col items-start gap-0.5 whitespace-normal",
-              !n.readAt && "bg-accent/50",
-            )}
-            onClick={() => {
-              if (!n.readAt) markOne.mutate(n.id)
-            }}
-          >
-            <span className="font-medium">{n.title}</span>
-            {n.body ? (
-              <span className="text-muted-foreground text-xs">{n.body}</span>
-            ) : null}
-            <span className="text-muted-foreground text-[10px]">
-              {new Date(n.createdAt).toLocaleString()}
-            </span>
-          </DropdownMenuItem>
-        ))}
+        {q.data?.notifications.map((n) => {
+          const hint = payloadActionHint(n.payloadJson)
+          return (
+            <DropdownMenuItem
+              key={n.id}
+              className={cn(
+                "flex cursor-pointer flex-col items-start gap-0.5 whitespace-normal",
+                !n.readAt && "bg-accent/50",
+              )}
+              onClick={() => {
+                if (!n.readAt) markOne.mutate(n.id)
+              }}
+            >
+              <span className="font-medium">{n.title}</span>
+              {hint ? (
+                <span className="text-amber-900/90 text-xs font-medium">
+                  {hint}
+                </span>
+              ) : null}
+              {n.body ? (
+                <span className="text-muted-foreground text-xs">{n.body}</span>
+              ) : null}
+              <span className="text-muted-foreground text-[10px]">
+                {new Date(n.createdAt).toLocaleString()}
+              </span>
+            </DropdownMenuItem>
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   )

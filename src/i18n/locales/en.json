@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "shipments": "Shipments",
     "warehouse": "Warehouse",
+    "warehouseSites": "Warehouse sites",
     "couriers": "Couriers",
     "merchants": "Merchants",
     "collections": "Collections",
@@ -132,7 +133,8 @@
       "anyStatus": "Any status",
       "from": "Created from",
       "to": "Created to",
-      "today": "Today"
+      "today": "Today",
+      "outboundCsPending": "Outbound CS pending (in warehouse)"
     },
     "table": {
       "merchant": "Merchant",
@@ -152,6 +154,7 @@
     },
     "actions": {
       "confirm": "Confirm",
+      "confirmOutbound": "Confirm outbound",
       "whatsappApi": "WhatsApp API",
       "whatsappApiTitle": "Send via WhatsApp Business (Cloud API)",
       "whatsappWeb": "WhatsApp Web",
@@ -219,6 +222,7 @@
       "RETURNED": "Returned",
       "PENDING_PICKUP": "Pending pickup",
       "RECEIVED_IN_WAREHOUSE": "Received in warehouse",
+      "WH_CS_PENDING": "In warehouse — CS pending",
       "READY_FOR_DISPATCH": "Ready for dispatch",
       "RETURNED_TO_WAREHOUSE": "Returned to warehouse",
       "RETURN_TO_MERCHANT": "Return to merchant",
@@ -254,9 +258,32 @@
     "pageTitle": "Warehouse operations",
     "subtitle": "Run scanning, tracking, assignment, and return receiving workflows from one dashboard.",
     "loading": "Loading warehouse data…",
+    "filter": {
+      "title": "Shipments scope",
+      "description": "Warehouse administrators can narrow the queue and KPI cards to a single hub.",
+      "warehouseLabel": "Warehouse",
+      "allWarehouses": "All warehouses"
+    },
+    "sites": {
+      "pageTitle": "Warehouse sites",
+      "subtitle": "Directory of hubs used for first-mile intake and last-mile staging.",
+      "tableTitle": "Sites",
+      "tableDescription": "Active and inactive warehouses registered in Orbex.",
+      "colName": "Name",
+      "colGovernorate": "Governorate",
+      "colZone": "Zone",
+      "colCode": "Code",
+      "colStatus": "Status",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "openDirectory": "Open warehouse directory →"
+    },
     "stats": {
+      "totalWarehouses": "Warehouses (total)",
+      "activeWarehouses": "Warehouses (active)",
       "awaitingScanIn": "Awaiting scan in",
       "inWarehouse": "In warehouse",
+      "inWarehouseCsPending": "In WH — CS pending (packages)",
       "readyForAssignment": "Ready for assignment",
       "assigned": "Assigned to courier",
       "returnsPending": "Returns pending receive",
@@ -265,7 +292,8 @@
     "operations": {
       "title": "Scan and returns",
       "description": "Use a tracking number to process inbound/outbound scans, mark returns, or quickly track a shipment.",
-      "trackingPlaceholder": "Tracking number",
+      "trackingPlaceholder": "Tracking number or shipment ID",
+      "trackNeedsTracking": "Look up by tracking number, or open the shipment from the queue.",
       "discountPlaceholder": "Return discount amount (optional)",
       "scanIn": "Scan in",
       "scanOut": "Scan out",
@@ -278,8 +306,14 @@
       "searchPlaceholder": "Search by tracking, customer, or phone",
       "allStatuses": "All statuses",
       "returnsOnly": "Returns only",
+      "filterReturnsByCourier": "Courier (returns)",
+      "allCouriers": "All couriers",
+      "pickCourier": "Choose courier…",
       "courierIdPlaceholder": "Courier ID",
       "assign": "Assign",
+      "assignLegDelivery": "Last mile",
+      "assignLegPickup": "First mile",
+      "assignLegHint": "First mile = merchant to hub (before scan-in). Last mile = delivery from warehouse.",
       "pagination": "Total {{total}} · page {{page}}"
     },
     "table": {

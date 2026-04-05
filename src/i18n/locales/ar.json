@@ -3,6 +3,7 @@
     "dashboard": "لوحة التحكم",
     "shipments": "الشحنات",
     "warehouse": "المخزن",
+    "warehouseSites": "مواقع المخازن",
     "couriers": "المناديب",
     "merchants": "التجار",
     "collections": "التحصيل",
@@ -254,7 +255,29 @@
     "pageTitle": "عمليات المخزن",
     "subtitle": "نفّذ المسح، التتبع، التعيين، واستلام المرتجعات من لوحة واحدة.",
     "loading": "جاري تحميل بيانات المخزن…",
+    "filter": {
+      "title": "نطاق الشحنات",
+      "description": "يمكن لمشرف المخازن تصفية القائمة ومؤشرات الأداء حسب موقع واحد.",
+      "warehouseLabel": "المخزن",
+      "allWarehouses": "كل المخازن"
+    },
+    "sites": {
+      "pageTitle": "مواقع المخازن",
+      "subtitle": "دليل المراكز المستخدمة لاستلام الشحنات وتجهيز التسليم الأخير.",
+      "tableTitle": "المواقع",
+      "tableDescription": "المخازن المفعّلة وغير المفعّلة المسجّلة في Orbex.",
+      "colName": "الاسم",
+      "colGovernorate": "المحافظة",
+      "colZone": "المنطقة",
+      "colCode": "الرمز",
+      "colStatus": "الحالة",
+      "statusActive": "نشط",
+      "statusInactive": "غير نشط",
+      "openDirectory": "فتح دليل المخازن ←"
+    },
     "stats": {
+      "totalWarehouses": "المخازن (الإجمالي)",
+      "activeWarehouses": "المخازن (النشطة)",
       "awaitingScanIn": "بانتظار مسح الدخول",
       "inWarehouse": "داخل المخزن",
       "readyForAssignment": "جاهزة للتعيين",
@@ -265,7 +288,8 @@
     "operations": {
       "title": "المسح والمرتجعات",
       "description": "استخدم رقم التتبع لتنفيذ مسح الدخول/الخروج، تسجيل المرتجع، أو تتبع الشحنة سريعًا.",
-      "trackingPlaceholder": "رقم التتبع",
+      "trackingPlaceholder": "رقم التتبع أو معرّف الشحنة",
+      "trackNeedsTracking": "استخدم رقم التتبع للبحث، أو افتح الشحنة من القائمة.",
       "discountPlaceholder": "قيمة خصم المرتجع (اختياري)",
       "scanIn": "مسح دخول",
       "scanOut": "مسح خروج",
@@ -278,6 +302,9 @@
       "searchPlaceholder": "بحث برقم التتبع أو العميل أو الهاتف",
       "allStatuses": "كل الحالات",
       "returnsOnly": "المرتجعات فقط",
+      "filterReturnsByCourier": "المندوب (مرتجعات)",
+      "allCouriers": "كل المناديب",
+      "pickCourier": "اختر مندوبًا…",
       "courierIdPlaceholder": "معرّف المندوب",
       "assign": "تعيين",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}"

@@ -1,6 +1,7 @@
 import {
   Banknote,
   LayoutDashboard,
+  MapPin,
   Package,
   Truck,
   Warehouse,
@@ -36,6 +37,11 @@ const warehouseNavConfig = [
   { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: true },
 ] as const
 
+const warehouseAdminNavConfig = [
+  { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: true },
+  { to: "/warehouse/sites", labelKey: "nav.warehouseSites", icon: MapPin, end: true },
+] as const
+
 export function Sidebar() {
   const { t, i18n } = useTranslation()
   const { open, setOpen } = useSidebar()
@@ -46,7 +52,9 @@ export function Sidebar() {
       ? [...customerServiceNavConfig]
       : user?.role === "WAREHOUSE"
         ? [...warehouseNavConfig]
-        : [...adminNavConfig]
+        : user?.role === "WAREHOUSE_ADMIN"
+          ? [...warehouseAdminNavConfig]
+          : [...adminNavConfig]
 
   return (
     <aside

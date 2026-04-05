@@ -10,6 +10,7 @@ export type ShipmentStateForView = {
   subStatus?: string | null
   paymentStatus?: string | null
   currentStatus?: string | null
+  outboundCsPending?: boolean
 }
 
 type LegacyShipmentStatus =

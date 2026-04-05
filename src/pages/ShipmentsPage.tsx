@@ -42,8 +42,7 @@ export function ShipmentsPage() {
       regionName: searchParams.get("regionName") ?? "",
       phoneSearch: searchParams.get("phoneSearch") ?? "",
       trackingNumber: searchParams.get("trackingNumber") ?? "",
-      currentStatus: searchParams.get("currentStatus") ?? "",
-      currentStatusIn: searchParams.get("currentStatusIn") ?? "",
+      coreSubIn: searchParams.get("coreSubIn") ?? "",
       status: searchParams.get("status") ?? "",
       subStatus: searchParams.get("subStatus") ?? "",
       paymentStatus: searchParams.get("paymentStatus") ?? "",
@@ -70,8 +69,7 @@ export function ShipmentsPage() {
         filters.regionName,
         filters.phoneSearch,
         filters.trackingNumber,
-        filters.currentStatus,
-        filters.currentStatusIn,
+        filters.coreSubIn,
         filters.status,
         filters.subStatus,
         filters.paymentStatus,
@@ -89,8 +87,7 @@ export function ShipmentsPage() {
       filters.regionName,
       filters.phoneSearch,
       filters.trackingNumber,
-      filters.currentStatus,
-      filters.currentStatusIn,
+      filters.coreSubIn,
       filters.status,
       filters.subStatus,
       filters.paymentStatus,
@@ -113,16 +110,10 @@ export function ShipmentsPage() {
         regionName: filters.regionName || undefined,
         phoneSearch: filters.phoneSearch || undefined,
         trackingNumber: filters.trackingNumber || undefined,
-        currentStatus: filters.currentStatus || undefined,
         status: filters.status || undefined,
         subStatus: filters.subStatus || undefined,
         paymentStatus: filters.paymentStatus || undefined,
-        currentStatusIn: filters.currentStatusIn
-          ? filters.currentStatusIn
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : undefined,
+        coreSubIn: filters.coreSubIn.trim() || undefined,
         createdFrom: filters.createdFrom || undefined,
         createdTo: filters.createdTo || undefined,
         overdueOnly: filters.overdueOnly,
@@ -149,10 +140,8 @@ export function ShipmentsPage() {
       else p.delete("phoneSearch")
       if (next.trackingNumber) p.set("trackingNumber", next.trackingNumber)
       else p.delete("trackingNumber")
-      if (next.currentStatus) p.set("currentStatus", next.currentStatus)
-      else p.delete("currentStatus")
-      if (next.currentStatusIn) p.set("currentStatusIn", next.currentStatusIn)
-      else p.delete("currentStatusIn")
+      if (next.coreSubIn.trim()) p.set("coreSubIn", next.coreSubIn.trim())
+      else p.delete("coreSubIn")
       if (next.status) p.set("status", next.status)
       else p.delete("status")
       if (next.subStatus) p.set("subStatus", next.subStatus)

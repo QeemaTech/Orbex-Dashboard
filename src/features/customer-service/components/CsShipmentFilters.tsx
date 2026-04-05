@@ -7,6 +7,13 @@ import {
   startOfTodayIso,
 } from "@/features/customer-service/lib/date-range"
 
+function workflowPresetValue(status: string, subStatus: string): string {
+  const s = status.trim().toUpperCase()
+  const u = (subStatus.trim() || "NONE").toUpperCase()
+  if (!s) return ""
+  return `${s}:${u}`
+}
+
 export type CsFilterValues = {
   merchantName: string
   courierName: string
@@ -14,8 +21,8 @@ export type CsFilterValues = {
   regionName: string
   phoneSearch: string
   trackingNumber: string
-  currentStatus: string
-  currentStatusIn: string
+  /** Backend `coreSubIn` (comma-separated core or core:sub). */
+  coreSubIn: string
   status: string
   subStatus: string
   paymentStatus: string
@@ -92,28 +99,46 @@ export function CsShipmentFilters({
         <span className="text-muted-foreground">{t("cs.filters.status")}</span>
         <select
           className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-          value={values.currentStatus}
-          onChange={(e) =>
-            onChange({ ...values, currentStatus: e.target.value })
-          }
+          value={workflowPresetValue(values.status, values.subStatus)}
+          onChange={(e) => {
+            const v = e.target.value
+            if (!v) {
+              onChange({ ...values, status: "", subStatus: "" })
+              return
+            }
+            const [st, sub] = v.split(":")
+            onChange({
+              ...values,
+              status: st ?? "",
+              subStatus: sub ?? "NONE",
+            })
+          }}
         >
           <option value="">{t("cs.filters.anyStatus")}</option>
-          <option value="PENDING_ASSIGNMENT">
+          <option value="PENDING:NONE">
             {t("cs.shipmentStatus.PENDING_ASSIGNMENT")}
           </option>
-          <option value="POSTPONED">{t("cs.shipmentStatus.POSTPONED")}</option>
-          <option value="DELIVERED">{t("cs.shipmentStatus.DELIVERED")}</option>
-          <option value="REJECTED">{t("cs.shipmentStatus.REJECTED")}</option>
-          <option value="IN_WAREHOUSE">
-            {t("cs.shipmentStatus.IN_WAREHOUSE")}
-          </option>
-          <option value="OUT_FOR_DELIVERY">
-            {t("cs.shipmentStatus.OUT_FOR_DELIVERY")}
-          </option>
-          <option value="CONFIRMED_BY_CS">
+          <option value="PENDING:CONFIRMED">
             {t("cs.shipmentStatus.CONFIRMED_BY_CS")}
           </option>
-          <option value="ASSIGNED">{t("cs.shipmentStatus.ASSIGNED")}</option>
+          <option value="IN_WAREHOUSE:NONE">
+            {t("cs.shipmentStatus.IN_WAREHOUSE")}
+          </option>
+          <option value="OUT_FOR_DELIVERY:NONE">
+            {t("cs.shipmentStatus.OUT_FOR_DELIVERY")}
+          </option>
+          <option value="OUT_FOR_DELIVERY:ASSIGNED">
+            {t("cs.shipmentStatus.ASSIGNED")}
+          </option>
+          <option value="DELIVERED:NONE">
+            {t("cs.shipmentStatus.DELIVERED")}
+          </option>
+          <option value="RETURNED:REJECTED">
+            {t("cs.shipmentStatus.REJECTED")}
+          </option>
+          <option value="RETURNED:DELAYED">
+            {t("cs.shipmentStatus.POSTPONED")}
+          </option>
         </select>
       </label>
       <label className="grid gap-1 text-sm">
@@ -144,12 +169,12 @@ export function CsShipmentFilters({
         />
       </label>
       <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Status set (CSV)</span>
+        <span className="text-muted-foreground">coreSubIn (CSV)</span>
         <Input
-          value={values.currentStatusIn}
-          placeholder="ASSIGNED,POSTPONED"
+          value={values.coreSubIn}
+          placeholder="OUT_FOR_DELIVERY:ASSIGNED,RETURNED:DELAYED"
           onChange={(e) =>
-            onChange({ ...values, currentStatusIn: e.target.value })
+            onChange({ ...values, coreSubIn: e.target.value })
           }
           className="min-w-[210px]"
         />

@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
-import { MapPin, PackageCheck } from "react-lucid"
+import { MapPin, PackageCheck } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 
 import { getShipmentById, listShipments } from "@/api/shipments-api"
 import { Layout } from "@/components/layout/Layout"
@@ -94,9 +94,26 @@ export function ShipmentDetailsPage() {
   return (
     <Layout title={t("shipments.detailTitle")}>
       <div className="space-y-4">
-        <Button type="button" variant="outline" size="sm" onClick={() => nav(-1)}>
-          {t("shipments.back")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => nav(-1)}>
+            {t("shipments.back")}
+          </Button>
+          {matchedShipmentId ? (
+            <Button type="button" variant="secondary" size="sm" asChild>
+              <Link
+                to={
+                  isWarehouseRoute
+                    ? `/warehouse/shipments/${matchedShipmentId}/packages`
+                    : location.pathname.startsWith("/cs/")
+                      ? `/cs/shipments/${matchedShipmentId}/packages`
+                      : `/shipments/${matchedShipmentId}/packages`
+                }
+              >
+                {t("shipments.viewPackages", { defaultValue: "View packages" })}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
         <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -229,8 +246,11 @@ export function ShipmentDetailsPage() {
                       {(q.data.statusEvents ?? []).map((event) => (
                         <li key={event.id} className="rounded border p-2 text-sm">
                           <div className="font-medium">
-                            {event.fromStatus ?? t("shipments.detail.timelineStart")} {"->"}{" "}
-                            {event.toStatus}
+                            {event.fromCoreStatus != null
+                              ? `${event.fromCoreStatus}/${event.fromSubStatus ?? ""}`
+                              : t("shipments.detail.timelineStart")}{" "}
+                            {"->"}{" "}
+                            {event.toCoreStatus}/{event.toSubStatus}
                           </div>
                           {event.note ? (
                             <p className="text-muted-foreground">{event.note}</p>

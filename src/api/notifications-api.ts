@@ -21,12 +21,28 @@ export type NotificationListResponse = {
 
 export async function listNotifications(
   token: string,
-  params?: { unreadOnly?: boolean; page?: number; pageSize?: number },
+  params?: {
+    unreadOnly?: boolean
+    page?: number
+    pageSize?: number
+    /** Comma-separated backend notification `type` values (e.g. CS_PACKAGE_DELIVERED). */
+    types?: string
+    /** Filter to CS package-delivery notifications for this status. */
+    packageDeliveryStatus?: string
+    createdFrom?: string
+    createdTo?: string
+  },
 ): Promise<NotificationListResponse> {
   const u = new URLSearchParams()
   if (params?.unreadOnly) u.set("unreadOnly", "true")
   if (params?.page) u.set("page", String(params.page))
   if (params?.pageSize) u.set("pageSize", String(params.pageSize))
+  if (params?.types?.trim()) u.set("types", params.types.trim())
+  if (params?.packageDeliveryStatus?.trim()) {
+    u.set("packageDeliveryStatus", params.packageDeliveryStatus.trim())
+  }
+  if (params?.createdFrom) u.set("createdFrom", params.createdFrom)
+  if (params?.createdTo) u.set("createdTo", params.createdTo)
   const q = u.toString()
   return apiFetch<NotificationListResponse>(
     `/api/notifications${q ? `?${q}` : ""}`,
