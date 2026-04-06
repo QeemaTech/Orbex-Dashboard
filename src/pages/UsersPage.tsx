@@ -735,7 +735,16 @@ export function UsersPage() {
                         <TableCell>{row.warehouse?.name ?? "—"}</TableCell>
                         <TableCell>{row.adminWarehouse?.name ?? "—"}</TableCell>
                         <TableCell>
-                          {row.isActive ? t("users.active.yes") : t("users.active.no")}
+                          <Badge
+                            variant="outline"
+                            className={
+                              row.isActive
+                                ? "border-success/40 bg-success/12 font-medium text-success dark:border-success/45 dark:bg-success/18 dark:text-green-100"
+                                : "border-muted bg-muted/40 font-medium text-muted-foreground"
+                            }
+                          >
+                            {row.isActive ? t("users.active.yes") : t("users.active.no")}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {new Date(row.createdAt).toLocaleDateString()}

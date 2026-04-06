@@ -35,6 +35,7 @@ const adminNavConfig = [
 
 const customerServiceNavConfig = [
   { to: "/cs/orders", labelKey: "nav.orders", icon: Package, end: false },
+  { to: "/cs/shipments", labelKey: "nav.shipments", icon: Boxes, end: false },
   { to: "/cs/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
 ] as const
 

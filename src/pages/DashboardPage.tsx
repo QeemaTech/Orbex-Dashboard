@@ -18,6 +18,7 @@ import {
 } from "recharts"
 
 import { Layout } from "@/components/layout/Layout"
+import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -92,7 +93,7 @@ export function DashboardPage() {
 
   const lineData = useMemo(
     () =>
-      (kpiQuery.data?.shipmentsOverTime ?? []).map((row) => ({
+      (kpiQuery.data?.ordersOverTime ?? []).map((row) => ({
         date: row.date,
         count: row.count,
         label: new Date(row.date).toLocaleDateString(i18n.language, {
@@ -100,7 +101,7 @@ export function DashboardPage() {
           day: "numeric",
         }),
       })),
-    [kpiQuery.data?.shipmentsOverTime, i18n.language]
+    [kpiQuery.data?.ordersOverTime, i18n.language]
   )
 
   const pieData = useMemo(() => {
@@ -216,10 +217,10 @@ export function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2.5 text-lg">
                 <TrendingUp className="size-6 shrink-0 text-primary" aria-hidden />
-                {t("dashboard.chart.shipmentsLineTitle")}
+                {t("dashboard.chart.lineTitle")}
               </CardTitle>
               <CardDescription>
-                {t("dashboard.chart.shipmentsLineDescription")}
+                {t("dashboard.chart.lineDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-5">
@@ -262,7 +263,7 @@ export function DashboardPage() {
                     <Line
                       type="monotone"
                       dataKey="count"
-                      name={t("dashboard.chart.shipmentsLineSeriesName")}
+                      name={t("dashboard.chart.lineSeriesName")}
                       stroke="var(--primary)"
                       strokeWidth={2}
                       dot={{ fill: "var(--primary)", r: 3 }}
@@ -380,9 +381,10 @@ export function DashboardPage() {
                         {row.assignedWarehouse?.name ?? "—"}
                       </TableCell>
                       <TableCell>
-                        {row.transferStatus
-                          ? backendShipmentTransferLabel(t, row.transferStatus)
-                          : "—"}
+                        <BackendStatusBadge
+                          kind="transfer"
+                          value={row.transferStatus ?? ""}
+                        />
                       </TableCell>
                       <TableCell className="text-end tabular-nums">
                         {row.orderCount ?? "—"}

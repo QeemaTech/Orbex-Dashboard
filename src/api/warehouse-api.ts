@@ -199,27 +199,6 @@ export function getWarehouseCouriers(params: {
   )
 }
 
-export function assignWarehouseShipment(params: {
-  token: string
-  shipmentId: string
-  courierId: string
-  note?: string
-  orderId?: string
-  /** `pickup` assigns first-mile courier on the shipment (batch). */
-  leg?: "pickup" | "delivery"
-}): Promise<unknown> {
-  return apiFetch(`/api/warehouse/shipments/${params.shipmentId}/assignment`, {
-    method: "PATCH",
-    token: params.token,
-    body: JSON.stringify({
-      courierId: params.courierId,
-      note: params.note,
-      ...(params.orderId ? { orderId: params.orderId } : {}),
-      ...(params.leg ? { leg: params.leg } : {}),
-    }),
-  })
-}
-
 export function receiveWarehouseReturn(params: {
   token: string
   trackingNumber?: string

@@ -18,6 +18,7 @@ import {
   type WarehouseCourierRow,
 } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
+import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
@@ -602,7 +603,7 @@ export function WarehouseDetailPage() {
                   <option value="">{t("warehouse.queue.allCouriers")}</option>
                   {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
                     <option key={c.id} value={c.id}>
-                      {c.fullName ?? c.id.slice(0, 8)}
+                      {c.fullName?.trim() || t("warehouse.queue.unnamedCourier")}
                     </option>
                   ))}
                 </select>
@@ -658,21 +659,16 @@ export function WarehouseDetailPage() {
                         }
                       >
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="font-mono text-xs">
-                              {row.trackingNumber ?? "—"}
-                            </span>
-                            <span className="text-muted-foreground text-xs">
-                              {row.shipmentId.slice(0, 8)}…
-                            </span>
-                          </div>
+                          <span className="font-mono text-xs">
+                            {row.trackingNumber ?? "—"}
+                          </span>
                         </TableCell>
                         <TableCell>{hub?.name ?? "—"}</TableCell>
                         <TableCell>{row.merchant?.displayName ?? "—"}</TableCell>
                         <TableCell>{row.orderCount}</TableCell>
                         <TableCell>{fmtMoney(row.totalShipmentValue)}</TableCell>
                         <TableCell className="max-w-[12rem] text-xs whitespace-normal">
-                          {backendShipmentTransferLabel(t, row.transferStatus)}
+                          <BackendStatusBadge kind="transfer" value={row.transferStatus} />
                         </TableCell>
                         <TableCell className="text-sm">
                           {row.pickupCourier?.fullName ?? "—"}

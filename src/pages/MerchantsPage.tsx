@@ -30,9 +30,11 @@ import {
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
 
-function statusBadgeVariant(status: MerchantAccountStatus): "secondary" | "default" {
-  if (status === "ACTIVATED") return "default"
-  return "secondary"
+function merchantStatusBadgeClass(status: MerchantAccountStatus): string {
+  if (status === "ACTIVATED") {
+    return "border-success/40 bg-success/12 text-success dark:border-success/45 dark:bg-success/18 dark:text-green-100"
+  }
+  return "border-warning/45 bg-warning/14 text-warning dark:border-warning/50 dark:bg-warning/18 dark:text-orange-100"
 }
 
 export function MerchantsPage() {
@@ -162,7 +164,10 @@ export function MerchantsPage() {
                         <TableCell>{row.phone}</TableCell>
                         <TableCell>{row.businessName}</TableCell>
                         <TableCell>
-                          <Badge variant={statusBadgeVariant(row.accountStatus)}>
+                          <Badge
+                            variant="outline"
+                            className={`font-medium ${merchantStatusBadgeClass(row.accountStatus)}`}
+                          >
                             {t(`merchants.status.${row.accountStatus}`)}
                           </Badge>
                         </TableCell>

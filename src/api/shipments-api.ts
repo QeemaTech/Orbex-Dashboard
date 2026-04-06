@@ -54,6 +54,8 @@ export type CsShipmentRow = {
   shippingFee: string
   paymentMethod: string
   productType: string
+  /** Package / product description (nullable from API). */
+  description?: string | null
   status: string
   subStatus: string
   paymentStatus: string
@@ -214,6 +216,7 @@ export type ShipmentOrderRow = {
   visaCommissionRate: string | null
   notes: string | null
   productType: string
+  description?: string | null
   deliveryCourierId: string | null
   deliveryCourier?: {
     id: string
@@ -267,7 +270,7 @@ export type DashboardKpisResponse = {
     transferStatus: string
     count: number
   }>
-  shipmentsOverTime: Array<{ date: string; count: number }>
+  ordersOverTime: Array<{ date: string; count: number }>
   courierWorkload: Array<{
     courierId: string
     courierName: string | null
@@ -308,6 +311,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "60",
       paymentMethod: "COD",
       productType: "Electronics",
+      description: "Phone accessories kit",
       status: "DELIVERED",
       subStatus: "NONE",
       paymentStatus: "COLLECTED",
@@ -349,6 +353,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "55",
       paymentMethod: "Card",
       productType: "Fashion",
+      description: "Summer collection — two items",
       status: "RETURNED",
       subStatus: "DELAYED",
       paymentStatus: "PENDING_COLLECTION",
@@ -390,6 +395,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "70",
       paymentMethod: "Wallet",
       productType: "Home",
+      description: "Kitchenware set",
       status: "RETURNED",
       subStatus: "REJECTED",
       paymentStatus: "ON_HOLD",
@@ -426,6 +432,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
       shippingFee: "45",
       paymentMethod: "COD",
       productType: "Accessories",
+      description: "Watch strap and case",
       status: "OUT_FOR_DELIVERY",
       subStatus: "NONE",
       paymentStatus: "PENDING_COLLECTION",
@@ -499,7 +506,7 @@ function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisRe
       { transferStatus: "ON_THE_WAY_TO_WAREHOUSE", count: 90 },
       { transferStatus: "ASSIGNED", count: 154 },
     ],
-    shipmentsOverTime: timeline,
+    ordersOverTime: timeline,
     courierWorkload: [
       { courierId: "cr-01", courierName: "Omar Adel", assignedCount: 28 },
       { courierId: "cr-02", courierName: "Mona Tarek", assignedCount: 23 },

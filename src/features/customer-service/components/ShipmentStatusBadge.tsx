@@ -15,11 +15,11 @@ function statusColorClass(status: string): string {
     case "ASSIGNED":
       return "border-cyan-300 bg-cyan-100 text-cyan-800 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300"
     case "DELIVERED":
-      return "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+      return "border-success/40 bg-success/12 text-success dark:border-success/45 dark:bg-success/18 dark:text-green-100"
     case "REJECTED":
-      return "border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+      return "border-destructive/40 bg-destructive/12 text-destructive dark:border-destructive/45 dark:bg-destructive/18 dark:text-red-100"
     case "POSTPONED":
-      return "border-yellow-300 bg-yellow-100 text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/35 dark:text-yellow-200"
+      return "border-warning/45 bg-warning/14 text-warning dark:border-warning/50 dark:bg-warning/18 dark:text-orange-100"
     case "PENDING_CONFIRMATION":
     case "PENDING_PICKUP":
     case "CREATED":
@@ -41,7 +41,7 @@ function statusColorClass(status: string): string {
       return "border-cyan-300 bg-cyan-100 text-cyan-800 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300"
     case "DAMAGED_OR_MISSING":
     case "DAMAGED":
-      return "border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+      return "border-destructive/40 bg-destructive/12 text-destructive dark:border-destructive/45 dark:bg-destructive/18 dark:text-red-100"
     case "OVERDUE":
       return "border-yellow-300 bg-yellow-100 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
     case "PENDING_COLLECTION":
@@ -51,7 +51,7 @@ function statusColorClass(status: string): string {
     case "COLLECTED":
     case "READY_FOR_SETTLEMENT":
     case "SETTLED":
-      return "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+      return "border-success/40 bg-success/12 text-success dark:border-success/45 dark:bg-success/18 dark:text-green-100"
     default:
       return "border-muted bg-muted/40 text-foreground"
   }
@@ -62,7 +62,7 @@ export function ShipmentStatusBadge({ status }: { status: string }) {
   const key = `cs.shipmentStatus.${status}`
   return (
     <Badge variant="outline" className={`font-medium ${statusColorClass(status)}`}>
-      {t(key, { defaultValue: status })}
+      {t(key, { defaultValue: t("backend.enumUnknown") })}
     </Badge>
   )
 }

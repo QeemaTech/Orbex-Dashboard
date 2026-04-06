@@ -25,6 +25,8 @@ export interface CsShipmentRowActionsProps {
   onOpenAddLocation: (row: CsShipmentRow) => void
   showWhatsApp?: boolean
   showAddLocation?: boolean
+  /** When false, hides WhatsApp, add location, and call-customer (batch detail: recipient is per order). */
+  showCustomerContact?: boolean
   /** Table rows use compact (confirm + menu); detail page uses inline buttons. */
   layout?: CsShipmentRowActionsLayout
 }
@@ -37,6 +39,7 @@ export function CsShipmentRowActions({
   onOpenAddLocation,
   showWhatsApp = true,
   showAddLocation = true,
+  showCustomerContact = true,
   layout = "compact",
 }: CsShipmentRowActionsProps) {
   const { t } = useTranslation()
@@ -55,6 +58,7 @@ export function CsShipmentRowActions({
   const telCustomer = `tel:${row.phonePrimary}`
   const hasPhone = !!row.phonePrimary?.trim()
   const hasLocationLink = !!row.locationLink?.trim()
+  const allowCustomerUi = showCustomerContact
   const showConfirm = row.status === "PENDING" && row.subStatus === "NONE"
   const hasCourierMenuItems =
     !!row.courier?.contactPhone || !!row.courier?.id
@@ -89,7 +93,7 @@ export function CsShipmentRowActions({
         onClick={stopRowClick}
       >
         {confirmButton}
-        {showWhatsApp ? (
+        {allowCustomerUi && showWhatsApp ? (
           <Button
             type="button"
             size="icon"
@@ -102,7 +106,7 @@ export function CsShipmentRowActions({
             <WhatsAppLogoIcon className="size-5 text-white" />
           </Button>
         ) : null}
-        {showAddLocation ? (
+        {allowCustomerUi && showAddLocation ? (
           <Button
             type="button"
             size="sm"
@@ -114,15 +118,17 @@ export function CsShipmentRowActions({
             {t("cs.actions.addLocation")}
           </Button>
         ) : null}
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-          asChild
-        >
-          <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
-        </Button>
+        {allowCustomerUi ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+            asChild
+          >
+            <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
+          </Button>
+        ) : null}
         {row.courier?.contactPhone ? (
           <Button
             type="button"
@@ -174,7 +180,7 @@ export function CsShipmentRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[10rem]">
-          {showWhatsApp ? (
+          {allowCustomerUi && showWhatsApp ? (
             <DropdownMenuItem
               disabled={!hasPhone}
               title={
@@ -188,16 +194,20 @@ export function CsShipmentRowActions({
               {t("cs.actions.whatsappMenu")}
             </DropdownMenuItem>
           ) : null}
-          {showAddLocation ? (
+          {allowCustomerUi && showAddLocation ? (
             <DropdownMenuItem onClick={handleLocationAction}>
               <LocateFixed className="size-4" aria-hidden />
               {t("cs.actions.addLocation")}
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem asChild>
-            <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
-          </DropdownMenuItem>
-          {hasCourierMenuItems ? <DropdownMenuSeparator /> : null}
+          {allowCustomerUi ? (
+            <DropdownMenuItem asChild>
+              <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
+            </DropdownMenuItem>
+          ) : null}
+          {allowCustomerUi && hasCourierMenuItems ? (
+            <DropdownMenuSeparator />
+          ) : null}
           {row.courier?.contactPhone ? (
             <DropdownMenuItem asChild>
               <a href={`tel:${row.courier.contactPhone}`}>

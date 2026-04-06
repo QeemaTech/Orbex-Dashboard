@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query"
-import { PackageCheck } from "react-lucid"
-import { useState } from "react"
+import { ArrowLeft, PackageCheck } from "react-lucid"
+import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
+import { Link, useLocation, useParams } from "react-router-dom"
 
-import { getShipmentById, getShipmentOrders, listShipments } from "@/api/shipments-api"
-import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
+import {
+  getShipmentById,
+  getShipmentOrders,
+  type CsShipmentRow,
+} from "@/api/shipments-api"
 import { Layout } from "@/components/layout/Layout"
+import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -21,29 +25,90 @@ import { CsShipmentRowActions } from "@/features/customer-service/components/CsS
 import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
-import { parseWarehouseLatLng } from "@/features/customer-service/lib/location"
 import { WarehouseShipmentOrdersTable } from "@/features/warehouse/components/WarehouseShipmentOrdersTable"
-import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
+import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labels"
+import type { UserRole } from "@/lib/auth-context"
 import { useAuth } from "@/lib/auth-context"
 
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+function isWarehouseTransfersPath(pathname: string): boolean {
+  return /^\/warehouses\/[^/]+\/transfers\//.test(pathname)
+}
+
+function resolvePerspective(role: UserRole | undefined): DashboardPerspective {
+  if (role === "ACCOUNTS") return "accounting"
+  if (role === "WAREHOUSE" || role === "WAREHOUSE_ADMIN") return "warehouse"
+  return "operations"
+}
+
+function sumMoney(values: Array<string | null | undefined>): number | null {
+  let total = 0
+  let any = false
+  for (const v of values) {
+    const n = Number.parseFloat(String(v ?? "").replace(/,/g, "").trim())
+    if (Number.isFinite(n)) {
+      total += n
+      any = true
+    }
+  }
+  return any ? total : null
+}
 
 export function ShipmentDetailsPage() {
-  const { t } = useTranslation()
-  const nav = useNavigate()
+  const { t, i18n } = useTranslation()
   const location = useLocation()
-  const { shipmentId: shipmentParam = "", warehouseId } = useParams<{
+  const { shipmentId: shipmentParam = "", warehouseId = "" } = useParams<{
     shipmentId?: string
     warehouseId?: string
   }>()
-  const { accessToken } = useAuth()
+  const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
-  const [mapCourierId, setMapCourierId] = useState<string | null>(null)
-  const [mapOpen, setMapOpen] = useState(false)
-  const [locationOpen, setLocationOpen] = useState(false)
-  const currencyLocale = t("shipments.detail.currencyLocale", { defaultValue: "en-EG" })
 
+  const shipmentId = (() => {
+    try {
+      return decodeURIComponent(shipmentParam).trim()
+    } catch {
+      return shipmentParam.trim()
+    }
+  })()
+
+  const isWarehouseRoute = isWarehouseTransfersPath(location.pathname)
+  const isCsRoute = location.pathname.startsWith("/cs/")
+  const statusPerspective = resolvePerspective(user?.role)
+
+  const [mapOpen, setMapOpen] = useState(false)
+  const [mapCourierId, setMapCourierId] = useState<string | null>(null)
+  const [locationOpen, setLocationOpen] = useState(false)
+  const [locationRow, setLocationRow] = useState<CsShipmentRow | null>(null)
+
+  const listQueryKey = useMemo(
+    () => ["shipment", "detail", shipmentId, token] as const,
+    [shipmentId, token],
+  )
+
+  const q = useQuery({
+    queryKey: listQueryKey,
+    queryFn: () =>
+      getShipmentById({ token, shipmentId, includeEvents: true }),
+    enabled: !!token && !!shipmentId,
+  })
+
+  const ordersSummaryQuery = useQuery({
+    queryKey: ["shipment", "orders", shipmentId, token],
+    queryFn: () => getShipmentOrders({ token, shipmentId }),
+    enabled: !!token && !!shipmentId,
+  })
+
+  const openMap = useCallback((courierId: string) => {
+    setMapCourierId(courierId)
+    setMapOpen(true)
+  }, [])
+
+  const openAddLocation = useCallback((row: CsShipmentRow) => {
+    setLocationRow(row)
+    setLocationOpen(true)
+  }, [])
+
+  const currencyLocale = t("shipments.detail.currencyLocale", { defaultValue: "en-EG" })
   const formatMoney = (raw: string | null | undefined): string => {
     const n = Number.parseFloat(String(raw ?? "").replace(/,/g, "").trim())
     if (!Number.isFinite(n)) return "—"
@@ -55,127 +120,53 @@ export function ShipmentDetailsPage() {
     }).format(n)
   }
 
-  const shipmentName = (() => {
-    try {
-      return decodeURIComponent(shipmentParam).trim()
-    } catch {
-      return shipmentParam.trim()
-    }
-  })()
-  const isWarehouseRoute = /^\/warehouses\/[^/]+\/transfers\//.test(
-    location.pathname,
-  )
-  const isIdParam = uuidRegex.test(shipmentName)
-  const statusPerspective: DashboardPerspective = isWarehouseRoute
-    ? "warehouse"
-    : "operations"
-  const shouldUseDirectId = isWarehouseRoute || isIdParam
+  const orders = ordersSummaryQuery.data?.orders ?? []
+  const ordersTotalValue = sumMoney(orders.map((p) => p.shipmentValue))
+  const ordersTotalShipping = sumMoney(orders.map((p) => p.shippingFee))
+  const orderCount =
+    orders.length > 0 ? orders.length : (q.data?.orderCount ?? 0)
+  const isMultiOrderBatch = orderCount > 1
 
-  const matchedShipmentQuery = useQuery({
-    queryKey: ["shipment-detail-match", shipmentName, token],
-    queryFn: async () => {
-      const result = await listShipments({
-        token,
-        page: 1,
-        pageSize: 1,
-        customerName: shipmentName,
-      })
-      return result.shipments[0] ?? null
-    },
-    enabled: !!token && !!shipmentName && !shouldUseDirectId,
-  })
-  const matchedShipmentId = shouldUseDirectId
-    ? shipmentName
-    : matchedShipmentQuery.data?.shipmentId ??
-      matchedShipmentQuery.data?.id ??
-      ""
-  const q = useQuery({
-    queryKey: ["shipment-detail", matchedShipmentId, token],
-    queryFn: () =>
-      getShipmentById({ token, shipmentId: matchedShipmentId, includeEvents: true }),
-    enabled: !!token && !!matchedShipmentId,
-  })
+  const backHref = isWarehouseRoute
+    ? `/warehouses/${encodeURIComponent(warehouseId)}`
+    : isCsRoute
+      ? "/cs/orders"
+      : "/shipments"
 
-  const ordersSummaryQuery = useQuery({
-    queryKey: ["shipment-orders-summary", matchedShipmentId, token],
-    queryFn: () => getShipmentOrders({ token, shipmentId: matchedShipmentId }),
-    enabled: !!token && !!matchedShipmentId,
-  })
-
-  const ordersTotalValue = (() => {
-    const list = ordersSummaryQuery.data?.orders ?? []
-    let sum = 0
-    for (const p of list) {
-      const n = Number.parseFloat(String(p.shipmentValue ?? "").replace(/,/g, "").trim())
-      if (Number.isFinite(n)) sum += n
-    }
-    return list.length === 0 ? null : sum
-  })()
-
-  const showNotFound =
-    (shouldUseDirectId && !q.isLoading && !q.error && !q.data) ||
-    (!shouldUseDirectId &&
-      !matchedShipmentQuery.isLoading &&
-      !matchedShipmentQuery.error &&
-      !matchedShipmentQuery.data)
+  const tableMode = isWarehouseRoute ? "warehouse" : "compact"
 
   return (
-    <Layout
-      title={
-        isWarehouseRoute
-          ? t("warehouse.transferDetailTitle")
-          : t("shipments.detailTitle")
-      }
-    >
+    <Layout title={t("shipments.detailTitle")}>
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => nav(-1)}>
-            {t("shipments.back")}
+          <Button type="button" variant="outline" size="sm" asChild>
+            <Link to={backHref}>
+              <ArrowLeft className="mr-2 size-4" aria-hidden />
+              {t("shipments.back")}
+            </Link>
           </Button>
-          {isWarehouseRoute && warehouseId ? (
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link to={`/warehouses/${encodeURIComponent(warehouseId)}`}>
-                {t("warehouse.detail.backToWarehouseHub")}
-              </Link>
-            </Button>
-          ) : null}
-          {matchedShipmentId ? (
-            <Button type="button" variant="secondary" size="sm" asChild>
-              <a href="#customer-orders">{t("warehouse.transferDetail.jumpToOrders")}</a>
-            </Button>
-          ) : null}
         </div>
-        <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PackageCheck className="text-primary size-5" aria-hidden />
-              {isWarehouseRoute ? t("warehouse.transferDetailTitle") : t("shipments.detailTitle")}
-            </CardTitle>
-            <CardDescription>
-              {isWarehouseRoute
-                ? t("warehouse.transferDetailSubtitle")
-                : q.data?.customerName || shipmentName || "—"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {matchedShipmentQuery.isLoading || q.isLoading ? (
-              <p>{t("shipments.loading")}</p>
-            ) : null}
-            {matchedShipmentQuery.error ? (
-              <p className="text-destructive">
-                {(matchedShipmentQuery.error as Error).message}
-              </p>
-            ) : null}
-            {showNotFound ? (
-              <p className="text-destructive">
-                {t("shipments.detail.notFound", { defaultValue: "Shipment not found." })}
-              </p>
-            ) : null}
-            {q.error ? (
-              <p className="text-destructive">{(q.error as Error).message}</p>
-            ) : null}
-            {q.data ? (
-              <>
+
+        {q.isLoading ? (
+          <p className="text-muted-foreground text-sm">{t("shipments.loading")}</p>
+        ) : null}
+        {q.error ? (
+          <p className="text-destructive text-sm">{(q.error as Error).message}</p>
+        ) : null}
+
+        {q.data ? (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex flex-wrap items-center gap-2">
+                  <PackageCheck className="text-primary size-5 shrink-0" aria-hidden />
+                  {t("shipments.detailTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("shipments.detail.batchSubtitle")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 {isWarehouseRoute ? (
                   <>
                     <div className="grid gap-2 md:grid-cols-2">
@@ -191,17 +182,18 @@ export function ShipmentDetailsPage() {
                         <strong>{t("warehouse.table.trackingNumber")}:</strong>{" "}
                         {q.data.trackingNumber || "—"}
                       </p>
-                      <p>
+                      <p className="flex flex-wrap items-center gap-2">
                         <strong>{t("warehouse.table.batchTransfer")}:</strong>{" "}
-                        {q.data.transferStatus
-                          ? backendShipmentTransferLabel(t, q.data.transferStatus)
-                          : "—"}
+                        <BackendStatusBadge
+                          kind="transfer"
+                          value={q.data.transferStatus ?? ""}
+                        />
                       </p>
                       <p>
                         <strong>{t("warehouse.table.orderCount")}:</strong>{" "}
                         {ordersSummaryQuery.isLoading
                           ? "…"
-                          : String(ordersSummaryQuery.data?.orders.length ?? 0)}
+                          : String(orders.length || (q.data.orderCount ?? 0))}
                       </p>
                       <p>
                         <strong>{t("warehouse.table.totalValue")}:</strong>{" "}
@@ -213,7 +205,7 @@ export function ShipmentDetailsPage() {
                     <p className="text-muted-foreground text-sm">
                       {t("warehouse.transferOrdersHint", {
                         defaultValue:
-                          "Recipient and courier assignment are managed per order — open the orders list.",
+                          "Recipient details and delivery status are shown per customer order — open the table below.",
                       })}
                     </p>
                   </>
@@ -229,159 +221,141 @@ export function ShipmentDetailsPage() {
                         {q.data.merchant?.businessName || "—"}
                       </p>
                       <p>
-                        <strong>{t("cs.table.customer")}:</strong> {q.data.customerName}
-                      </p>
-                      <p>
-                        <strong>{t("cs.table.phone")}:</strong> {q.data.phonePrimary}
-                      </p>
-                      <p>
                         <strong>{t("shipments.detail.assignedWarehouse")}:</strong>{" "}
                         {q.data.assignedWarehouse?.name ?? "—"}
                       </p>
-                      <p>
-                        <strong>{t("cs.table.product")}:</strong> {q.data.productType || "—"}
+                      <p className="flex flex-wrap items-center gap-2">
+                        <strong>{t("warehouse.table.batchTransfer")}:</strong>{" "}
+                        <BackendStatusBadge
+                          kind="transfer"
+                          value={q.data.transferStatus ?? ""}
+                        />
                       </p>
                       <p>
-                        <strong>{t("cs.table.value")}:</strong> {formatMoney(q.data.shipmentValue)}
+                        <strong>{t("warehouse.table.orderCount")}:</strong>{" "}
+                        {ordersSummaryQuery.isLoading
+                          ? "…"
+                          : String(orders.length || (q.data.orderCount ?? 0))}
+                      </p>
+                      <p>
+                        <strong>{t("warehouse.table.totalValue")}:</strong>{" "}
+                        {ordersTotalValue == null
+                          ? "—"
+                          : formatMoney(String(ordersTotalValue))}
                       </p>
                       <p>
                         <strong>{t("shipments.detail.shippingFee")}:</strong>{" "}
-                        {formatMoney(q.data.shippingFee)}
+                        {ordersSummaryQuery.isLoading
+                          ? "…"
+                          : ordersTotalShipping == null
+                            ? "—"
+                            : formatMoney(String(ordersTotalShipping))}
                       </p>
-                      <p>
-                        <strong>{t("warehouse.table.trackingNumber")}:</strong>{" "}
-                        {q.data.trackingNumber || "—"}
-                      </p>
-                      <p>
-                        <strong>{t("cs.table.courier")}:</strong>{" "}
-                        {q.data.courier?.fullName || "—"}
-                      </p>
-                      <p>
-                        <strong>{t("shipments.detail.courierPhone")}:</strong>{" "}
-                        {q.data.courier?.contactPhone || "—"}
-                      </p>
+                      {isMultiOrderBatch ? null : (
+                        <>
+                          <p>
+                            <strong>{t("cs.table.courier")}:</strong>{" "}
+                            {q.data.courier?.fullName || "—"}
+                          </p>
+                          <p>
+                            <strong>{t("shipments.detail.courierPhone")}:</strong>{" "}
+                            {q.data.courier?.contactPhone || "—"}
+                          </p>
+                        </>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <strong>{t("cs.table.status")}:</strong>
-                      <ShipmentStatusBadge
-                        status={getPerspectiveStatusKey(statusPerspective, q.data)}
-                      />
-                    </div>
-                    <p><strong>{t("cs.table.address")}:</strong> {q.data.addressText}</p>
-                    {q.data.locationText ? (
-                      <p><strong>{t("cs.addLocation.locationTextLabel")}:</strong> {q.data.locationText}</p>
+                    {isMultiOrderBatch ? (
+                      <p className="text-muted-foreground text-sm">
+                        {t("shipments.detail.multiOrderCourierStatusHint", {
+                          defaultValue:
+                            "Courier and delivery status are per customer order. Use the table below for each recipient.",
+                        })}
+                      </p>
                     ) : null}
-                    {parseWarehouseLatLng(q.data.customerLat, q.data.customerLng) ? (
-                      <p className="flex flex-wrap items-center gap-2">
-                        <strong>{t("cs.table.customerLocation")}:</strong>
-                        <CoordinatesMapLink
-                          latitude={q.data.customerLat}
-                          longitude={q.data.customerLng}
+                    <p className="text-muted-foreground text-sm">
+                      {t("shipments.detail.batchOrdersHint")}
+                    </p>
+                    {isMultiOrderBatch ? null : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <strong>{t("cs.table.status")}:</strong>
+                        <ShipmentStatusBadge
+                          status={getPerspectiveStatusKey(statusPerspective, q.data)}
                         />
-                      </p>
-                    ) : null}
-                    {q.data.locationLink ? (
-                      <p>
-                        <strong>{t("cs.addLocation.locationLinkLabel")}:</strong>{" "}
-                        <a
-                          href={q.data.locationLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary underline"
-                        >
-                          {q.data.locationLink}
-                        </a>
-                      </p>
-                    ) : null}
-                    <div className="rounded-lg border bg-card p-3">
-                      <CsShipmentRowActions
-                        row={q.data}
-                        token={token}
-                        listQueryKey={["shipment-detail", matchedShipmentId, token]}
-                        onOpenMap={(courierId) => {
-                          setMapCourierId(courierId)
-                          setMapOpen(true)
-                        }}
-                        onOpenAddLocation={() => setLocationOpen(true)}
-                        showWhatsApp={!isWarehouseRoute}
-                        showAddLocation={!isWarehouseRoute}
-                        layout="inline"
-                      />
-                    </div>
+                      </div>
+                    )}
                   </>
                 )}
-                <div className="space-y-2 rounded-lg border bg-card p-3">
-                  <h3 className="font-semibold">{t("shipments.detail.timelineTitle")}</h3>
-                  {(q.data.statusEvents ?? []).length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                      {t("shipments.detail.timelineEmpty")}
-                    </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {(q.data.statusEvents ?? []).map((event) => (
-                        <li key={event.id} className="rounded border p-2 text-sm">
-                          <div className="font-medium">
-                            {event.fromCoreStatus != null
-                              ? `${event.fromCoreStatus}/${event.fromSubStatus ?? ""}`
-                              : t("shipments.detail.timelineStart")}{" "}
-                            {"->"}{" "}
-                            {event.toCoreStatus}/{event.toSubStatus}
-                          </div>
-                          {event.note ? (
-                            <p className="text-muted-foreground">{event.note}</p>
-                          ) : null}
-                          <p className="text-muted-foreground text-xs">
-                            {new Date(event.createdAt).toLocaleString()}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </>
-            ) : null}
-          </CardContent>
-        </Card>
 
-        {matchedShipmentId && token ? (
-          <Card id="customer-orders">
-            <CardHeader>
-              <CardTitle>
-                {isWarehouseRoute
-                  ? t("warehouse.transferDetail.ordersSectionTitle")
-                  : t("shipments.detail.customerOrdersTitle")}
-              </CardTitle>
-              <CardDescription>
-                {isWarehouseRoute
-                  ? t("warehouse.transferDetail.ordersSectionDescription")
-                  : t("shipments.detail.customerOrdersDescription")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <WarehouseShipmentOrdersTable
-                token={token}
-                shipmentId={matchedShipmentId}
-                mode={isWarehouseRoute ? "warehouse" : "compact"}
-              />
-            </CardContent>
-          </Card>
+                <div className="flex flex-wrap justify-center gap-3 border-border/60 border-t pt-4">
+                  <CsShipmentRowActions
+                    row={q.data}
+                    token={token}
+                    listQueryKey={[...listQueryKey]}
+                    onOpenMap={openMap}
+                    onOpenAddLocation={openAddLocation}
+                    showCustomerContact={!isMultiOrderBatch}
+                    layout="inline"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card id="customer-orders">
+              <CardHeader>
+                <CardTitle>{t("shipments.detail.customerOrdersTitle")}</CardTitle>
+                <CardDescription>
+                  {t("shipments.detail.customerOrdersDescription")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WarehouseShipmentOrdersTable
+                  token={token}
+                  shipmentId={shipmentId}
+                  mode={tableMode}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("shipments.detail.timelineTitle")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(q.data.statusEvents ?? []).length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    {t("shipments.detail.timelineEmpty")}
+                  </p>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {(q.data.statusEvents ?? []).map((event) => (
+                      <li key={event.id} className="border-border/60 border-b pb-2 last:border-0">
+                        {formatShipmentStatusEventLine(t, event)}
+                        <span className="text-muted-foreground ml-2">
+                          {new Date(event.createdAt).toLocaleString(i18n.language)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </>
         ) : null}
       </div>
+
       <CsCourierMapDialog
         open={mapOpen}
         onOpenChange={setMapOpen}
         courierId={mapCourierId}
         token={token}
       />
-      {!isWarehouseRoute ? (
-        <CsAddLocationDialog
-          open={locationOpen}
-          onOpenChange={setLocationOpen}
-          row={q.data ?? null}
-          token={token}
-          listQueryKey={["shipment-detail", matchedShipmentId, token]}
-        />
-      ) : null}
+      <CsAddLocationDialog
+        open={locationOpen}
+        onOpenChange={setLocationOpen}
+        row={locationRow}
+        token={token}
+        listQueryKey={[...listQueryKey]}
+      />
     </Layout>
   )
 }
