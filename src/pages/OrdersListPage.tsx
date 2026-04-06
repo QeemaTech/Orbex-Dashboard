@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
-import { Sparkles } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { Sparkles } from "react-lucid"
+import { useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
-import { listShipments } from "@/api/shipments-api"
-import type { CsShipmentRow } from "@/api/shipments-api"
+import { listOrders } from "@/api/orders-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,26 +14,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { CsAddLocationDialog } from "@/features/customer-service/components/CsAddLocationDialog"
-import { CsCourierMapDialog } from "@/features/customer-service/components/CsCourierMapDialog"
 import {
   CsShipmentFilters,
   type CsFilterValues,
 } from "@/features/customer-service/components/CsShipmentFilters"
-import { CsShipmentTable } from "@/features/customer-service/components/CsShipmentTable"
-import { ShipmentKpiStatRow } from "@/features/shipments/components/ShipmentKpiStatRow"
+import { AdminOrdersTable } from "@/features/shipments/components/AdminOrdersTable"
+import { OrderKpiStatRow } from "@/features/shipments/components/OrderKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-/** Operations list of customer orders (`/orders`); row click opens shipment (batch) detail. */
+/** Customer order lines (`GET /api/orders`); row opens the parent transfer at `/shipments/:id`. */
 export function OrdersListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
   const [searchParams, setSearchParams] = useSearchParams()
-  const [mapCourierId, setMapCourierId] = useState<string | null>(null)
-  const [mapOpen, setMapOpen] = useState(false)
-  const [locationRow, setLocationRow] = useState<CsShipmentRow | null>(null)
-  const [locationOpen, setLocationOpen] = useState(false)
 
   const filters: CsFilterValues = useMemo(
     () => ({
@@ -60,7 +53,7 @@ export function OrdersListPage() {
   const listQueryKey = useMemo(
     () =>
       [
-        "shipments-list",
+        "orders-lines-list",
         token,
         page,
         pageSize,
@@ -96,10 +89,10 @@ export function OrdersListPage() {
     ],
   )
 
-  const shipmentsQuery = useQuery({
+  const ordersQuery = useQuery({
     queryKey: listQueryKey,
     queryFn: () =>
-      listShipments({
+      listOrders({
         token,
         page,
         pageSize,
@@ -165,17 +158,8 @@ export function OrdersListPage() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
+    Math.ceil((ordersQuery.data?.total ?? 0) / pageSize),
   )
-
-  const openMap = useCallback((courierId: string) => {
-    setMapCourierId(courierId)
-    setMapOpen(true)
-  }, [])
-  const openAddLocation = useCallback((row: CsShipmentRow) => {
-    setLocationRow(row)
-    setLocationOpen(true)
-  }, [])
 
   return (
     <Layout title={t("ordersList.pageTitle")}>
@@ -192,7 +176,7 @@ export function OrdersListPage() {
           </CardHeader>
         </Card>
 
-        <ShipmentKpiStatRow
+        <OrderKpiStatRow
           token={token}
           filters={filters}
           queryKeyPrefix="orders-list-page"
@@ -208,34 +192,30 @@ export function OrdersListPage() {
           <CardContent className="space-y-4 pt-6">
             <CsShipmentFilters values={filters} onChange={setFilters} />
 
-            {shipmentsQuery.error ? (
+            {ordersQuery.error ? (
               <p className="text-destructive text-sm">
-                {(shipmentsQuery.error as Error).message}
+                {(ordersQuery.error as Error).message}
               </p>
             ) : null}
 
-            {shipmentsQuery.isLoading ? (
+            {ordersQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("ordersList.loading")}</p>
             ) : null}
 
-            {shipmentsQuery.data ? (
+            {ordersQuery.data && ordersQuery.data.orders.length > 0 ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
-                <CsShipmentTable
-                  rows={shipmentsQuery.data.shipments}
-                  token={token}
-                  listQueryKey={[...listQueryKey]}
-                  onOpenMap={openMap}
-                  onOpenAddLocation={openAddLocation}
-                  showActions
-                  perspective="operations"
-                />
+                <AdminOrdersTable rows={ordersQuery.data.orders} />
               </div>
+            ) : null}
+
+            {ordersQuery.data && ordersQuery.data.orders.length === 0 && !ordersQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">{t("ordersList.empty")}</p>
             ) : null}
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-border/60 border-t pt-4">
               <p className="text-muted-foreground text-sm">
                 {t("cs.pagination.summary", {
-                  total: shipmentsQuery.data?.total ?? 0,
+                  total: ordersQuery.data?.total ?? 0,
                   page,
                 })}
               </p>
@@ -263,19 +243,6 @@ export function OrdersListPage() {
           </CardContent>
         </Card>
       </div>
-      <CsCourierMapDialog
-        open={mapOpen}
-        onOpenChange={setMapOpen}
-        courierId={mapCourierId}
-        token={token}
-      />
-      <CsAddLocationDialog
-        open={locationOpen}
-        onOpenChange={setLocationOpen}
-        row={locationRow}
-        token={token}
-        listQueryKey={[...listQueryKey]}
-      />
     </Layout>
   )
 }

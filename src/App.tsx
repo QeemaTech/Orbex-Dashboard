@@ -4,6 +4,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useParams,
 } from "react-router-dom"
 
 import {
@@ -21,6 +22,7 @@ import { UsersPage } from "@/pages/UsersPage"
 import { ShipmentDetailsPage } from "@/pages/ShipmentDetailsPage"
 import { OrdersPage } from "@/pages/OrdersPage"
 import { OrdersListPage } from "@/pages/OrdersListPage"
+import { ShipmentsListPage } from "@/pages/ShipmentsListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
@@ -60,6 +62,23 @@ function RootRedirect() {
   return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
 }
 
+function RedirectToShipmentDetail() {
+  const { shipmentId = "" } = useParams()
+  return (
+    <Navigate to={`/shipments/${encodeURIComponent(shipmentId)}`} replace />
+  )
+}
+
+function RedirectWarehouseTransferOrdersToDetail() {
+  const { warehouseId = "", shipmentId = "" } = useParams()
+  return (
+    <Navigate
+      to={`/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(shipmentId)}#customer-orders`}
+      replace
+    />
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -94,13 +113,19 @@ export default function App() {
           path="/orders/:shipmentId"
           element={
             <Protected>
-              <OrdersPage />
+              <RedirectToShipmentDetail />
             </Protected>
           }
         />
         <Route
           path="/shipments"
-          element={<Navigate to="/orders" replace />}
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN"]}>
+                <ShipmentsListPage />
+              </ProtectedRole>
+            </Protected>
+          }
         />
         <Route
           path="/shipments/:shipmentId"
@@ -183,7 +208,7 @@ export default function App() {
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <OrdersPage />
+                <RedirectWarehouseTransferOrdersToDetail />
               </ProtectedRole>
             </Protected>
           }

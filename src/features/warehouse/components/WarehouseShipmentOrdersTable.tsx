@@ -34,7 +34,7 @@ type Props = {
 }
 
 /**
- * Customer orders (packages) under a transfer (shipment batch).
+ * Customer orders under a merchant transfer (shipment). Each row has its own `trackingNumber`.
  * Warehouse mode: assignment and line-level ops are scoped to the parent transfer via `shipmentId`.
  */
 export function WarehouseShipmentOrdersTable({

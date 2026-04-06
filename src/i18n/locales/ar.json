@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "لوحة التحكم",
+    "shipments": "الشحنات",
     "orders": "طلبات العملاء",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
@@ -28,10 +29,35 @@
   },
   "ordersList": {
     "pageTitle": "طلبات العملاء",
-    "description": "طلبات العملاء الظاهرة لحسابك. استخدم المرشحات لتضييق القائمة.",
-    "tableCardTitle": "كل الطلبات",
+    "description": "أسطر طلبات العملاء (الطرود) من الخادم. افتح الصف للانتقال إلى الشحنة (الدفعة) وعرض كل الطلبات فيها.",
+    "tableCardTitle": "كل طلبات العملاء",
     "tableCardDescription": "النتائج تخضع لصلاحيات دورك من الخادم.",
-    "loading": "جاري تحميل الطلبات…"
+    "loading": "جاري تحميل الطلبات…",
+    "empty": "لا توجد طلبات تطابق المرشحات الحالية.",
+    "kpiTotalOrders": "إجمالي طلبات العملاء"
+  },
+  "shipmentsList": {
+    "pageTitle": "الشحنات",
+    "description": "دفعات النقل (شحنات) — صف واحد لكل دفعة تاجر. صفِّ حسب المخزن لعرض نشاط المحور.",
+    "tableCardTitle": "كل الشحنات",
+    "tableCardDescription": "بيانات على مستوى الشحنة فقط؛ افتح الصف لطلبات العملاء وتفاصيل الأسطر.",
+    "loading": "جاري تحميل الشحنات…",
+    "filterWarehouse": "المخزن",
+    "allWarehouses": "كل المخازن",
+    "kpiTotalShipments": "دفعات الشحن",
+    "colMerchant": "التاجر",
+    "colWarehouse": "المخزن",
+    "colOrderCount": "الطلبات",
+    "colTotalValue": "القيمة الإجمالية",
+    "colTransferStatus": "حالة النقل"
+  },
+  "adminOrders": {
+    "colCustomer": "العميل",
+    "colPhone": "الهاتف",
+    "colTracking": "التتبع",
+    "colDelivery": "التسليم",
+    "colValue": "القيمة",
+    "colShipment": "الشحنة"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول — Orbex",
@@ -94,8 +120,13 @@
       "lineTitle": "الطلبات عبر الوقت",
       "lineDescription": "آخر 14 يومًا",
       "lineSeriesName": "الطلبات",
+      "shipmentsLineTitle": "الشحنات عبر الوقت",
+      "shipmentsLineDescription": "دفعات شحن جديدة يوميًا (آخر 14 يومًا)",
+      "shipmentsLineSeriesName": "الشحنات",
       "pieTitle": "توزيع حالات الطلبات",
       "pieDescription": "طلبات العملاء حسب حالة التسليم",
+      "transferPieTitle": "حالة النقل",
+      "transferPieDescription": "دفعات الشحن حسب حالة المسار",
       "days": {
         "mon": "الإثنين",
         "tue": "الثلاثاء",
@@ -108,9 +139,10 @@
     },
     "quickActions": {
       "title": "إجراءات سريعة",
-      "description": "انتقل إلى قائمة الطلبات الكاملة ومهام خدمة العملاء",
+      "description": "انتقال إلى الشحنات (الدفعات) أو أسطر طلبات العملاء",
       "createOrder": "إنشاء طلب",
-      "viewAllOrders": "عرض كل الطلبات"
+      "viewShipments": "عرض الشحنات",
+      "viewAllOrders": "عرض طلبات العملاء"
     },
     "language": {
       "label": "اللغة",
@@ -119,7 +151,9 @@
     },
     "recent": {
       "title": "أحدث الطلبات",
-      "description": "أحدث طلبات العملاء في شبكتك"
+      "description": "أحدث طلبات العملاء في شبكتك",
+      "shipmentsTitle": "أحدث الشحنات",
+      "shipmentsDescription": "أحدث دفعات النقل عبر الشبكة"
     },
     "warehouses": {
       "title": "مراكز المخازن",
@@ -134,7 +168,12 @@
       "viewLocation": "عرض الموقع",
       "status": "الحالة",
       "paymentMethod": "طريقة الدفع",
-      "amount": "المبلغ"
+      "amount": "المبلغ",
+      "merchant": "التاجر",
+      "warehouse": "المخزن",
+      "transferStatus": "حالة النقل",
+      "orderCount": "الطلبات",
+      "batchValue": "قيمة الدفعة"
     }
   },
   "shipments": {
@@ -144,6 +183,9 @@
     "detail": {
       "courierPhone": "رقم موبايل المندوب",
       "shippingFee": "مصاريف الشحن",
+      "assignedWarehouse": "المخزن",
+      "customerOrdersTitle": "طلبات العملاء",
+      "customerOrdersDescription": "أسطر الطلبات (الطرود) ضمن هذه الشحنة. التحديثات والإسناد لكل طلب على حدة.",
       "timelineTitle": "سجل الحالة",
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
@@ -168,6 +210,8 @@
     "ordersQueueDescription": "رشّح بالهاتف أو الحالة أو وقت الإنشاء. إجراءات خدمة العملاء متاحة من هذه اللوحة فقط.",
     "loading": "جاري تحميل الطلبات…",
     "filters": {
+      "tracking": "تتبع الطلب",
+      "trackingPlaceholder": "رقم تتبع الطلب",
       "phone": "بحث بالهاتف",
       "phonePlaceholder": "هاتف العميل",
       "status": "الحالة",
@@ -407,7 +451,7 @@
       "pagination": "الإجمالي {{total}} · صفحة {{page}}"
     },
     "table": {
-      "trackingNumber": "رقم التتبع",
+      "trackingNumber": "تتبع الطلب",
       "warehouse": "المخزن",
       "customer": "العميل",
       "merchant": "التاجر",
@@ -423,11 +467,11 @@
       "actions": "الإجراءات"
     },
     "transferDetailTitle": "تفاصيل النقل (الدفعة)",
-    "transferDetailSubtitle": "نقل من التاجر — طلبات العملاء والتعيينات في الجدول أدناه.",
+    "transferDetailSubtitle": "نقل من التاجر — لكل طلب رقم تتبع خاص؛ التفاصيل في الجدول أدناه.",
     "transferOrdersHint": "يُدار المستلم وتعيين المندوب لكل طلب عميل في الجدول أدناه.",
     "transferDetail": {
       "ordersSectionTitle": "طلبات العملاء (هذه الشحنة)",
-      "ordersSectionDescription": "حالة التسليم والدفع وتعيين المندوب لكل طرد في الدفعة.",
+      "ordersSectionDescription": "التسليم والدفع والمندوب ورقم التتبع لكل طلب في هذا النقل.",
       "jumpToOrders": "الانتقال إلى طلبات العملاء"
     },
     "orders": {

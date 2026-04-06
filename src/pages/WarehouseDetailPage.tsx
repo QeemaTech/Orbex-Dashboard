@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import type { ElementType } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Boxes, Search, UserRound, Warehouse } from "react-lucid"
 import { useTranslation } from "react-i18next"
@@ -298,7 +299,7 @@ export function WarehouseDetailPage() {
     statKey: WarehouseTransferStatKey
     /** `ShipmentTransferStatus` value for i18n (`backend.shipmentTransferStatus.*`). */
     labelEnum: string
-    icon: typeof AwaitingScanIcon
+    icon: ElementType<{ className?: string; "aria-hidden"?: boolean }>
     accent: "warning" | "primary" | "success" | "destructive"
   }[] = [
     { statKey: "pending", labelEnum: "PENDING", icon: AwaitingScanIcon, accent: "warning" },

@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Boxes, Package, TrendingUp, Users, Warehouse } from "lucide-react"
+import { Boxes, Package, TrendingUp, Users, Warehouse } from "react-lucid"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate } from "react-router-dom"
 import {
@@ -18,9 +18,7 @@ import {
 } from "recharts"
 
 import { Layout } from "@/components/layout/Layout"
-import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { StatCard } from "@/components/shared/StatCard"
-import { StatusBadge } from "@/components/shared/StatusBadge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -40,30 +38,23 @@ import {
 import { getDashboardKpis } from "@/api/shipments-api"
 import { listUsers } from "@/api/users-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
-import { parseCoordinatesFromLocationInput } from "@/features/customer-service/lib/location"
+import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
 import { useAuth } from "@/lib/auth-context"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
-import type { ShipmentStatus as DashboardShipmentStatus } from "@/types/dashboard"
-import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 
 function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
 }
 
-function formatEGP(amountCents: number, locale: string) {
+function formatEGPFromDecimalString(amountStr: string | undefined, locale: string) {
+  const n = Number.parseFloat(String(amountStr ?? "0").replace(/,/g, "").trim())
+  if (!Number.isFinite(n)) return "—"
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EGP",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amountCents / 100)
-}
-
-function toDashboardStatus(status: string): DashboardShipmentStatus {
-  if (status === "DELIVERED") return "delivered"
-  if (status === "REJECTED") return "rejected"
-  if (status === "DELAYED" || status === "POSTPONED") return "postponed"
-  return "in_transit"
+  }).format(n)
 }
 
 export function DashboardPage() {
@@ -112,25 +103,24 @@ export function DashboardPage() {
     [kpiQuery.data?.shipmentsOverTime, i18n.language]
   )
 
-  const pieData = useMemo(
-    () =>
-      (kpiQuery.data?.statusBreakdown ?? []).map(
-        ({ status, subStatus, count }) => ({
-          status: `${status}/${subStatus}`,
-          value: count,
-          color:
-            status === "DELIVERED"
-              ? "var(--success)"
-              : status === "RETURNED" && subStatus === "REJECTED"
-                ? "var(--error)"
-                : status === "RETURNED" && subStatus === "DELAYED"
-                  ? "var(--warning)"
-                  : "var(--primary)",
-          label: `${status}/${subStatus}`,
-        }),
-      ),
-    [kpiQuery.data?.statusBreakdown],
-  )
+  const pieData = useMemo(() => {
+    const rows = kpiQuery.data?.transferStatusBreakdown ?? []
+    const palette = [
+      "var(--primary)",
+      "var(--success)",
+      "var(--warning)",
+      "var(--chart-2)",
+      "var(--chart-3)",
+      "var(--chart-4)",
+      "var(--muted-foreground)",
+    ]
+    return rows.map((row, i) => ({
+      status: row.transferStatus,
+      value: row.count,
+      color: palette[i % palette.length] ?? "var(--primary)",
+      label: backendShipmentTransferLabel(t, row.transferStatus),
+    }))
+  }, [kpiQuery.data?.transferStatusBreakdown, t])
 
   return (
     <Layout title={t("nav.dashboard")}>
@@ -150,6 +140,7 @@ export function DashboardPage() {
               value={totals?.totalOrders ?? 0}
               icon={Boxes}
               accent="warning"
+              to="/orders"
               hideTrend
             />
             <StatCard
@@ -157,7 +148,7 @@ export function DashboardPage() {
               value={totals?.totalShipments ?? 0}
               icon={Package}
               accent="success"
-              to="/orders"
+              to="/shipments"
               hideTrend
             />
             <StatCard
@@ -225,10 +216,10 @@ export function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2.5 text-lg">
                 <TrendingUp className="size-6 shrink-0 text-primary" aria-hidden />
-                {t("dashboard.chart.lineTitle")}
+                {t("dashboard.chart.shipmentsLineTitle")}
               </CardTitle>
               <CardDescription>
-                {t("dashboard.chart.lineDescription")}
+                {t("dashboard.chart.shipmentsLineDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-5">
@@ -271,7 +262,7 @@ export function DashboardPage() {
                     <Line
                       type="monotone"
                       dataKey="count"
-                      name={t("dashboard.chart.lineSeriesName")}
+                      name={t("dashboard.chart.shipmentsLineSeriesName")}
                       stroke="var(--primary)"
                       strokeWidth={2}
                       dot={{ fill: "var(--primary)", r: 3 }}
@@ -285,9 +276,9 @@ export function DashboardPage() {
 
           <Card className="dashboard-card dashboard-card-hover dashboard-animate-in lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg">{t("dashboard.chart.pieTitle")}</CardTitle>
+              <CardTitle className="text-lg">{t("dashboard.chart.transferPieTitle")}</CardTitle>
               <CardDescription>
-                {t("dashboard.chart.pieDescription")}
+                {t("dashboard.chart.transferPieDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-5">
@@ -305,7 +296,7 @@ export function DashboardPage() {
                       paddingAngle={2}
                     >
                       {pieData.map((entry) => (
-                        <Cell key={entry.status} fill={entry.color} />
+                        <Cell key={`${entry.status}-${entry.label}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -336,6 +327,15 @@ export function DashboardPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
+                variant="default"
+                className="w-full sm:w-auto"
+                onClick={() => navigate("/shipments")}
+              >
+                {t("dashboard.quickActions.viewShipments")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 className="w-full sm:w-auto"
                 onClick={() => navigate("/orders")}
               >
@@ -347,63 +347,54 @@ export function DashboardPage() {
 
         <Card className="dashboard-card dashboard-animate-in overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">{t("dashboard.recent.title")}</CardTitle>
-            <CardDescription>{t("dashboard.recent.description")}</CardDescription>
+            <CardTitle className="text-lg">{t("dashboard.recent.shipmentsTitle")}</CardTitle>
+            <CardDescription>{t("dashboard.recent.shipmentsDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="px-0 pt-0">
             <div className="overflow-x-auto px-2 pb-2 [-webkit-overflow-scrolling:touch] sm:px-4">
               <Table className="min-w-[36rem]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t("dashboard.table.customerName")}</TableHead>
-                    <TableHead>{t("dashboard.table.phone")}</TableHead>
-                    <TableHead>{t("dashboard.table.location")}</TableHead>
-                    <TableHead>{t("dashboard.table.status")}</TableHead>
-                    <TableHead>{t("dashboard.table.paymentMethod")}</TableHead>
+                    <TableHead>{t("dashboard.table.merchant")}</TableHead>
+                    <TableHead>{t("dashboard.table.warehouse")}</TableHead>
+                    <TableHead>{t("dashboard.table.transferStatus")}</TableHead>
+                    <TableHead className="text-end">{t("dashboard.table.orderCount")}</TableHead>
                     <TableHead className="text-end">
-                      {t("dashboard.table.amount")}
+                      {t("dashboard.table.batchValue")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(kpiQuery.data?.recentShipments ?? []).map((row) => {
-                    const lat = Number(row.customerLat)
-                    const lng = Number(row.customerLng)
-                    const fallback = parseCoordinatesFromLocationInput(row.locationLink)
-                    const coordinates =
-                      Number.isFinite(lat) && Number.isFinite(lng)
-                        ? { lat, lng }
-                        : fallback
-                    return (
-                      <TableRow key={row.id}>
-                        <TableCell className="font-medium">
-                          {row.customerName}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {row.phonePrimary}
-                        </TableCell>
-                        <TableCell>
-                          <CoordinatesMapLink coordinates={coordinates} />
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={toDashboardStatus(
-                              getPerspectiveStatusKey("operations", row),
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {row.paymentMethod}
-                        </TableCell>
-                        <TableCell className="text-end font-medium tabular-nums">
-                          {formatEGP(
-                            Math.round(Number(row.shipmentValue || "0") * 100),
-                            locale,
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                  {(kpiQuery.data?.recentShipments ?? []).map((row) => (
+                    <TableRow
+                      key={row.shipmentId}
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() =>
+                        void navigate(`/shipments/${encodeURIComponent(row.shipmentId)}`)
+                      }
+                    >
+                      <TableCell className="font-medium">
+                        {row.merchant?.displayName ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {row.assignedWarehouse?.name ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        {row.transferStatus
+                          ? backendShipmentTransferLabel(t, row.transferStatus)
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-end tabular-nums">
+                        {row.orderCount ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-end font-medium tabular-nums">
+                        {formatEGPFromDecimalString(
+                          row.totalShipmentValue ?? row.shipmentValue,
+                          locale,
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

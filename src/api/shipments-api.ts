@@ -35,6 +35,7 @@ export type CsShipmentRow = {
   regionId?: string | null
   customerId: string
   assignedCourierId: string | null
+  /** Order line tracking number (unique per order). */
   trackingNumber: string | null
   /** Batch pipeline enum from API (`Shipment.transferStatus`). */
   transferStatus?: string
@@ -58,6 +59,12 @@ export type CsShipmentRow = {
   paymentStatus: string
   merchant?: CsMerchant
   courier?: CsCourier | null
+  /** Hub assigned to the batch (`Shipment.assignedWarehouse`); present on list/KPI/detail when returned by API. */
+  assignedWarehouse?: { id: string; name: string } | null
+  /** Line count in batch; from shipment list/KPI aggregates. */
+  orderCount?: number
+  /** Sum of line values in the batch. */
+  totalShipmentValue?: string
   createdAt: string
   updatedAt: string
   statusEvents?: CsShipmentStatusEvent[]
@@ -104,6 +111,8 @@ export type ListShipmentsParams = {
   createdTo?: string
   overdueOnly?: boolean
   expand?: string
+  /** Filter by hub `Shipment.assignedWarehouseId`. */
+  assignedWarehouseId?: string
 }
 
 function qs(params: Record<string, string | number | undefined>): string {
@@ -139,6 +148,7 @@ export async function listShipments(
     createdFrom: p.createdFrom,
     createdTo: p.createdTo,
     overdueOnly: p.overdueOnly ? "true" : undefined,
+    assignedWarehouseId: p.assignedWarehouseId,
     expand: p.expand ?? "merchant,courier",
   })
   const data = await apiFetch<ShipmentListResponse>(`/api/shipments${query}`, {
@@ -251,6 +261,10 @@ export type DashboardKpisResponse = {
   statusBreakdown: Array<{
     status: string
     subStatus: string
+    count: number
+  }>
+  transferStatusBreakdown: Array<{
+    transferStatus: string
     count: number
   }>
   shipmentsOverTime: Array<{ date: string; count: number }>
@@ -478,6 +492,13 @@ function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisRe
         count: totals.inProgress,
       },
     ],
+    transferStatusBreakdown: [
+      { transferStatus: "PENDING", count: 120 },
+      { transferStatus: "IN_WAREHOUSE", count: 340 },
+      { transferStatus: "DELIVERED", count: 560 },
+      { transferStatus: "ON_THE_WAY_TO_WAREHOUSE", count: 90 },
+      { transferStatus: "ASSIGNED", count: 154 },
+    ],
     shipmentsOverTime: timeline,
     courierWorkload: [
       { courierId: "cr-01", courierName: "Omar Adel", assignedCount: 28 },
@@ -507,6 +528,7 @@ export async function getDashboardKpis(
     unassignedOnly: p.unassignedOnly ? "true" : undefined,
     regionId: p.regionId,
     regionName: p.regionName,
+    assignedWarehouseId: p.assignedWarehouseId,
     trackingNumber: p.trackingNumber,
     customerName: p.customerName,
     phoneSearch: p.phoneSearch,
@@ -532,6 +554,7 @@ export async function getDashboardKpis(
       ...data.totals,
       totalOrders: data.totals.totalOrders ?? 0,
     },
+    transferStatusBreakdown: data.transferStatusBreakdown ?? [],
     recentShipments: data.recentShipments.map((s) => {
       const location = extractShipmentLocation(s.notes)
       return {
@@ -587,6 +610,7 @@ export async function listShipmentTimeline(
     unassignedOnly: p.unassignedOnly ? "true" : undefined,
     regionId: p.regionId,
     regionName: p.regionName,
+    assignedWarehouseId: p.assignedWarehouseId,
     trackingNumber: p.trackingNumber,
     customerName: p.customerName,
     phoneSearch: p.phoneSearch,

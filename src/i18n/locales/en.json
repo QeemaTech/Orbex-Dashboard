@@ -1,7 +1,8 @@
 {
   "nav": {
     "dashboard": "Dashboard",
-    "orders": "Orders",
+    "shipments": "Shipments",
+    "orders": "Customer orders",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
     "couriers": "Couriers",
@@ -27,11 +28,36 @@
     }
   },
   "ordersList": {
-    "pageTitle": "Orders",
-    "description": "Customer orders visible for your account. Use filters to narrow the list.",
-    "tableCardTitle": "All orders",
+    "pageTitle": "Customer orders",
+    "description": "Customer order lines (packages) from the API. Open a row to view the parent shipment (transfer) and all orders in that batch.",
+    "tableCardTitle": "All customer orders",
     "tableCardDescription": "Results respect your role and permissions from the API.",
-    "loading": "Loading orders…"
+    "loading": "Loading orders…",
+    "empty": "No orders match the current filters.",
+    "kpiTotalOrders": "Customer orders (total)"
+  },
+  "shipmentsList": {
+    "pageTitle": "Shipments",
+    "description": "Transfer batches (shipments) — one row per merchant batch. Use the warehouse filter to see hub-specific activity.",
+    "tableCardTitle": "All shipments",
+    "tableCardDescription": "Shipment-level data only; open a row for customer orders and line details.",
+    "loading": "Loading shipments…",
+    "filterWarehouse": "Warehouse",
+    "allWarehouses": "All warehouses",
+    "kpiTotalShipments": "Shipment batches",
+    "colMerchant": "Merchant",
+    "colWarehouse": "Warehouse",
+    "colOrderCount": "Orders",
+    "colTotalValue": "Total value",
+    "colTransferStatus": "Transfer status"
+  },
+  "adminOrders": {
+    "colCustomer": "Customer",
+    "colPhone": "Phone",
+    "colTracking": "Tracking",
+    "colDelivery": "Delivery",
+    "colValue": "Value",
+    "colShipment": "Shipment"
   },
   "auth": {
     "loginTitle": "Sign in to Orbex",
@@ -94,8 +120,13 @@
       "lineTitle": "Orders over time",
       "lineDescription": "Last 14 days",
       "lineSeriesName": "Orders",
+      "shipmentsLineTitle": "Shipments over time",
+      "shipmentsLineDescription": "New shipment batches per day (last 14 days)",
+      "shipmentsLineSeriesName": "Shipments",
       "pieTitle": "Order status distribution",
       "pieDescription": "Customer orders grouped by delivery status",
+      "transferPieTitle": "Transfer status",
+      "transferPieDescription": "Shipment batches by pipeline status",
       "days": {
         "mon": "Mon",
         "tue": "Tue",
@@ -108,9 +139,10 @@
     },
     "quickActions": {
       "title": "Quick actions",
-      "description": "Jump to the full orders list and CS workflows",
+      "description": "Jump to shipments (transfers) or customer order lines",
       "createOrder": "Create order",
-      "viewAllOrders": "View all orders"
+      "viewShipments": "View shipments",
+      "viewAllOrders": "View customer orders"
     },
     "language": {
       "label": "Language",
@@ -119,7 +151,9 @@
     },
     "recent": {
       "title": "Recent orders",
-      "description": "Latest customer orders in your network"
+      "description": "Latest customer orders in your network",
+      "shipmentsTitle": "Recent shipments",
+      "shipmentsDescription": "Latest transfer batches across your network"
     },
     "warehouses": {
       "title": "Warehouse hubs",
@@ -134,7 +168,12 @@
       "viewLocation": "View location",
       "status": "Status",
       "paymentMethod": "Payment Method",
-      "amount": "Amount"
+      "amount": "Amount",
+      "merchant": "Merchant",
+      "warehouse": "Warehouse",
+      "transferStatus": "Transfer status",
+      "orderCount": "Orders",
+      "batchValue": "Batch value"
     }
   },
   "shipments": {
@@ -144,6 +183,9 @@
     "detail": {
       "courierPhone": "Courier phone",
       "shippingFee": "Shipping fee",
+      "assignedWarehouse": "Warehouse",
+      "customerOrdersTitle": "Customer orders",
+      "customerOrdersDescription": "Order lines (packages) under this shipment. Assignment and delivery updates are per order.",
       "timelineTitle": "Timeline",
       "timelineEmpty": "No timeline events yet.",
       "timelineStart": "START",
@@ -168,6 +210,8 @@
     "ordersQueueDescription": "Filter by phone, status, or creation time. Actions apply CS workflows only from this dashboard.",
     "loading": "Loading orders…",
     "filters": {
+      "tracking": "Order tracking",
+      "trackingPlaceholder": "Order tracking number",
       "phone": "Phone search",
       "phonePlaceholder": "Customer phone",
       "status": "Status",
@@ -410,7 +454,7 @@
       "pagination": "Total {{total}} · page {{page}}"
     },
     "table": {
-      "trackingNumber": "Tracking #",
+      "trackingNumber": "Order tracking",
       "warehouse": "Warehouse",
       "customer": "Customer",
       "merchant": "Merchant",
@@ -426,11 +470,11 @@
       "actions": "Actions"
     },
     "transferDetailTitle": "Transfer (batch) detail",
-    "transferDetailSubtitle": "Merchant transfer — customer orders and assignments are below.",
+    "transferDetailSubtitle": "Merchant transfer — each order has its own tracking number; details below.",
     "transferOrdersHint": "Recipient and courier assignment are managed per customer order in the table below.",
     "transferDetail": {
       "ordersSectionTitle": "Customer orders (this transfer)",
-      "ordersSectionDescription": "Line-level delivery, payment, and courier assignment for packages in this batch.",
+      "ordersSectionDescription": "Line-level delivery, payment, courier assignment, and tracking per order in this transfer.",
       "jumpToOrders": "Jump to customer orders"
     },
     "orders": {

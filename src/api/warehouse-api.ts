@@ -41,7 +41,10 @@ export type WarehouseSiteDetail = WarehouseSiteRow & {
   staffCount: number
 }
 
-/** One warehouse queue row = merchant transfer (batch), not a single customer order. */
+/**
+ * One warehouse queue row = one merchant transfer (shipment). `trackingNumber` is derived from
+ * order lines (comma-separated when multiple orders each have a tracking number).
+ */
 export type WarehouseShipmentRow = {
   id: string
   shipmentId: string

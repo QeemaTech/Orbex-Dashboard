@@ -1,4 +1,4 @@
-import type { ComponentType } from "react"
+import type { ElementType } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
@@ -56,7 +56,8 @@ export interface StatCardProps {
   title: string
   value: number | string
   percentage?: number
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>
+  /** Lucide / react-lucid icons are forward refs — `ElementType` keeps typings compatible. */
+  icon: ElementType<{ className?: string; "aria-hidden"?: boolean }>
   accent: StatAccent
   /** When set, the whole card navigates (e.g. dashboard shortcuts). */
   to?: string

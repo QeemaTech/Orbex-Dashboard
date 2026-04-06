@@ -103,10 +103,12 @@ export function CsShipmentFilters({
         />
       </label>
       <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Tracking</span>
+        <span className="text-muted-foreground">
+          {t("cs.filters.tracking")}
+        </span>
         <Input
           value={values.trackingNumber}
-          placeholder="tracking number"
+          placeholder={t("cs.filters.trackingPlaceholder")}
           onChange={(e) =>
             onChange({ ...values, trackingNumber: e.target.value })
           }

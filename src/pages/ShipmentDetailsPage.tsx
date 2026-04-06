@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { PackageCheck } from "lucide-react"
+import { PackageCheck } from "react-lucid"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
@@ -99,7 +99,7 @@ export function ShipmentDetailsPage() {
   const ordersSummaryQuery = useQuery({
     queryKey: ["shipment-orders-summary", matchedShipmentId, token],
     queryFn: () => getShipmentOrders({ token, shipmentId: matchedShipmentId }),
-    enabled: !!token && !!matchedShipmentId && isWarehouseRoute,
+    enabled: !!token && !!matchedShipmentId,
   })
 
   const ordersTotalValue = (() => {
@@ -139,24 +139,9 @@ export function ShipmentDetailsPage() {
               </Link>
             </Button>
           ) : null}
-          {matchedShipmentId && !isWarehouseRoute ? (
+          {matchedShipmentId ? (
             <Button type="button" variant="secondary" size="sm" asChild>
-              <Link
-                to={
-                  location.pathname.startsWith("/cs/")
-                    ? `/cs/orders/${matchedShipmentId}`
-                    : `/orders/${matchedShipmentId}`
-                }
-              >
-                {t("shipments.viewOrders", { defaultValue: "View orders" })}
-              </Link>
-            </Button>
-          ) : null}
-          {matchedShipmentId && isWarehouseRoute ? (
-            <Button type="button" variant="secondary" size="sm" asChild>
-              <a href="#warehouse-customer-orders">
-                {t("warehouse.transferDetail.jumpToOrders")}
-              </a>
+              <a href="#customer-orders">{t("warehouse.transferDetail.jumpToOrders")}</a>
             </Button>
           ) : null}
         </div>
@@ -248,6 +233,10 @@ export function ShipmentDetailsPage() {
                       </p>
                       <p>
                         <strong>{t("cs.table.phone")}:</strong> {q.data.phonePrimary}
+                      </p>
+                      <p>
+                        <strong>{t("shipments.detail.assignedWarehouse")}:</strong>{" "}
+                        {q.data.assignedWarehouse?.name ?? "—"}
                       </p>
                       <p>
                         <strong>{t("cs.table.product")}:</strong> {q.data.productType || "—"}
@@ -354,17 +343,25 @@ export function ShipmentDetailsPage() {
           </CardContent>
         </Card>
 
-        {isWarehouseRoute && matchedShipmentId && token ? (
-          <Card id="warehouse-customer-orders">
+        {matchedShipmentId && token ? (
+          <Card id="customer-orders">
             <CardHeader>
-              <CardTitle>{t("warehouse.transferDetail.ordersSectionTitle")}</CardTitle>
-              <CardDescription>{t("warehouse.transferDetail.ordersSectionDescription")}</CardDescription>
+              <CardTitle>
+                {isWarehouseRoute
+                  ? t("warehouse.transferDetail.ordersSectionTitle")
+                  : t("shipments.detail.customerOrdersTitle")}
+              </CardTitle>
+              <CardDescription>
+                {isWarehouseRoute
+                  ? t("warehouse.transferDetail.ordersSectionDescription")
+                  : t("shipments.detail.customerOrdersDescription")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <WarehouseShipmentOrdersTable
                 token={token}
                 shipmentId={matchedShipmentId}
-                mode="warehouse"
+                mode={isWarehouseRoute ? "warehouse" : "compact"}
               />
             </CardContent>
           </Card>
