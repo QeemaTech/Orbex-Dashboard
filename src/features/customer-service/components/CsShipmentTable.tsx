@@ -25,6 +25,11 @@ export interface CsShipmentTableProps {
   onOpenMap: (courierId: string) => void
   onOpenAddLocation: (row: CsShipmentRow) => void
   detailBasePath?: string
+  /**
+   * Row click opens **order** detail: `{orderDetailBase}/{row.id}`.
+   * Defaults from `detailBasePath` by swapping `/shipments` → `/orders` (e.g. `/cs/shipments` → `/cs/orders`).
+   */
+  orderDetailBasePath?: string
   /** When false, hides the actions column (e.g. general Shipments list). Default true. */
   showActions?: boolean
   perspective?: DashboardPerspective
@@ -37,11 +42,18 @@ export function CsShipmentTable({
   onOpenMap,
   onOpenAddLocation,
   detailBasePath = "/shipments",
+  orderDetailBasePath,
   showActions = true,
   perspective = "operations",
 }: CsShipmentTableProps) {
   const { t } = useTranslation()
   const nav = useNavigate()
+
+  const orderBase =
+    orderDetailBasePath?.replace(/\/$/, "") ??
+    (detailBasePath.endsWith("/shipments")
+      ? detailBasePath.replace(/\/shipments$/, "/orders")
+      : "/orders")
 
   const resolveCoordinates = (row: CsShipmentRow): { lat: number; lng: number } | null => {
     const hasLat = row.customerLat != null && String(row.customerLat).trim() !== ""
@@ -77,9 +89,7 @@ export function CsShipmentTable({
               key={row.id}
               className="hover:bg-muted/50 cursor-pointer"
               onClick={() =>
-                nav(
-                  `${detailBasePath}/${encodeURIComponent(row.shipmentId)}`,
-                )
+                nav(`${orderBase}/${encodeURIComponent(row.id)}`)
               }
             >
             <TableCell className="max-w-[120px] truncate">

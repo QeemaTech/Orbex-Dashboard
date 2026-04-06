@@ -87,136 +87,138 @@
     "loginError": "Could not sign in. Check your credentials."
   },
   "notifications": {
-    "title": "الإشعارات",
-    "loading": "جاري التحميل…",
-    "empty": "لا إشعارات",
-    "markAllRead": "تعليم الكل كمقروء"
+    "title": "Notifications",
+    "loading": "Loading…",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all read"
   },
   "a11y": {
-    "mainNav": "التنقل الرئيسي",
-    "openNav": "فتح قائمة التنقل",
-    "closeNav": "إغلاق قائمة التنقل",
-    "closeNavBackdrop": "إغلاق قائمة التنقل",
-    "notifications": "الإشعارات",
-    "userMenu": "قائمة المستخدم",
-    "search": "بحث"
+    "mainNav": "Main navigation",
+    "openNav": "Open navigation menu",
+    "closeNav": "Close navigation menu",
+    "closeNavBackdrop": "Close navigation menu",
+    "notifications": "Notifications",
+    "userMenu": "User menu",
+    "search": "Search"
   },
   "header": {
-    "searchPlaceholder": "بحث…",
-    "account": "الحساب",
-    "profile": "الملف الشخصي",
-    "settings": "الإعدادات",
-    "signOut": "تسجيل الخروج"
+    "searchPlaceholder": "Search…",
+    "account": "Account",
+    "profile": "Profile",
+    "settings": "Settings",
+    "signOut": "Sign out"
   },
   "placeholder": {
-    "comingSoon": "هذا القسم قيد الإعداد."
+    "comingSoon": "This section is coming soon."
   },
   "status": {
-    "delivered": "تم التسليم",
-    "rejected": "مرفوض",
-    "postponed": "مؤجل",
-    "in_transit": "قيد النقل"
+    "delivered": "Delivered",
+    "rejected": "Rejected",
+    "postponed": "Postponed",
+    "in_transit": "In transit"
   },
   "payment": {
-    "COD": "الدفع عند الاستلام",
-    "Card": "بطاقة",
-    "Wallet": "محفظة"
+    "COD": "Cash on delivery",
+    "Card": "Card",
+    "Wallet": "Wallet"
   },
   "dashboard": {
     "stats": {
-      "totalShipments": "دفعات الشحن",
-      "delivered": "تم التسليم",
-      "rejected": "مرفوض",
-      "postponed": "مؤجل"
+      "totalShipments": "Shipment batches",
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed"
     },
     "adminStats": {
-      "users": "المستخدمون",
-      "shipments": "دفعات الشحن",
-      "orders": "طلبات العملاء",
-      "warehouses": "المخازن"
+      "users": "Users",
+      "shipments": "Shipment batches",
+      "orders": "Customer orders",
+      "warehouses": "Warehouses"
     },
     "chart": {
-      "lineTitle": "الطلبات عبر الوقت",
-      "lineDescription": "طلبات عملاء جديدة يوميًا (آخر 14 يومًا)",
-      "lineSeriesName": "الطلبات",
-      "transferPieTitle": "حالة النقل",
-      "transferPieDescription": "دفعات الشحن حسب حالة المسار",
+      "lineTitle": "Orders over time",
+      "lineDescription": "New customer orders per day (last 14 days)",
+      "lineSeriesName": "Orders",
+      "transferPieTitle": "Transfer status",
+      "transferPieDescription": "Shipment batches by pipeline status",
       "days": {
-        "mon": "الإثنين",
-        "tue": "الثلاثاء",
-        "wed": "الأربعاء",
-        "thu": "الخميس",
-        "fri": "الجمعة",
-        "sat": "السبت",
-        "sun": "الأحد"
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
       }
     },
     "quickActions": {
-      "title": "إجراءات سريعة",
-      "description": "انتقال إلى الشحنات (الدفعات) أو أسطر طلبات العملاء",
-      "createOrder": "إنشاء طلب",
-      "viewShipments": "عرض الشحنات",
-      "viewAllOrders": "عرض طلبات العملاء"
+      "title": "Quick actions",
+      "description": "Jump to shipments (transfers) or customer order lines",
+      "createOrder": "Create order",
+      "viewShipments": "View shipments",
+      "viewAllOrders": "View customer orders"
     },
     "language": {
-      "label": "اللغة",
+      "label": "Language",
       "en": "English",
       "ar": "العربية"
     },
     "recent": {
-      "title": "أحدث الطلبات",
-      "description": "أحدث طلبات العملاء في شبكتك",
-      "shipmentsTitle": "أحدث الشحنات",
-      "shipmentsDescription": "أحدث دفعات النقل عبر الشبكة"
+      "title": "Recent orders",
+      "description": "Latest customer orders in your network",
+      "shipmentsTitle": "Recent shipments",
+      "shipmentsDescription": "Latest transfer batches across your network"
     },
     "warehouses": {
-      "title": "مراكز المخازن",
-      "description": "افتح موقعًا لعرض التفاصيل ومشرف الموقع وعدد العاملين.",
-      "viewAll": "عرض كل المخازن",
-      "empty": "لا توجد مواقع مخازن مسجّلة بعد."
+      "title": "Warehouse hubs",
+      "description": "Open a site for full details, admin contact, and staff count.",
+      "viewAll": "View all warehouses",
+      "empty": "No warehouse sites registered yet."
     },
     "table": {
-      "customerName": "اسم العميل",
-      "phone": "الهاتف",
-      "location": "الموقع",
-      "viewLocation": "عرض الموقع",
-      "status": "الحالة",
-      "paymentMethod": "طريقة الدفع",
-      "amount": "المبلغ",
-      "merchant": "التاجر",
-      "warehouse": "المخزن",
-      "transferStatus": "حالة النقل",
-      "orderCount": "الطلبات",
-      "batchValue": "قيمة الدفعة"
+      "customerName": "Customer Name",
+      "phone": "Phone",
+      "location": "GPS",
+      "viewLocation": "View location",
+      "status": "Status",
+      "paymentMethod": "Payment Method",
+      "amount": "Amount",
+      "merchant": "Merchant",
+      "warehouse": "Warehouse",
+      "transferStatus": "Transfer status",
+      "orderCount": "Orders",
+      "batchValue": "Batch value",
+      "product": "Product"
     }
   },
   "shipments": {
-    "detailTitle": "تفاصيل الشحنة",
-    "back": "رجوع",
-    "loading": "جاري التحميل…",
+    "detailTitle": "Shipment details",
+    "back": "Back",
+    "loading": "Loading…",
     "detail": {
-      "batchSubtitle": "دفعة من التاجر — لكل طلب مستلم خاص؛ التفاصيل في الجدول أدناه.",
-      "batchOrdersHint": "اسم المستلم والهاتف والعنوان ونوع المنتج يظهر لكل طلب في الجدول أدناه — قد تضم الدفعة أكثر من عميل.",
-      "courierPhone": "رقم موبايل المندوب",
-      "shippingFee": "مصاريف الشحن",
-      "assignedWarehouse": "المخزن",
-      "customerOrdersTitle": "طلبات العملاء",
-      "customerOrdersDescription": "أسطر الطلبات (الطرود) ضمن هذه الشحنة. التحديثات والإسناد لكل طلب على حدة.",
-      "timelineTitle": "سجل الحالة",
-      "timelineEmpty": "لا توجد أحداث بعد.",
-      "timelineStart": "البداية",
+      "notFound": "Shipment not found.",
+      "batchSubtitle": "Merchant batch — each order has its own recipient; see the table below.",
+      "batchOrdersHint": "Recipient name, phone, address, and product appear on each order row below — a batch can include multiple customers.",
+      "courierPhone": "Courier phone",
+      "shippingFee": "Shipping fee",
+      "assignedWarehouse": "Warehouse",
+      "customerOrdersTitle": "Customer orders",
+      "customerOrdersDescription": "Order lines (packages) under this shipment. Assignment and delivery updates are per order.",
+      "timelineTitle": "Timeline",
+      "timelineEmpty": "No timeline events yet.",
+      "timelineStart": "START",
       "timelineArrow": "→",
-      "currencyLocale": "ar-EG"
+      "currencyLocale": "en-EG"
     },
-    "viewOrders": "عرض طلبات العملاء",
-    "backToShipment": "العودة للشحنة",
-    "ordersTitle": "طلبات العملاء",
-    "ordersSubtitle": "كل صف يمثل طلب عميل واحد مع مستلمه.",
-    "ordersWarehouseSubtitle": "كل صف يمثل سطر طلب عميل داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام.",
-    "ordersEmpty": "لا توجد طلبات في هذه الشحنة.",
+    "viewOrders": "View orders",
+    "backToShipment": "Back to shipment",
+    "ordersTitle": "Customer orders",
+    "ordersSubtitle": "Each row is one customer order with its own recipient.",
+    "ordersWarehouseSubtitle": "Each row is a customer order line from the batch, with delivery and payment states as stored in Orbex.",
+    "ordersEmpty": "No orders in this shipment.",
     "orders": {
-      "deliveryStatus": "التسليم",
-      "paymentStatus": "الدفع"
+      "deliveryStatus": "Delivery",
+      "paymentStatus": "Payment"
     }
   },
   "cs": {
@@ -253,36 +255,36 @@
       "overduePostponed": "تأجيل متأخر"
     },
     "table": {
-      "merchant": "التاجر",
-      "brand": "العلامة",
-      "customer": "العميل",
-      "phone": "الهاتف",
-      "gpsLocation": "GPS/الموقع",
-      "viewLocation": "عرض الموقع",
-      "product": "نوع المنتج",
-      "value": "القيمة",
-      "address": "العنوان",
-      "openLocationLink": "فتح رابط الموقع",
-      "customerLocation": "موقع العميل",
-      "courier": "المندوب",
-      "status": "الحالة",
-      "actions": "إجراءات"
+      "merchant": "Merchant",
+      "brand": "Brand",
+      "customer": "Customer",
+      "phone": "Phone",
+      "gpsLocation": "GPS/Location",
+      "viewLocation": "View location",
+      "product": "Product type",
+      "value": "Value",
+      "address": "Address",
+      "openLocationLink": "Open location link",
+      "customerLocation": "Customer GPS",
+      "courier": "Courier",
+      "status": "Status",
+      "actions": "Actions"
     },
     "actions": {
-      "confirm": "تأكيد",
-      "confirmOutbound": "تأكيد الخروج",
-      "menu": "إجراءات",
-      "menuAriaLabel": "فتح قائمة إجراءات الطلب",
-      "whatsappApi": "واتساب API",
-      "whatsappApiTitle": "إرسال رسالة عبر WhatsApp Business (Cloud API)",
-      "whatsappWeb": "واتساب ويب",
-      "whatsappMenu": "واتساب",
-      "whatsappTooltip": "إرسال واتساب",
-      "whatsappDisabledHint": "لا يوجد رقم هاتف",
-      "addLocation": "إضافة موقع",
-      "callCustomer": "اتصال بالعميل",
-      "callCourier": "اتصال بالمندوب",
-      "track": "خريطة"
+      "confirm": "Confirm",
+      "confirmOutbound": "Confirm outbound",
+      "menu": "Actions",
+      "menuAriaLabel": "Open order actions menu",
+      "whatsappApi": "WhatsApp API",
+      "whatsappApiTitle": "Send via WhatsApp Business (Cloud API)",
+      "whatsappWeb": "WhatsApp Web",
+      "whatsappMenu": "WhatsApp",
+      "whatsappTooltip": "Send WhatsApp",
+      "whatsappDisabledHint": "No phone number on file",
+      "addLocation": "Add location",
+      "callCustomer": "Call customer",
+      "callCourier": "Call courier",
+      "track": "Map"
     },
     "addLocation": {
       "title": "إضافة موقع العميل",
@@ -519,51 +521,51 @@
     }
   },
   "backend": {
-    "enumUnknown": "غير معروف",
+    "enumUnknown": "Unknown",
     "shipmentCoreStatus": {
-      "PENDING": "معلّق",
-      "IN_WAREHOUSE": "في المخزن",
-      "OUT_FOR_DELIVERY": "جاري التسليم",
-      "DELIVERED": "تم التسليم",
-      "RETURNED": "مرتجع"
+      "PENDING": "Pending",
+      "IN_WAREHOUSE": "In warehouse",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "DELIVERED": "Delivered",
+      "RETURNED": "Returned"
     },
     "shipmentSubStatus": {
       "NONE": "—",
-      "CONFIRMED": "مؤكد",
-      "ASSIGNED": "مُسند",
-      "LOCATION_RECEIVED": "تم استلام الموقع",
-      "REJECTED": "مرفوض",
-      "DELAYED": "مؤجل",
-      "RESCHEDULED": "إعادة جدولة",
-      "RETURNED_TO_WAREHOUSE": "عاد إلى المخزن",
-      "RETURN_TO_MERCHANT": "إرجاع إلى التاجر",
-      "DAMAGED": "تالف",
-      "OVERDUE": "متأخر"
+      "CONFIRMED": "Confirmed",
+      "ASSIGNED": "Assigned",
+      "LOCATION_RECEIVED": "Location received",
+      "REJECTED": "Rejected",
+      "DELAYED": "Delayed",
+      "RESCHEDULED": "Rescheduled",
+      "RETURNED_TO_WAREHOUSE": "Returned to warehouse",
+      "RETURN_TO_MERCHANT": "Return to merchant",
+      "DAMAGED": "Damaged",
+      "OVERDUE": "Overdue"
     },
     "shipmentTransferStatus": {
-      "PENDING": "معلّق (دفعة)",
-      "ASSIGNED": "مُسند (دفعة)",
-      "ON_THE_WAY_TO_WAREHOUSE": "في الطريق إلى المخزن",
-      "IN_WAREHOUSE": "داخل المخزن (دفعة)",
-      "PARTIALLY_DELIVERED": "مُسلَّم جزئيًا",
-      "DELIVERED": "مُسلَّم بالكامل"
+      "PENDING": "Pending (batch)",
+      "ASSIGNED": "Assigned (batch)",
+      "ON_THE_WAY_TO_WAREHOUSE": "On the way to warehouse",
+      "IN_WAREHOUSE": "In warehouse (batch)",
+      "PARTIALLY_DELIVERED": "Partially delivered",
+      "DELIVERED": "Delivered"
     },
     "orderDeliveryStatus": {
-      "PENDING": "معلّق",
-      "CONFIRMED_BY_CS": "مؤكد من خدمة العملاء",
-      "OUT_FOR_DELIVERY": "جاري التسليم",
-      "DELIVERED": "تم التسليم",
-      "REJECTED": "مرفوض",
-      "RETURNED": "عاد للمخزن",
-      "POSTPONED": "مؤجل"
+      "PENDING": "Pending",
+      "CONFIRMED_BY_CS": "Confirmed by CS",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "DELIVERED": "Delivered",
+      "REJECTED": "Rejected",
+      "RETURNED": "Returned to warehouse",
+      "POSTPONED": "Postponed"
     },
     "orderPaymentStatus": {
-      "PENDING_COLLECTION": "بانتظار التحصيل",
-      "COLLECTED": "تم التحصيل",
-      "POS_PENDING": "بانتظار مراجعة POS",
-      "READY_FOR_SETTLEMENT": "جاهز للتسوية",
-      "SETTLED": "تمت التسوية",
-      "ON_HOLD": "معلّق مؤقتًا"
+      "PENDING_COLLECTION": "Pending collection",
+      "COLLECTED": "Collected",
+      "POS_PENDING": "POS pending",
+      "READY_FOR_SETTLEMENT": "Ready for settlement",
+      "SETTLED": "Settled",
+      "ON_HOLD": "On hold"
     }
   },
   "merchants": {

@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
+import { useLocation, useNavigate } from "react-router-dom"
 
 import { getShipmentOrders } from "@/api/shipments-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
@@ -10,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useTranslation } from "react-i18next"
 
 const WAREHOUSE_COL_COUNT = 9
 const COMPACT_COL_COUNT = 6
@@ -32,6 +33,9 @@ export function WarehouseShipmentOrdersTable({
   mode = "warehouse",
 }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/orders" : "/orders"
 
   const ordersQuery = useQuery({
     queryKey: ["orders", "list", shipmentId, token],
@@ -97,7 +101,13 @@ export function WarehouseShipmentOrdersTable({
                 </TableRow>
               ) : (
                 ordersQuery.data.orders.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow
+                    key={p.id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() =>
+                      void navigate(`${ordersBase}/${encodeURIComponent(p.id)}`)
+                    }
+                  >
                     <TableCell className="font-mono text-xs">
                       {p.trackingNumber || "—"}
                     </TableCell>

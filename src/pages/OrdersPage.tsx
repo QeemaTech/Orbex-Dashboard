@@ -26,6 +26,11 @@ function isWarehouseTransfersPath(pathname: string): boolean {
   return /^\/warehouses\/[^/]+\/transfers\//.test(pathname)
 }
 
+/**
+ * `/orders/:shipmentId` — if the param is an **order** UUID, shows that order’s detail.
+ * If it is a **shipment** UUID (no order with that id), falls back to the batch orders table.
+ * Non-UUID params still resolve by customer name when not on warehouse/CS direct routes.
+ */
 export function OrdersPage() {
   const { t } = useTranslation()
   const location = useLocation()
@@ -106,11 +111,18 @@ export function OrdersPage() {
 
   if (isUuidParam && orderDetailQuery.isSuccess && orderDetailQuery.data) {
     const order = orderDetailQuery.data
-    let backHref = `/shipments/${encodeURIComponent(order.shipmentId)}`
+    const sid = encodeURIComponent(order.shipmentId)
+    let backHref = `/shipments/${sid}`
+    let shipmentDetailHref = `/shipments/${sid}`
+    let batchOrdersListHref = `/orders/${sid}`
     if (isWarehouseRoute && warehouseId) {
-      backHref = `/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(order.shipmentId)}`
+      const w = encodeURIComponent(warehouseId)
+      backHref = `/warehouses/${w}/transfers/${sid}`
+      shipmentDetailHref = `/warehouses/${w}/transfers/${sid}`
     } else if (isCsRoute) {
-      backHref = `/cs/shipments/${encodeURIComponent(order.shipmentId)}`
+      backHref = `/cs/shipments/${sid}`
+      shipmentDetailHref = `/cs/shipments/${sid}`
+      batchOrdersListHref = `/cs/orders/${sid}`
     }
     return (
       <Layout title={t("orders.detail.pageTitle")}>
@@ -118,6 +130,8 @@ export function OrdersPage() {
           order={order}
           backHref={backHref}
           backLabel={t("orders.backToTransfer")}
+          shipmentDetailHref={shipmentDetailHref}
+          batchOrdersListHref={batchOrdersListHref}
           variant={isWarehouseRoute ? "warehouse" : isCsRoute ? "cs" : "default"}
         />
       </Layout>
@@ -150,16 +164,10 @@ export function OrdersPage() {
             {matchedShipmentQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("orders.loading")}</p>
             ) : null}
-            {matchedShipmentQuery.error ? (
+            {!shouldUseDirectId && !matchedShipmentQuery.isLoading && !matchedShipmentId ? (
               <p className="text-destructive text-sm">
-                {(matchedShipmentQuery.error as Error).message}
+                {t("shipments.detail.notFound", { defaultValue: "Shipment not found." })}
               </p>
-            ) : null}
-            {!matchedShipmentQuery.isLoading &&
-            shipmentName &&
-            !shouldUseDirectId &&
-            !matchedShipmentId ? (
-              <p className="text-muted-foreground text-sm">{t("orders.empty")}</p>
             ) : null}
             {matchedShipmentId ? (
               <WarehouseShipmentOrdersTable

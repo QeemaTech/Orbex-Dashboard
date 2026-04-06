@@ -25,6 +25,22 @@
     "columns": {
       "deliveryStatus": "التسليم",
       "paymentStatus": "الدفع"
+    },
+    "detail": {
+      "pageTitle": "تفاصيل الطلب",
+      "loading": "جاري تحميل الطلب…",
+      "orderId": "معرّف الطلب",
+      "unnamedTracking": "طلب",
+      "sectionCustomer": "العميل والمنتج",
+      "sectionFinancial": "القيمة والدفع",
+      "sectionLogistics": "التسليم والجدول الزمني",
+      "description": "الوصف",
+      "notes": "ملاحظات",
+      "commission": "العمولة",
+      "createdAt": "تاريخ الإنشاء",
+      "updatedAt": "آخر تحديث",
+      "actions": "إجراءات",
+      "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة النقل."
     }
   },
   "ordersList": {

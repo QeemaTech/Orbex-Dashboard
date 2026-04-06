@@ -22,7 +22,7 @@ import { AdminOrdersTable } from "@/features/shipments/components/AdminOrdersTab
 import { OrderKpiStatRow } from "@/features/shipments/components/OrderKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-/** Customer order lines (`GET /api/orders`); row opens the batch’s order list at `/orders/:shipmentId`. */
+/** Customer order lines (`GET /api/orders`); row opens **order** detail at `/orders/:orderId`. */
 export function OrdersListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()
