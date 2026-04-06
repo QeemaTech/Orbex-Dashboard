@@ -1,5 +1,7 @@
+import type { MouseEvent } from "react"
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useLocation, useNavigate } from "react-router-dom"
 
 import {
   getShipmentById,
@@ -43,6 +45,9 @@ export function WarehouseShipmentOrdersTable({
   mode = "warehouse",
 }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/orders" : "/orders"
   const queryClient = useQueryClient()
   const [assignOrderId, setAssignOrderId] = useState("")
   const [assignCourierInput, setAssignCourierInput] = useState("")
@@ -119,6 +124,14 @@ export function WarehouseShipmentOrdersTable({
 
   if (!shipmentId) return null
 
+  const goToOrder = (orderId: string) => {
+    void navigate(`${ordersBase}/${encodeURIComponent(orderId)}`)
+  }
+
+  const stopAssignClick = (e: MouseEvent<HTMLTableCellElement>) => {
+    e.stopPropagation()
+  }
+
   return (
     <div className="space-y-3">
       {ordersQuery.isLoading ? (
@@ -166,7 +179,11 @@ export function WarehouseShipmentOrdersTable({
                 </TableRow>
               ) : (
                 ordersQuery.data.orders.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow
+                    key={p.id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => goToOrder(p.id)}
+                  >
                     <TableCell className="font-mono text-xs">
                       {p.trackingNumber || "—"}
                     </TableCell>
@@ -196,7 +213,7 @@ export function WarehouseShipmentOrdersTable({
                         <TableCell className="text-xs">
                           {p.deliveryCourier?.fullName ?? "—"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={stopAssignClick}>
                           <div className="flex min-w-[12rem] flex-col gap-1">
                             <select
                               className="border-input bg-background h-8 rounded-md border px-2 text-xs"

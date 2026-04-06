@@ -50,3 +50,14 @@ export async function listOrders(
     token: p.token,
   })
 }
+
+/** Single order line: `GET /api/orders/:id`. */
+export async function getOrderById(p: {
+  token: string
+  id: string
+}): Promise<ShipmentOrderRow> {
+  return apiFetch<ShipmentOrderRow>(
+    `/api/orders/${encodeURIComponent(p.id)}`,
+    { token: p.token },
+  )
+}
