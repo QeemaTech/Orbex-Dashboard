@@ -146,19 +146,18 @@ export function DashboardPage() {
               hideTrend
             />
             <StatCard
+              title={t("dashboard.adminStats.orders")}
+              value={totals?.totalOrders ?? 0}
+              icon={Boxes}
+              accent="warning"
+              hideTrend
+            />
+            <StatCard
               title={t("dashboard.adminStats.shipments")}
               value={totals?.totalShipments ?? 0}
               icon={Package}
               accent="success"
-              to="/shipments"
-              hideTrend
-            />
-            <StatCard
-              title={t("dashboard.adminStats.packages")}
-              value={totals?.totalPackages ?? 0}
-              icon={Boxes}
-              accent="warning"
-              to="/shipments"
+              to="/orders"
               hideTrend
             />
             <StatCard
@@ -166,7 +165,7 @@ export function DashboardPage() {
               value={warehouseCount}
               icon={Warehouse}
               accent="destructive"
-              to="/warehouse/sites"
+              to="/warehouses"
               hideTrend
             />
           </div>
@@ -183,7 +182,7 @@ export function DashboardPage() {
                 <CardDescription>{t("dashboard.warehouses.description")}</CardDescription>
               </div>
               <Button variant="outline" size="sm" className="shrink-0 self-start" asChild>
-                <Link to="/warehouse/sites">{t("dashboard.warehouses.viewAll")}</Link>
+                <Link to="/warehouses">{t("dashboard.warehouses.viewAll")}</Link>
               </Button>
             </CardHeader>
             <CardContent>
@@ -199,7 +198,7 @@ export function DashboardPage() {
                 {(warehousesPreview.data?.warehouses ?? []).slice(0, 3).map((w) => (
                   <li key={w.id}>
                     <Link
-                      to={`/warehouse/sites/${w.id}`}
+                      to={`/warehouses/${w.id}`}
                       className="text-primary font-medium underline-offset-4 hover:underline"
                     >
                       {w.name}
@@ -338,9 +337,9 @@ export function DashboardPage() {
               <Button
                 type="button"
                 className="w-full sm:w-auto"
-                onClick={() => navigate("/shipments")}
+                onClick={() => navigate("/orders")}
               >
-                {t("dashboard.quickActions.viewAllShipments")}
+                {t("dashboard.quickActions.viewAllOrders")}
               </Button>
             </div>
           </div>

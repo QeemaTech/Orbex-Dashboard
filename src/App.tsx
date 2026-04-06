@@ -12,18 +12,18 @@ import {
   useAuth,
 } from "@/lib/auth-context"
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
-import { CsShipmentsPage } from "@/features/customer-service/pages/CsShipmentsPage"
+import { CsOrdersListPage } from "@/features/customer-service/pages/CsOrdersListPage"
 import { DashboardPage } from "@/pages/DashboardPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
 import { ShipmentDetailsPage } from "@/pages/ShipmentDetailsPage"
-import { ShipmentPackagesPage } from "@/pages/ShipmentPackagesPage"
-import { ShipmentsPage } from "@/pages/ShipmentsPage"
-import { WarehousePage } from "@/pages/WarehousePage"
-import { WarehouseSiteDetailPage } from "@/pages/WarehouseSiteDetailPage"
-import { WarehouseSitesPage } from "@/pages/WarehouseSitesPage"
+import { OrdersPage } from "@/pages/OrdersPage"
+import { OrdersListPage } from "@/pages/OrdersListPage"
+import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
+import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
+import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 
 function Protected({ children }: { children: ReactNode }) {
@@ -83,20 +83,24 @@ export default function App() {
           }
         />
         <Route
-          path="/shipments"
+          path="/orders"
           element={
             <Protected>
-              <ShipmentsPage />
+              <OrdersListPage />
             </Protected>
           }
         />
         <Route
-          path="/shipments/:shipmentId/packages"
+          path="/orders/:shipmentId"
           element={
             <Protected>
-              <ShipmentPackagesPage />
+              <OrdersPage />
             </Protected>
           }
+        />
+        <Route
+          path="/shipments"
+          element={<Navigate to="/orders" replace />}
         />
         <Route
           path="/shipments/:shipmentId"
@@ -149,43 +153,43 @@ export default function App() {
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <WarehousePage />
+                <WarehouseRedirectPage />
               </ProtectedRole>
             </Protected>
           }
         />
         <Route
-          path="/warehouse/sites"
+          path="/warehouses"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE_ADMIN"]}>
-                <WarehouseSitesPage />
+                <WarehousesPage />
               </ProtectedRole>
             </Protected>
           }
         />
         <Route
-          path="/warehouse/sites/:warehouseId"
-          element={
-            <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE_ADMIN"]}>
-                <WarehouseSiteDetailPage />
-              </ProtectedRole>
-            </Protected>
-          }
-        />
-        <Route
-          path="/warehouse/shipments/:shipmentId/packages"
+          path="/warehouses/:warehouseId"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <ShipmentPackagesPage />
+                <WarehouseDetailPage />
               </ProtectedRole>
             </Protected>
           }
         />
         <Route
-          path="/warehouse/shipments/:shipmentId"
+          path="/warehouses/:warehouseId/transfers/:shipmentId/orders"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
+                <OrdersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/transfers/:shipmentId"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
@@ -194,16 +198,20 @@ export default function App() {
             </Protected>
           }
         />
-        <Route path="/cs" element={<Navigate to="/cs/shipments" replace />} />
+        <Route path="/cs" element={<Navigate to="/cs/orders" replace />} />
         <Route
-          path="/cs/shipments"
+          path="/cs/orders"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
-                <CsShipmentsPage />
+                <CsOrdersListPage />
               </ProtectedRole>
             </Protected>
           }
+        />
+        <Route
+          path="/cs/shipments"
+          element={<Navigate to="/cs/orders" replace />}
         />
         <Route
           path="/cs/couriers"
@@ -216,11 +224,11 @@ export default function App() {
           }
         />
         <Route
-          path="/cs/shipments/:shipmentId/packages"
+          path="/cs/orders/:shipmentId"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
-                <ShipmentPackagesPage />
+                <OrdersPage />
               </ProtectedRole>
             </Protected>
           }

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { backendPackagePaymentLabel } from "@/features/warehouse/backend-labels"
+import { backendOrderPaymentLabel } from "@/features/warehouse/backend-labels"
 import {
   endOfTodayIso,
   startOfTodayIso,
@@ -17,7 +17,7 @@ const PACKAGE_PAYMENT_FILTER_VALUES = [
   "ON_HOLD",
 ] as const
 
-function packagePaymentSelectValue(raw: string): string {
+function orderPaymentSelectValue(raw: string): string {
   const u = raw.trim().toUpperCase()
   return (PACKAGE_PAYMENT_FILTER_VALUES as readonly string[]).includes(u)
     ? u
@@ -187,7 +187,7 @@ export function CsShipmentFilters({
         <span className="text-muted-foreground">Payment status</span>
         <select
           className="border-input bg-background h-9 min-w-[200px] rounded-md border px-3 text-sm"
-          value={packagePaymentSelectValue(values.paymentStatus)}
+          value={orderPaymentSelectValue(values.paymentStatus)}
           onChange={(e) =>
             onChange({ ...values, paymentStatus: e.target.value })
           }
@@ -195,7 +195,7 @@ export function CsShipmentFilters({
           <option value="">{t("cs.filters.anyPaymentStatus")}</option>
           {PACKAGE_PAYMENT_FILTER_VALUES.map((ps) => (
             <option key={ps} value={ps}>
-              {backendPackagePaymentLabel(t, ps)}
+              {backendOrderPaymentLabel(t, ps)}
             </option>
           ))}
         </select>

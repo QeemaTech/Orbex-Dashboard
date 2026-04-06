@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { Sparkles } from "react-lucid"
+import { Sparkles } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
@@ -25,7 +25,8 @@ import { CsShipmentTable } from "@/features/customer-service/components/CsShipme
 import { ShipmentKpiStatRow } from "@/features/shipments/components/ShipmentKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-export function ShipmentsPage() {
+/** Operations list of customer orders (`/orders`); row click opens shipment (batch) detail. */
+export function OrdersListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
@@ -177,7 +178,7 @@ export function ShipmentsPage() {
   }, [])
 
   return (
-    <Layout title={t("shipments.pageTitle")}>
+    <Layout title={t("ordersList.pageTitle")}>
       <div className="space-y-6">
         <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
           <CardHeader className="flex flex-row items-center gap-3 pb-2">
@@ -185,8 +186,8 @@ export function ShipmentsPage() {
               <Sparkles className="size-5" aria-hidden />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-lg">{t("shipments.pageTitle")}</CardTitle>
-              <CardDescription>{t("shipments.description")}</CardDescription>
+              <CardTitle className="text-lg">{t("ordersList.pageTitle")}</CardTitle>
+              <CardDescription>{t("ordersList.description")}</CardDescription>
             </div>
           </CardHeader>
         </Card>
@@ -194,15 +195,15 @@ export function ShipmentsPage() {
         <ShipmentKpiStatRow
           token={token}
           filters={filters}
-          queryKeyPrefix="shipments-page"
+          queryKeyPrefix="orders-list-page"
         />
 
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="border-border/60 border-b pb-4">
             <CardTitle className="text-base font-semibold">
-              {t("shipments.tableCardTitle")}
+              {t("ordersList.tableCardTitle")}
             </CardTitle>
-            <CardDescription>{t("shipments.tableCardDescription")}</CardDescription>
+            <CardDescription>{t("ordersList.tableCardDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             <CsShipmentFilters values={filters} onChange={setFilters} />
@@ -214,7 +215,7 @@ export function ShipmentsPage() {
             ) : null}
 
             {shipmentsQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">{t("shipments.loading")}</p>
+              <p className="text-muted-foreground text-sm">{t("ordersList.loading")}</p>
             ) : null}
 
             {shipmentsQuery.data ? (

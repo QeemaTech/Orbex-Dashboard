@@ -4,10 +4,10 @@ export function backendShipmentTransferLabel(t: TFunction, value: string): strin
   return t(`backend.shipmentTransferStatus.${value}`, { defaultValue: value })
 }
 
-export function backendPackageDeliveryLabel(t: TFunction, value: string): string {
-  return t(`backend.packageDeliveryStatus.${value}`, { defaultValue: value })
+export function backendOrderDeliveryLabel(t: TFunction, value: string): string {
+  return t(`backend.orderDeliveryStatus.${value}`, { defaultValue: value })
 }
 
-export function backendPackagePaymentLabel(t: TFunction, value: string): string {
-  return t(`backend.packagePaymentStatus.${value}`, { defaultValue: value })
+export function backendOrderPaymentLabel(t: TFunction, value: string): string {
+  return t(`backend.orderPaymentStatus.${value}`, { defaultValue: value })
 }

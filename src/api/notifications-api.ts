@@ -27,8 +27,8 @@ export async function listNotifications(
     pageSize?: number
     /** Comma-separated backend notification `type` values (e.g. CS_PACKAGE_DELIVERED). */
     types?: string
-    /** Filter to CS package-delivery notifications for this status. */
-    packageDeliveryStatus?: string
+    /** Filter to CS order-delivery notifications for this status. */
+    orderDeliveryStatus?: string
     createdFrom?: string
     createdTo?: string
   },
@@ -38,8 +38,8 @@ export async function listNotifications(
   if (params?.page) u.set("page", String(params.page))
   if (params?.pageSize) u.set("pageSize", String(params.pageSize))
   if (params?.types?.trim()) u.set("types", params.types.trim())
-  if (params?.packageDeliveryStatus?.trim()) {
-    u.set("packageDeliveryStatus", params.packageDeliveryStatus.trim())
+  if (params?.orderDeliveryStatus?.trim()) {
+    u.set("orderDeliveryStatus", params.orderDeliveryStatus.trim())
   }
   if (params?.createdFrom) u.set("createdFrom", params.createdFrom)
   if (params?.createdTo) u.set("createdTo", params.createdTo)

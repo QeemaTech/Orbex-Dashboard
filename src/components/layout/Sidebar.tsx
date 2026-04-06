@@ -2,12 +2,12 @@ import { LogOut } from "lucide-react"
 import {
   Banknote,
   LayoutDashboard,
-  MapPin,
   Package,
   Truck,
   Users,
   Warehouse,
 } from "react-lucid"
+import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { NavLink, useNavigate } from "react-router-dom"
 
@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
 const adminNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
   { to: "/users", labelKey: "nav.users", icon: Users, end: false },
-  { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false },
+  { to: "/orders", labelKey: "nav.orders", icon: Package, end: false },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
   { to: "/merchants", labelKey: "nav.merchants", icon: Package, end: false },
   {
@@ -28,22 +28,12 @@ const adminNavConfig = [
     icon: Banknote,
     end: false,
   },
-  { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: true },
-  { to: "/warehouse/sites", labelKey: "nav.warehouses", icon: MapPin, end: true },
+  { to: "/warehouses", labelKey: "nav.warehouses", icon: Warehouse, end: true },
 ] as const
 
 const customerServiceNavConfig = [
-  { to: "/cs/shipments", labelKey: "nav.shipments", icon: Package, end: false },
+  { to: "/cs/orders", labelKey: "nav.orders", icon: Package, end: false },
   { to: "/cs/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
-] as const
-
-const warehouseNavConfig = [
-  { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: true },
-] as const
-
-const warehouseAdminNavConfig = [
-  { to: "/warehouse", labelKey: "nav.warehouse", icon: Warehouse, end: true },
-  { to: "/warehouse/sites", labelKey: "nav.warehouseSites", icon: MapPin, end: true },
 ] as const
 
 export function Sidebar() {
@@ -52,6 +42,22 @@ export function Sidebar() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const isEn = i18n.language.startsWith("en")
+
+  const warehouseStaffNav = useMemo(() => {
+    if (user?.role === "WAREHOUSE" && user.warehouseId) {
+      return [
+        {
+          to: `/warehouses/${user.warehouseId}`,
+          labelKey: "nav.warehouses" as const,
+          icon: Warehouse,
+          end: true,
+        },
+      ] as const
+    }
+    return [
+      { to: "/warehouse", labelKey: "nav.warehouses" as const, icon: Warehouse, end: true },
+    ] as const
+  }, [user?.role, user?.warehouseId])
 
   function onSignOut() {
     setOpen(false)
@@ -62,9 +68,16 @@ export function Sidebar() {
     user?.role === "CUSTOMER_SERVICE"
       ? [...customerServiceNavConfig]
       : user?.role === "WAREHOUSE"
-        ? [...warehouseNavConfig]
+        ? [...warehouseStaffNav]
         : user?.role === "WAREHOUSE_ADMIN"
-          ? [...warehouseAdminNavConfig]
+          ? [
+              {
+                to: "/warehouses",
+                labelKey: "nav.warehouses" as const,
+                icon: Warehouse,
+                end: true,
+              },
+            ]
           : [...adminNavConfig]
 
   return (

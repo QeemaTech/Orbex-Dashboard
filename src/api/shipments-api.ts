@@ -25,12 +25,12 @@ export type CsCourier = {
 }
 
 export type CsShipmentRow = {
-  /** Package id (list rows); batch id is `shipmentId`. */
+  /** Order id (list rows); batch id is `shipmentId`. */
   id: string
   /** Parent shipment (batch) id for `/api/shipments/:shipmentId` routes. */
   shipmentId: string
   /** Batch detail: primary line id for status PATCH; list rows omit (use `id`). */
-  primaryPackageId?: string
+  primaryOrderId?: string
   merchantId: string
   regionId?: string | null
   customerId: string
@@ -178,7 +178,7 @@ export async function getShipmentById(params: {
   }
 }
 
-export type ShipmentPackageCustomer = {
+export type ShipmentOrderCustomer = {
   id: string
   customerName: string
   phonePrimary: string
@@ -190,7 +190,7 @@ export type ShipmentPackageCustomer = {
   customerLocationReceivedAt: string | null
 }
 
-export type ShipmentPackageRow = {
+export type ShipmentOrderRow = {
   id: string
   shipmentId: string
   customerId: string
@@ -220,20 +220,20 @@ export type ShipmentPackageRow = {
   returnDiscountAmount: string | null
   createdAt: string
   updatedAt: string
-  customer: ShipmentPackageCustomer
+  customer: ShipmentOrderCustomer
 }
 
-export type ShipmentPackagesResponse = {
+export type ShipmentOrdersResponse = {
   shipmentId: string
-  packages: ShipmentPackageRow[]
+  orders: ShipmentOrderRow[]
 }
 
-export async function getShipmentPackages(params: {
+export async function getShipmentOrders(params: {
   token: string
   shipmentId: string
-}): Promise<ShipmentPackagesResponse> {
-  return apiFetch<ShipmentPackagesResponse>(
-    `/api/shipments/${params.shipmentId}/packages`,
+}): Promise<ShipmentOrdersResponse> {
+  return apiFetch<ShipmentOrdersResponse>(
+    `/api/shipments/${params.shipmentId}/orders`,
     { token: params.token },
   )
 }
@@ -241,7 +241,7 @@ export async function getShipmentPackages(params: {
 export type DashboardKpisResponse = {
   totals: {
     totalShipments: number
-    totalPackages: number
+    totalOrders: number
     delivered: number
     rejected: number
     postponed: number
@@ -274,7 +274,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1001",
       shipmentId: "seed-shp-1001",
-      primaryPackageId: "seed-shp-1001",
+      primaryOrderId: "seed-shp-1001",
       merchantId: "mrc-01",
       customerId: "seed-cust-1001",
       assignedCourierId: "cr-01",
@@ -315,7 +315,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1002",
       shipmentId: "seed-shp-1002",
-      primaryPackageId: "seed-shp-1002",
+      primaryOrderId: "seed-shp-1002",
       merchantId: "mrc-02",
       customerId: "seed-cust-1002",
       assignedCourierId: "cr-02",
@@ -356,7 +356,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1003",
       shipmentId: "seed-shp-1003",
-      primaryPackageId: "seed-shp-1003",
+      primaryOrderId: "seed-shp-1003",
       merchantId: "mrc-03",
       customerId: "seed-cust-1003",
       assignedCourierId: null,
@@ -392,7 +392,7 @@ function buildSeedRecentShipments(take: number): CsShipmentRow[] {
     {
       id: "seed-shp-1004",
       shipmentId: "seed-shp-1004",
-      primaryPackageId: "seed-shp-1004",
+      primaryOrderId: "seed-shp-1004",
       merchantId: "mrc-01",
       customerId: "seed-cust-1004",
       assignedCourierId: "cr-03",
@@ -446,7 +446,7 @@ function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisRe
 
   const totals = {
     totalShipments: 1264,
-    totalPackages: 2103,
+    totalOrders: 2103,
     delivered: 914,
     rejected: 83,
     postponed: 129,
@@ -530,7 +530,7 @@ export async function getDashboardKpis(
     ...data,
     totals: {
       ...data.totals,
-      totalPackages: data.totals.totalPackages ?? 0,
+      totalOrders: data.totals.totalOrders ?? 0,
     },
     recentShipments: data.recentShipments.map((s) => {
       const location = extractShipmentLocation(s.notes)
@@ -606,14 +606,14 @@ export async function listShipmentTimeline(
 export async function confirmShipmentCs(
   token: string,
   shipmentId: string,
-  packageId: string,
+  orderId: string,
 ): Promise<void> {
   await apiFetch<unknown>(`/api/shipments/${shipmentId}/status`, {
     method: "PATCH",
     token,
     body: JSON.stringify({
-      packageId,
-      toPackageDeliveryStatus: "CONFIRMED_BY_CS",
+      orderId,
+      toOrderDeliveryStatus: "CONFIRMED_BY_CS",
     }),
   })
 }

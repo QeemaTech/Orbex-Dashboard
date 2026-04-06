@@ -47,7 +47,7 @@ export function CsShipmentRowActions({
       confirmShipmentCs(
         token,
         row.shipmentId,
-        row.primaryPackageId ?? row.id,
+        row.primaryOrderId ?? row.id,
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: listQueryKey }),
   })

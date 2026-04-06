@@ -25,7 +25,8 @@ import { CsShipmentTable } from "@/features/customer-service/components/CsShipme
 import { ShipmentKpiStatRow } from "@/features/shipments/components/ShipmentKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-export function CsShipmentsPage() {
+/** CS orders queue (`/cs/orders`); row click opens shipment (batch) detail at `/cs/shipments/:id`. */
+export function CsOrdersListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
@@ -200,15 +201,15 @@ export function CsShipmentsPage() {
         <ShipmentKpiStatRow
           token={token}
           filters={filters}
-          queryKeyPrefix="cs-shipments-page"
+          queryKeyPrefix="cs-orders-list-page"
         />
 
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="border-border/60 border-b pb-4">
             <CardTitle className="text-base font-semibold">
-              {t("cs.shipmentsQueueTitle")}
+              {t("cs.ordersQueueTitle")}
             </CardTitle>
-            <CardDescription>{t("cs.shipmentsQueueDescription")}</CardDescription>
+            <CardDescription>{t("cs.ordersQueueDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             <CsShipmentFilters values={filters} onChange={setFilters} />

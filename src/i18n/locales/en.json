@@ -1,7 +1,7 @@
 {
   "nav": {
     "dashboard": "Dashboard",
-    "shipments": "Shipments",
+    "orders": "Orders",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
     "couriers": "Couriers",
@@ -11,6 +11,27 @@
     "warehouses": "Warehouses",
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
+  },
+  "orders": {
+    "pageTitle": "Orders",
+    "pageHeading": "Customer orders",
+    "backToShipment": "Back to shipment",
+    "backToTransfer": "Back to transfer",
+    "loading": "Loading orders…",
+    "empty": "No orders in this shipment.",
+    "subtitle": "Each row is one customer order with its own recipient.",
+    "warehouseSubtitle": "Each row is a customer order line from the batch, with delivery and payment states as stored in Orbex.",
+    "columns": {
+      "deliveryStatus": "Delivery",
+      "paymentStatus": "Payment"
+    }
+  },
+  "ordersList": {
+    "pageTitle": "Orders",
+    "description": "Customer orders visible for your account. Use filters to narrow the list.",
+    "tableCardTitle": "All orders",
+    "tableCardDescription": "Results respect your role and permissions from the API.",
+    "loading": "Loading orders…"
   },
   "auth": {
     "loginTitle": "Sign in to Orbex",
@@ -58,23 +79,23 @@
   },
   "dashboard": {
     "stats": {
-      "totalShipments": "Total Shipments",
+      "totalShipments": "Shipment batches",
       "delivered": "Delivered",
       "rejected": "Rejected",
       "postponed": "Postponed"
     },
     "adminStats": {
       "users": "Users",
-      "shipments": "Shipments",
-      "packages": "Packages",
+      "shipments": "Shipment batches",
+      "orders": "Customer orders",
       "warehouses": "Warehouses"
     },
     "chart": {
-      "lineTitle": "Shipments over time",
-      "lineDescription": "Last 7 days",
-      "lineSeriesName": "Shipments",
-      "pieTitle": "Status distribution",
-      "pieDescription": "All shipments by status",
+      "lineTitle": "Orders over time",
+      "lineDescription": "Last 14 days",
+      "lineSeriesName": "Orders",
+      "pieTitle": "Order status distribution",
+      "pieDescription": "Customer orders grouped by delivery status",
       "days": {
         "mon": "Mon",
         "tue": "Tue",
@@ -87,9 +108,9 @@
     },
     "quickActions": {
       "title": "Quick actions",
-      "description": "Common shipment tasks",
-      "createShipment": "Create Shipment",
-      "viewAllShipments": "View All Shipments"
+      "description": "Jump to the full orders list and CS workflows",
+      "createOrder": "Create order",
+      "viewAllOrders": "View all orders"
     },
     "language": {
       "label": "Language",
@@ -97,8 +118,8 @@
       "ar": "العربية"
     },
     "recent": {
-      "title": "Recent shipments",
-      "description": "Latest activity in your network"
+      "title": "Recent orders",
+      "description": "Latest customer orders in your network"
     },
     "warehouses": {
       "title": "Warehouse hubs",
@@ -117,13 +138,9 @@
     }
   },
   "shipments": {
-    "pageTitle": "Shipments",
     "detailTitle": "Shipment details",
     "back": "Back",
-    "description": "Shipments visible for your account. Use filters to narrow the list.",
-    "tableCardTitle": "All shipments",
-    "tableCardDescription": "Results respect your role and permissions from the API.",
-    "loading": "Loading shipments…",
+    "loading": "Loading…",
     "detail": {
       "courierPhone": "Courier phone",
       "shippingFee": "Shipping fee",
@@ -132,15 +149,24 @@
       "timelineStart": "START",
       "currencyLocale": "en-EG"
     },
-    "packagesWarehouseSubtitle": "Each row is a package line from the batch, with delivery and payment states as stored in Orbex."
+    "viewOrders": "View orders",
+    "backToShipment": "Back to shipment",
+    "ordersTitle": "Customer orders",
+    "ordersSubtitle": "Each row is one customer order with its own recipient.",
+    "ordersWarehouseSubtitle": "Each row is a customer order line from the batch, with delivery and payment states as stored in Orbex.",
+    "ordersEmpty": "No orders in this shipment.",
+    "orders": {
+      "deliveryStatus": "Delivery",
+      "paymentStatus": "Payment"
+    }
   },
   "cs": {
-    "pageTitle": "Customer service — Shipments",
+    "pageTitle": "Customer service — Orders",
     "dashboardTitle": "Customer service dashboard",
     "dashboardSubtitle": "Confirm orders, reach customers, and track couriers. The queue defaults to today and refreshes every 25 seconds.",
-    "shipmentsQueueTitle": "Shipments queue",
-    "shipmentsQueueDescription": "Filter by phone, status, or creation time. Actions apply CS workflows only from this dashboard.",
-    "loading": "Loading shipments…",
+    "ordersQueueTitle": "Orders queue",
+    "ordersQueueDescription": "Filter by phone, status, or creation time. Actions apply CS workflows only from this dashboard.",
+    "loading": "Loading orders…",
     "filters": {
       "phone": "Phone search",
       "phonePlaceholder": "Customer phone",
@@ -172,7 +198,7 @@
       "confirm": "Confirm",
       "confirmOutbound": "Confirm outbound",
       "menu": "Actions",
-      "menuAriaLabel": "Open shipment actions menu",
+      "menuAriaLabel": "Open order actions menu",
       "whatsappApi": "WhatsApp API",
       "whatsappApiTitle": "Send via WhatsApp Business (Cloud API)",
       "whatsappWeb": "WhatsApp Web",
@@ -266,7 +292,7 @@
       "empty": "No couriers available right now.",
       "table": {
         "name": "Courier",
-        "assignedCount": "Assigned shipments",
+        "assignedCount": "Assigned orders",
         "location": "Location",
         "unknownCourier": "Unknown courier"
       },
@@ -278,9 +304,28 @@
   "warehouse": {
     "pageTitle": "Warehouse operations",
     "subtitle": "Run scanning, tracking, assignment, and return receiving workflows from one dashboard.",
+    "list": {
+      "pageTitle": "Warehouses",
+      "subtitle": "Each row is one hub. Open a warehouse to see transfers (merchant batches), scanning tools, and metrics for that site only.",
+      "tableTitle": "Warehouses",
+      "tableDescription": "Click a row to open warehouse details and transfers for that hub.",
+      "colTransfers": "Transfers",
+      "colLocation": "Location",
+      "openMap": "Open on map"
+    },
+    "detail": {
+      "pageTitle": "Warehouse",
+      "subtitle": "Transfers (merchant batches), scanning, and metrics scoped to this warehouse only.",
+      "backToWarehouses": "← All warehouses",
+      "invalidTitle": "Warehouse",
+      "invalidDescription": "The warehouse link is missing or invalid.",
+      "accessDeniedTitle": "Access denied",
+      "accessDeniedDescription": "You cannot open this warehouse.",
+      "backToWarehouseHub": "Warehouse overview"
+    },
     "loading": "Loading warehouse data…",
     "filter": {
-      "title": "Shipments scope",
+      "title": "Orders scope",
       "description": "Warehouse administrators can narrow the queue and KPI cards to a single hub.",
       "descriptionAdmin": "Admins can narrow the queue and KPI cards to a single hub.",
       "warehouseLabel": "Warehouse",
@@ -306,7 +351,7 @@
       "openDirectory": "Open warehouse directory →",
       "colActions": "Actions",
       "viewDetails": "View",
-      "viewShipmentsQueue": "Shipments"
+      "viewShipmentsQueue": "Transfers queue"
     },
     "siteDetail": {
       "pageTitle": "Warehouse details",
@@ -321,18 +366,11 @@
       "adminInactive": "This user account is inactive.",
       "noAdmin": "No warehouse admin is assigned yet.",
       "linkFromOperations": "My warehouse details →",
-      "viewShipmentsAtHub": "View shipments at this warehouse →"
+      "viewShipmentsAtHub": "View transfers at this warehouse →"
     },
     "stats": {
       "totalWarehouses": "Warehouses (total)",
-      "activeWarehouses": "Warehouses (active)",
-      "awaitingScanIn": "Awaiting scan in",
-      "inWarehouse": "In warehouse",
-      "inWarehouseCsPending": "In WH — CS pending (packages)",
-      "readyForAssignment": "Ready for assignment",
-      "assigned": "Assigned to courier",
-      "returnsPending": "Returns pending receive",
-      "returnsReceivedToday": "Returns received today"
+      "activeWarehouses": "Warehouses (active)"
     },
     "hubSnapshot": {
       "title": "Warehouse profile",
@@ -341,9 +379,9 @@
     },
     "operations": {
       "title": "Scan and returns",
-      "description": "Use a tracking number to process inbound/outbound scans, mark returns, or quickly track a shipment.",
-      "trackingPlaceholder": "Tracking number or shipment ID",
-      "trackNeedsTracking": "Look up by tracking number, or open the shipment from the queue.",
+      "description": "Use an order tracking number to scan transfers in or out, receive returns, or look up transfer status.",
+      "trackingPlaceholder": "Order tracking number",
+      "trackNeedsTracking": "Look up by tracking number, or open the order from the queue.",
       "discountPlaceholder": "Return discount amount (optional)",
       "scanIn": "Scan in",
       "scanOut": "Scan out",
@@ -352,11 +390,13 @@
     },
     "queue": {
       "title": "Warehouse queue",
-      "description": "Monitor shipments and assign couriers directly from warehouse operations.",
-      "descriptionExtended": "Live shipment batches for your hub from the warehouse API. Click a row to open every package in that batch; use the link under the tracking number for the batch summary.",
-      "descriptionTransfers": "Each row is a merchant transfer (batch). Open a row to see every customer package, assign couriers per package, and run line-level operations.",
+      "titleTransfers": "Transfers",
+      "description": "Monitor orders and assign couriers directly from warehouse operations.",
+      "descriptionExtended": "Live transfers for your hub from the warehouse API. Click a row to open transfer details and customer orders.",
+      "descriptionTransfers": "Each row is one transfer (merchant batch) from merchant to this warehouse. Open a row for transfer details and customer orders.",
       "openBatchSummary": "Batch summary",
-      "searchPlaceholder": "Search by tracking, customer, or phone",
+      "openCustomerOrders": "Customer orders",
+      "searchPlaceholder": "Search by order tracking number",
       "allStatuses": "All statuses",
       "returnsOnly": "Returns only",
       "filterReturnsByCourier": "Courier (returns)",
@@ -371,13 +411,13 @@
     },
     "table": {
       "trackingNumber": "Tracking #",
+      "warehouse": "Warehouse",
       "customer": "Customer",
       "merchant": "Merchant",
-      "packageCount": "Packages",
+      "orderCount": "Orders",
       "totalValue": "Total value",
       "batchTransfer": "Transfer status",
       "pickupCourier": "Pickup courier",
-      "packageProgressHint": "{{delivered}} delivered · {{out}} out · {{csPending}} CS pending",
       "lineDelivery": "Line delivery",
       "linePayment": "Line payment",
       "status": "Status",
@@ -386,14 +426,19 @@
       "actions": "Actions"
     },
     "transferDetailTitle": "Transfer (batch) detail",
-    "transferDetailSubtitle": "Merchant transfer — open packages for recipients and assignments.",
-    "transferPackagesHint": "Recipient and courier assignment are managed per package — use “View packages” above.",
-    "packages": {
+    "transferDetailSubtitle": "Merchant transfer — customer orders and assignments are below.",
+    "transferOrdersHint": "Recipient and courier assignment are managed per customer order in the table below.",
+    "transferDetail": {
+      "ordersSectionTitle": "Customer orders (this transfer)",
+      "ordersSectionDescription": "Line-level delivery, payment, and courier assignment for packages in this batch.",
+      "jumpToOrders": "Jump to customer orders"
+    },
+    "orders": {
       "assignColumn": "Assign courier"
     },
     "feedback": {
-      "scanInSuccess": "Shipment scanned into warehouse.",
-      "scanOutSuccess": "Shipment scanned out for delivery.",
+      "scanInSuccess": "Transfer scanned into warehouse.",
+      "scanOutSuccess": "Package scanned out for delivery.",
       "assignmentSuccess": "Courier assigned successfully.",
       "returnSuccess": "Return received and recorded."
     }
@@ -407,7 +452,7 @@
       "PARTIALLY_DELIVERED": "Partially delivered",
       "DELIVERED": "Delivered (batch)"
     },
-    "packageDeliveryStatus": {
+    "orderDeliveryStatus": {
       "PENDING": "Pending",
       "CONFIRMED_BY_CS": "Confirmed by CS",
       "OUT_FOR_DELIVERY": "Out for delivery",
@@ -416,7 +461,7 @@
       "RETURNED": "Returned to warehouse",
       "POSTPONED": "Postponed"
     },
-    "packagePaymentStatus": {
+    "orderPaymentStatus": {
       "PENDING_COLLECTION": "Pending collection",
       "COLLECTED": "Collected",
       "POS_PENDING": "POS pending",

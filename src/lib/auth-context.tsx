@@ -159,7 +159,7 @@ export function canAccessCustomerService(role: UserRole | undefined): boolean {
 }
 
 export function getDefaultDashboardRoute(role: UserRole | undefined): string {
-  if (role === "CUSTOMER_SERVICE") return "/cs/shipments"
+  if (role === "CUSTOMER_SERVICE") return "/cs/orders"
   if (role === "WAREHOUSE" || role === "WAREHOUSE_ADMIN") return "/warehouse"
   return "/dashboard"
 }

@@ -1,7 +1,7 @@
 {
   "nav": {
     "dashboard": "لوحة التحكم",
-    "shipments": "الشحنات",
+    "orders": "طلبات العملاء",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
     "couriers": "المناديب",
@@ -11,6 +11,27 @@
     "warehouses": "المخازن",
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء"
+  },
+  "orders": {
+    "pageTitle": "طلبات العملاء",
+    "pageHeading": "طلبات العملاء",
+    "backToShipment": "العودة للشحنة",
+    "backToTransfer": "العودة للشحنة (النقل)",
+    "loading": "جاري تحميل الطلبات…",
+    "empty": "لا توجد طلبات في هذه الشحنة.",
+    "subtitle": "كل صف يمثل طلب عميل واحد مع مستلمه.",
+    "warehouseSubtitle": "كل صف يمثل سطر طلب عميل داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام.",
+    "columns": {
+      "deliveryStatus": "التسليم",
+      "paymentStatus": "الدفع"
+    }
+  },
+  "ordersList": {
+    "pageTitle": "طلبات العملاء",
+    "description": "طلبات العملاء الظاهرة لحسابك. استخدم المرشحات لتضييق القائمة.",
+    "tableCardTitle": "كل الطلبات",
+    "tableCardDescription": "النتائج تخضع لصلاحيات دورك من الخادم.",
+    "loading": "جاري تحميل الطلبات…"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول — Orbex",
@@ -58,23 +79,23 @@
   },
   "dashboard": {
     "stats": {
-      "totalShipments": "إجمالي الشحنات",
+      "totalShipments": "دفعات الشحن",
       "delivered": "تم التسليم",
       "rejected": "مرفوض",
       "postponed": "مؤجل"
     },
     "adminStats": {
       "users": "المستخدمون",
-      "shipments": "الشحنات",
-      "packages": "الطرود",
+      "shipments": "دفعات الشحن",
+      "orders": "طلبات العملاء",
       "warehouses": "المخازن"
     },
     "chart": {
-      "lineTitle": "الشحنات عبر الوقت",
-      "lineDescription": "آخر 7 أيام",
-      "lineSeriesName": "الشحنات",
-      "pieTitle": "توزيع الحالات",
-      "pieDescription": "جميع الشحنات حسب الحالة",
+      "lineTitle": "الطلبات عبر الوقت",
+      "lineDescription": "آخر 14 يومًا",
+      "lineSeriesName": "الطلبات",
+      "pieTitle": "توزيع حالات الطلبات",
+      "pieDescription": "طلبات العملاء حسب حالة التسليم",
       "days": {
         "mon": "الإثنين",
         "tue": "الثلاثاء",
@@ -87,9 +108,9 @@
     },
     "quickActions": {
       "title": "إجراءات سريعة",
-      "description": "مهام الشحن الشائعة",
-      "createShipment": "إنشاء شحنة",
-      "viewAllShipments": "عرض كل الشحنات"
+      "description": "انتقل إلى قائمة الطلبات الكاملة ومهام خدمة العملاء",
+      "createOrder": "إنشاء طلب",
+      "viewAllOrders": "عرض كل الطلبات"
     },
     "language": {
       "label": "اللغة",
@@ -97,8 +118,8 @@
       "ar": "العربية"
     },
     "recent": {
-      "title": "أحدث الشحنات",
-      "description": "آخر النشاط على الشبكة"
+      "title": "أحدث الطلبات",
+      "description": "أحدث طلبات العملاء في شبكتك"
     },
     "warehouses": {
       "title": "مراكز المخازن",
@@ -117,13 +138,9 @@
     }
   },
   "shipments": {
-    "pageTitle": "الشحنات",
     "detailTitle": "تفاصيل الشحنة",
     "back": "رجوع",
-    "description": "الشحنات الظاهرة لحسابك. استخدم المرشحات لتضييق القائمة.",
-    "tableCardTitle": "كل الشحنات",
-    "tableCardDescription": "النتائج تخضع لصلاحيات دورك من الخادم.",
-    "loading": "جاري تحميل الشحنات…",
+    "loading": "جاري التحميل…",
     "detail": {
       "courierPhone": "رقم موبايل المندوب",
       "shippingFee": "مصاريف الشحن",
@@ -132,15 +149,24 @@
       "timelineStart": "البداية",
       "currencyLocale": "ar-EG"
     },
-    "packagesWarehouseSubtitle": "كل صف يمثل سطر طرد داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام."
+    "viewOrders": "عرض طلبات العملاء",
+    "backToShipment": "العودة للشحنة",
+    "ordersTitle": "طلبات العملاء",
+    "ordersSubtitle": "كل صف يمثل طلب عميل واحد مع مستلمه.",
+    "ordersWarehouseSubtitle": "كل صف يمثل سطر طلب عميل داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام.",
+    "ordersEmpty": "لا توجد طلبات في هذه الشحنة.",
+    "orders": {
+      "deliveryStatus": "التسليم",
+      "paymentStatus": "الدفع"
+    }
   },
   "cs": {
-    "pageTitle": "خدمة العملاء — الشحنات",
+    "pageTitle": "خدمة العملاء — الطلبات",
     "dashboardTitle": "لوحة خدمة العملاء",
     "dashboardSubtitle": "أكّد الطلبات، تواصل مع العملاء، وتتبع المناديب. القائمة تفترض اليوم وتُحدَّث كل 25 ثانية.",
-    "shipmentsQueueTitle": "قائمة الشحنات",
-    "shipmentsQueueDescription": "رشّح بالهاتف أو الحالة أو وقت الإنشاء. إجراءات خدمة العملاء متاحة من هذه اللوحة فقط.",
-    "loading": "جاري تحميل الشحنات…",
+    "ordersQueueTitle": "قائمة الطلبات",
+    "ordersQueueDescription": "رشّح بالهاتف أو الحالة أو وقت الإنشاء. إجراءات خدمة العملاء متاحة من هذه اللوحة فقط.",
+    "loading": "جاري تحميل الطلبات…",
     "filters": {
       "phone": "بحث بالهاتف",
       "phonePlaceholder": "هاتف العميل",
@@ -170,7 +196,7 @@
     "actions": {
       "confirm": "تأكيد",
       "menu": "إجراءات",
-      "menuAriaLabel": "فتح قائمة إجراءات الشحنة",
+      "menuAriaLabel": "فتح قائمة إجراءات الطلب",
       "whatsappApi": "واتساب API",
       "whatsappApiTitle": "إرسال رسالة عبر WhatsApp Business (Cloud API)",
       "whatsappWeb": "واتساب ويب",
@@ -263,7 +289,7 @@
       "empty": "لا يوجد مناديب حاليا.",
       "table": {
         "name": "المندوب",
-        "assignedCount": "الشحنات المسندة",
+        "assignedCount": "الطلبات المسندة",
         "location": "الموقع",
         "unknownCourier": "مندوب غير معروف"
       },
@@ -275,9 +301,28 @@
   "warehouse": {
     "pageTitle": "عمليات المخزن",
     "subtitle": "نفّذ المسح، التتبع، التعيين، واستلام المرتجعات من لوحة واحدة.",
+    "list": {
+      "pageTitle": "المخازن",
+      "subtitle": "كل صف يمثل مركزًا. افتح المخزن لعرض عمليات النقل (الدفعات) وأدوات المسح والمؤشرات لهذا الموقع فقط.",
+      "tableTitle": "المخازن",
+      "tableDescription": "انقر صفًا لفتح تفاصيل المخزن والنقل لهذا المركز.",
+      "colTransfers": "النقل",
+      "colLocation": "الموقع",
+      "openMap": "فتح على الخريطة"
+    },
+    "detail": {
+      "pageTitle": "المخزن",
+      "subtitle": "عمليات النقل (الشحنات) والمسح والمؤشرات لهذا المخزن فقط.",
+      "backToWarehouses": "← كل المخازن",
+      "invalidTitle": "المخزن",
+      "invalidDescription": "رابط المخزن غير صالح أو ناقص.",
+      "accessDeniedTitle": "غير مسموح",
+      "accessDeniedDescription": "لا يمكنك فتح هذا المخزن.",
+      "backToWarehouseHub": "نظرة عامة على المخزن"
+    },
     "loading": "جاري تحميل بيانات المخزن…",
     "filter": {
-      "title": "نطاق الشحنات",
+      "title": "نطاق الطلبات",
       "description": "يمكن لمشرف المخازن تصفية القائمة ومؤشرات الأداء حسب موقع واحد.",
       "descriptionAdmin": "يمكن للمسؤول تصفية القائمة ومؤشرات الأداء حسب موقع واحد.",
       "warehouseLabel": "المخزن",
@@ -303,7 +348,7 @@
       "openDirectory": "فتح دليل المخازن ←",
       "colActions": "إجراءات",
       "viewDetails": "عرض",
-      "viewShipmentsQueue": "الشحنات"
+      "viewShipmentsQueue": "قائمة الشحنات (النقل)"
     },
     "siteDetail": {
       "pageTitle": "تفاصيل المخزن",
@@ -322,13 +367,7 @@
     },
     "stats": {
       "totalWarehouses": "المخازن (الإجمالي)",
-      "activeWarehouses": "المخازن (النشطة)",
-      "awaitingScanIn": "بانتظار مسح الدخول",
-      "inWarehouse": "داخل المخزن",
-      "readyForAssignment": "جاهزة للتعيين",
-      "assigned": "مُسندة لمندوب",
-      "returnsPending": "مرتجعات بانتظار الاستلام",
-      "returnsReceivedToday": "مرتجعات تم استلامها اليوم"
+      "activeWarehouses": "المخازن (النشطة)"
     },
     "hubSnapshot": {
       "title": "ملف المخزن",
@@ -337,9 +376,9 @@
     },
     "operations": {
       "title": "المسح والمرتجعات",
-      "description": "استخدم رقم التتبع لتنفيذ مسح الدخول/الخروج، تسجيل المرتجع، أو تتبع الشحنة سريعًا.",
-      "trackingPlaceholder": "رقم التتبع أو معرّف الشحنة",
-      "trackNeedsTracking": "استخدم رقم التتبع للبحث، أو افتح الشحنة من القائمة.",
+      "description": "استخدم رقم تتبع الطلب لتنفيذ مسح الدخول/الخروج، تسجيل المرتجع، أو الاطلاع على حالة الشحنة.",
+      "trackingPlaceholder": "رقم تتبع الطلب",
+      "trackNeedsTracking": "استخدم رقم التتبع للبحث، أو افتح الطلب من القائمة.",
       "discountPlaceholder": "قيمة خصم المرتجع (اختياري)",
       "scanIn": "مسح دخول",
       "scanOut": "مسح خروج",
@@ -348,10 +387,13 @@
     },
     "queue": {
       "title": "قائمة المخزن",
-      "description": "تابع الشحنات وعيّن المناديب مباشرة من عمليات المخزن.",
-      "descriptionExtended": "دفعات شحن فعلية لمخزنك من واجهة المخزن. انقر الصف لعرض كل الطرود في الدفعة؛ واستخدم الرابط تحت رقم التتبع لملخص الدفعة.",
+      "titleTransfers": "النقل",
+      "description": "تابع الطلبات وعيّن المناديب مباشرة من عمليات المخزن.",
+      "descriptionExtended": "دفعات فعلية لمخزنك من واجهة المخزن. انقر الصف لعرض كل طلبات العملاء في الدفعة؛ واستخدم الرابط تحت رقم التتبع لملخص الدفعة.",
+      "descriptionTransfers": "كل صف يمثل شحنة نقل (دفعة من التاجر) إلى هذا المخزن. افتح الصف لعرض تفاصيل الشحنة وطلبات العملاء.",
       "openBatchSummary": "ملخص الدفعة",
-      "searchPlaceholder": "بحث برقم التتبع أو العميل أو الهاتف",
+      "openCustomerOrders": "طلبات العملاء",
+      "searchPlaceholder": "بحث برقم تتبع الطلب",
       "allStatuses": "كل الحالات",
       "returnsOnly": "المرتجعات فقط",
       "filterReturnsByCourier": "المندوب (مرتجعات)",
@@ -359,12 +401,19 @@
       "pickCourier": "اختر مندوبًا…",
       "courierIdPlaceholder": "معرّف المندوب",
       "assign": "تعيين",
+      "assignLegDelivery": "آخر ميل",
+      "assignLegPickup": "أول ميل",
+      "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}"
     },
     "table": {
       "trackingNumber": "رقم التتبع",
+      "warehouse": "المخزن",
       "customer": "العميل",
       "merchant": "التاجر",
+      "orderCount": "طلبات العملاء",
+      "totalValue": "القيمة الإجمالية",
+      "pickupCourier": "مندوب الاستلام",
       "batchTransfer": "حالة الدفعة (نقل)",
       "lineDelivery": "تسليم السطر",
       "linePayment": "دفع السطر",
@@ -373,9 +422,20 @@
       "updatedAt": "آخر تحديث",
       "actions": "الإجراءات"
     },
+    "transferDetailTitle": "تفاصيل النقل (الدفعة)",
+    "transferDetailSubtitle": "نقل من التاجر — طلبات العملاء والتعيينات في الجدول أدناه.",
+    "transferOrdersHint": "يُدار المستلم وتعيين المندوب لكل طلب عميل في الجدول أدناه.",
+    "transferDetail": {
+      "ordersSectionTitle": "طلبات العملاء (هذه الشحنة)",
+      "ordersSectionDescription": "حالة التسليم والدفع وتعيين المندوب لكل طرد في الدفعة.",
+      "jumpToOrders": "الانتقال إلى طلبات العملاء"
+    },
+    "orders": {
+      "assignColumn": "تعيين مندوب"
+    },
     "feedback": {
       "scanInSuccess": "تم تسجيل دخول الشحنة إلى المخزن.",
-      "scanOutSuccess": "تم تسجيل خروج الشحنة للتسليم.",
+      "scanOutSuccess": "تم تسجيل خروج الطرد للتسليم.",
       "assignmentSuccess": "تم تعيين المندوب بنجاح.",
       "returnSuccess": "تم استلام المرتجع وتسجيله."
     }
@@ -389,7 +449,7 @@
       "PARTIALLY_DELIVERED": "مُسلَّم جزئيًا",
       "DELIVERED": "مُسلَّم (دفعة)"
     },
-    "packageDeliveryStatus": {
+    "orderDeliveryStatus": {
       "PENDING": "معلّق",
       "CONFIRMED_BY_CS": "مؤكد من خدمة العملاء",
       "OUT_FOR_DELIVERY": "جاري التسليم",
@@ -398,7 +458,7 @@
       "RETURNED": "عاد للمخزن",
       "POSTPONED": "مؤجل"
     },
-    "packagePaymentStatus": {
+    "orderPaymentStatus": {
       "PENDING_COLLECTION": "بانتظار التحصيل",
       "COLLECTED": "تم التحصيل",
       "POS_PENDING": "بانتظار مراجعة POS",

@@ -1,14 +1,13 @@
 import { apiFetch } from "@/api/client"
 
+/** Hub dashboard: counts of shipments by `Shipment.transferStatus` only. */
 export type WarehouseStats = {
-  awaitingScanIn: number
-  inWarehouse: number
-  /** Packages physically in hub waiting for CS outbound clearance */
-  inWarehouseCsPending: number
-  readyForAssignment: number
+  pending: number
   assigned: number
-  returnsPending: number
-  returnsReceivedToday: number
+  onTheWayToWarehouse: number
+  inWarehouse: number
+  partiallyDelivered: number
+  delivered: number
   /** Populated for unscoped `WAREHOUSE_ADMIN` dashboard calls */
   totalWarehouses?: number
   activeWarehouses?: number
@@ -26,6 +25,8 @@ export type WarehouseSiteRow = {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  /** Active pipeline transfer count for this hub (from directory API when available). */
+  transferCount?: number
 }
 
 export type WarehouseSiteAdmin = {
@@ -49,11 +50,8 @@ export type WarehouseShipmentRow = {
   transferStatus: string
   scannedOutAt: string | null
   updatedAt: string
-  packageCount: number
+  orderCount: number
   totalShipmentValue: string
-  packagesDeliveredCount: number
-  packagesOutForDeliveryCount: number
-  packagesPendingCsCount: number
   merchant?: {
     id: string
     displayName: string
@@ -86,10 +84,10 @@ type WarehouseQueueParams = {
   page?: number
   pageSize?: number
   search?: string
-  status?: string
-  subStatus?: string
-  /** Comma-separated core or core:sub pairs (backend `coreSubIn`). */
-  coreSubIn?: string
+  /** Single `ShipmentTransferStatus` (query `transferStatus`). */
+  transferStatus?: string
+  /** Comma-separated `ShipmentTransferStatus` values (query `transferStatusesIn`). */
+  transferStatusesIn?: string
   returnsOnly?: boolean
   courierId?: string
   /** Admin / warehouse admin: narrow queue to one hub */
@@ -123,9 +121,8 @@ export function listWarehouseQueue(
     page: params.page ?? 1,
     pageSize: params.pageSize ?? 20,
     search: params.search,
-    status: params.status,
-    subStatus: params.subStatus,
-    coreSubIn: params.coreSubIn,
+    transferStatus: params.transferStatus,
+    transferStatusesIn: params.transferStatusesIn,
     returnsOnly: params.returnsOnly,
     courierId: params.courierId,
     warehouseId: params.warehouseId,
@@ -204,7 +201,7 @@ export function assignWarehouseShipment(params: {
   shipmentId: string
   courierId: string
   note?: string
-  packageId?: string
+  orderId?: string
   /** `pickup` assigns first-mile courier on the shipment (batch). */
   leg?: "pickup" | "delivery"
 }): Promise<unknown> {
@@ -214,7 +211,7 @@ export function assignWarehouseShipment(params: {
     body: JSON.stringify({
       courierId: params.courierId,
       note: params.note,
-      ...(params.packageId ? { packageId: params.packageId } : {}),
+      ...(params.orderId ? { orderId: params.orderId } : {}),
       ...(params.leg ? { leg: params.leg } : {}),
     }),
   })
@@ -224,7 +221,7 @@ export function receiveWarehouseReturn(params: {
   token: string
   trackingNumber?: string
   shipmentId?: string
-  packageId?: string
+  orderId?: string
   returnDiscountAmount?: number
   note?: string
 }): Promise<unknown> {
@@ -235,7 +232,7 @@ export function receiveWarehouseReturn(params: {
       ...(params.shipmentId
         ? { shipmentId: params.shipmentId }
         : { trackingNumber: params.trackingNumber }),
-      ...(params.packageId ? { packageId: params.packageId } : {}),
+      ...(params.orderId ? { orderId: params.orderId } : {}),
       returnDiscountAmount: params.returnDiscountAmount,
       note: params.note,
     }),

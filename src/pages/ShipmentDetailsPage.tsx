@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 
-import { getShipmentById, getShipmentPackages, listShipments } from "@/api/shipments-api"
+import { getShipmentById, getShipmentOrders, listShipments } from "@/api/shipments-api"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,7 @@ import { ShipmentStatusBadge } from "@/features/customer-service/components/Ship
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
 import { parseWarehouseLatLng } from "@/features/customer-service/lib/location"
+import { WarehouseShipmentOrdersTable } from "@/features/warehouse/components/WarehouseShipmentOrdersTable"
 import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
 import { useAuth } from "@/lib/auth-context"
 
@@ -32,7 +33,10 @@ export function ShipmentDetailsPage() {
   const { t } = useTranslation()
   const nav = useNavigate()
   const location = useLocation()
-  const { shipmentId: shipmentParam = "" } = useParams()
+  const { shipmentId: shipmentParam = "", warehouseId } = useParams<{
+    shipmentId?: string
+    warehouseId?: string
+  }>()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
   const [mapCourierId, setMapCourierId] = useState<string | null>(null)
@@ -58,7 +62,9 @@ export function ShipmentDetailsPage() {
       return shipmentParam.trim()
     }
   })()
-  const isWarehouseRoute = location.pathname.startsWith("/warehouse/")
+  const isWarehouseRoute = /^\/warehouses\/[^/]+\/transfers\//.test(
+    location.pathname,
+  )
   const isIdParam = uuidRegex.test(shipmentName)
   const statusPerspective: DashboardPerspective = isWarehouseRoute
     ? "warehouse"
@@ -90,15 +96,14 @@ export function ShipmentDetailsPage() {
     enabled: !!token && !!matchedShipmentId,
   })
 
-  const packagesSummaryQuery = useQuery({
-    queryKey: ["shipment-packages-summary", matchedShipmentId, token],
-    queryFn: () =>
-      getShipmentPackages({ token, shipmentId: matchedShipmentId }),
+  const ordersSummaryQuery = useQuery({
+    queryKey: ["shipment-orders-summary", matchedShipmentId, token],
+    queryFn: () => getShipmentOrders({ token, shipmentId: matchedShipmentId }),
     enabled: !!token && !!matchedShipmentId && isWarehouseRoute,
   })
 
-  const packagesTotalValue = (() => {
-    const list = packagesSummaryQuery.data?.packages ?? []
+  const ordersTotalValue = (() => {
+    const list = ordersSummaryQuery.data?.orders ?? []
     let sum = 0
     for (const p of list) {
       const n = Number.parseFloat(String(p.shipmentValue ?? "").replace(/,/g, "").trim())
@@ -127,19 +132,31 @@ export function ShipmentDetailsPage() {
           <Button type="button" variant="outline" size="sm" onClick={() => nav(-1)}>
             {t("shipments.back")}
           </Button>
-          {matchedShipmentId ? (
+          {isWarehouseRoute && warehouseId ? (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link to={`/warehouses/${encodeURIComponent(warehouseId)}`}>
+                {t("warehouse.detail.backToWarehouseHub")}
+              </Link>
+            </Button>
+          ) : null}
+          {matchedShipmentId && !isWarehouseRoute ? (
             <Button type="button" variant="secondary" size="sm" asChild>
               <Link
                 to={
-                  isWarehouseRoute
-                    ? `/warehouse/shipments/${matchedShipmentId}/packages`
-                    : location.pathname.startsWith("/cs/")
-                      ? `/cs/shipments/${matchedShipmentId}/packages`
-                      : `/shipments/${matchedShipmentId}/packages`
+                  location.pathname.startsWith("/cs/")
+                    ? `/cs/orders/${matchedShipmentId}`
+                    : `/orders/${matchedShipmentId}`
                 }
               >
-                {t("shipments.viewPackages", { defaultValue: "View packages" })}
+                {t("shipments.viewOrders", { defaultValue: "View orders" })}
               </Link>
+            </Button>
+          ) : null}
+          {matchedShipmentId && isWarehouseRoute ? (
+            <Button type="button" variant="secondary" size="sm" asChild>
+              <a href="#warehouse-customer-orders">
+                {t("warehouse.transferDetail.jumpToOrders")}
+              </a>
             </Button>
           ) : null}
         </div>
@@ -147,7 +164,7 @@ export function ShipmentDetailsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PackageCheck className="text-primary size-5" aria-hidden />
-              {t("shipments.detailTitle")}
+              {isWarehouseRoute ? t("warehouse.transferDetailTitle") : t("shipments.detailTitle")}
             </CardTitle>
             <CardDescription>
               {isWarehouseRoute
@@ -196,22 +213,22 @@ export function ShipmentDetailsPage() {
                           : "—"}
                       </p>
                       <p>
-                        <strong>{t("warehouse.table.packageCount")}:</strong>{" "}
-                        {packagesSummaryQuery.isLoading
+                        <strong>{t("warehouse.table.orderCount")}:</strong>{" "}
+                        {ordersSummaryQuery.isLoading
                           ? "…"
-                          : String(packagesSummaryQuery.data?.packages.length ?? 0)}
+                          : String(ordersSummaryQuery.data?.orders.length ?? 0)}
                       </p>
                       <p>
                         <strong>{t("warehouse.table.totalValue")}:</strong>{" "}
-                        {packagesTotalValue == null
+                        {ordersTotalValue == null
                           ? "—"
-                          : formatMoney(String(packagesTotalValue))}
+                          : formatMoney(String(ordersTotalValue))}
                       </p>
                     </div>
                     <p className="text-muted-foreground text-sm">
-                      {t("warehouse.transferPackagesHint", {
+                      {t("warehouse.transferOrdersHint", {
                         defaultValue:
-                          "Recipient and courier assignment are managed per package — open the packages list.",
+                          "Recipient and courier assignment are managed per order — open the orders list.",
                       })}
                     </p>
                   </>
@@ -336,6 +353,22 @@ export function ShipmentDetailsPage() {
             ) : null}
           </CardContent>
         </Card>
+
+        {isWarehouseRoute && matchedShipmentId && token ? (
+          <Card id="warehouse-customer-orders">
+            <CardHeader>
+              <CardTitle>{t("warehouse.transferDetail.ordersSectionTitle")}</CardTitle>
+              <CardDescription>{t("warehouse.transferDetail.ordersSectionDescription")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WarehouseShipmentOrdersTable
+                token={token}
+                shipmentId={matchedShipmentId}
+                mode="warehouse"
+              />
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
       <CsCourierMapDialog
         open={mapOpen}

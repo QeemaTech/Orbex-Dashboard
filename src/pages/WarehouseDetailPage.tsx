@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Boxes, Search, UserRound, Warehouse } from "react-lucid"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 
 import {
   getWarehouseCouriers,
@@ -10,7 +10,6 @@ import {
   getWarehouseStats,
   getWarehouseTracking,
   listWarehouseQueue,
-  listWarehouseSites,
   receiveWarehouseReturn,
   scanPayloadFromInput,
   scanShipmentIn,
@@ -41,37 +40,18 @@ import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
 import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
 
-const warehouseStatusFilters = [
+/** `Shipment.transferStatus` values; empty = default pipeline (active batches). */
+const warehouseTransferStatusFilters = [
   "",
-  "PENDING_PICKUP",
-  "RECEIVED_IN_WAREHOUSE",
-  "OUT_FOR_DELIVERY",
-  "REJECTED",
-  "DELAYED",
+  "PENDING",
+  "ASSIGNED",
+  "ON_THE_WAY_TO_WAREHOUSE",
+  "IN_WAREHOUSE",
+  "PARTIALLY_DELIVERED",
+  "DELIVERED",
 ] as const
 
-type WarehouseStatusFilter = (typeof warehouseStatusFilters)[number]
-
-function toWarehouseQueueQuery(value: WarehouseStatusFilter): {
-  status?: string
-  subStatus?: string
-  coreSubIn?: string
-} {
-  switch (value) {
-    case "":
-      return {}
-    case "PENDING_PICKUP":
-      return { coreSubIn: "PENDING:NONE,PENDING:CONFIRMED" }
-    case "RECEIVED_IN_WAREHOUSE":
-      return { status: "IN_WAREHOUSE", subStatus: "NONE" }
-    case "OUT_FOR_DELIVERY":
-      return { coreSubIn: "OUT_FOR_DELIVERY:NONE,OUT_FOR_DELIVERY:ASSIGNED" }
-    case "REJECTED":
-      return { status: "RETURNED", subStatus: "REJECTED" }
-    case "DELAYED":
-      return { status: "RETURNED", subStatus: "DELAYED" }
-  }
-}
+type WarehouseTransferStatusFilter = (typeof warehouseTransferStatusFilters)[number]
 
 function warehouseTransferRowTone(transferStatus: string): string {
   const s = transferStatus.toUpperCase()
@@ -120,128 +100,70 @@ function AssignmentTruckIcon({ className, "aria-hidden": ariaHidden }: { classNa
   )
 }
 
-function ReturnsIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
-      <path d="M12 3.75a8.25 8.25 0 1 0 6.69 13.08.9.9 0 0 0-1.46-1.05A6.45 6.45 0 1 1 18.45 12h-1.8a.9.9 0 0 0-.636 1.536l3.15 3.15a.9.9 0 0 0 1.272 0l3.15-3.15A.9.9 0 0 0 22.95 12h-2.7A8.25 8.25 0 0 0 12 3.75Zm-.9 4.2a.9.9 0 0 0-1.8 0v4.2a.9.9 0 0 0 .4.75l3 2.1a.9.9 0 0 0 1.03-1.476l-2.63-1.84V7.95Z" />
-    </svg>
-  )
-}
-
-export function WarehousePage() {
+export function WarehouseDetailPage() {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const { warehouseId = "" } = useParams<{ warehouseId: string }>()
   const { accessToken, user } = useAuth()
   const queryClient = useQueryClient()
   const token = accessToken ?? ""
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
 
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<WarehouseStatusFilter>("")
+  const [transferStatusFilter, setTransferStatusFilter] =
+    useState<WarehouseTransferStatusFilter>("")
   const [returnsOnly, setReturnsOnly] = useState(false)
   const [returnsCourierFilterId, setReturnsCourierFilterId] = useState("")
   const [page, setPage] = useState(1)
   const [trackingInput, setTrackingInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
   const [trackingResult, setTrackingResult] = useState<string>("")
-  const [filterWarehouseId, setFilterWarehouseId] = useState("")
 
-  const canFilterByWarehouse = user?.role === "ADMIN"
-  const isWarehouseNetworkAdmin = user?.role === "ADMIN"
-  const loadWarehouseSitesForNav =
+  const canSeeWarehouseDirectory =
     user?.role === "ADMIN" || user?.role === "WAREHOUSE_ADMIN"
-
-  const warehouseListFilter = useMemo(() => toWarehouseQueueQuery(status), [status])
+  const accessDenied =
+    !!user &&
+    user.role === "WAREHOUSE" &&
+    !!user.warehouseId &&
+    user.warehouseId !== warehouseId
 
   const queueQueryKey = useMemo(
     () =>
       [
         "warehouse-queue",
         token,
+        warehouseId,
         page,
         search,
-        warehouseListFilter.status ?? "",
-        warehouseListFilter.subStatus ?? "",
-        warehouseListFilter.coreSubIn ?? "",
+        transferStatusFilter,
         returnsOnly,
         returnsOnly ? returnsCourierFilterId : "",
-        canFilterByWarehouse ? filterWarehouseId : "",
       ] as const,
     [
       token,
+      warehouseId,
       page,
       search,
-      warehouseListFilter,
+      transferStatusFilter,
       returnsOnly,
       returnsCourierFilterId,
-      canFilterByWarehouse,
-      filterWarehouseId,
     ],
   )
 
-  const sitesQuery = useQuery({
-    queryKey: ["warehouse-sites", token],
-    queryFn: () => listWarehouseSites(token),
-    enabled: !!token && loadWarehouseSitesForNav,
-  })
-
-  useEffect(() => {
-    if (!canFilterByWarehouse || !sitesQuery.isSuccess) return
-    const fromUrl = searchParams.get("warehouseId")?.trim() ?? ""
-    const siteIds = new Set((sitesQuery.data?.warehouses ?? []).map((w) => w.id))
-    if (fromUrl && !siteIds.has(fromUrl)) {
-      setSearchParams(
-        (prev) => {
-          const n = new URLSearchParams(prev)
-          n.delete("warehouseId")
-          return n
-        },
-        { replace: true },
-      )
-      return
-    }
-    const next = fromUrl && siteIds.has(fromUrl) ? fromUrl : ""
-    setFilterWarehouseId((prev) => {
-      if (prev === next) return prev
-      setPage(1)
-      return next
-    })
-  }, [
-    canFilterByWarehouse,
-    sitesQuery.isSuccess,
-    sitesQuery.data?.warehouses,
-    searchParams,
-    setSearchParams,
-  ])
-
-  const myWarehouseId = sitesQuery.data?.warehouses?.[0]?.id ?? ""
-
-  const siteDetailWarehouseId = useMemo(() => {
-    if (canFilterByWarehouse && filterWarehouseId) return filterWarehouseId
-    if (user?.warehouseId) return user.warehouseId
-    if (user?.role === "WAREHOUSE_ADMIN" && myWarehouseId) return myWarehouseId
-    return ""
-  }, [canFilterByWarehouse, filterWarehouseId, user?.warehouseId, user?.role, myWarehouseId])
+  const siteDetailWarehouseId = warehouseId
 
   const siteDetailQuery = useQuery({
     queryKey: ["warehouse-site-detail", token, siteDetailWarehouseId],
     queryFn: () => getWarehouseSite(token, siteDetailWarehouseId),
-    enabled: !!token && !!siteDetailWarehouseId,
+    enabled: !!token && !!siteDetailWarehouseId && !accessDenied,
   })
 
   const hub = siteDetailQuery.data
 
   const statsQuery = useQuery({
-    queryKey: ["warehouse-stats", token, canFilterByWarehouse ? filterWarehouseId : ""],
-    queryFn: () =>
-      getWarehouseStats(
-        token,
-        canFilterByWarehouse && filterWarehouseId
-          ? filterWarehouseId
-          : undefined,
-      ),
-    enabled: !!token,
+    queryKey: ["warehouse-stats", token, warehouseId],
+    queryFn: () => getWarehouseStats(token, warehouseId),
+    enabled: !!token && !!warehouseId && !accessDenied,
     refetchInterval: 15000,
   })
 
@@ -253,27 +175,23 @@ export function WarehousePage() {
         page,
         pageSize: 20,
         search: search || undefined,
-        status: warehouseListFilter.status,
-        subStatus: warehouseListFilter.subStatus,
-        coreSubIn: warehouseListFilter.coreSubIn,
+        transferStatus:
+          transferStatusFilter === "" ? undefined : transferStatusFilter,
         returnsOnly,
         courierId:
           returnsOnly && returnsCourierFilterId.trim()
             ? returnsCourierFilterId.trim()
             : undefined,
-        warehouseId:
-          canFilterByWarehouse && filterWarehouseId
-            ? filterWarehouseId
-            : undefined,
+        warehouseId,
       }),
-    enabled: !!token,
+    enabled: !!token && !!warehouseId && !accessDenied,
     refetchInterval: 10000,
   })
 
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
     queryFn: () => getWarehouseCouriers({ token }),
-    enabled: !!token && returnsOnly,
+    enabled: !!token && returnsOnly && !accessDenied,
   })
 
   const refreshData = async () => {
@@ -339,23 +257,13 @@ export function WarehousePage() {
         trackingNumber: scanPayloadFromInput(trackingInput).trackingNumber ?? "",
       }),
     onSuccess: (data) => {
-      const row = data as {
-        customerName?: string
-        transferStatus?: string
-        status: string
-        subStatus: string
-        updatedAt: string
+      const row = data as { transferStatus?: string; updatedAt?: string }
+      if (!row.transferStatus || !row.updatedAt) {
+        setTrackingResult("")
+        return
       }
-      const label =
-        row.transferStatus != null
-          ? backendShipmentTransferLabel(t, row.transferStatus)
-          : t(`cs.shipmentStatus.${row.status}_${row.subStatus}`, {
-              defaultValue: `${row.status} / ${row.subStatus}`,
-            })
-      const who = row.customerName ?? "—"
-      setTrackingResult(
-        `${who} · ${label} · ${formatDateTime(row.updatedAt, locale)}`,
-      )
+      const label = backendShipmentTransferLabel(t, row.transferStatus)
+      setTrackingResult(`${label} · ${formatDateTime(row.updatedAt, locale)}`)
     },
     onError: (error) => {
       showToast((error as Error).message, "error")
@@ -369,93 +277,91 @@ export function WarehousePage() {
   )
   const stats = statsQuery.data
   const statValues = [
-    stats?.awaitingScanIn ?? 0,
-    stats?.inWarehouse ?? 0,
-    stats?.inWarehouseCsPending ?? 0,
-    stats?.readyForAssignment ?? 0,
+    stats?.pending ?? 0,
     stats?.assigned ?? 0,
-    stats?.returnsPending ?? 0,
-    stats?.returnsReceivedToday ?? 0,
-    ...(isWarehouseNetworkAdmin && stats?.totalWarehouses !== undefined
-      ? [stats.totalWarehouses, stats.activeWarehouses ?? 0]
-      : []),
+    stats?.onTheWayToWarehouse ?? 0,
+    stats?.inWarehouse ?? 0,
+    stats?.partiallyDelivered ?? 0,
+    stats?.delivered ?? 0,
   ]
   const maxStatValue = Math.max(...statValues, 0)
 
+  type WarehouseTransferStatKey =
+    | "pending"
+    | "assigned"
+    | "onTheWayToWarehouse"
+    | "inWarehouse"
+    | "partiallyDelivered"
+    | "delivered"
+
+  const transferStatCards: {
+    statKey: WarehouseTransferStatKey
+    /** `ShipmentTransferStatus` value for i18n (`backend.shipmentTransferStatus.*`). */
+    labelEnum: string
+    icon: typeof AwaitingScanIcon
+    accent: "warning" | "primary" | "success" | "destructive"
+  }[] = [
+    { statKey: "pending", labelEnum: "PENDING", icon: AwaitingScanIcon, accent: "warning" },
+    { statKey: "assigned", labelEnum: "ASSIGNED", icon: AssignmentTruckIcon, accent: "primary" },
+    {
+      statKey: "onTheWayToWarehouse",
+      labelEnum: "ON_THE_WAY_TO_WAREHOUSE",
+      icon: AssignmentTruckIcon,
+      accent: "primary",
+    },
+    { statKey: "inWarehouse", labelEnum: "IN_WAREHOUSE", icon: WarehouseBoxIcon, accent: "primary" },
+    {
+      statKey: "partiallyDelivered",
+      labelEnum: "PARTIALLY_DELIVERED",
+      icon: AssignmentTruckIcon,
+      accent: "success",
+    },
+    { statKey: "delivered", labelEnum: "DELIVERED", icon: Boxes, accent: "success" },
+  ]
+
+  if (!warehouseId) {
+    return (
+      <Layout title={t("warehouse.detail.invalidTitle")}>
+        <p className="text-muted-foreground text-sm">{t("warehouse.detail.invalidDescription")}</p>
+      </Layout>
+    )
+  }
+
+  if (accessDenied) {
+    return (
+      <Layout title={t("warehouse.detail.accessDeniedTitle")}>
+        <p className="text-destructive text-sm">{t("warehouse.detail.accessDeniedDescription")}</p>
+      </Layout>
+    )
+  }
+
   return (
-    <Layout title={t("warehouse.pageTitle")}>
+    <Layout title={hub?.name ?? t("warehouse.detail.pageTitle")}>
       <div className="space-y-6">
+        {canSeeWarehouseDirectory ? (
+          <p>
+            <Link
+              to="/warehouses"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+            >
+              {t("warehouse.detail.backToWarehouses")}
+            </Link>
+          </p>
+        ) : null}
+
         <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
           <CardHeader className="flex flex-row items-center gap-3 pb-2">
             <div className="bg-primary/15 text-primary flex size-14 items-center justify-center rounded-xl">
               <Boxes className="size-6" aria-hidden />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-lg">{t("warehouse.pageTitle")}</CardTitle>
-              <CardDescription>{t("warehouse.subtitle")}</CardDescription>
-              {isWarehouseNetworkAdmin ? (
-                <p className="pt-1">
-                  <Link
-                    to="/warehouse/sites"
-                    className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                  >
-                    {t("warehouse.sites.openDirectory")}
-                  </Link>
-                </p>
-              ) : null}
-              {user?.role === "WAREHOUSE_ADMIN" && myWarehouseId ? (
-                <p className="pt-1">
-                  <Link
-                    to={`/warehouse/sites/${myWarehouseId}`}
-                    className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                  >
-                    {t("warehouse.siteDetail.linkFromOperations")}
-                  </Link>
-                </p>
-              ) : null}
+              <CardTitle className="text-lg">
+                {hub?.name ?? t("warehouse.detail.pageTitle")}
+              </CardTitle>
+              <CardDescription>{t("warehouse.detail.subtitle")}</CardDescription>
             </div>
           </CardHeader>
         </Card>
-
-        {canFilterByWarehouse ? (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{t("warehouse.filter.title")}</CardTitle>
-              <CardDescription>{t("warehouse.filter.descriptionAdmin")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <label className="text-muted-foreground mb-2 block text-sm">
-                {t("warehouse.filter.warehouseLabel")}
-              </label>
-              <select
-                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 max-w-md rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
-                value={filterWarehouseId}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setFilterWarehouseId(v)
-                  setPage(1)
-                  setSearchParams(
-                    (prev) => {
-                      const n = new URLSearchParams(prev)
-                      if (v) n.set("warehouseId", v)
-                      else n.delete("warehouseId")
-                      return n
-                    },
-                    { replace: true },
-                  )
-                }}
-              >
-                <option value="">{t("warehouse.filter.allWarehouses")}</option>
-                {(sitesQuery.data?.warehouses ?? []).map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name} ({w.governorate}
-                    {w.code ? ` · ${w.code}` : ""})
-                  </option>
-                ))}
-              </select>
-            </CardContent>
-          </Card>
-        ) : null}
 
         {siteDetailWarehouseId ? (
           <div className="space-y-3">
@@ -548,92 +454,22 @@ export function WarehousePage() {
                     )}
                   </CardContent>
                 </Card>
-                <div className="lg:col-span-2">
-                  <Link
-                    to={`/warehouse/sites/${encodeURIComponent(hub.id)}`}
-                    className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                  >
-                    {t("warehouse.hubSnapshot.fullDetailsLink")}
-                  </Link>
-                </div>
               </div>
             ) : null}
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {isWarehouseNetworkAdmin &&
-          stats?.totalWarehouses !== undefined &&
-          !filterWarehouseId ? (
-            <>
-              <StatCard
-                title={t("warehouse.stats.totalWarehouses")}
-                value={stats.totalWarehouses}
-                percentage={toPercentFromMax(stats.totalWarehouses, maxStatValue)}
-                icon={WarehouseBoxIcon}
-                accent="primary"
-              />
-              <StatCard
-                title={t("warehouse.stats.activeWarehouses")}
-                value={stats.activeWarehouses ?? 0}
-                percentage={toPercentFromMax(stats.activeWarehouses ?? 0, maxStatValue)}
-                icon={AwaitingScanIcon}
-                accent="success"
-              />
-            </>
-          ) : null}
-          <StatCard
-            title={t("warehouse.stats.awaitingScanIn")}
-            value={stats?.awaitingScanIn ?? 0}
-            percentage={toPercentFromMax(stats?.awaitingScanIn ?? 0, maxStatValue)}
-            icon={AwaitingScanIcon}
-            accent="warning"
-          />
-          <StatCard
-            title={t("warehouse.stats.inWarehouse")}
-            value={stats?.inWarehouse ?? 0}
-            percentage={toPercentFromMax(stats?.inWarehouse ?? 0, maxStatValue)}
-            icon={WarehouseBoxIcon}
-            accent="primary"
-          />
-          <StatCard
-            title={t("warehouse.stats.inWarehouseCsPending")}
-            value={stats?.inWarehouseCsPending ?? 0}
-            percentage={toPercentFromMax(
-              stats?.inWarehouseCsPending ?? 0,
-              maxStatValue,
-            )}
-            icon={AwaitingScanIcon}
-            accent="warning"
-          />
-          <StatCard
-            title={t("warehouse.stats.readyForAssignment")}
-            value={stats?.readyForAssignment ?? 0}
-            percentage={toPercentFromMax(stats?.readyForAssignment ?? 0, maxStatValue)}
-            icon={AssignmentTruckIcon}
-            accent="success"
-          />
-          <StatCard
-            title={t("warehouse.stats.assigned")}
-            value={stats?.assigned ?? 0}
-            percentage={toPercentFromMax(stats?.assigned ?? 0, maxStatValue)}
-            icon={AssignmentTruckIcon}
-            accent="primary"
-          />
-          <StatCard
-            title={t("warehouse.stats.returnsPending")}
-            value={stats?.returnsPending ?? 0}
-            percentage={toPercentFromMax(stats?.returnsPending ?? 0, maxStatValue)}
-            icon={ReturnsIcon}
-            accent="destructive"
-          />
-          <StatCard
-            title={t("warehouse.stats.returnsReceivedToday")}
-            value={stats?.returnsReceivedToday ?? 0}
-            percentage={toPercentFromMax(stats?.returnsReceivedToday ?? 0, maxStatValue)}
-            icon={ReturnsIcon}
-            accent="success"
-          />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {transferStatCards.map((c) => (
+            <StatCard
+              key={c.statKey}
+              title={t(`backend.shipmentTransferStatus.${c.labelEnum}`)}
+              value={stats?.[c.statKey] ?? 0}
+              percentage={toPercentFromMax(stats?.[c.statKey] ?? 0, maxStatValue)}
+              icon={c.icon}
+              accent={c.accent}
+            />
+          ))}
         </div>
 
         <Card>
@@ -706,7 +542,7 @@ export function WarehousePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("warehouse.queue.title")}</CardTitle>
+            <CardTitle>{t("warehouse.queue.titleTransfers")}</CardTitle>
             <CardDescription>{t("warehouse.queue.descriptionTransfers")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -721,16 +557,16 @@ export function WarehousePage() {
               />
               <select
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
-                value={status}
+                value={transferStatusFilter}
                 onChange={(e) => {
-                  setStatus(e.target.value as WarehouseStatusFilter)
+                  setTransferStatusFilter(e.target.value as WarehouseTransferStatusFilter)
                   setPage(1)
                 }}
               >
-                {warehouseStatusFilters.map((value) => (
+                {warehouseTransferStatusFilters.map((value) => (
                   <option key={value || "all"} value={value}>
                     {value
-                      ? t(`cs.shipmentStatus.${value}`)
+                      ? backendShipmentTransferLabel(t, value)
                       : t("warehouse.queue.allStatuses")}
                   </option>
                 ))}
@@ -787,8 +623,9 @@ export function WarehousePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("warehouse.table.trackingNumber")}</TableHead>
+                    <TableHead>{t("warehouse.table.warehouse")}</TableHead>
                     <TableHead>{t("warehouse.table.merchant")}</TableHead>
-                    <TableHead>{t("warehouse.table.packageCount")}</TableHead>
+                    <TableHead>{t("warehouse.table.orderCount")}</TableHead>
                     <TableHead>{t("warehouse.table.totalValue")}</TableHead>
                     <TableHead>{t("warehouse.table.batchTransfer")}</TableHead>
                     <TableHead>{t("warehouse.table.pickupCourier")}</TableHead>
@@ -815,7 +652,7 @@ export function WarehousePage() {
                         className={`hover:bg-muted/50 cursor-pointer ${warehouseTransferRowTone(row.transferStatus)}`}
                         onClick={() =>
                           nav(
-                            `/warehouse/shipments/${encodeURIComponent(row.shipmentId)}/packages`,
+                            `/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(row.shipmentId)}`,
                           )
                         }
                       >
@@ -827,31 +664,14 @@ export function WarehousePage() {
                             <span className="text-muted-foreground text-xs">
                               {row.shipmentId.slice(0, 8)}…
                             </span>
-                            <Link
-                              to={`/warehouse/shipments/${encodeURIComponent(row.shipmentId)}`}
-                              className="text-primary w-fit text-xs font-medium underline-offset-4 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {t("warehouse.queue.openBatchSummary")}
-                            </Link>
                           </div>
                         </TableCell>
+                        <TableCell>{hub?.name ?? "—"}</TableCell>
                         <TableCell>{row.merchant?.displayName ?? "—"}</TableCell>
-                        <TableCell>{row.packageCount}</TableCell>
+                        <TableCell>{row.orderCount}</TableCell>
                         <TableCell>{fmtMoney(row.totalShipmentValue)}</TableCell>
                         <TableCell className="max-w-[12rem] text-xs whitespace-normal">
                           {backendShipmentTransferLabel(t, row.transferStatus)}
-                          {row.packagesDeliveredCount > 0 ||
-                          row.packagesOutForDeliveryCount > 0 ||
-                          row.packagesPendingCsCount > 0 ? (
-                            <span className="text-muted-foreground mt-1 block">
-                              {t("warehouse.table.packageProgressHint", {
-                                delivered: row.packagesDeliveredCount,
-                                out: row.packagesOutForDeliveryCount,
-                                csPending: row.packagesPendingCsCount,
-                              })}
-                            </span>
-                          ) : null}
                         </TableCell>
                         <TableCell className="text-sm">
                           {row.pickupCourier?.fullName ?? "—"}

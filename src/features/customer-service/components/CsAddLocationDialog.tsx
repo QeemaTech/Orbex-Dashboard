@@ -128,7 +128,7 @@ export function CsAddLocationDialog({
             ...detail,
             ...updatedRow,
             shipmentId: detail.shipmentId,
-            primaryPackageId: detail.primaryPackageId,
+            primaryOrderId: detail.primaryOrderId,
             id: detail.id,
             locationText: parsedLocation.locationText,
             locationLink: parsedLocation.locationLink,
