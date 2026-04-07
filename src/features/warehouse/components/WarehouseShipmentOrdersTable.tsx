@@ -1,11 +1,12 @@
+import type { MouseEvent } from "react"
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
+import { useLocation, useNavigate } from "react-router-dom"
 
-import {
-  getShipmentById,
-  getShipmentOrders,
-} from "@/api/shipments-api"
+import { getShipmentById, getShipmentOrders } from "@/api/shipments-api"
 import { assignWarehouseShipment, getWarehouseCouriers } from "@/api/warehouse-api"
+import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -16,12 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  backendOrderDeliveryLabel,
-  backendOrderPaymentLabel,
-} from "@/features/warehouse/backend-labels"
 import { showToast } from "@/lib/toast"
-import { useTranslation } from "react-i18next"
 
 const WAREHOUSE_COL_COUNT = 10
 const COMPACT_COL_COUNT = 6
@@ -34,8 +30,8 @@ type Props = {
 }
 
 /**
- * Customer orders under a merchant transfer (shipment). Each row has its own `trackingNumber`.
- * Warehouse mode: assignment and line-level ops are scoped to the parent transfer via `shipmentId`.
+ * Customer orders under a merchant transfer (shipment). Row click opens **order** detail.
+ * Warehouse mode: assignment controls; clicks on the assign cell do not navigate.
  */
 export function WarehouseShipmentOrdersTable({
   token,
@@ -43,6 +39,9 @@ export function WarehouseShipmentOrdersTable({
   mode = "warehouse",
 }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/orders" : "/orders"
   const queryClient = useQueryClient()
   const [assignOrderId, setAssignOrderId] = useState("")
   const [assignCourierInput, setAssignCourierInput] = useState("")
@@ -119,6 +118,14 @@ export function WarehouseShipmentOrdersTable({
 
   if (!shipmentId) return null
 
+  const goToOrder = (orderId: string) => {
+    void navigate(`${ordersBase}/${encodeURIComponent(orderId)}`)
+  }
+
+  const stopAssignClick = (e: MouseEvent<HTMLTableCellElement>) => {
+    e.stopPropagation()
+  }
+
   return (
     <div className="space-y-3">
       {ordersQuery.isLoading ? (
@@ -166,7 +173,11 @@ export function WarehouseShipmentOrdersTable({
                 </TableRow>
               ) : (
                 ordersQuery.data.orders.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow
+                    key={p.id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => goToOrder(p.id)}
+                  >
                     <TableCell className="font-mono text-xs">
                       {p.trackingNumber || "—"}
                     </TableCell>
@@ -181,14 +192,10 @@ export function WarehouseShipmentOrdersTable({
                       </>
                     ) : null}
                     <TableCell className="text-xs">
-                      {mode === "warehouse"
-                        ? backendOrderDeliveryLabel(t, p.deliveryStatus)
-                        : p.deliveryStatus}
+                      <BackendStatusBadge kind="orderDelivery" value={p.deliveryStatus} />
                     </TableCell>
                     <TableCell className="text-xs">
-                      {mode === "warehouse"
-                        ? backendOrderPaymentLabel(t, p.paymentStatus)
-                        : p.paymentStatus}
+                      <BackendStatusBadge kind="orderPayment" value={p.paymentStatus} />
                     </TableCell>
                     <TableCell>{formatMoney(p.shipmentValue)}</TableCell>
                     {mode === "warehouse" ? (
@@ -196,7 +203,7 @@ export function WarehouseShipmentOrdersTable({
                         <TableCell className="text-xs">
                           {p.deliveryCourier?.fullName ?? "—"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={stopAssignClick}>
                           <div className="flex min-w-[12rem] flex-col gap-1">
                             <select
                               className="border-input bg-background h-8 rounded-md border px-2 text-xs"

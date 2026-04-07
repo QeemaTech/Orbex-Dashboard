@@ -1,5 +1,4 @@
 import { apiFetch } from "@/api/client"
-
 import type { ListShipmentsParams, ShipmentOrderRow } from "@/api/shipments-api"
 
 export type OrderListResponse = {
@@ -19,7 +18,7 @@ function qs(params: Record<string, string | number | undefined>): string {
   return s ? `?${s}` : ""
 }
 
-/** One row per customer order line (`GET /api/orders`). Query shape matches shipment list filters. */
+/** Customer order lines: `GET /api/orders` (same filters as shipment list). */
 export async function listOrders(
   p: ListShipmentsParams,
 ): Promise<OrderListResponse> {
@@ -33,7 +32,6 @@ export async function listOrders(
     unassignedOnly: p.unassignedOnly ? "true" : undefined,
     regionId: p.regionId,
     regionName: p.regionName,
-    assignedWarehouseId: p.assignedWarehouseId,
     phoneSearch: p.phoneSearch,
     trackingNumber: p.trackingNumber,
     customerName: p.customerName,
@@ -44,9 +42,21 @@ export async function listOrders(
     createdFrom: p.createdFrom,
     createdTo: p.createdTo,
     overdueOnly: p.overdueOnly ? "true" : undefined,
+    assignedWarehouseId: p.assignedWarehouseId,
     expand: p.expand ?? "merchant,courier",
   })
   return apiFetch<OrderListResponse>(`/api/orders${query}`, {
     token: p.token,
   })
+}
+
+/** Single order line: `GET /api/orders/:id`. */
+export async function getOrderById(p: {
+  token: string
+  id: string
+}): Promise<ShipmentOrderRow> {
+  return apiFetch<ShipmentOrderRow>(
+    `/api/orders/${encodeURIComponent(p.id)}`,
+    { token: p.token },
+  )
 }

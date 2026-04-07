@@ -63,19 +63,19 @@ export function CsShipmentFilters({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
       <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Merchant Name</span>
+        <span className="text-muted-foreground">{t("cs.filters.merchantName")}</span>
         <Input
           value={values.merchantName}
-          placeholder="merchant name"
+          placeholder={t("cs.filters.merchantNamePlaceholder")}
           onChange={(e) => onChange({ ...values, merchantName: e.target.value })}
           className="min-w-[200px]"
         />
       </label>
       <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Courier Name</span>
+        <span className="text-muted-foreground">{t("cs.filters.courierName")}</span>
         <Input
           value={values.courierName}
-          placeholder="courier name"
+          placeholder={t("cs.filters.courierNamePlaceholder")}
           onChange={(e) =>
             onChange({ ...values, courierName: e.target.value })
           }
@@ -83,10 +83,10 @@ export function CsShipmentFilters({
         />
       </label>
       <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Region Name</span>
+        <span className="text-muted-foreground">{t("cs.filters.regionName")}</span>
         <Input
           value={values.regionName}
-          placeholder="region name"
+          placeholder={t("cs.filters.regionNamePlaceholder")}
           onChange={(e) => onChange({ ...values, regionName: e.target.value })}
           className="min-w-[200px]"
         />
@@ -164,19 +164,19 @@ export function CsShipmentFilters({
       {showCoreSubTextInputs ? (
         <>
           <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Core status</span>
+            <span className="text-muted-foreground">{t("cs.filters.coreStatus")}</span>
             <Input
               value={values.status}
-              placeholder="PENDING"
+              placeholder={t("cs.filters.coreStatusPlaceholder")}
               onChange={(e) => onChange({ ...values, status: e.target.value })}
               className="min-w-[160px]"
             />
           </label>
           <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Sub status</span>
+            <span className="text-muted-foreground">{t("cs.filters.subStatus")}</span>
             <Input
               value={values.subStatus}
-              placeholder="DELAYED"
+              placeholder={t("cs.filters.subStatusPlaceholder")}
               onChange={(e) =>
                 onChange({ ...values, subStatus: e.target.value })
               }
@@ -186,7 +186,7 @@ export function CsShipmentFilters({
         </>
       ) : null}
       <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Payment status</span>
+        <span className="text-muted-foreground">{t("cs.filters.paymentStatus")}</span>
         <select
           className="border-input bg-background h-9 min-w-[200px] rounded-md border px-3 text-sm"
           value={orderPaymentSelectValue(values.paymentStatus)}
@@ -249,7 +249,7 @@ export function CsShipmentFilters({
             onChange({ ...values, unassignedOnly: e.target.checked })
           }
         />
-        <span className="text-muted-foreground">Unassigned only</span>
+        <span className="text-muted-foreground">{t("cs.filters.unassignedOnly")}</span>
       </label>
       <label className="inline-flex items-center gap-2 text-sm">
         <input
@@ -259,7 +259,7 @@ export function CsShipmentFilters({
             onChange({ ...values, overdueOnly: e.target.checked })
           }
         />
-        <span className="text-muted-foreground">Overdue postponed</span>
+        <span className="text-muted-foreground">{t("cs.filters.overduePostponed")}</span>
       </label>
     </div>
   )

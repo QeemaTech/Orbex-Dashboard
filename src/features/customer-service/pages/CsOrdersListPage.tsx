@@ -25,7 +25,7 @@ import { CsShipmentTable } from "@/features/customer-service/components/CsShipme
 import { ShipmentKpiStatRow } from "@/features/shipments/components/ShipmentKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-/** CS orders queue (`/cs/orders`); row click opens shipment (batch) detail at `/cs/shipments/:id`. */
+/** CS orders queue (`/cs/orders`); row opens **order** detail at `/cs/orders/:orderId`. */
 export function CsOrdersListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()

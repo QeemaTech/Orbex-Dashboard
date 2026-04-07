@@ -25,6 +25,22 @@
     "columns": {
       "deliveryStatus": "التسليم",
       "paymentStatus": "الدفع"
+    },
+    "detail": {
+      "pageTitle": "تفاصيل الطلب",
+      "loading": "جاري تحميل الطلب…",
+      "orderId": "معرّف الطلب",
+      "unnamedTracking": "طلب",
+      "sectionCustomer": "العميل والمنتج",
+      "sectionFinancial": "القيمة والدفع",
+      "sectionLogistics": "التسليم والجدول الزمني",
+      "description": "الوصف",
+      "notes": "ملاحظات",
+      "commission": "العمولة",
+      "createdAt": "تاريخ الإنشاء",
+      "updatedAt": "آخر تحديث",
+      "actions": "إجراءات",
+      "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة النقل."
     }
   },
   "ordersList": {
@@ -57,7 +73,10 @@
     "colTracking": "التتبع",
     "colDelivery": "التسليم",
     "colValue": "القيمة",
-    "colShipment": "الشحنة"
+    "colActions": "إجراءات",
+    "openTransfer": "فتح النقل",
+    "viewBatchOrders": "عرض طلبات الدفعة",
+    "menuAriaLabel": "فتح قائمة إجراءات الطلب"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول — Orbex",
@@ -118,13 +137,8 @@
     },
     "chart": {
       "lineTitle": "الطلبات عبر الوقت",
-      "lineDescription": "آخر 14 يومًا",
+      "lineDescription": "طلبات عملاء جديدة يوميًا (آخر 14 يومًا)",
       "lineSeriesName": "الطلبات",
-      "shipmentsLineTitle": "الشحنات عبر الوقت",
-      "shipmentsLineDescription": "دفعات شحن جديدة يوميًا (آخر 14 يومًا)",
-      "shipmentsLineSeriesName": "الشحنات",
-      "pieTitle": "توزيع حالات الطلبات",
-      "pieDescription": "طلبات العملاء حسب حالة التسليم",
       "transferPieTitle": "حالة النقل",
       "transferPieDescription": "دفعات الشحن حسب حالة المسار",
       "days": {
@@ -181,6 +195,8 @@
     "back": "رجوع",
     "loading": "جاري التحميل…",
     "detail": {
+      "batchSubtitle": "دفعة من التاجر — لكل طلب مستلم خاص؛ التفاصيل في الجدول أدناه.",
+      "batchOrdersHint": "اسم المستلم والهاتف والعنوان ونوع المنتج يظهر لكل طلب في الجدول أدناه — قد تضم الدفعة أكثر من عميل.",
       "courierPhone": "رقم موبايل المندوب",
       "shippingFee": "مصاريف الشحن",
       "assignedWarehouse": "المخزن",
@@ -189,6 +205,7 @@
       "timelineTitle": "سجل الحالة",
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
+      "timelineArrow": "→",
       "currencyLocale": "ar-EG"
     },
     "viewOrders": "عرض طلبات العملاء",
@@ -219,7 +236,21 @@
       "anyPaymentStatus": "أي حالة دفع",
       "from": "من تاريخ",
       "to": "إلى تاريخ",
-      "today": "اليوم"
+      "today": "اليوم",
+      "outboundCsPending": "بانتظار خدمة العملاء للخروج (في المخزن)",
+      "merchantName": "اسم التاجر",
+      "merchantNamePlaceholder": "اسم التاجر",
+      "courierName": "اسم المندوب",
+      "courierNamePlaceholder": "اسم المندوب",
+      "regionName": "اسم المنطقة",
+      "regionNamePlaceholder": "اسم المنطقة",
+      "paymentStatus": "حالة الدفع",
+      "coreStatus": "الحالة الأساسية",
+      "coreStatusPlaceholder": "PENDING",
+      "subStatus": "الحالة الفرعية",
+      "subStatusPlaceholder": "DELAYED",
+      "unassignedOnly": "غير مسند فقط",
+      "overduePostponed": "تأجيل متأخر"
     },
     "table": {
       "merchant": "التاجر",
@@ -239,6 +270,7 @@
     },
     "actions": {
       "confirm": "تأكيد",
+      "confirmOutbound": "تأكيد الخروج",
       "menu": "إجراءات",
       "menuAriaLabel": "فتح قائمة إجراءات الطلب",
       "whatsappApi": "واتساب API",
@@ -311,6 +343,7 @@
       "RETURNED": "مرتجع",
       "PENDING_PICKUP": "بانتظار الاستلام",
       "RECEIVED_IN_WAREHOUSE": "تم الاستلام في المخزن",
+      "WH_CS_PENDING": "في المخزن — بانتظار خدمة العملاء",
       "READY_FOR_DISPATCH": "جاهز للخروج",
       "RETURNED_TO_WAREHOUSE": "عاد إلى المخزن",
       "RETURN_TO_MERCHANT": "إرجاع إلى التاجر",
@@ -432,7 +465,7 @@
     "queue": {
       "title": "قائمة المخزن",
       "titleTransfers": "النقل",
-      "description": "تابع الطلبات وعيّن المناديب مباشرة من عمليات المخزن.",
+      "description": "تابع الطلبات والحالة لكل سطر من عمليات المخزن.",
       "descriptionExtended": "دفعات فعلية لمخزنك من واجهة المخزن. انقر الصف لعرض كل طلبات العملاء في الدفعة؛ واستخدم الرابط تحت رقم التتبع لملخص الدفعة.",
       "descriptionTransfers": "كل صف يمثل شحنة نقل (دفعة من التاجر) إلى هذا المخزن. افتح الصف لعرض تفاصيل الشحنة وطلبات العملاء.",
       "openBatchSummary": "ملخص الدفعة",
@@ -442,6 +475,7 @@
       "returnsOnly": "المرتجعات فقط",
       "filterReturnsByCourier": "المندوب (مرتجعات)",
       "allCouriers": "كل المناديب",
+      "unnamedCourier": "مندوب بلا اسم",
       "pickCourier": "اختر مندوبًا…",
       "courierIdPlaceholder": "معرّف المندوب",
       "assign": "تعيين",
@@ -468,10 +502,10 @@
     },
     "transferDetailTitle": "تفاصيل النقل (الدفعة)",
     "transferDetailSubtitle": "نقل من التاجر — لكل طلب رقم تتبع خاص؛ التفاصيل في الجدول أدناه.",
-    "transferOrdersHint": "يُدار المستلم وتعيين المندوب لكل طلب عميل في الجدول أدناه.",
+    "transferOrdersHint": "تفاصيل المستلم وحالة التسليم تظهر لكل طلب عميل في الجدول أدناه.",
     "transferDetail": {
       "ordersSectionTitle": "طلبات العملاء (هذه الشحنة)",
-      "ordersSectionDescription": "التسليم والدفع والمندوب ورقم التتبع لكل طلب في هذا النقل.",
+      "ordersSectionDescription": "التسليم والدفع والتتبع لكل طلب في هذا النقل.",
       "jumpToOrders": "الانتقال إلى طلبات العملاء"
     },
     "orders": {
@@ -485,13 +519,34 @@
     }
   },
   "backend": {
+    "enumUnknown": "غير معروف",
+    "shipmentCoreStatus": {
+      "PENDING": "معلّق",
+      "IN_WAREHOUSE": "في المخزن",
+      "OUT_FOR_DELIVERY": "جاري التسليم",
+      "DELIVERED": "تم التسليم",
+      "RETURNED": "مرتجع"
+    },
+    "shipmentSubStatus": {
+      "NONE": "—",
+      "CONFIRMED": "مؤكد",
+      "ASSIGNED": "مُسند",
+      "LOCATION_RECEIVED": "تم استلام الموقع",
+      "REJECTED": "مرفوض",
+      "DELAYED": "مؤجل",
+      "RESCHEDULED": "إعادة جدولة",
+      "RETURNED_TO_WAREHOUSE": "عاد إلى المخزن",
+      "RETURN_TO_MERCHANT": "إرجاع إلى التاجر",
+      "DAMAGED": "تالف",
+      "OVERDUE": "متأخر"
+    },
     "shipmentTransferStatus": {
       "PENDING": "معلّق (دفعة)",
       "ASSIGNED": "مُسند (دفعة)",
       "ON_THE_WAY_TO_WAREHOUSE": "في الطريق إلى المخزن",
       "IN_WAREHOUSE": "داخل المخزن (دفعة)",
       "PARTIALLY_DELIVERED": "مُسلَّم جزئيًا",
-      "DELIVERED": "مُسلَّم (دفعة)"
+      "DELIVERED": "مُسلَّم بالكامل"
     },
     "orderDeliveryStatus": {
       "PENDING": "معلّق",

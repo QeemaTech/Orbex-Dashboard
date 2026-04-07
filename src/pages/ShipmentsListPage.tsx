@@ -2,12 +2,13 @@ import { useQuery } from "@tanstack/react-query"
 import { Boxes } from "react-lucid"
 import { useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 
 import { getDashboardKpis, listShipments } from "@/api/shipments-api"
 import type { CsShipmentRow } from "@/api/shipments-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
+import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,6 +46,7 @@ function formatEGP(amountStr: string | undefined, locale: string) {
 
 export function ShipmentsListPage() {
   const { t, i18n } = useTranslation()
+  const location = useLocation()
   const navigate = useNavigate()
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
@@ -128,8 +130,14 @@ export function ShipmentsListPage() {
   const transferBreakdown = kpiQuery.data?.transferStatusBreakdown ?? []
   const totals = kpiQuery.data?.totals
 
+  const shipmentDetailPrefix = location.pathname.startsWith("/cs/")
+    ? "/cs/shipments"
+    : "/shipments"
+
   const onRowClick = (row: CsShipmentRow) => {
-    void navigate(`/shipments/${encodeURIComponent(row.shipmentId)}`)
+    void navigate(
+      `${shipmentDetailPrefix}/${encodeURIComponent(row.shipmentId)}`,
+    )
   }
 
   return (
@@ -244,9 +252,10 @@ export function ShipmentsListPage() {
                           {formatEGP(row.totalShipmentValue ?? row.shipmentValue, locale)}
                         </TableCell>
                         <TableCell>
-                          {row.transferStatus
-                            ? backendShipmentTransferLabel(t, row.transferStatus)
-                            : "—"}
+                          <BackendStatusBadge
+                            kind="transfer"
+                            value={row.transferStatus ?? ""}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}

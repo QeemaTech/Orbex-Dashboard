@@ -72,7 +72,6 @@ export function Header({ title }: HeaderProps) {
                 size="icon"
                 className="gradient-accent rounded-full border border-border/75 shadow-sm transition-transform duration-200 hover:-translate-y-px"
                 aria-label={t("a11y.userMenu")}
-                title={user?.fullName?.trim() || undefined}
               >
                 <Avatar className="size-9 ring-2 ring-primary/15">
                   <AvatarFallback className="gradient-primary text-primary-foreground text-sm font-semibold">
@@ -81,8 +80,19 @@ export function Header({ title }: HeaderProps) {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>{t("header.account")}</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="min-w-[12rem] max-w-[18rem]">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold leading-tight">
+                    {user?.fullName?.trim() || t("header.account")}
+                  </span>
+                  {user?.email ? (
+                    <span className="text-muted-foreground truncate text-xs font-normal leading-tight">
+                      {user.email}
+                    </span>
+                  ) : null}
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>{t("header.profile")}</DropdownMenuItem>
               <DropdownMenuItem>{t("header.settings")}</DropdownMenuItem>

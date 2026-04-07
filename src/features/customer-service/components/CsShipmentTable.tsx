@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
@@ -18,13 +19,22 @@ import type { DashboardPerspective } from "@/features/shipment-status/status-typ
 import { CsShipmentRowActions } from "./CsShipmentRowActions"
 import { ShipmentStatusBadge } from "./ShipmentStatusBadge"
 
+function stopRowClick(e: MouseEvent<HTMLDivElement>) {
+  e.stopPropagation()
+}
+
 export interface CsShipmentTableProps {
   rows: CsShipmentRow[]
   token: string
   listQueryKey: unknown[]
   onOpenMap: (courierId: string) => void
   onOpenAddLocation: (row: CsShipmentRow) => void
+  /** Used for deriving `/orders` base from `/shipments`; row opens **order** detail (`row.id`). */
   detailBasePath?: string
+  /**
+   * Row: `{orderDetailBasePath}/{row.id}`. Defaults: `detailBasePath` with `/shipments` → `/orders`.
+   */
+  orderDetailBasePath?: string
   /** When false, hides the actions column (e.g. general Shipments list). Default true. */
   showActions?: boolean
   perspective?: DashboardPerspective
@@ -37,11 +47,18 @@ export function CsShipmentTable({
   onOpenMap,
   onOpenAddLocation,
   detailBasePath = "/shipments",
+  orderDetailBasePath,
   showActions = true,
   perspective = "operations",
 }: CsShipmentTableProps) {
   const { t } = useTranslation()
   const nav = useNavigate()
+
+  const orderBase =
+    orderDetailBasePath?.replace(/\/$/, "") ??
+    (detailBasePath.endsWith("/shipments")
+      ? detailBasePath.replace(/\/shipments$/, "/orders")
+      : "/orders")
 
   const resolveCoordinates = (row: CsShipmentRow): { lat: number; lng: number } | null => {
     const hasLat = row.customerLat != null && String(row.customerLat).trim() !== ""
@@ -76,28 +93,20 @@ export function CsShipmentTable({
             <TableRow
               key={row.id}
               className="hover:bg-muted/50 cursor-pointer"
-              onClick={() =>
-                nav(
-                  `${detailBasePath}/${encodeURIComponent(row.shipmentId)}`,
-                )
-              }
+              onClick={() => void nav(`${orderBase}/${encodeURIComponent(row.id)}`)}
             >
-            <TableCell className="max-w-[120px] truncate">
-              {row.customerName}
-            </TableCell>
-            <TableCell className="whitespace-nowrap">
-              {row.phonePrimary}
-            </TableCell>
-            <TableCell>
-              <ShipmentStatusBadge
-                status={getPerspectiveStatusKey(perspective, row)}
-              />
-            </TableCell>
+              <TableCell className="max-w-[120px] truncate">
+                {row.customerName}
+              </TableCell>
+              <TableCell className="whitespace-nowrap">{row.phonePrimary}</TableCell>
+              <TableCell>
+                <ShipmentStatusBadge status={getPerspectiveStatusKey(perspective, row)} />
+              </TableCell>
               <TableCell>
                 <CoordinatesMapLink coordinates={coordinates} stopPropagation />
               </TableCell>
               {showActions ? (
-                <TableCell className="text-end align-middle">
+                <TableCell className="text-end align-middle" onClick={stopRowClick}>
                   <CsShipmentRowActions
                     row={row}
                     token={token}

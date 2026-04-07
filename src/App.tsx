@@ -62,13 +62,6 @@ function RootRedirect() {
   return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
 }
 
-function RedirectToShipmentDetail() {
-  const { shipmentId = "" } = useParams()
-  return (
-    <Navigate to={`/shipments/${encodeURIComponent(shipmentId)}`} replace />
-  )
-}
-
 function RedirectWarehouseTransferOrdersToDetail() {
   const { warehouseId = "", shipmentId = "" } = useParams()
   return (
@@ -113,7 +106,7 @@ export default function App() {
           path="/orders/:shipmentId"
           element={
             <Protected>
-              <RedirectToShipmentDetail />
+              <OrdersPage />
             </Protected>
           }
         />
@@ -236,7 +229,13 @@ export default function App() {
         />
         <Route
           path="/cs/shipments"
-          element={<Navigate to="/cs/orders" replace />}
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+                <ShipmentsListPage />
+              </ProtectedRole>
+            </Protected>
+          }
         />
         <Route
           path="/cs/couriers"
