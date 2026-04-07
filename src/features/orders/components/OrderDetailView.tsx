@@ -97,7 +97,7 @@ export function OrderDetailView({
               <span className="text-muted-foreground text-xs font-medium">
                 {t("orders.columns.deliveryStatus")}
               </span>
-              <BackendStatusBadge kind="orderDelivery" value={order.deliveryStatus} />
+              <BackendStatusBadge kind="orderDelivery" value={order.status} />
               <span className="text-muted-foreground text-xs font-medium">
                 {t("orders.columns.paymentStatus")}
               </span>

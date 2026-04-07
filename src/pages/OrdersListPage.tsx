@@ -202,13 +202,15 @@ export function OrdersListPage() {
               <p className="text-muted-foreground text-sm">{t("ordersList.loading")}</p>
             ) : null}
 
-            {ordersQuery.data && ordersQuery.data.orders.length > 0 ? (
+            {ordersQuery.data && ordersQuery.data.shipments.length > 0 ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
-                <AdminOrdersTable rows={ordersQuery.data.orders} />
+                <AdminOrdersTable rows={ordersQuery.data.shipments} />
               </div>
             ) : null}
 
-            {ordersQuery.data && ordersQuery.data.orders.length === 0 && !ordersQuery.isLoading ? (
+            {ordersQuery.data &&
+            ordersQuery.data.shipments.length === 0 &&
+            !ordersQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("ordersList.empty")}</p>
             ) : null}
 

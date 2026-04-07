@@ -25,25 +25,31 @@ function badgeClass(kind: Kind, raw: string): string {
       return "border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-200"
     if (s === "IN_WAREHOUSE")
       return "border-indigo-300 bg-indigo-100 text-indigo-800 dark:border-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+    if (s === "PICKED_UP")
+      return "border-cyan-300 bg-cyan-100 text-cyan-800 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300"
+    if (s === "PENDING_PICKUP" || s === "PENDING")
+      return "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
     if (s === "ON_THE_WAY_TO_WAREHOUSE")
       return "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
     if (s === "ASSIGNED")
       return "border-cyan-300 bg-cyan-100 text-cyan-800 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300"
-    if (s === "PENDING")
-      return "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
     return "border-muted bg-muted/40 text-foreground"
   }
   if (kind === "orderDelivery") {
     if (s === "DELIVERED") return green
     if (s === "REJECTED") return red
     if (s === "POSTPONED") return orange
-    if (s === "OUT_FOR_DELIVERY")
+    if (s === "OUT_FOR_DELIVERY" || s === "ASSIGNED")
       return "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-    if (s === "CONFIRMED_BY_CS")
+    if (s === "IN_WAREHOUSE" || s === "CONFIRMED_BY_CS")
       return "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-    if (s === "PENDING")
+    if (
+      s === "PENDING_PICKUP" ||
+      s === "PICKED_UP" ||
+      s === "PENDING"
+    )
       return "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
-    if (s === "RETURNED")
+    if (s === "RETURNED" || s === "RETURNED_TO_WAREHOUSE" || s === "RETURNED_TO_MERCHANT")
       return "border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
     return "border-muted bg-muted/40 text-foreground"
   }

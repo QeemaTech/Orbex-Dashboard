@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "shipments": "Shipments",
+    "merchantOrders": "Merchant orders",
     "orders": "Customer orders",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
@@ -543,21 +544,29 @@
       "OVERDUE": "Overdue"
     },
     "shipmentTransferStatus": {
+      "PENDING_PICKUP": "Pending pickup",
+      "PICKED_UP": "Picked up",
+      "IN_WAREHOUSE": "In warehouse",
       "PENDING": "Pending (batch)",
       "ASSIGNED": "Assigned (batch)",
       "ON_THE_WAY_TO_WAREHOUSE": "On the way to warehouse",
-      "IN_WAREHOUSE": "In warehouse (batch)",
       "PARTIALLY_DELIVERED": "Partially delivered",
       "DELIVERED": "Delivered"
     },
     "orderDeliveryStatus": {
-      "PENDING": "Pending",
-      "CONFIRMED_BY_CS": "Confirmed by CS",
+      "PENDING_PICKUP": "Pending pickup",
+      "PICKED_UP": "Picked up",
+      "IN_WAREHOUSE": "In warehouse",
+      "ASSIGNED": "Assigned",
       "OUT_FOR_DELIVERY": "Out for delivery",
       "DELIVERED": "Delivered",
       "REJECTED": "Rejected",
-      "RETURNED": "Returned to warehouse",
-      "POSTPONED": "Postponed"
+      "POSTPONED": "Postponed",
+      "RETURNED_TO_WAREHOUSE": "Returned to warehouse",
+      "RETURNED_TO_MERCHANT": "Returned to merchant",
+      "PENDING": "Pending",
+      "CONFIRMED_BY_CS": "Confirmed by CS",
+      "RETURNED": "Returned"
     },
     "orderPaymentStatus": {
       "PENDING_COLLECTION": "Pending collection",

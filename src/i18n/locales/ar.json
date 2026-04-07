@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "لوحة التحكم",
     "shipments": "الشحنات",
+    "merchantOrders": "طلبات التجار",
     "orders": "طلبات العملاء",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
@@ -541,21 +542,29 @@
       "OVERDUE": "متأخر"
     },
     "shipmentTransferStatus": {
+      "PENDING_PICKUP": "بانتظار الاستلام",
+      "PICKED_UP": "تم الاستلام",
+      "IN_WAREHOUSE": "داخل المخزن",
       "PENDING": "معلّق (دفعة)",
       "ASSIGNED": "مُسند (دفعة)",
       "ON_THE_WAY_TO_WAREHOUSE": "في الطريق إلى المخزن",
-      "IN_WAREHOUSE": "داخل المخزن (دفعة)",
       "PARTIALLY_DELIVERED": "مُسلَّم جزئيًا",
       "DELIVERED": "مُسلَّم بالكامل"
     },
     "orderDeliveryStatus": {
-      "PENDING": "معلّق",
-      "CONFIRMED_BY_CS": "مؤكد من خدمة العملاء",
+      "PENDING_PICKUP": "بانتظار الاستلام",
+      "PICKED_UP": "تم الاستلام",
+      "IN_WAREHOUSE": "داخل المخزن",
+      "ASSIGNED": "مُسند",
       "OUT_FOR_DELIVERY": "جاري التسليم",
       "DELIVERED": "تم التسليم",
       "REJECTED": "مرفوض",
-      "RETURNED": "عاد للمخزن",
-      "POSTPONED": "مؤجل"
+      "POSTPONED": "مؤجل",
+      "RETURNED_TO_WAREHOUSE": "عائد للمخزن",
+      "RETURNED_TO_MERCHANT": "عائد للتاجر",
+      "PENDING": "معلّق",
+      "CONFIRMED_BY_CS": "مؤكد من خدمة العملاء",
+      "RETURNED": "عاد للمخزن"
     },
     "orderPaymentStatus": {
       "PENDING_COLLECTION": "بانتظار التحصيل",

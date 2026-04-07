@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils"
 const adminNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
   { to: "/users", labelKey: "nav.users", icon: Users, end: false },
-  { to: "/orders", labelKey: "nav.orders", icon: Package, end: false },
-  { to: "/shipments", labelKey: "nav.shipments", icon: Boxes, end: false },
+  { to: "/orders", labelKey: "nav.shipments", icon: Package, end: false },
+  { to: "/shipments", labelKey: "nav.merchantOrders", icon: Boxes, end: false },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
   { to: "/merchants", labelKey: "nav.merchants", icon: Package, end: false },
   {
@@ -34,8 +34,8 @@ const adminNavConfig = [
 ] as const
 
 const customerServiceNavConfig = [
-  { to: "/cs/orders", labelKey: "nav.orders", icon: Package, end: false },
-  { to: "/cs/shipments", labelKey: "nav.shipments", icon: Boxes, end: false },
+  { to: "/cs/orders", labelKey: "nav.shipments", icon: Package, end: false },
+  { to: "/cs/shipments", labelKey: "nav.merchantOrders", icon: Boxes, end: false },
   { to: "/cs/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
 ] as const
 

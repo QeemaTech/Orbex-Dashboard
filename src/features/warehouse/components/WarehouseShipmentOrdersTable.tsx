@@ -162,7 +162,7 @@ export function WarehouseShipmentOrdersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ordersQuery.data.orders.length === 0 ? (
+              {ordersQuery.data.shipments.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={mode === "warehouse" ? WAREHOUSE_COL_COUNT : COMPACT_COL_COUNT}
@@ -172,7 +172,7 @@ export function WarehouseShipmentOrdersTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                ordersQuery.data.orders.map((p) => (
+                ordersQuery.data.shipments.map((p) => (
                   <TableRow
                     key={p.id}
                     className="hover:bg-muted/50 cursor-pointer"
@@ -192,7 +192,7 @@ export function WarehouseShipmentOrdersTable({
                       </>
                     ) : null}
                     <TableCell className="text-xs">
-                      <BackendStatusBadge kind="orderDelivery" value={p.deliveryStatus} />
+                      <BackendStatusBadge kind="orderDelivery" value={p.status} />
                     </TableCell>
                     <TableCell className="text-xs">
                       <BackendStatusBadge kind="orderPayment" value={p.paymentStatus} />

@@ -25,10 +25,12 @@ export type CsCourier = {
 }
 
 export type CsShipmentRow = {
-  /** Order id (list rows); batch id is `shipmentId`. */
+  /** Delivery line id; use for `/api/shipments/:id` (legacy `/api/orders/:id`). */
   id: string
-  /** Parent shipment (batch) id for `/api/shipments/:shipmentId` routes. */
+  /** Parent merchant-order (batch) id; same as `merchantOrderId` when API sends both. */
   shipmentId: string
+  /** Explicit parent batch id from API (`MerchantOrder.id`). */
+  merchantOrderId?: string
   /** Batch detail: primary line id for status PATCH; list rows omit (use `id`). */
   primaryOrderId?: string
   merchantId: string
@@ -52,6 +54,7 @@ export type CsShipmentRow = {
   customerLocationReceivedAt?: string | null
   shipmentValue: string
   shippingFee: string
+  commissionFee?: string
   paymentMethod: string
   productType: string
   /** Package / product description (nullable from API). */
@@ -59,6 +62,14 @@ export type CsShipmentRow = {
   status: string
   subStatus: string
   paymentStatus: string
+  statusUi?: string
+  shipmentPaymentStatus?: string
+  autoRejectedFromPostpone?: boolean
+  rejectionCourierLat?: string | null
+  rejectionCourierLng?: string | null
+  importJobId?: string | null
+  pickupCourierId?: string | null
+  visaCommissionRate?: string | null
   merchant?: CsMerchant
   courier?: CsCourier | null
   /** Hub assigned to the batch (`Shipment.assignedWarehouse`); present on list/KPI/detail when returned by API. */
@@ -153,9 +164,12 @@ export async function listShipments(
     assignedWarehouseId: p.assignedWarehouseId,
     expand: p.expand ?? "merchant,courier",
   })
-  const data = await apiFetch<ShipmentListResponse>(`/api/shipments${query}`, {
-    token: p.token,
-  })
+  const data = await apiFetch<ShipmentListResponse>(
+    `/api/merchant-orders${query}`,
+    {
+      token: p.token,
+    },
+  )
   return {
     ...data,
     shipments: data.shipments.map((s) => {
@@ -179,7 +193,7 @@ export async function getShipmentById(params: {
     includeEvents: params.includeEvents ? "true" : undefined,
   })
   const row = await apiFetch<CsShipmentRow>(
-    `/api/shipments/${params.shipmentId}${query}`,
+    `/api/merchant-orders/${params.shipmentId}${query}`,
     { token: params.token },
   )
   const location = extractShipmentLocation(row.notes)
@@ -204,10 +218,15 @@ export type ShipmentOrderCustomer = {
 
 export type ShipmentOrderRow = {
   id: string
+  merchantOrderId: string
+  /** Parent merchant-order id; same as `merchantOrderId` when returned by list/detail APIs. */
   shipmentId: string
   customerId: string
+  merchantId?: string
+  regionId?: string | null
+  assignedCourierId?: string | null
   trackingNumber: string | null
-  deliveryStatus: string
+  status: string
   paymentStatus: string
   shipmentValue: string
   shippingFee: string
@@ -231,14 +250,34 @@ export type ShipmentOrderRow = {
   postponedAt: string | null
   returnReceivedAt: string | null
   returnDiscountAmount: string | null
+  autoRejectedFromPostpone?: boolean
+  rejectionCourierLat?: string | null
+  rejectionCourierLng?: string | null
+  importJobId?: string | null
+  pickupCourierId?: string | null
+  transferStatus?: string
+  subStatus?: string
+  statusUi?: string
+  shipmentPaymentStatus?: string
+  customerName?: string
+  phonePrimary?: string
+  phoneSecondary?: string | null
+  addressText?: string
+  addressConfirmed?: boolean
+  customerLat?: string | null
+  customerLng?: string | null
+  customerLocationReceivedAt?: string | null
+  merchant?: CsMerchant
+  courier?: CsCourier | null
   createdAt: string
   updatedAt: string
   customer: ShipmentOrderCustomer
 }
 
 export type ShipmentOrdersResponse = {
+  merchantOrderId: string
   shipmentId: string
-  orders: ShipmentOrderRow[]
+  shipments: ShipmentOrderRow[]
 }
 
 export async function getShipmentOrders(params: {
@@ -246,7 +285,7 @@ export async function getShipmentOrders(params: {
   shipmentId: string
 }): Promise<ShipmentOrdersResponse> {
   return apiFetch<ShipmentOrdersResponse>(
-    `/api/shipments/${params.shipmentId}/orders`,
+    `/api/merchant-orders/${params.shipmentId}/orders`,
     { token: params.token },
   )
 }
@@ -550,7 +589,7 @@ export async function getDashboardKpis(
     recentTake: p.recentTake,
   })
   const data = await apiFetch<DashboardKpisResponse>(
-    `/api/shipments/dashboard/kpis${query}`,
+    `/api/merchant-orders/dashboard/kpis${query}`,
     {
       token: p.token,
     },
@@ -629,7 +668,7 @@ export async function listShipmentTimeline(
     createdTo: p.createdTo,
     overdueOnly: p.overdueOnly ? "true" : undefined,
   })
-  return apiFetch<TimelineResponse>(`/api/shipments/timeline${query}`, {
+  return apiFetch<TimelineResponse>(`/api/merchant-orders/timeline${query}`, {
     token: p.token,
   })
 }
@@ -639,12 +678,12 @@ export async function confirmShipmentCs(
   shipmentId: string,
   orderId: string,
 ): Promise<void> {
-  await apiFetch<unknown>(`/api/shipments/${shipmentId}/status`, {
+  await apiFetch<unknown>(`/api/merchant-orders/${shipmentId}/status`, {
     method: "PATCH",
     token,
     body: JSON.stringify({
       orderId,
-      toOrderDeliveryStatus: "CONFIRMED_BY_CS",
+      toOrderDeliveryStatus: "IN_WAREHOUSE",
     }),
   })
 }
@@ -661,7 +700,7 @@ export type PatchShipmentFieldsParams = {
 export async function patchShipmentFields(
   p: PatchShipmentFieldsParams,
 ): Promise<CsShipmentRow> {
-  return apiFetch<CsShipmentRow>(`/api/shipments/${p.shipmentId}`, {
+  return apiFetch<CsShipmentRow>(`/api/merchant-orders/${p.shipmentId}`, {
     method: "PATCH",
     token: p.token,
     body: JSON.stringify({

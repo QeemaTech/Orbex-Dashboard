@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
-import { listShipments } from "@/api/shipments-api"
+import { listOrders } from "@/api/orders-api"
 import type { CsShipmentRow } from "@/api/shipments-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,7 @@ import { CsShipmentTable } from "@/features/customer-service/components/CsShipme
 import { ShipmentKpiStatRow } from "@/features/shipments/components/ShipmentKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-/** CS orders queue (`/cs/orders`); row opens **order** detail at `/cs/orders/:orderId`. */
+/** CS shipment (delivery-line) queue via `GET /api/orders`; row opens line detail at `/cs/orders/:lineId`. */
 export function CsOrdersListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()
@@ -60,7 +60,7 @@ export function CsOrdersListPage() {
   const listQueryKey = useMemo(
     () =>
       [
-        "cs-shipments",
+        "cs-shipment-lines",
         token,
         page,
         pageSize,
@@ -96,10 +96,10 @@ export function CsOrdersListPage() {
     ],
   )
 
-  const shipmentsQuery = useQuery({
+  const ordersQuery = useQuery({
     queryKey: listQueryKey,
     queryFn: () =>
-      listShipments({
+      listOrders({
         token,
         page,
         pageSize,
@@ -119,6 +119,27 @@ export function CsOrdersListPage() {
     enabled: !!token,
     refetchInterval: 25_000,
   })
+
+  const tableRows: CsShipmentRow[] = useMemo(
+    () =>
+      (ordersQuery.data?.shipments ?? []).map((row) => ({
+        ...row,
+        merchantId: row.merchantId ?? "",
+        assignedCourierId: row.assignedCourierId ?? row.deliveryCourierId ?? null,
+        customerName: row.customerName ?? row.customer.customerName,
+        phonePrimary: row.phonePrimary ?? row.customer.phonePrimary,
+        phoneSecondary: row.phoneSecondary ?? row.customer.phoneSecondary,
+        addressText: row.addressText ?? row.customer.addressText,
+        addressConfirmed: row.addressConfirmed ?? row.customer.addressConfirmed,
+        customerLat: row.customerLat ?? row.customer.customerLat,
+        customerLng: row.customerLng ?? row.customer.customerLng,
+        customerLocationReceivedAt:
+          row.customerLocationReceivedAt ??
+          row.customer.customerLocationReceivedAt,
+        subStatus: row.subStatus ?? "NONE",
+      })),
+    [ordersQuery.data],
+  )
 
   const setFilters = useCallback(
     (next: CsFilterValues) => {
@@ -176,7 +197,7 @@ export function CsOrdersListPage() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
+    Math.ceil((ordersQuery.data?.total ?? 0) / pageSize),
   )
 
   return (
@@ -214,20 +235,20 @@ export function CsOrdersListPage() {
           <CardContent className="space-y-4 pt-6">
             <CsShipmentFilters values={filters} onChange={setFilters} />
 
-            {shipmentsQuery.error ? (
+            {ordersQuery.error ? (
               <p className="text-destructive text-sm">
-                {(shipmentsQuery.error as Error).message}
+                {(ordersQuery.error as Error).message}
               </p>
             ) : null}
 
-            {shipmentsQuery.isLoading ? (
+            {ordersQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("cs.loading")}</p>
             ) : null}
 
-            {shipmentsQuery.data ? (
+            {ordersQuery.data ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
                 <CsShipmentTable
-                  rows={shipmentsQuery.data.shipments}
+                  rows={tableRows}
                   token={token}
                   listQueryKey={[...listQueryKey]}
                   onOpenMap={openMap}
@@ -241,7 +262,7 @@ export function CsOrdersListPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-border/60 border-t pt-4">
               <p className="text-muted-foreground text-sm">
                 {t("cs.pagination.summary", {
-                  total: shipmentsQuery.data?.total ?? 0,
+                  total: ordersQuery.data?.total ?? 0,
                   page,
                 })}
               </p>

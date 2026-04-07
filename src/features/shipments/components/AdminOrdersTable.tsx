@@ -91,7 +91,7 @@ export function AdminOrdersTable({ rows }: Props) {
               <TableCell className="font-medium">{row.customer.customerName}</TableCell>
               <TableCell className="text-muted-foreground">{row.customer.phonePrimary}</TableCell>
               <TableCell>{row.trackingNumber ?? "—"}</TableCell>
-              <TableCell>{backendOrderDeliveryLabel(t, row.deliveryStatus)}</TableCell>
+              <TableCell>{backendOrderDeliveryLabel(t, row.status)}</TableCell>
               <TableCell className="text-end tabular-nums">
                 {formatMoney(row.shipmentValue, locale)}
               </TableCell>
@@ -117,14 +117,18 @@ export function AdminOrdersTable({ rows }: Props) {
                     <DropdownMenuContent align="end" className="min-w-[10rem]">
                       <DropdownMenuItem
                         onClick={() =>
-                          void nav(`/shipments/${encodeURIComponent(row.shipmentId)}`)
+                          void nav(
+                            `/shipments/${encodeURIComponent(row.merchantOrderId)}`,
+                          )
                         }
                       >
                         {t("adminOrders.openTransfer")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() =>
-                          void nav(`/orders/${encodeURIComponent(row.shipmentId)}`)
+                          void nav(
+                            `/orders/${encodeURIComponent(row.merchantOrderId)}`,
+                          )
                         }
                       >
                         {t("adminOrders.viewBatchOrders")}

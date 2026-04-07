@@ -111,7 +111,7 @@ export function OrdersPage() {
 
   if (isUuidParam && orderDetailQuery.isSuccess && orderDetailQuery.data) {
     const order = orderDetailQuery.data
-    const sid = encodeURIComponent(order.shipmentId)
+    const sid = encodeURIComponent(order.merchantOrderId)
     let backHref = `/shipments/${sid}`
     let shipmentDetailHref = `/shipments/${sid}`
     let batchOrdersListHref = `/orders/${sid}`

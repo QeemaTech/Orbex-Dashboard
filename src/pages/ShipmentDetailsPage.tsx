@@ -120,7 +120,7 @@ export function ShipmentDetailsPage() {
     }).format(n)
   }
 
-  const orders = ordersSummaryQuery.data?.orders ?? []
+  const orders = ordersSummaryQuery.data?.shipments ?? []
   const ordersTotalValue = sumMoney(orders.map((p) => p.shipmentValue))
   const ordersTotalShipping = sumMoney(orders.map((p) => p.shippingFee))
   const orderCount =

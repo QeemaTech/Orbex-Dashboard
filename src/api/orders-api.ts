@@ -2,7 +2,7 @@ import { apiFetch } from "@/api/client"
 import type { ListShipmentsParams, ShipmentOrderRow } from "@/api/shipments-api"
 
 export type OrderListResponse = {
-  orders: ShipmentOrderRow[]
+  shipments: ShipmentOrderRow[]
   total: number
   page: number
   pageSize: number
@@ -18,7 +18,7 @@ function qs(params: Record<string, string | number | undefined>): string {
   return s ? `?${s}` : ""
 }
 
-/** Customer order lines: `GET /api/orders` (same filters as shipment list). */
+/** Delivery units: `GET /api/shipments` (same filters as merchant-order list). */
 export async function listOrders(
   p: ListShipmentsParams,
 ): Promise<OrderListResponse> {
@@ -45,18 +45,18 @@ export async function listOrders(
     assignedWarehouseId: p.assignedWarehouseId,
     expand: p.expand ?? "merchant,courier",
   })
-  return apiFetch<OrderListResponse>(`/api/orders${query}`, {
+  return apiFetch<OrderListResponse>(`/api/shipments${query}`, {
     token: p.token,
   })
 }
 
-/** Single order line: `GET /api/orders/:id`. */
+/** Single delivery unit: `GET /api/shipments/:id` (legacy `/api/orders/:id`). */
 export async function getOrderById(p: {
   token: string
   id: string
 }): Promise<ShipmentOrderRow> {
   return apiFetch<ShipmentOrderRow>(
-    `/api/orders/${encodeURIComponent(p.id)}`,
+    `/api/shipments/${encodeURIComponent(p.id)}`,
     { token: p.token },
   )
 }
