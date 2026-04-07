@@ -36,7 +36,12 @@ export function WarehouseRedirectPage() {
   useEffect(() => {
     if (!user || user.role !== "WAREHOUSE_ADMIN") return
     if (!sitesQuery.isSuccess) return
-    const id = sitesQuery.data?.warehouses?.[0]?.id
+    const warehouses = sitesQuery.data?.warehouses ?? []
+    if (warehouses.length > 1) {
+      void navigate("/warehouses", { replace: true })
+      return
+    }
+    const id = warehouses[0]?.id
     if (id) {
       void navigate(`/warehouses/${encodeURIComponent(id)}`, { replace: true })
     }

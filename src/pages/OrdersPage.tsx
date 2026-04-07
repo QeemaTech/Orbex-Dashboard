@@ -27,9 +27,9 @@ function isWarehouseTransfersPath(pathname: string): boolean {
 }
 
 /**
- * `/orders/:shipmentId` — if the param is an **order** UUID, shows that order’s detail.
- * If it is a **shipment** UUID (no order with that id), falls back to the batch orders table.
- * Non-UUID params still resolve by customer name when not on warehouse/CS direct routes.
+ * `/orders/:id` — if `id` is a UUID, load as an **order** first (`GET /api/orders/:id`).
+ * If no order exists (404), treat `id` as a **shipment** and show the batch orders table.
+ * Non-UUID params resolve by customer name when not on warehouse/CS direct routes.
  */
 export function OrdersPage() {
   const { t } = useTranslation()

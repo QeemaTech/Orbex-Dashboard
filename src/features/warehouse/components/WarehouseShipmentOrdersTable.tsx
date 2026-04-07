@@ -1,9 +1,14 @@
-import { useQuery } from "@tanstack/react-query"
+import type { MouseEvent } from "react"
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
-import { getShipmentOrders } from "@/api/shipments-api"
+import { getShipmentById, getShipmentOrders } from "@/api/shipments-api"
+import { assignWarehouseShipment, getWarehouseCouriers } from "@/api/warehouse-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -12,20 +17,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { showToast } from "@/lib/toast"
 
-const WAREHOUSE_COL_COUNT = 9
+const WAREHOUSE_COL_COUNT = 10
 const COMPACT_COL_COUNT = 6
 
 type Props = {
   token: string
   shipmentId: string
-  /** Warehouse hub: full columns including read-only courier. Other routes: read-only compact list. */
+  /** Warehouse hub: full columns including assignment. Other routes: read-only compact list. */
   mode?: "warehouse" | "compact"
 }
 
 /**
- * Customer orders under a merchant transfer (shipment). Each row has its own `trackingNumber`.
- * Warehouse mode: line-level details are scoped to the parent transfer via `shipmentId`.
+ * Customer orders under a merchant transfer (shipment). Row click opens **order** detail.
+ * Warehouse mode: assignment controls; clicks on the assign cell do not navigate.
  */
 export function WarehouseShipmentOrdersTable({
   token,
@@ -36,11 +42,66 @@ export function WarehouseShipmentOrdersTable({
   const navigate = useNavigate()
   const location = useLocation()
   const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/orders" : "/orders"
+  const queryClient = useQueryClient()
+  const [assignOrderId, setAssignOrderId] = useState("")
+  const [assignCourierInput, setAssignCourierInput] = useState("")
+  const [assignLeg, setAssignLeg] = useState<"delivery" | "pickup">("delivery")
+
+  const shipmentDetailQuery = useQuery({
+    queryKey: ["shipment-detail-for-orders", shipmentId, token],
+    queryFn: () => getShipmentById({ token, shipmentId }),
+    enabled: !!token && !!shipmentId && mode === "warehouse",
+  })
+
+  const regionKey = shipmentDetailQuery.data?.regionId ?? "none"
+
+  const couriersQuery = useQuery({
+    queryKey: ["warehouse-couriers-orders", token, regionKey],
+    queryFn: () =>
+      getWarehouseCouriers({
+        token,
+        regionId: regionKey === "none" ? undefined : regionKey,
+      }),
+    enabled: !!token && mode === "warehouse",
+  })
 
   const ordersQuery = useQuery({
     queryKey: ["orders", "list", shipmentId, token],
     queryFn: () => getShipmentOrders({ token, shipmentId }),
     enabled: !!token && !!shipmentId,
+  })
+
+  const assignMutation = useMutation({
+    mutationFn: (payload: {
+      shipmentId: string
+      orderId?: string
+      courierId: string
+      leg?: "pickup" | "delivery"
+    }) =>
+      assignWarehouseShipment({
+        token,
+        shipmentId: payload.shipmentId,
+        courierId: payload.courierId,
+        leg: payload.leg,
+        ...(payload.orderId ? { orderId: payload.orderId } : {}),
+      }),
+    onSuccess: async () => {
+      showToast(t("warehouse.feedback.assignmentSuccess"), "success")
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["orders", "list", shipmentId, token],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["warehouse-queue", token],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["shipment-detail", shipmentId, token],
+        }),
+      ])
+    },
+    onError: (error) => {
+      showToast((error as Error).message, "error")
+    },
   })
 
   const currencyLocale = t("shipments.detail.currencyLocale", { defaultValue: "en-EG" })
@@ -56,6 +117,14 @@ export function WarehouseShipmentOrdersTable({
   }
 
   if (!shipmentId) return null
+
+  const goToOrder = (orderId: string) => {
+    void navigate(`${ordersBase}/${encodeURIComponent(orderId)}`)
+  }
+
+  const stopAssignClick = (e: MouseEvent<HTMLTableCellElement>) => {
+    e.stopPropagation()
+  }
 
   return (
     <div className="space-y-3">
@@ -85,7 +154,10 @@ export function WarehouseShipmentOrdersTable({
                 <TableHead>{t("orders.columns.paymentStatus")}</TableHead>
                 <TableHead>{t("cs.table.value", { defaultValue: "Value" })}</TableHead>
                 {mode === "warehouse" ? (
-                  <TableHead>{t("warehouse.table.courier", { defaultValue: "Courier" })}</TableHead>
+                  <>
+                    <TableHead>{t("warehouse.table.courier", { defaultValue: "Courier" })}</TableHead>
+                    <TableHead>{t("warehouse.orders.assignColumn", { defaultValue: "Assign" })}</TableHead>
+                  </>
                 ) : null}
               </TableRow>
             </TableHeader>
@@ -104,9 +176,7 @@ export function WarehouseShipmentOrdersTable({
                   <TableRow
                     key={p.id}
                     className="hover:bg-muted/50 cursor-pointer"
-                    onClick={() =>
-                      void navigate(`${ordersBase}/${encodeURIComponent(p.id)}`)
-                    }
+                    onClick={() => goToOrder(p.id)}
                   >
                     <TableCell className="font-mono text-xs">
                       {p.trackingNumber || "—"}
@@ -129,9 +199,78 @@ export function WarehouseShipmentOrdersTable({
                     </TableCell>
                     <TableCell>{formatMoney(p.shipmentValue)}</TableCell>
                     {mode === "warehouse" ? (
-                      <TableCell className="text-xs">
-                        {p.deliveryCourier?.fullName ?? "—"}
-                      </TableCell>
+                      <>
+                        <TableCell className="text-xs">
+                          {p.deliveryCourier?.fullName ?? "—"}
+                        </TableCell>
+                        <TableCell onClick={stopAssignClick}>
+                          <div className="flex min-w-[12rem] flex-col gap-1">
+                            <select
+                              className="border-input bg-background h-8 rounded-md border px-2 text-xs"
+                              value=""
+                              onChange={(e) => {
+                                const v = e.target.value
+                                if (!v) return
+                                setAssignOrderId(p.id)
+                                setAssignCourierInput(v)
+                              }}
+                            >
+                              <option value="">{t("warehouse.queue.pickCourier")}</option>
+                              {(couriersQuery.data?.couriers ?? []).map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {(c.servesShipmentRegion ? "★ " : "") +
+                                    (c.fullName ?? c.id.slice(0, 8))}
+                                </option>
+                              ))}
+                            </select>
+                            <Input
+                              className="h-8 text-xs"
+                              placeholder={t("warehouse.queue.courierIdPlaceholder")}
+                              value={assignOrderId === p.id ? assignCourierInput : ""}
+                              onChange={(e) => {
+                                setAssignOrderId(p.id)
+                                setAssignCourierInput(e.target.value)
+                              }}
+                            />
+                            <select
+                              className="border-input bg-background h-8 rounded-md border px-2 text-xs"
+                              value={assignOrderId === p.id ? assignLeg : "delivery"}
+                              title={t("warehouse.queue.assignLegHint")}
+                              onChange={(e) => {
+                                setAssignOrderId(p.id)
+                                setAssignLeg(e.target.value as "delivery" | "pickup")
+                              }}
+                            >
+                              <option value="delivery">
+                                {t("warehouse.queue.assignLegDelivery")}
+                              </option>
+                              <option value="pickup">
+                                {t("warehouse.queue.assignLegPickup")}
+                              </option>
+                            </select>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="h-8 text-xs"
+                              disabled={
+                                assignMutation.isPending ||
+                                assignOrderId !== p.id ||
+                                !assignCourierInput.trim()
+                              }
+                              onClick={() =>
+                                assignMutation.mutate({
+                                  shipmentId,
+                                  courierId: assignCourierInput.trim(),
+                                  leg: assignLeg,
+                                  ...(assignLeg === "delivery" ? { orderId: p.id } : {}),
+                                })
+                              }
+                            >
+                              {t("warehouse.queue.assign")}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
                     ) : null}
                   </TableRow>
                 ))

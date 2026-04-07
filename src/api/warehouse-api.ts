@@ -199,6 +199,30 @@ export function getWarehouseCouriers(params: {
   )
 }
 
+/** PATCH `/api/warehouse/shipments/:shipmentId/assignment` — assign pickup or delivery courier. */
+export function assignWarehouseShipment(params: {
+  token: string
+  shipmentId: string
+  courierId: string
+  leg?: "pickup" | "delivery"
+  orderId?: string
+  note?: string | null
+}): Promise<unknown> {
+  return apiFetch(
+    `/api/warehouse/shipments/${encodeURIComponent(params.shipmentId)}/assignment`,
+    {
+      method: "PATCH",
+      token: params.token,
+      body: JSON.stringify({
+        courierId: params.courierId,
+        ...(params.orderId ? { orderId: params.orderId } : {}),
+        ...(params.leg ? { leg: params.leg } : {}),
+        ...(params.note !== undefined ? { note: params.note } : {}),
+      }),
+    },
+  )
+}
+
 export function receiveWarehouseReturn(params: {
   token: string
   trackingNumber?: string
