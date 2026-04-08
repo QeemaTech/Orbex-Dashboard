@@ -27,11 +27,11 @@ function isWarehouseTransfersPath(pathname: string): boolean {
 }
 
 /**
- * `/shipments/:id` — if `id` is a UUID, load as a **shipment** first (`GET /api/shipments/:id`).
- * If no shipment exists (404), treat `id` as a **merchant order** and show the batch shipments table.
+ * `/shipments/:id` — if `id` is a UUID, load as a **delivery line** first (`GET /api/shipments/:id`).
+ * If no line exists (404), treat `id` as a **merchant-order batch** id and show the batch lines table.
  * Non-UUID params resolve by customer name when not on warehouse/CS direct routes.
  */
-export function ShipmentDetailsPage() {
+export function ShipmentLineDetailsPage() {
   const { t } = useTranslation()
   const location = useLocation()
   const { shipmentId: shipmentParam = "", warehouseId } = useParams<{
@@ -182,4 +182,3 @@ export function ShipmentDetailsPage() {
     </Layout>
   )
 }
-

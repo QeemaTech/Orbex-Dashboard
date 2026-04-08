@@ -21,8 +21,8 @@ import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
 import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
 import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
-import { ShipmentDetailsPage } from "@/pages/ShipmentDetailsPage"
-import { ShipmentsListPage } from "@/pages/ShipmentsListPage"
+import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
+import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
@@ -98,7 +98,7 @@ export default function App() {
           path="/shipments"
           element={
             <Protected>
-              <ShipmentsListPage />
+              <ShipmentLinesListPage />
             </Protected>
           }
         />
@@ -106,7 +106,7 @@ export default function App() {
           path="/shipments/:shipmentId"
           element={
             <Protected>
-              <ShipmentDetailsPage />
+              <ShipmentLineDetailsPage />
             </Protected>
           }
         />
@@ -252,7 +252,7 @@ export default function App() {
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
-                <ShipmentDetailsPage />
+                <ShipmentLineDetailsPage />
               </ProtectedRole>
             </Protected>
           }
