@@ -22,8 +22,8 @@ import { AdminShipmentsTable } from "@/features/shipments/components/AdminShipme
 import { ShipmentLinesKpiStatRow } from "@/features/shipments/components/ShipmentLinesKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-/** Customer shipment lines (`GET /api/shipments`); row opens **shipment** detail at `/shipments/:shipmentId`. */
-export function ShipmentsListPage() {
+/** Delivery lines (`GET /api/shipments`); row opens line detail at `/shipments/:shipmentId`. */
+export function ShipmentLinesListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
@@ -248,4 +248,3 @@ export function ShipmentsListPage() {
     </Layout>
   )
 }
-
