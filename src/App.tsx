@@ -13,15 +13,15 @@ import {
   useAuth,
 } from "@/lib/auth-context"
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
-import { CsOrdersListPage } from "@/features/customer-service/pages/CsOrdersListPage"
+import { CsShipmentsListPage } from "@/features/customer-service/pages/CsShipmentsListPage"
 import { DashboardPage } from "@/pages/DashboardPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
+import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
+import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
 import { ShipmentDetailsPage } from "@/pages/ShipmentDetailsPage"
-import { OrdersPage } from "@/pages/OrdersPage"
-import { OrdersListPage } from "@/pages/OrdersListPage"
 import { ShipmentsListPage } from "@/pages/ShipmentsListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
@@ -62,11 +62,11 @@ function RootRedirect() {
   return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
 }
 
-function RedirectWarehouseTransferOrdersToDetail() {
-  const { warehouseId = "", shipmentId = "" } = useParams()
+function RedirectWarehouseTransferShipmentsToDetail() {
+  const { warehouseId = "", merchantOrderId = "" } = useParams()
   return (
     <Navigate
-      to={`/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(shipmentId)}#customer-orders`}
+      to={`/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(merchantOrderId)}#customer-orders`}
       replace
     />
   )
@@ -95,28 +95,10 @@ export default function App() {
           }
         />
         <Route
-          path="/orders"
-          element={
-            <Protected>
-              <OrdersListPage />
-            </Protected>
-          }
-        />
-        <Route
-          path="/orders/:shipmentId"
-          element={
-            <Protected>
-              <OrdersPage />
-            </Protected>
-          }
-        />
-        <Route
           path="/shipments"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN"]}>
-                <ShipmentsListPage />
-              </ProtectedRole>
+              <ShipmentsListPage />
             </Protected>
           }
         />
@@ -125,6 +107,24 @@ export default function App() {
           element={
             <Protected>
               <ShipmentDetailsPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/merchant-orders"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN"]}>
+                <MerchantOrdersListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/merchant-orders/:merchantOrderId"
+          element={
+            <Protected>
+              <MerchantOrderDetailsPage />
             </Protected>
           }
         />
@@ -197,42 +197,42 @@ export default function App() {
           }
         />
         <Route
-          path="/warehouses/:warehouseId/transfers/:shipmentId/orders"
+          path="/warehouses/:warehouseId/transfers/:merchantOrderId/shipments"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <RedirectWarehouseTransferOrdersToDetail />
+                <RedirectWarehouseTransferShipmentsToDetail />
               </ProtectedRole>
             </Protected>
           }
         />
         <Route
-          path="/warehouses/:warehouseId/transfers/:shipmentId"
+          path="/warehouses/:warehouseId/transfers/:merchantOrderId"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <ShipmentDetailsPage />
+                <MerchantOrderDetailsPage />
               </ProtectedRole>
             </Protected>
           }
         />
-        <Route path="/cs" element={<Navigate to="/cs/orders" replace />} />
-        <Route
-          path="/cs/orders"
-          element={
-            <Protected>
-              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
-                <CsOrdersListPage />
-              </ProtectedRole>
-            </Protected>
-          }
-        />
+        <Route path="/cs" element={<Navigate to="/cs/shipments" replace />} />
         <Route
           path="/cs/shipments"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
-                <ShipmentsListPage />
+                <CsShipmentsListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/cs/merchant-orders"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+                <MerchantOrdersListPage />
               </ProtectedRole>
             </Protected>
           }
@@ -248,21 +248,21 @@ export default function App() {
           }
         />
         <Route
-          path="/cs/orders/:shipmentId"
-          element={
-            <Protected>
-              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
-                <OrdersPage />
-              </ProtectedRole>
-            </Protected>
-          }
-        />
-        <Route
           path="/cs/shipments/:shipmentId"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
                 <ShipmentDetailsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/cs/merchant-orders/:merchantOrderId"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+                <MerchantOrderDetailsPage />
               </ProtectedRole>
             </Protected>
           }

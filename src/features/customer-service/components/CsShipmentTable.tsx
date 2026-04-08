@@ -2,7 +2,7 @@ import type { MouseEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-import type { CsShipmentRow } from "@/api/shipments-api"
+import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import {
   Table,
@@ -29,10 +29,10 @@ export interface CsShipmentTableProps {
   listQueryKey: unknown[]
   onOpenMap: (courierId: string) => void
   onOpenAddLocation: (row: CsShipmentRow) => void
-  /** Used for deriving `/orders` base from `/shipments`; row opens **order** detail (`row.id`). */
+  /** Used for deriving shipment-line detail base from merchant-order base; row opens shipment detail (`row.id`). */
   detailBasePath?: string
   /**
-   * Row: `{orderDetailBasePath}/{row.id}`. Defaults: `detailBasePath` with `/shipments` → `/orders`.
+   * Row: `{orderDetailBasePath}/{row.id}`. Defaults: `detailBasePath` with `/merchant-orders` → `/shipments`.
    */
   orderDetailBasePath?: string
   /** When false, hides the actions column (e.g. general Shipments list). Default true. */
@@ -46,7 +46,7 @@ export function CsShipmentTable({
   listQueryKey,
   onOpenMap,
   onOpenAddLocation,
-  detailBasePath = "/shipments",
+  detailBasePath = "/merchant-orders",
   orderDetailBasePath,
   showActions = true,
   perspective = "operations",
@@ -56,9 +56,9 @@ export function CsShipmentTable({
 
   const orderBase =
     orderDetailBasePath?.replace(/\/$/, "") ??
-    (detailBasePath.endsWith("/shipments")
-      ? detailBasePath.replace(/\/shipments$/, "/orders")
-      : "/orders")
+    (detailBasePath.endsWith("/merchant-orders")
+      ? detailBasePath.replace(/\/merchant-orders$/, "/shipments")
+      : "/shipments")
 
   const resolveCoordinates = (row: CsShipmentRow): { lat: number; lng: number } | null => {
     const hasLat = row.customerLat != null && String(row.customerLat).trim() !== ""

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
-import { getShipmentById, getShipmentOrders } from "@/api/shipments-api"
+import { getShipmentById, getShipmentOrders } from "@/api/merchant-orders-api"
 import { assignWarehouseShipment, getWarehouseCouriers } from "@/api/warehouse-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { Button } from "@/components/ui/button"
@@ -41,7 +41,7 @@ export function WarehouseShipmentOrdersTable({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/orders" : "/orders"
+  const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/shipments" : "/shipments"
   const queryClient = useQueryClient()
   const [assignOrderId, setAssignOrderId] = useState("")
   const [assignCourierInput, setAssignCourierInput] = useState("")
@@ -129,7 +129,7 @@ export function WarehouseShipmentOrdersTable({
   return (
     <div className="space-y-3">
       {ordersQuery.isLoading ? (
-        <p className="text-muted-foreground text-sm">{t("orders.loading")}</p>
+        <p className="text-muted-foreground text-sm">{t("shipments.loading")}</p>
       ) : null}
       {ordersQuery.error ? (
         <p className="text-destructive text-sm">{(ordersQuery.error as Error).message}</p>
@@ -150,8 +150,8 @@ export function WarehouseShipmentOrdersTable({
                     <TableHead>{t("cs.table.product", { defaultValue: "Product" })}</TableHead>
                   </>
                 ) : null}
-                <TableHead>{t("orders.columns.deliveryStatus")}</TableHead>
-                <TableHead>{t("orders.columns.paymentStatus")}</TableHead>
+                <TableHead>{t("shipments.columns.deliveryStatus")}</TableHead>
+                <TableHead>{t("shipments.columns.paymentStatus")}</TableHead>
                 <TableHead>{t("cs.table.value", { defaultValue: "Value" })}</TableHead>
                 {mode === "warehouse" ? (
                   <>
@@ -168,7 +168,7 @@ export function WarehouseShipmentOrdersTable({
                     colSpan={mode === "warehouse" ? WAREHOUSE_COL_COUNT : COMPACT_COL_COUNT}
                     className="text-muted-foreground text-center text-sm"
                   >
-                    {t("orders.empty")}
+                    {t("shipments.empty")}
                   </TableCell>
                 </TableRow>
               ) : (

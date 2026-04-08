@@ -3,7 +3,7 @@ import { MapPin, Truck } from "react-lucid"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { getDashboardKpis } from "@/api/shipments-api"
+import { getDashboardKpis } from "@/api/merchant-orders-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {

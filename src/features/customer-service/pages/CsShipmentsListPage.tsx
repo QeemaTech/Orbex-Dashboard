@@ -4,8 +4,8 @@ import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
-import { listOrders } from "@/api/orders-api"
-import type { CsShipmentRow } from "@/api/shipments-api"
+import { listShipments } from "@/api/shipments-api"
+import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,8 +25,8 @@ import { CsShipmentTable } from "@/features/customer-service/components/CsShipme
 import { ShipmentKpiStatRow } from "@/features/shipments/components/ShipmentKpiStatRow"
 import { useAuth } from "@/lib/auth-context"
 
-/** CS shipment (delivery-line) queue via `GET /api/orders`; row opens line detail at `/cs/orders/:lineId`. */
-export function CsOrdersListPage() {
+/** CS shipment (delivery-line) queue via `GET /api/shipments`; row opens line detail at `/cs/shipments/:lineId`. */
+export function CsShipmentsListPage() {
   const { t } = useTranslation()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
@@ -96,10 +96,10 @@ export function CsOrdersListPage() {
     ],
   )
 
-  const ordersQuery = useQuery({
+  const shipmentsQuery = useQuery({
     queryKey: listQueryKey,
     queryFn: () =>
-      listOrders({
+      listShipments({
         token,
         page,
         pageSize,
@@ -122,7 +122,7 @@ export function CsOrdersListPage() {
 
   const tableRows: CsShipmentRow[] = useMemo(
     () =>
-      (ordersQuery.data?.shipments ?? []).map((row) => ({
+      (shipmentsQuery.data?.shipments ?? []).map((row) => ({
         ...row,
         merchantId: row.merchantId ?? "",
         assignedCourierId: row.assignedCourierId ?? row.deliveryCourierId ?? null,
@@ -138,7 +138,7 @@ export function CsOrdersListPage() {
           row.customer.customerLocationReceivedAt,
         subStatus: row.subStatus ?? "NONE",
       })),
-    [ordersQuery.data],
+    [shipmentsQuery.data],
   )
 
   const setFilters = useCallback(
@@ -197,7 +197,7 @@ export function CsOrdersListPage() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil((ordersQuery.data?.total ?? 0) / pageSize),
+    Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
   )
 
   return (
@@ -222,7 +222,7 @@ export function CsOrdersListPage() {
         <ShipmentKpiStatRow
           token={token}
           filters={filters}
-          queryKeyPrefix="cs-orders-list-page"
+          queryKeyPrefix="cs-shipments-list-page"
         />
 
         <Card className="border-border/80 shadow-sm">
@@ -235,17 +235,17 @@ export function CsOrdersListPage() {
           <CardContent className="space-y-4 pt-6">
             <CsShipmentFilters values={filters} onChange={setFilters} />
 
-            {ordersQuery.error ? (
+            {shipmentsQuery.error ? (
               <p className="text-destructive text-sm">
-                {(ordersQuery.error as Error).message}
+                {(shipmentsQuery.error as Error).message}
               </p>
             ) : null}
 
-            {ordersQuery.isLoading ? (
+            {shipmentsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("cs.loading")}</p>
             ) : null}
 
-            {ordersQuery.data ? (
+            {shipmentsQuery.data ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
                 <CsShipmentTable
                   rows={tableRows}
@@ -262,7 +262,7 @@ export function CsOrdersListPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-border/60 border-t pt-4">
               <p className="text-muted-foreground text-sm">
                 {t("cs.pagination.summary", {
-                  total: ordersQuery.data?.total ?? 0,
+                  total: shipmentsQuery.data?.total ?? 0,
                   page,
                 })}
               </p>
@@ -307,3 +307,4 @@ export function CsOrdersListPage() {
     </Layout>
   )
 }
+

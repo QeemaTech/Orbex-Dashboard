@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { getDashboardKpis } from "@/api/shipments-api"
+import { getDashboardKpis } from "@/api/merchant-orders-api"
 import { listUsers } from "@/api/users-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
@@ -141,7 +141,7 @@ export function DashboardPage() {
               value={totals?.totalOrders ?? 0}
               icon={Boxes}
               accent="warning"
-              to="/orders"
+              to="/shipments"
               hideTrend
             />
             <StatCard
@@ -149,7 +149,7 @@ export function DashboardPage() {
               value={totals?.totalShipments ?? 0}
               icon={Package}
               accent="success"
-              to="/shipments"
+              to="/merchant-orders"
               hideTrend
             />
             <StatCard
@@ -330,7 +330,7 @@ export function DashboardPage() {
                 type="button"
                 variant="default"
                 className="w-full sm:w-auto"
-                onClick={() => navigate("/shipments")}
+                onClick={() => navigate("/merchant-orders")}
               >
                 {t("dashboard.quickActions.viewShipments")}
               </Button>
@@ -338,7 +338,7 @@ export function DashboardPage() {
                 type="button"
                 variant="outline"
                 className="w-full sm:w-auto"
-                onClick={() => navigate("/orders")}
+                onClick={() => navigate("/shipments")}
               >
                 {t("dashboard.quickActions.viewAllOrders")}
               </Button>
@@ -371,7 +371,7 @@ export function DashboardPage() {
                       key={row.shipmentId}
                       className="hover:bg-muted/50 cursor-pointer"
                       onClick={() =>
-                        void navigate(`/shipments/${encodeURIComponent(row.shipmentId)}`)
+                        void navigate(`/merchant-orders/${encodeURIComponent(row.shipmentId)}`)
                       }
                     >
                       <TableCell className="font-medium">

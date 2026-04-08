@@ -3,7 +3,7 @@
     "dashboard": "Dashboard",
     "shipments": "Shipments",
     "merchantOrders": "Merchant orders",
-    "orders": "Customer orders",
+    "orders": "Shipments",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
     "couriers": "Couriers",
@@ -14,57 +14,60 @@
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
   },
-  "orders": {
-    "pageTitle": "Orders",
-    "pageHeading": "Customer orders",
+  "shipments": {
+    "pageTitle": "Shipments",
+    "pageHeading": "Customer shipments",
     "backToShipment": "Back to shipment",
     "backToTransfer": "Back to transfer",
-    "loading": "Loading orders…",
-    "empty": "No orders in this shipment.",
-    "subtitle": "Each row is one customer order with its own recipient.",
-    "warehouseSubtitle": "Each row is a customer order line from the batch, with delivery and payment states as stored in Orbex.",
+    "loading": "Loading shipments…",
+    "empty": "No shipments in this merchant order.",
+    "subtitle": "Each row is one customer shipment with its own recipient.",
+    "warehouseSubtitle": "Each row is a customer shipment line from the batch, with delivery and payment states as stored in Orbex.",
     "columns": {
       "deliveryStatus": "Delivery",
       "paymentStatus": "Payment"
     },
     "detail": {
-      "pageTitle": "Order details",
-      "loading": "Loading order…",
-      "orderId": "Order ID",
-      "unnamedTracking": "Order",
+      "pageTitle": "Shipment details",
+      "loading": "Loading shipment…",
+      "shipmentId": "Shipment ID",
+      "unnamedTracking": "Shipment",
       "sectionCustomer": "Customer & product",
       "sectionFinancial": "Value & payment",
       "sectionLogistics": "Delivery & timeline",
       "description": "Description",
       "notes": "Notes",
       "commission": "Commission",
+      "shippingFee": "Shipping fee",
+      "courierPhone": "Courier phone",
       "createdAt": "Created",
       "updatedAt": "Last updated",
       "actions": "Actions",
-      "warehouseHint": "Warehouse tools for this batch are on the transfer page."
+      "warehouseHint": "Warehouse tools for this batch are on the transfer page.",
+      "currencyLocale": "en-EG"
     }
-  },
-  "ordersList": {
-    "pageTitle": "Customer orders",
-    "description": "Customer order lines (packages) from the API. Open a row for full order details, status, and actions; use the menu to open the transfer or all orders in the batch.",
-    "tableCardTitle": "All customer orders",
-    "tableCardDescription": "Results respect your role and permissions from the API.",
-    "loading": "Loading orders…",
-    "empty": "No orders match the current filters.",
-    "kpiTotalOrders": "Customer orders (total)"
   },
   "shipmentsList": {
     "pageTitle": "Shipments",
-    "description": "Transfer batches (shipments) — one row per merchant batch. Use the warehouse filter to see hub-specific activity.",
+    "description": "Customer shipment lines (packages) from the API. Open a row for full shipment details, status, and actions; use the menu to open the merchant order or all shipments in the merchant order.",
     "tableCardTitle": "All shipments",
-    "tableCardDescription": "Shipment-level data only; open a row for customer orders and line details.",
+    "tableCardDescription": "Results respect your role and permissions from the API.",
     "loading": "Loading shipments…",
+    "empty": "No shipments match the current filters.",
+    "kpiTotalShipments": "Shipments (total)"
+  },
+  "merchantOrdersList": {
+    "pageTitle": "Merchant orders",
+    "description": "Merchant order batches — one row per merchant batch. Use the warehouse filter to see hub-specific activity.",
+    "tableCardTitle": "All merchant orders",
+    "tableCardDescription": "Merchant-order-level data only; open a row for customer shipments and line details.",
+    "loading": "Loading merchant orders…",
     "filterWarehouse": "Warehouse",
     "allWarehouses": "All warehouses",
-    "kpiTotalShipments": "Shipment batches",
+    "kpiTotalMerchantOrders": "Merchant orders",
     "colMerchant": "Merchant",
     "colWarehouse": "Warehouse",
-    "colOrderCount": "Orders",
+    "colOrderCount": "Shipments",
     "colTotalValue": "Total value",
     "colTransferStatus": "Transfer status"
   },
@@ -75,9 +78,9 @@
     "colDelivery": "Delivery",
     "colValue": "Value",
     "colActions": "Actions",
-    "openTransfer": "Open transfer",
-    "viewBatchOrders": "View batch orders",
-    "menuAriaLabel": "Open order actions menu"
+    "openTransfer": "Open merchant order",
+    "viewBatchOrders": "View merchant order shipments",
+    "menuAriaLabel": "Open shipment actions menu"
   },
   "auth": {
     "loginTitle": "Sign in to Orbex",
@@ -125,23 +128,23 @@
   },
   "dashboard": {
     "stats": {
-      "totalShipments": "Shipment batches",
+      "totalShipments": "Merchant orders",
       "delivered": "Delivered",
       "rejected": "Rejected",
       "postponed": "Postponed"
     },
     "adminStats": {
       "users": "Users",
-      "shipments": "Shipment batches",
-      "orders": "Customer orders",
+      "shipments": "Merchant orders",
+      "orders": "Shipments",
       "warehouses": "Warehouses"
     },
     "chart": {
-      "lineTitle": "Orders over time",
-      "lineDescription": "New customer orders per day (last 14 days)",
-      "lineSeriesName": "Orders",
+      "lineTitle": "Shipments over time",
+      "lineDescription": "New customer shipments per day (last 14 days)",
+      "lineSeriesName": "Shipments",
       "transferPieTitle": "Transfer status",
-      "transferPieDescription": "Shipment batches by pipeline status",
+      "transferPieDescription": "Merchant orders by pipeline status",
       "days": {
         "mon": "Mon",
         "tue": "Tue",
@@ -154,10 +157,10 @@
     },
     "quickActions": {
       "title": "Quick actions",
-      "description": "Jump to shipments (transfers) or customer order lines",
-      "createOrder": "Create order",
-      "viewShipments": "View shipments",
-      "viewAllOrders": "View customer orders"
+      "description": "Jump to merchant orders or customer shipments",
+      "createOrder": "Create shipment",
+      "viewShipments": "View merchant orders",
+      "viewAllOrders": "View shipments"
     },
     "language": {
       "label": "Language",
@@ -165,10 +168,10 @@
       "ar": "العربية"
     },
     "recent": {
-      "title": "Recent orders",
-      "description": "Latest customer orders in your network",
-      "shipmentsTitle": "Recent shipments",
-      "shipmentsDescription": "Latest transfer batches across your network"
+      "title": "Recent shipments",
+      "description": "Latest customer shipments in your network",
+      "shipmentsTitle": "Recent merchant orders",
+      "shipmentsDescription": "Latest merchant orders across your network"
     },
     "warehouses": {
       "title": "Warehouse hubs",
@@ -187,36 +190,36 @@
       "merchant": "Merchant",
       "warehouse": "Warehouse",
       "transferStatus": "Transfer status",
-      "orderCount": "Orders",
+      "orderCount": "Shipments",
       "batchValue": "Batch value",
       "product": "Product"
     }
   },
-  "shipments": {
-    "detailTitle": "Shipment details",
+  "merchantOrders": {
+    "detailTitle": "Merchant order details",
     "back": "Back",
     "loading": "Loading…",
     "detail": {
-      "notFound": "Shipment not found.",
-      "batchSubtitle": "Merchant batch — each order has its own recipient; see the table below.",
-      "batchOrdersHint": "Recipient name, phone, address, and product appear on each order row below — a batch can include multiple customers.",
+      "notFound": "Merchant order not found.",
+      "batchSubtitle": "Merchant batch — each shipment has its own recipient; see the table below.",
+      "batchOrdersHint": "Recipient name, phone, address, and product appear on each shipment row below — a merchant order can include multiple customers.",
       "courierPhone": "Courier phone",
       "shippingFee": "Shipping fee",
       "assignedWarehouse": "Warehouse",
-      "customerOrdersTitle": "Customer orders",
-      "customerOrdersDescription": "Order lines (packages) under this shipment. Assignment and delivery updates are per order.",
+      "customerOrdersTitle": "Customer shipments",
+      "customerOrdersDescription": "Shipment lines (packages) under this merchant order. Assignment and delivery updates are per shipment.",
       "timelineTitle": "Timeline",
       "timelineEmpty": "No timeline events yet.",
       "timelineStart": "START",
       "timelineArrow": "→",
       "currencyLocale": "en-EG"
     },
-    "viewOrders": "View orders",
-    "backToShipment": "Back to shipment",
-    "ordersTitle": "Customer orders",
-    "ordersSubtitle": "Each row is one customer order with its own recipient.",
-    "ordersWarehouseSubtitle": "Each row is a customer order line from the batch, with delivery and payment states as stored in Orbex.",
-    "ordersEmpty": "No orders in this shipment.",
+    "viewOrders": "View shipments",
+    "backToShipment": "Back to merchant order",
+    "ordersTitle": "Customer shipments",
+    "ordersSubtitle": "Each row is one customer shipment with its own recipient.",
+    "ordersWarehouseSubtitle": "Each row is a customer shipment line from the batch, with delivery and payment states as stored in Orbex.",
+    "ordersEmpty": "No shipments in this merchant order.",
     "orders": {
       "deliveryStatus": "Delivery",
       "paymentStatus": "Payment"

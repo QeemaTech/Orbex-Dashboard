@@ -3,7 +3,7 @@
     "dashboard": "لوحة التحكم",
     "shipments": "الشحنات",
     "merchantOrders": "طلبات التجار",
-    "orders": "طلبات العملاء",
+    "orders": "الشحنات",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
     "couriers": "المناديب",
@@ -14,57 +14,60 @@
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء"
   },
-  "orders": {
-    "pageTitle": "طلبات العملاء",
-    "pageHeading": "طلبات العملاء",
+  "shipments": {
+    "pageTitle": "الشحنات",
+    "pageHeading": "شحنات العملاء",
     "backToShipment": "العودة للشحنة",
     "backToTransfer": "العودة للشحنة (النقل)",
-    "loading": "جاري تحميل الطلبات…",
-    "empty": "لا توجد طلبات في هذه الشحنة.",
-    "subtitle": "كل صف يمثل طلب عميل واحد مع مستلمه.",
-    "warehouseSubtitle": "كل صف يمثل سطر طلب عميل داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام.",
+    "loading": "جاري تحميل الشحنات…",
+    "empty": "لا توجد شحنات في طلب التاجر هذا.",
+    "subtitle": "كل صف يمثل شحنة عميل واحدة مع مستلمها.",
+    "warehouseSubtitle": "كل صف يمثل سطر شحنة عميل داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام.",
     "columns": {
       "deliveryStatus": "التسليم",
       "paymentStatus": "الدفع"
     },
     "detail": {
-      "pageTitle": "تفاصيل الطلب",
-      "loading": "جاري تحميل الطلب…",
-      "orderId": "معرّف الطلب",
-      "unnamedTracking": "طلب",
+      "pageTitle": "تفاصيل الشحنة",
+      "loading": "جاري تحميل الشحنة…",
+      "shipmentId": "معرّف الشحنة",
+      "unnamedTracking": "شحنة",
       "sectionCustomer": "العميل والمنتج",
       "sectionFinancial": "القيمة والدفع",
       "sectionLogistics": "التسليم والجدول الزمني",
       "description": "الوصف",
       "notes": "ملاحظات",
       "commission": "العمولة",
+      "shippingFee": "مصاريف الشحن",
+      "courierPhone": "رقم موبايل المندوب",
       "createdAt": "تاريخ الإنشاء",
       "updatedAt": "آخر تحديث",
       "actions": "إجراءات",
-      "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة النقل."
+      "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة النقل.",
+      "currencyLocale": "ar-EG"
     }
-  },
-  "ordersList": {
-    "pageTitle": "طلبات العملاء",
-    "description": "أسطر طلبات العملاء (الطرود) من الخادم. افتح الصف للانتقال إلى الشحنة (الدفعة) وعرض كل الطلبات فيها.",
-    "tableCardTitle": "كل طلبات العملاء",
-    "tableCardDescription": "النتائج تخضع لصلاحيات دورك من الخادم.",
-    "loading": "جاري تحميل الطلبات…",
-    "empty": "لا توجد طلبات تطابق المرشحات الحالية.",
-    "kpiTotalOrders": "إجمالي طلبات العملاء"
   },
   "shipmentsList": {
     "pageTitle": "الشحنات",
-    "description": "دفعات النقل (شحنات) — صف واحد لكل دفعة تاجر. صفِّ حسب المخزن لعرض نشاط المحور.",
+    "description": "أسطر شحنات العملاء (الطرود) من الخادم. افتح الصف لعرض تفاصيل الشحنة وحالاتها وإجراءاتها؛ واستخدم القائمة لفتح طلب التاجر أو كل الشحنات داخل طلب التاجر.",
     "tableCardTitle": "كل الشحنات",
-    "tableCardDescription": "بيانات على مستوى الشحنة فقط؛ افتح الصف لطلبات العملاء وتفاصيل الأسطر.",
+    "tableCardDescription": "النتائج تخضع لصلاحيات دورك من الخادم.",
     "loading": "جاري تحميل الشحنات…",
+    "empty": "لا توجد شحنات تطابق المرشحات الحالية.",
+    "kpiTotalShipments": "إجمالي الشحنات"
+  },
+  "merchantOrdersList": {
+    "pageTitle": "طلبات التجار",
+    "description": "دفعات طلبات التجار — صف واحد لكل دفعة تاجر. صفِّ حسب المخزن لعرض نشاط المحور.",
+    "tableCardTitle": "كل طلبات التجار",
+    "tableCardDescription": "بيانات على مستوى طلب التاجر فقط؛ افتح الصف لشحنات العملاء وتفاصيل الأسطر.",
+    "loading": "جاري تحميل طلبات التجار…",
     "filterWarehouse": "المخزن",
     "allWarehouses": "كل المخازن",
-    "kpiTotalShipments": "دفعات الشحن",
+    "kpiTotalMerchantOrders": "طلبات التجار",
     "colMerchant": "التاجر",
     "colWarehouse": "المخزن",
-    "colOrderCount": "الطلبات",
+    "colOrderCount": "الشحنات",
     "colTotalValue": "القيمة الإجمالية",
     "colTransferStatus": "حالة النقل"
   },
@@ -75,9 +78,9 @@
     "colDelivery": "التسليم",
     "colValue": "القيمة",
     "colActions": "إجراءات",
-    "openTransfer": "فتح النقل",
-    "viewBatchOrders": "عرض طلبات الدفعة",
-    "menuAriaLabel": "فتح قائمة إجراءات الطلب"
+    "openTransfer": "فتح طلب التاجر",
+    "viewBatchOrders": "عرض شحنات طلب التاجر",
+    "menuAriaLabel": "فتح قائمة إجراءات الشحنة"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول — Orbex",
@@ -125,23 +128,23 @@
   },
   "dashboard": {
     "stats": {
-      "totalShipments": "دفعات الشحن",
+      "totalShipments": "طلبات التجار",
       "delivered": "تم التسليم",
       "rejected": "مرفوض",
       "postponed": "مؤجل"
     },
     "adminStats": {
       "users": "المستخدمون",
-      "shipments": "دفعات الشحن",
-      "orders": "طلبات العملاء",
+      "shipments": "طلبات التجار",
+      "orders": "الشحنات",
       "warehouses": "المخازن"
     },
     "chart": {
-      "lineTitle": "الطلبات عبر الوقت",
-      "lineDescription": "طلبات عملاء جديدة يوميًا (آخر 14 يومًا)",
-      "lineSeriesName": "الطلبات",
+      "lineTitle": "الشحنات عبر الوقت",
+      "lineDescription": "شحنات عملاء جديدة يوميًا (آخر 14 يومًا)",
+      "lineSeriesName": "الشحنات",
       "transferPieTitle": "حالة النقل",
-      "transferPieDescription": "دفعات الشحن حسب حالة المسار",
+      "transferPieDescription": "طلبات التجار حسب حالة المسار",
       "days": {
         "mon": "الإثنين",
         "tue": "الثلاثاء",
@@ -154,10 +157,10 @@
     },
     "quickActions": {
       "title": "إجراءات سريعة",
-      "description": "انتقال إلى الشحنات (الدفعات) أو أسطر طلبات العملاء",
-      "createOrder": "إنشاء طلب",
-      "viewShipments": "عرض الشحنات",
-      "viewAllOrders": "عرض طلبات العملاء"
+      "description": "انتقال إلى طلبات التجار أو شحنات العملاء",
+      "createOrder": "إنشاء شحنة",
+      "viewShipments": "عرض طلبات التجار",
+      "viewAllOrders": "عرض الشحنات"
     },
     "language": {
       "label": "اللغة",
@@ -165,10 +168,10 @@
       "ar": "العربية"
     },
     "recent": {
-      "title": "أحدث الطلبات",
-      "description": "أحدث طلبات العملاء في شبكتك",
-      "shipmentsTitle": "أحدث الشحنات",
-      "shipmentsDescription": "أحدث دفعات النقل عبر الشبكة"
+      "title": "أحدث الشحنات",
+      "description": "أحدث شحنات العملاء في شبكتك",
+      "shipmentsTitle": "أحدث طلبات التجار",
+      "shipmentsDescription": "أحدث طلبات التجار عبر الشبكة"
     },
     "warehouses": {
       "title": "مراكز المخازن",
@@ -187,34 +190,34 @@
       "merchant": "التاجر",
       "warehouse": "المخزن",
       "transferStatus": "حالة النقل",
-      "orderCount": "الطلبات",
+      "orderCount": "الشحنات",
       "batchValue": "قيمة الدفعة"
     }
   },
-  "shipments": {
-    "detailTitle": "تفاصيل الشحنة",
+  "merchantOrders": {
+    "detailTitle": "تفاصيل طلب التاجر",
     "back": "رجوع",
     "loading": "جاري التحميل…",
     "detail": {
-      "batchSubtitle": "دفعة من التاجر — لكل طلب مستلم خاص؛ التفاصيل في الجدول أدناه.",
-      "batchOrdersHint": "اسم المستلم والهاتف والعنوان ونوع المنتج يظهر لكل طلب في الجدول أدناه — قد تضم الدفعة أكثر من عميل.",
+      "batchSubtitle": "دفعة من التاجر — لكل شحنة مستلم خاص؛ التفاصيل في الجدول أدناه.",
+      "batchOrdersHint": "اسم المستلم والهاتف والعنوان ونوع المنتج يظهر لكل شحنة في الجدول أدناه — قد تضم الدفعة أكثر من عميل.",
       "courierPhone": "رقم موبايل المندوب",
       "shippingFee": "مصاريف الشحن",
       "assignedWarehouse": "المخزن",
-      "customerOrdersTitle": "طلبات العملاء",
-      "customerOrdersDescription": "أسطر الطلبات (الطرود) ضمن هذه الشحنة. التحديثات والإسناد لكل طلب على حدة.",
+      "customerOrdersTitle": "شحنات العملاء",
+      "customerOrdersDescription": "أسطر الشحنات (الطرود) ضمن طلب التاجر هذا. التحديثات والإسناد لكل شحنة على حدة.",
       "timelineTitle": "سجل الحالة",
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
       "timelineArrow": "→",
       "currencyLocale": "ar-EG"
     },
-    "viewOrders": "عرض طلبات العملاء",
-    "backToShipment": "العودة للشحنة",
-    "ordersTitle": "طلبات العملاء",
-    "ordersSubtitle": "كل صف يمثل طلب عميل واحد مع مستلمه.",
-    "ordersWarehouseSubtitle": "كل صف يمثل سطر طلب عميل داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام.",
-    "ordersEmpty": "لا توجد طلبات في هذه الشحنة.",
+    "viewOrders": "عرض شحنات العملاء",
+    "backToShipment": "العودة لطلب التاجر",
+    "ordersTitle": "شحنات العملاء",
+    "ordersSubtitle": "كل صف يمثل شحنة عميل واحدة مع مستلمها.",
+    "ordersWarehouseSubtitle": "كل صف يمثل سطر شحنة عميل داخل الدفعة، مع حالات التسليم والدفع كما هي مخزنة في النظام.",
+    "ordersEmpty": "لا توجد شحنات في طلب التاجر هذا.",
     "orders": {
       "deliveryStatus": "التسليم",
       "paymentStatus": "الدفع"

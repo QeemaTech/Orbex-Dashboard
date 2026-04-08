@@ -3,7 +3,7 @@ import { MoreVertical, PhoneCall } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-import type { ShipmentOrderRow } from "@/api/shipments-api"
+import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -59,7 +59,7 @@ function WhatsAppLogoIcon({ className }: { className?: string }) {
   )
 }
 
-export function AdminOrdersTable({ rows }: Props) {
+export function AdminShipmentsTable({ rows }: Props) {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
@@ -86,7 +86,7 @@ export function AdminOrdersTable({ rows }: Props) {
             <TableRow
               key={row.id}
               className="hover:bg-muted/50 cursor-pointer"
-              onClick={() => void nav(`/orders/${encodeURIComponent(row.id)}`)}
+              onClick={() => void nav(`/shipments/${encodeURIComponent(row.id)}`)}
             >
               <TableCell className="font-medium">{row.customer.customerName}</TableCell>
               <TableCell className="text-muted-foreground">{row.customer.phonePrimary}</TableCell>
@@ -118,7 +118,7 @@ export function AdminOrdersTable({ rows }: Props) {
                       <DropdownMenuItem
                         onClick={() =>
                           void nav(
-                            `/shipments/${encodeURIComponent(row.merchantOrderId)}`,
+                            `/merchant-orders/${encodeURIComponent(row.merchantOrderId)}`,
                           )
                         }
                       >
@@ -127,7 +127,7 @@ export function AdminOrdersTable({ rows }: Props) {
                       <DropdownMenuItem
                         onClick={() =>
                           void nav(
-                            `/orders/${encodeURIComponent(row.merchantOrderId)}`,
+                            `/shipments/${encodeURIComponent(row.merchantOrderId)}`,
                           )
                         }
                       >
@@ -178,3 +178,4 @@ export function AdminOrdersTable({ rows }: Props) {
     </Table>
   )
 }
+

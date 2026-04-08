@@ -22,7 +22,7 @@ export function CollectionsPage() {
     <Layout title={t("nav.collections")}>
       <div className="space-y-4">
         {q.isLoading ? (
-          <p className="text-muted-foreground text-sm">{t("shipments.loading")}</p>
+          <p className="text-muted-foreground text-sm">{t("merchantOrders.loading")}</p>
         ) : null}
         {q.error ? (
           <p className="text-destructive text-sm">{(q.error as Error).message}</p>

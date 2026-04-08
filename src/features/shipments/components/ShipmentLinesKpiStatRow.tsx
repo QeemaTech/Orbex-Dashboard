@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
-import { getDashboardKpis } from "@/api/shipments-api"
+import { getDashboardKpis } from "@/api/merchant-orders-api"
 import { StatCard } from "@/components/shared/StatCard"
 import type { CsFilterValues } from "@/features/customer-service/components/CsShipmentFilters"
 
@@ -10,7 +10,7 @@ function toPercent(part: number, total: number) {
   return Math.round((part / total) * 100)
 }
 
-function TotalOrdersIcon({
+function TotalShipmentsIcon({
   className,
   "aria-hidden": ariaHidden,
 }: {
@@ -62,7 +62,7 @@ function RejectedIcon({
       className={className}
       aria-hidden={ariaHidden}
     >
-      <path d="M12 2.25a9.75 9.75 0 1 0 9.75 9.75A9.75 9.75 0 0 0 12 2.25Zm3.53 12.22a1.125 1.125 0 1 1-1.59 1.59L12 14.06l-1.94 1.94a1.125 1.125 0 1 1-1.59-1.59L10.41 12 8.47 10.06a1.125 1.125 0 0 1 1.59-1.59L12 10.41l1.94-1.94a1.125 1.125 0 0 1 1.59 1.59L13.59 12l1.94 1.94Z" />
+      <path d="M12 2.25a9.75 9.75 0 1 0 9.75 9.75A9.75 9.75 0 0 0 12 2.25Zm3.53 12.22a1.125 1.125 0 1 1-1.59 1.59L12 14.06l-1.94 1.94a1.125 1.125 0 0 1-1.59-1.59L10.41 12 8.47 10.06a1.125 1.125 0 0 1 1.59-1.59L12 10.41l1.94-1.94a1.125 1.125 0 0 1 1.59 1.59L13.59 12l1.94 1.94Z" />
     </svg>
   )
 }
@@ -86,18 +86,18 @@ function PostponedIcon({
   )
 }
 
-export type OrderKpiStatRowProps = {
+export type ShipmentLinesKpiStatRowProps = {
   token: string
   filters: CsFilterValues
   queryKeyPrefix: string
 }
 
-/** KPI strip for the customer-order list: denominators use `totalOrders` where applicable. */
-export function OrderKpiStatRow({
+/** KPI strip for the customer-shipment list: denominators use `totalOrders` where applicable. */
+export function ShipmentLinesKpiStatRow({
   token,
   filters,
   queryKeyPrefix,
-}: OrderKpiStatRowProps) {
+}: ShipmentLinesKpiStatRowProps) {
   const { t } = useTranslation()
 
   const kpiQuery = useQuery({
@@ -140,39 +140,40 @@ export function OrderKpiStatRow({
   })
 
   const totals = kpiQuery.data?.totals
-  const totalOrders = totals?.totalOrders ?? 0
-  const totalShipments = totals?.totalShipments ?? 0
+  const totalShipments = totals?.totalOrders ?? 0
+  const totalMerchantOrders = totals?.totalShipments ?? 0
 
   return (
     <div className="grid gap-5 md:gap-6 xl:grid-cols-4">
       <StatCard
-        title={t("ordersList.kpiTotalOrders")}
-        value={totalOrders}
-        percentage={totalOrders > 0 ? 100 : 0}
-        icon={TotalOrdersIcon}
+        title={t("shipmentsList.kpiTotalShipments")}
+        value={totalShipments}
+        percentage={totalShipments > 0 ? 100 : 0}
+        icon={TotalShipmentsIcon}
         accent="primary"
       />
       <StatCard
         title={t("dashboard.stats.delivered")}
         value={totals?.delivered ?? 0}
-        percentage={toPercent(totals?.delivered ?? 0, totalShipments)}
+        percentage={toPercent(totals?.delivered ?? 0, totalMerchantOrders)}
         icon={DeliveredIcon}
         accent="success"
       />
       <StatCard
         title={t("dashboard.stats.rejected")}
         value={totals?.rejected ?? 0}
-        percentage={toPercent(totals?.rejected ?? 0, totalShipments)}
+        percentage={toPercent(totals?.rejected ?? 0, totalMerchantOrders)}
         icon={RejectedIcon}
         accent="destructive"
       />
       <StatCard
         title={t("dashboard.stats.postponed")}
         value={totals?.postponed ?? 0}
-        percentage={toPercent(totals?.postponed ?? 0, totalShipments)}
+        percentage={toPercent(totals?.postponed ?? 0, totalMerchantOrders)}
         icon={PostponedIcon}
         accent="warning"
       />
     </div>
   )
 }
+

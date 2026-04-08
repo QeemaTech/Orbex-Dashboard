@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next"
 
-import type { CsShipmentStatusEvent } from "@/api/shipments-api"
+import type { CsShipmentStatusEvent } from "@/api/merchant-orders-api"
 
 export function backendEnumUnknown(t: TFunction): string {
   return t("backend.enumUnknown")
@@ -49,11 +49,11 @@ export function formatShipmentStatusEventLine(
     "fromCoreStatus" | "fromSubStatus" | "toCoreStatus" | "toSubStatus"
   >,
 ): string {
-  const arrow = ` ${t("shipments.detail.timelineArrow")} `
+  const arrow = ` ${t("merchantOrders.detail.timelineArrow")} `
   const from =
     event.fromCoreStatus != null
       ? `${shipmentCoreStatusLabel(t, event.fromCoreStatus)}/${shipmentSubStatusLabel(t, event.fromSubStatus)}`
-      : t("shipments.detail.timelineStart")
+      : t("merchantOrders.detail.timelineStart")
   const to = `${shipmentCoreStatusLabel(t, event.toCoreStatus)}/${shipmentSubStatusLabel(t, event.toSubStatus)}`
   return `${from}${arrow}${to}`
 }

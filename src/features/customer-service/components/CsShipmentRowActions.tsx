@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { LocateFixed, MapPin, MoreVertical, PhoneCall } from "react-lucid"
 import { useTranslation } from "react-i18next"
 
-import { confirmShipmentCs } from "@/api/shipments-api"
-import type { CsShipmentRow } from "@/api/shipments-api"
+import { confirmShipmentCs } from "@/api/merchant-orders-api"
+import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

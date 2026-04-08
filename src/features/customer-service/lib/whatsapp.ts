@@ -1,4 +1,4 @@
-import type { CsShipmentRow, ShipmentOrderRow } from "@/api/shipments-api"
+import type { CsShipmentRow, ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { showToast } from "@/lib/toast"
 
 /** Digits only for wa.me (country code should be included in stored phone). */

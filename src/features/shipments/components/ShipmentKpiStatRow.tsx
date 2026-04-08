@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
-import { getDashboardKpis } from "@/api/shipments-api"
+import { getDashboardKpis } from "@/api/merchant-orders-api"
 import { StatCard } from "@/components/shared/StatCard"
 import type { CsFilterValues } from "@/features/customer-service/components/CsShipmentFilters"
 

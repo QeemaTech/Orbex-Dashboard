@@ -7,7 +7,7 @@ import {
   patchShipmentFields,
   type CsShipmentRow,
   type ShipmentListResponse,
-} from "@/api/shipments-api"
+} from "@/api/merchant-orders-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
