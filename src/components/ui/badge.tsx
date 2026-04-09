@@ -27,9 +27,9 @@ function Badge({
   className,
   variant,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof badgeVariants>) {
+}: React.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
   return (
-    <div
+    <span
       data-slot="badge"
       className={cn(badgeVariants({ variant }), className)}
       {...props}

@@ -10,11 +10,15 @@ function withUnknownDefault(t: TFunction, key: string): string {
   return t(key, { defaultValue: backendEnumUnknown(t) })
 }
 
-export function backendShipmentTransferLabel(t: TFunction, value: string): string {
+/** Labels for merchant-order batch pipeline (`transferStatus` from API). */
+export function backendMerchantOrderBatchLabel(t: TFunction, value: string): string {
   const v = value?.trim()
   if (!v) return backendEnumUnknown(t)
-  return withUnknownDefault(t, `backend.shipmentTransferStatus.${v}`)
+  return withUnknownDefault(t, `backend.merchantOrderBatchStatus.${v}`)
 }
+
+/** Alias for backward compatibility - maps shipment transfer status labels. */
+export const backendShipmentTransferLabel = backendMerchantOrderBatchLabel;
 
 export function backendOrderDeliveryLabel(t: TFunction, value: string): string {
   const v = value?.trim()

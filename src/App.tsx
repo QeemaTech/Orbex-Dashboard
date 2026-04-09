@@ -27,6 +27,7 @@ import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
+import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -62,11 +63,22 @@ function RootRedirect() {
   return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
 }
 
-function RedirectWarehouseTransferShipmentsToDetail() {
+function RedirectWarehouseMerchantOrderShipmentsToDetail() {
   const { warehouseId = "", merchantOrderId = "" } = useParams()
   return (
     <Navigate
-      to={`/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(merchantOrderId)}#customer-orders`}
+      to={`${warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}#customer-orders`}
+      replace
+    />
+  )
+}
+
+/** Old bookmarks: `/warehouses/.../transfers/...` → `.../merchant-orders/...`. */
+function RedirectLegacyWarehouseTransfersToMerchantOrder() {
+  const { warehouseId = "", merchantOrderId = "" } = useParams()
+  return (
+    <Navigate
+      to={warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}
       replace
     />
   )
@@ -197,11 +209,31 @@ export default function App() {
           }
         />
         <Route
+          path="/warehouses/:warehouseId/merchant-orders/:merchantOrderId/shipments"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
+                <RedirectWarehouseMerchantOrderShipmentsToDetail />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/merchant-orders/:merchantOrderId"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
+                <MerchantOrderDetailsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/warehouses/:warehouseId/transfers/:merchantOrderId/shipments"
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <RedirectWarehouseTransferShipmentsToDetail />
+                <RedirectWarehouseMerchantOrderShipmentsToDetail />
               </ProtectedRole>
             </Protected>
           }
@@ -211,7 +243,7 @@ export default function App() {
           element={
             <Protected>
               <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <MerchantOrderDetailsPage />
+                <RedirectLegacyWarehouseTransfersToMerchantOrder />
               </ProtectedRole>
             </Protected>
           }
