@@ -709,5 +709,12 @@
       "activated": "تم تفعيل المستخدم.",
       "activateFailed": "تعذّر تفعيل المستخدم."
     }
+  },
+  "common": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading…",
+    "close": "Close",
+    "system": "System"
   }
 }

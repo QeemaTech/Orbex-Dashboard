@@ -132,8 +132,9 @@ function RoleFormDialog({
   if (!open) return null
 
   const permsByCategory = permissions.reduce<Record<string, PermissionRow[]>>((acc, p) => {
-    acc[p.category] = acc[p.category] ?? []
-    acc[p.category]!.push(p)
+    const cat = t(`rbac.perms.${p.key}.category`, { defaultValue: p.category })
+    acc[cat] = acc[cat] ?? []
+    acc[cat]!.push(p)
     return acc
   }, {})
 
@@ -155,21 +156,21 @@ function RoleFormDialog({
               {mode === "create" ? "Create role" : `Edit role: ${initial?.name ?? ""}`}
             </p>
             <p className="text-muted-foreground text-xs">
-              Select permissions to grant to this role.
+              {t("rbac.form.permissionsHint", "Select permissions to grant to this role.")}
             </p>
           </div>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              {t("common.close")}
+            </Button>
         </div>
         <form onSubmit={onSubmit} className="grid gap-4 p-5 md:grid-cols-[1.2fr,1fr]">
           <div className="space-y-3">
             <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Name</span>
+              <span className="text-muted-foreground">{t("rbac.form.name", "Name")}</span>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Slug</span>
+              <span className="text-muted-foreground">{t("rbac.form.slug", "Slug")}</span>
               <Input
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
@@ -178,7 +179,9 @@ function RoleFormDialog({
               />
             </label>
             <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Description</span>
+              <span className="text-muted-foreground">
+                {t("rbac.form.description", "Description")}
+              </span>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} />
             </label>
           </div>
@@ -205,7 +208,9 @@ function RoleFormDialog({
                               className="h-4 w-4"
                             />
                             <div>
-                              <div className="font-medium">{p.label}</div>
+                              <div className="font-medium">
+                                {t(`rbac.perms.${p.key}.label`, { defaultValue: p.label })}
+                              </div>
                               <div className="text-muted-foreground text-xs">{p.key}</div>
                             </div>
                           </label>
@@ -218,10 +223,14 @@ function RoleFormDialog({
 
           <div className="md:col-span-2 flex justify-end gap-2 border-t pt-3">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t("rbac.form.cancel", "Cancel")}
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : mode === "create" ? "Create role" : "Save changes"}
+              {pending
+                ? t("rbac.form.saving", "Saving…")
+                : mode === "create"
+                  ? t("rbac.form.create", "Create role")
+                  : t("rbac.form.save", "Save changes")}
             </Button>
           </div>
         </form>
@@ -339,7 +348,7 @@ export function RolesPage() {
                         <div className="flex flex-wrap gap-1">
                           {r.permissions.slice(0, 6).map((p) => (
                             <Badge key={p} variant="secondary" className="text-2xs">
-                              {p}
+                              {t(`rbac.perms.${p}.label`, { defaultValue: p })}
                             </Badge>
                           ))}
                           {r.permissions.length > 6 ? (

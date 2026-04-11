@@ -59,5 +59,28 @@
     "next": "التالي",
     "pageLabel": "الصفحة {{page}} من {{pages}}"
   },
+  "perms": {
+    "dashboard.view": { "label": "عرض لوحة المتابعة", "category": "لوحة التحكم" },
+    "users.read": { "label": "عرض المستخدمين", "category": "المستخدمون" },
+    "users.write": { "label": "إنشاء وتعديل المستخدمين", "category": "المستخدمون" },
+    "users.roles": { "label": "تعيين الأدوار للمستخدمين", "category": "المستخدمون" },
+    "roles.read": { "label": "عرض الأدوار", "category": "التحكم بالصلاحيات" },
+    "roles.write": { "label": "إنشاء/تعديل/حذف الأدوار", "category": "التحكم بالصلاحيات" },
+    "roles.permissions": { "label": "تعديل صلاحيات الأدوار", "category": "التحكم بالصلاحيات" },
+    "permissions.read": { "label": "عرض قائمة الصلاحيات", "category": "التحكم بالصلاحيات" },
+    "rbac.audit.read": { "label": "عرض سجل تغييرات الصلاحيات", "category": "التحكم بالصلاحيات" },
+    "shipments.read": { "label": "عرض الشحنات", "category": "الشحنات" },
+    "shipments.update_status": { "label": "تحديث حالة الشحنات", "category": "الشحنات" },
+    "couriers.read": { "label": "عرض المندوبين", "category": "المندوبون" },
+    "merchant_orders.read": { "label": "عرض شحنات التاجر", "category": "شحنات التاجر" },
+    "merchant_orders.create": { "label": "إنشاء شحنات للتاجر", "category": "شحنات التاجر" },
+    "merchant_orders.assign_courier": { "label": "تعيين مندوب", "category": "شحنات التاجر" },
+    "merchants.read": { "label": "عرض التجار", "category": "التجار" },
+    "warehouses.read": { "label": "عرض المخازن", "category": "المخازن" },
+    "warehouses.manage_transfer": { "label": "إدارة تحويلات المخزن", "category": "المخازن" },
+    "accounting.settlement_close": { "label": "إغلاق التسويات", "category": "الحسابات" },
+    "collections.read": { "label": "عرض التحصيلات", "category": "الحسابات" },
+    "notifications.send": { "label": "إرسال الإشعارات", "category": "الإشعارات" }
+  },
   "signedInAs": "أنت مسجّل الدخول كـ {{email}}."
 }
