@@ -18,13 +18,13 @@ import {
 import { ShipmentDetailView } from "@/features/shipments/components/ShipmentDetailView"
 import { WarehouseShipmentOrdersTable } from "@/features/warehouse/components/WarehouseShipmentOrdersTable"
 import { useAuth } from "@/lib/auth-context"
+import {
+  isWarehouseScopedMerchantOrderPath,
+  warehouseMerchantOrderDetailPath,
+} from "@/lib/warehouse-merchant-order-routes"
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-function isWarehouseTransfersPath(pathname: string): boolean {
-  return /^\/warehouses\/[^/]+\/transfers\//.test(pathname)
-}
 
 /**
  * `/shipments/:id` — if `id` is a UUID, load as a **delivery line** first (`GET /api/shipments/:id`).
@@ -49,7 +49,7 @@ export function ShipmentLineDetailsPage() {
     }
   })()
 
-  const isWarehouseRoute = isWarehouseTransfersPath(location.pathname)
+  const isWarehouseRoute = isWarehouseScopedMerchantOrderPath(location.pathname)
   const isCsRoute = location.pathname.startsWith("/cs/")
   const isUuidParam = uuidRegex.test(shipmentName)
   const shouldUseDirectId = isWarehouseRoute || isCsRoute || isUuidParam
@@ -87,7 +87,7 @@ export function ShipmentLineDetailsPage() {
   const merchantOrderDetailPath = (() => {
     if (!matchedMerchantOrderId) return "/shipments"
     if (isWarehouseRoute && warehouseId) {
-      return `/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(matchedMerchantOrderId)}`
+      return warehouseMerchantOrderDetailPath(warehouseId, matchedMerchantOrderId)
     }
     if (isCsRoute) return `/cs/merchant-orders/${matchedMerchantOrderId}`
     return `/merchant-orders/${matchedMerchantOrderId}`
@@ -116,9 +116,9 @@ export function ShipmentLineDetailsPage() {
     let merchantOrderDetailHref = `/merchant-orders/${merchantOrderId}`
     let merchantOrderShipmentsHref = `/shipments/${merchantOrderId}`
     if (isWarehouseRoute && warehouseId) {
-      const w = encodeURIComponent(warehouseId)
-      backHref = `/warehouses/${w}/transfers/${merchantOrderId}`
-      merchantOrderDetailHref = `/warehouses/${w}/transfers/${merchantOrderId}`
+      const path = warehouseMerchantOrderDetailPath(warehouseId, shipment.merchantOrderId)
+      backHref = path
+      merchantOrderDetailHref = path
     } else if (isCsRoute) {
       backHref = `/cs/merchant-orders/${merchantOrderId}`
       merchantOrderDetailHref = `/cs/merchant-orders/${merchantOrderId}`
@@ -129,7 +129,7 @@ export function ShipmentLineDetailsPage() {
         <ShipmentDetailView
           shipment={shipment}
           backHref={backHref}
-          backLabel={t("shipments.backToTransfer")}
+          backLabel={t("shipments.backToMerchantOrder")}
           merchantOrderDetailHref={merchantOrderDetailHref}
           merchantOrderShipmentsHref={merchantOrderShipmentsHref}
           variant={isWarehouseRoute ? "warehouse" : isCsRoute ? "cs" : "default"}
@@ -144,7 +144,7 @@ export function ShipmentLineDetailsPage() {
         <Button type="button" variant="outline" size="sm" asChild>
           <Link to={merchantOrderDetailPath}>
             <ArrowLeft className="mr-2 size-4" aria-hidden />
-            {t("shipments.backToTransfer")}
+            {t("shipments.backToMerchantOrder")}
           </Link>
         </Button>
 

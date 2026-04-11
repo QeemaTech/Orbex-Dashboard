@@ -172,7 +172,7 @@ export function ShipmentDetailView({
               <Button type="button" variant="default" size="sm" asChild>
                 <Link to={merchantOrderDetailHref}>
                   <ExternalLink className="mr-2 size-4" aria-hidden />
-                  {t("adminOrders.openTransfer")}
+                  {t("adminOrders.openMerchantOrder")}
                 </Link>
               </Button>
               <Button type="button" variant="outline" size="sm" asChild>

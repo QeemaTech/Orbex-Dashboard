@@ -10,7 +10,7 @@ import {
   getWarehouseSite,
   getWarehouseStats,
   getWarehouseTracking,
-  listWarehouseQueue,
+  listWarehouseOrders,
   receiveWarehouseReturn,
   scanPayloadFromInput,
   scanShipmentIn,
@@ -42,26 +42,23 @@ import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
 import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
 
-/** `Shipment.transferStatus` values; empty = default pipeline (active batches). */
+/** `MerchantOrder.transferStatus` (batch pipeline); empty = all batches in hub scope. */
 const warehouseTransferStatusFilters = [
   "",
-  "PENDING",
-  "ASSIGNED",
-  "ON_THE_WAY_TO_WAREHOUSE",
+  "PENDING_PICKUP",
+  "PICKED_UP",
   "IN_WAREHOUSE",
-  "PARTIALLY_DELIVERED",
-  "DELIVERED",
 ] as const
 
 type WarehouseTransferStatusFilter = (typeof warehouseTransferStatusFilters)[number]
 
 function warehouseTransferRowTone(transferStatus: string): string {
   const s = transferStatus.toUpperCase()
-  if (s === "DELIVERED") {
-    return "bg-emerald-50/80 dark:bg-emerald-950/30"
-  }
-  if (s === "PARTIALLY_DELIVERED") {
+  if (s === "IN_WAREHOUSE") {
     return "bg-sky-50/70 dark:bg-sky-950/25"
+  }
+  if (s === "PICKED_UP") {
+    return "bg-amber-50/70 dark:bg-amber-950/20"
   }
   return ""
 }
@@ -132,7 +129,7 @@ export function WarehouseDetailPage() {
   const queueQueryKey = useMemo(
     () =>
       [
-        "warehouse-queue",
+        "warehouse-orders",
         token,
         warehouseId,
         page,
@@ -172,7 +169,7 @@ export function WarehouseDetailPage() {
   const queueQuery = useQuery({
     queryKey: queueQueryKey,
     queryFn: () =>
-      listWarehouseQueue({
+      listWarehouseOrders({
         token,
         page,
         pageSize: 20,
@@ -199,7 +196,7 @@ export function WarehouseDetailPage() {
   const refreshData = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token] }),
-      queryClient.invalidateQueries({ queryKey: ["warehouse-queue", token] }),
+      queryClient.invalidateQueries({ queryKey: ["warehouse-orders", token] }),
     ])
   }
 
@@ -298,27 +295,41 @@ export function WarehouseDetailPage() {
 
   const transferStatCards: {
     statKey: WarehouseTransferStatKey
-    /** `ShipmentTransferStatus` value for i18n (`backend.shipmentTransferStatus.*`). */
-    labelEnum: string
+    titleI18nKey: `warehouse.hubStats.${WarehouseTransferStatKey}`
     icon: ElementType<{ className?: string; "aria-hidden"?: boolean }>
     accent: "warning" | "primary" | "success" | "destructive"
   }[] = [
-    { statKey: "pending", labelEnum: "PENDING", icon: AwaitingScanIcon, accent: "warning" },
-    { statKey: "assigned", labelEnum: "ASSIGNED", icon: AssignmentTruckIcon, accent: "primary" },
+    { statKey: "pending", titleI18nKey: "warehouse.hubStats.pending", icon: AwaitingScanIcon, accent: "warning" },
     {
-      statKey: "onTheWayToWarehouse",
-      labelEnum: "ON_THE_WAY_TO_WAREHOUSE",
+      statKey: "assigned",
+      titleI18nKey: "warehouse.hubStats.assigned",
       icon: AssignmentTruckIcon,
       accent: "primary",
     },
-    { statKey: "inWarehouse", labelEnum: "IN_WAREHOUSE", icon: WarehouseBoxIcon, accent: "primary" },
+    {
+      statKey: "onTheWayToWarehouse",
+      titleI18nKey: "warehouse.hubStats.onTheWayToWarehouse",
+      icon: AssignmentTruckIcon,
+      accent: "primary",
+    },
+    {
+      statKey: "inWarehouse",
+      titleI18nKey: "warehouse.hubStats.inWarehouse",
+      icon: WarehouseBoxIcon,
+      accent: "primary",
+    },
     {
       statKey: "partiallyDelivered",
-      labelEnum: "PARTIALLY_DELIVERED",
+      titleI18nKey: "warehouse.hubStats.partiallyDelivered",
       icon: AssignmentTruckIcon,
       accent: "success",
     },
-    { statKey: "delivered", labelEnum: "DELIVERED", icon: Boxes, accent: "success" },
+    {
+      statKey: "delivered",
+      titleI18nKey: "warehouse.hubStats.delivered",
+      icon: Boxes,
+      accent: "success",
+    },
   ]
 
   if (!warehouseId) {
@@ -402,15 +413,15 @@ export function WarehouseDetailPage() {
                     </p>
                     <p>
                       <span className="text-foreground font-medium">{t("warehouse.sites.colZone")}</span>{" "}
-                      {hub.zone ?? "—"}
+                      {hub.zone ?? t("warehouse.notApplicable")}
                     </p>
                     <p>
                       <span className="text-foreground font-medium">{t("warehouse.sites.colCode")}</span>{" "}
-                      {hub.code ?? "—"}
+                      {hub.code ?? t("warehouse.notApplicable")}
                     </p>
                     <p>
                       <span className="text-foreground font-medium">{t("warehouse.sites.colAddress")}</span>{" "}
-                      {hub.address?.trim() ? hub.address : "—"}
+                      {hub.address?.trim() ? hub.address : t("warehouse.notApplicable")}
                     </p>
                     <p className="flex flex-wrap items-center gap-2">
                       <span className="text-foreground font-medium">
@@ -465,7 +476,7 @@ export function WarehouseDetailPage() {
           {transferStatCards.map((c) => (
             <StatCard
               key={c.statKey}
-              title={t(`backend.shipmentTransferStatus.${c.labelEnum}`)}
+              title={t(c.titleI18nKey)}
               value={stats?.[c.statKey] ?? 0}
               percentage={toPercentFromMax(stats?.[c.statKey] ?? 0, maxStatValue)}
               icon={c.icon}
@@ -624,8 +635,6 @@ export function WarehouseDetailPage() {
               <Table className="min-w-[56rem]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t("warehouse.table.trackingNumber")}</TableHead>
-                    <TableHead>{t("warehouse.table.warehouse")}</TableHead>
                     <TableHead>{t("warehouse.table.merchant")}</TableHead>
                     <TableHead>{t("warehouse.table.orderCount")}</TableHead>
                     <TableHead>{t("warehouse.table.totalValue")}</TableHead>
@@ -635,12 +644,12 @@ export function WarehouseDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(queueQuery.data?.shipments ?? []).map((row) => {
+                  {(queueQuery.data?.merchantOrders ?? []).map((row) => {
                     const fmtMoney = (raw: string) => {
                       const n = Number.parseFloat(
                         String(raw ?? "").replace(/,/g, "").trim(),
                       )
-                      if (!Number.isFinite(n)) return "—"
+                      if (!Number.isFinite(n)) return t("warehouse.notApplicable")
                       return new Intl.NumberFormat(locale, {
                         style: "currency",
                         currency: "EGP",
@@ -654,24 +663,18 @@ export function WarehouseDetailPage() {
                         className={`hover:bg-muted/50 cursor-pointer ${warehouseTransferRowTone(row.transferStatus)}`}
                         onClick={() =>
                           nav(
-                            `/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(row.shipmentId)}`,
+                            `/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(row.merchantOrderId)}`,
                           )
                         }
                       >
-                        <TableCell>
-                          <span className="font-mono text-xs">
-                            {row.trackingNumber ?? "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>{hub?.name ?? "—"}</TableCell>
-                        <TableCell>{row.merchant?.displayName ?? "—"}</TableCell>
+                        <TableCell>{row.merchant?.displayName ?? t("warehouse.notApplicable")}</TableCell>
                         <TableCell>{row.orderCount}</TableCell>
                         <TableCell>{fmtMoney(row.totalShipmentValue)}</TableCell>
                         <TableCell className="max-w-[12rem] text-xs whitespace-normal">
-                          <BackendStatusBadge kind="transfer" value={row.transferStatus} />
+                          <BackendStatusBadge kind="merchantOrderBatch" value={row.transferStatus} />
                         </TableCell>
                         <TableCell className="text-sm">
-                          {row.pickupCourier?.fullName ?? "—"}
+                          {row.pickupCourier?.fullName ?? t("warehouse.notApplicable")}
                         </TableCell>
                         <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
                       </TableRow>

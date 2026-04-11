@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
+import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { useAuth } from "@/lib/auth-context"
 
 function resolveNumberLocale(language: string) {
@@ -127,7 +127,7 @@ export function MerchantOrdersListPage() {
     Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
   )
 
-  const transferBreakdown = kpiQuery.data?.transferStatusBreakdown ?? []
+  const batchPipelineBreakdown = kpiQuery.data?.transferStatusBreakdown ?? []
   const totals = kpiQuery.data?.totals
 
   const detailPrefix = location.pathname.startsWith("/cs/")
@@ -186,10 +186,10 @@ export function MerchantOrdersListPage() {
             accent="primary"
             hideTrend
           />
-          {transferBreakdown.slice(0, 3).map((row) => (
+          {batchPipelineBreakdown.slice(0, 3).map((row) => (
             <StatCard
               key={row.transferStatus}
-              title={backendShipmentTransferLabel(t, row.transferStatus)}
+              title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
               value={row.count}
               icon={Boxes}
               accent="success"
@@ -229,13 +229,13 @@ export function MerchantOrdersListPage() {
                       <TableHead className="text-end tabular-nums">
                         {t("merchantOrdersList.colTotalValue")}
                       </TableHead>
-                      <TableHead>{t("merchantOrdersList.colTransferStatus")}</TableHead>
+                      <TableHead>{t("merchantOrdersList.colBatchPipelineStatus")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {shipmentsQuery.data.shipments.map((row) => (
+                    {shipmentsQuery.data.shipments.map((row, idx) => (
                       <TableRow
-                        key={row.shipmentId}
+                        key={row.shipmentId ?? `row-${idx}`}
                         className="hover:bg-muted/50 cursor-pointer"
                         onClick={() => onRowClick(row)}
                       >
@@ -253,7 +253,7 @@ export function MerchantOrdersListPage() {
                         </TableCell>
                         <TableCell>
                           <BackendStatusBadge
-                            kind="transfer"
+                            kind="merchantOrderBatch"
                             value={row.transferStatus ?? ""}
                           />
                         </TableCell>

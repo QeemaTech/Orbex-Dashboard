@@ -39,7 +39,7 @@ export type CsShipmentRow = {
   assignedCourierId: string | null
   /** Order line tracking number (unique per order). */
   trackingNumber: string | null
-  /** Batch pipeline enum from API (`Shipment.transferStatus`). */
+  /** Merchant-order batch pipeline — API field `transferStatus` on the parent `MerchantOrder`. */
   transferStatus?: string
   customerName: string
   phonePrimary: string
@@ -255,6 +255,7 @@ export type ShipmentOrderRow = {
   rejectionCourierLng?: string | null
   importJobId?: string | null
   pickupCourierId?: string | null
+  /** Parent merchant-order batch pipeline (`MerchantOrder.transferStatus`). */
   transferStatus?: string
   subStatus?: string
   statusUi?: string
@@ -305,6 +306,7 @@ export type DashboardKpisResponse = {
     subStatus: string
     count: number
   }>
+  /** Counts by merchant-order batch pipeline status (`transferStatus`). */
   transferStatusBreakdown: Array<{
     transferStatus: string
     count: number
