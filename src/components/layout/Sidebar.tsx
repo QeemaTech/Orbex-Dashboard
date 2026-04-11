@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react"
+import { LogOut, ShieldCheck } from "lucide-react"
 import {
   Banknote,
   Boxes,
@@ -18,25 +18,27 @@ import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 
 const adminNavConfig = [
-  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
-  { to: "/users", labelKey: "nav.users", icon: Users, end: false },
-  { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false },
-  { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false },
-  { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
-  { to: "/merchants", labelKey: "nav.merchants", icon: Package, end: false },
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
+  { to: "/users", labelKey: "nav.users", icon: Users, end: false, perm: "users.read" },
+  { to: "/rbac/roles", labelKey: "nav.roles", icon: ShieldCheck, end: false, perm: "roles.read" },
+  { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
+  { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
+  { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
+  { to: "/merchants", labelKey: "nav.merchants", icon: Package, end: false, perm: "merchants.read" },
   {
     to: "/collections",
     labelKey: "nav.collections",
     icon: Banknote,
     end: false,
+    perm: "collections.read",
   },
-  { to: "/warehouses", labelKey: "nav.warehouses", icon: Warehouse, end: true },
+  { to: "/warehouses", labelKey: "nav.warehouses", icon: Warehouse, end: true, perm: "warehouses.read" },
 ] as const
 
 const customerServiceNavConfig = [
-  { to: "/cs/shipments", labelKey: "nav.shipments", icon: Package, end: false },
-  { to: "/cs/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false },
-  { to: "/cs/couriers", labelKey: "nav.couriers", icon: Truck, end: false },
+  { to: "/cs/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
+  { to: "/cs/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
+  { to: "/cs/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
 ] as const
 
 export function Sidebar() {
@@ -45,6 +47,12 @@ export function Sidebar() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const isEn = i18n.language.startsWith("en")
+  const perms = user?.permissions ?? []
+
+  const hasPerm = (p?: string) => {
+    if (!p) return true
+    return perms.includes(p)
+  }
 
   const warehouseStaffNav = useMemo(() => {
     if (user?.role === "WAREHOUSE" && user.warehouseId) {
@@ -54,11 +62,12 @@ export function Sidebar() {
           labelKey: "nav.warehouses" as const,
           icon: Warehouse,
           end: true,
+          perm: "warehouses.read" as const,
         },
       ] as const
     }
     return [
-      { to: "/warehouse", labelKey: "nav.warehouses" as const, icon: Warehouse, end: true },
+      { to: "/warehouse", labelKey: "nav.warehouses" as const, icon: Warehouse, end: true, perm: "warehouses.read" as const },
     ] as const
   }, [user?.role, user?.warehouseId])
 
@@ -69,9 +78,9 @@ export function Sidebar() {
   }
   const navConfig =
     user?.role === "CUSTOMER_SERVICE"
-      ? [...customerServiceNavConfig]
+      ? customerServiceNavConfig.filter(({ perm }) => hasPerm(perm))
       : user?.role === "WAREHOUSE"
-        ? [...warehouseStaffNav]
+        ? warehouseStaffNav.filter(({ perm }) => hasPerm(perm))
         : user?.role === "WAREHOUSE_ADMIN"
           ? [
               {
@@ -79,9 +88,10 @@ export function Sidebar() {
                 labelKey: "nav.warehouses" as const,
                 icon: Warehouse,
                 end: true,
+                perm: "warehouses.read" as const,
               },
-            ]
-          : [...adminNavConfig]
+            ].filter(({ perm }) => hasPerm(perm))
+          : adminNavConfig.filter(({ perm }) => hasPerm(perm))
 
   return (
     <aside

@@ -42,6 +42,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  listRoles,
+  listUserRoles,
+  addUserRole,
+  removeUserRole,
+  type RoleRow,
+} from "@/api/rbac-api"
 import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
 
@@ -89,6 +96,121 @@ const ROLE_STAT_CARD: Record<
 }
 
 type UserFormMode = "create" | "edit"
+
+function ManageRolesDialog({
+  open,
+  user,
+  token,
+  roles,
+  onOpenChange,
+  onChanged,
+}: {
+  open: boolean
+  user: UserPublicRow | null
+  token: string
+  roles: RoleRow[]
+  onOpenChange: (open: boolean) => void
+  onChanged: () => void
+}) {
+  const { t } = useTranslation()
+  const rolesQuery = useQuery({
+    queryKey: ["rbac-user-roles", user?.id, token],
+    queryFn: () => listUserRoles({ token, userId: user!.id }),
+    enabled: open && !!user && !!token,
+  })
+
+  const addMut = useMutation({
+    mutationFn: (roleId: string) => addUserRole({ token, userId: user!.id, roleId }),
+    onSuccess: () => {
+      void rolesQuery.refetch()
+      onChanged()
+      showToast(t("users.feedback.rolesUpdated") ?? "Roles updated", "success")
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : "Failed to update roles", "error"),
+  })
+
+  const removeMut = useMutation({
+    mutationFn: (roleId: string) => removeUserRole({ token, userId: user!.id, roleId }),
+    onSuccess: () => {
+      void rolesQuery.refetch()
+      onChanged()
+      showToast(t("users.feedback.rolesUpdated") ?? "Roles updated", "success")
+    },
+    onError: (e) => showToast(e instanceof Error ? e.message : "Failed to update roles", "error"),
+  })
+
+  if (!open || !user) return null
+
+  const assignedIds = new Set(rolesQuery.data?.map((r) => r.roleId))
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card w-full max-w-lg rounded-lg border shadow-xl">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold">
+              {t("users.roles.manageTitle", { email: user.email })}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {t("users.roles.manageHint") ?? "Assign RBAC roles to this user."}
+            </p>
+          </div>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            {t("users.roles.close") ?? "Close"}
+          </Button>
+        </div>
+        <div className="max-h-[70vh] space-y-3 overflow-y-auto p-4">
+          {roles.map((role) => {
+            const checked = assignedIds.has(role.id)
+            const disabled = addMut.isPending || removeMut.isPending
+            return (
+              <label
+                key={role.id}
+                className="border-border hover:bg-muted/40 flex items-start gap-3 rounded-lg border px-3 py-2"
+              >
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4"
+                  checked={checked}
+                  disabled={disabled || role.isSystem}
+                  onChange={() => {
+                    if (checked) {
+                      removeMut.mutate(role.id)
+                    } else {
+                      addMut.mutate(role.id)
+                    }
+                  }}
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{role.name}</span>
+                    {role.isSystem ? (
+                      <Badge variant="outline" className="text-2xs">
+                        {t("users.roles.system") ?? "System"}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    {role.description ?? role.slug}
+                  </p>
+                  <p className="text-muted-foreground text-[11px]">
+                    {role.permissions.slice(0, 4).join(", ")}
+                    {role.permissions.length > 4 ? ` +${role.permissions.length - 4}` : ""}
+                  </p>
+                </div>
+              </label>
+            )
+          })}
+        </div>
+        <div className="flex justify-end gap-2 border-t px-4 py-3">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {t("users.roles.close") ?? "Close"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function UserFormDialog({
   open,
@@ -474,6 +596,8 @@ export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editRow, setEditRow] = useState<UserPublicRow | null>(null)
   const [deactivateRow, setDeactivateRow] = useState<UserPublicRow | null>(null)
+  const [rolesDialogUser, setRolesDialogUser] = useState<UserPublicRow | null>(null)
+  const [rolesDialogOpen, setRolesDialogOpen] = useState(false)
 
   const invalidateUsers = async () => {
     await queryClient.invalidateQueries({ queryKey: ["users", token] })
@@ -578,6 +702,13 @@ export function UsersPage() {
   const totalPages = Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / pageSize))
   const hasActiveFilters =
     searchQ.trim().length > 0 || !!roleFilter || isActiveFilter !== undefined
+
+  const rolesQuery = useQuery({
+    queryKey: ["rbac-roles", token],
+    queryFn: () => listRoles(token),
+    enabled: !!token,
+  })
+  const canManageRoles = (authUser?.permissions ?? []).includes("users.roles")
 
   const byRole = statsQuery.data?.byRole
 
@@ -780,6 +911,19 @@ export function UsersPage() {
                                 {t("users.actions.activate")}
                               </Button>
                             )}
+                            {canManageRoles ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  setRolesDialogUser(row)
+                                  setRolesDialogOpen(true)
+                                }}
+                              >
+                                {t("users.actions.manageRoles", "Manage roles")}
+                              </Button>
+                            ) : null}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -849,6 +993,19 @@ export function UsersPage() {
         }}
         onSuccess={invalidateUsers}
       />
+      {rolesDialogOpen && rolesDialogUser && rolesQuery.data ? (
+        <ManageRolesDialog
+          open={rolesDialogOpen}
+          user={rolesDialogUser}
+          token={token}
+          roles={rolesQuery.data}
+          onOpenChange={(o) => {
+            setRolesDialogOpen(o)
+            if (!o) setRolesDialogUser(null)
+          }}
+          onChanged={invalidateUsers}
+        />
+      ) : null}
     </Layout>
   )
 }

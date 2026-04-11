@@ -9,6 +9,7 @@
     "couriers": "Couriers",
     "merchants": "Merchants",
     "users": "Users",
+    "roles": "Roles",
     "collections": "Collections",
     "warehouses": "Warehouses",
     "customerService": "Customer service",
@@ -619,11 +620,13 @@
       "activeOnlyHint": "المستخدمون النشطون فقط"
     },
     "roles": {
-      "WAREHOUSE": "مخزن",
-      "WAREHOUSE_ADMIN": "مسؤول مخازن",
-      "CUSTOMER_SERVICE": "خدمة العملاء",
-      "ACCOUNTS": "الحسابات",
-      "SALES": "المبيعات"
+      "WAREHOUSE": "Warehouse",
+      "WAREHOUSE_ADMIN": "Warehouse Admin",
+      "CUSTOMER_SERVICE": "Customer Service",
+      "ACCOUNTS": "Accounts",
+      "SALES": "Sales",
+      "COURIER": "Courier",
+      "MERCHANT": "Merchant"
     },
     "tableCardTitle": "موظفو النظام",
     "tableCardDescription": "أدوار تُدار من هذه الصفحة (لا يشمل التجار والمناديب والمدراء).",

@@ -12,7 +12,8 @@
     "collections": "التحصيل",
     "warehouses": "المخازن",
     "customerService": "خدمة العملاء",
-    "csDashboard": "لوحة خدمة العملاء"
+    "csDashboard": "لوحة خدمة العملاء",
+    "roles": "الأدوار"
   },
   "shipments": {
     "pageTitle": "الشحنات",
@@ -621,7 +622,9 @@
       "WAREHOUSE_ADMIN": "مسؤول مخازن",
       "CUSTOMER_SERVICE": "خدمة العملاء",
       "ACCOUNTS": "الحسابات",
-      "SALES": "المبيعات"
+      "SALES": "المبيعات",
+      "COURIER": "مندوب",
+      "MERCHANT": "تاجر"
     },
     "tableCardTitle": "موظفو النظام",
     "tableCardDescription": "أدوار تُدار من هذه الصفحة (لا يشمل التجار والمناديب والمدراء).",

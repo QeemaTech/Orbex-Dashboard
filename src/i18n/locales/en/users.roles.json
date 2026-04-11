@@ -1,0 +1,6 @@
+{
+  "manageTitle": "Manage roles for {{email}}",
+  "manageHint": "Assign RBAC roles to this user.",
+  "close": "Close",
+  "system": "System"
+}

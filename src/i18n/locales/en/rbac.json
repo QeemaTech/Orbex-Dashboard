@@ -1,0 +1,63 @@
+{
+  "pageTitle": "Roles & Permissions",
+  "pageSubtitle": "Manage custom roles, permission sets, and audit system roles.",
+  "stats": {
+    "roles": "{{count}} roles",
+    "perms": "{{count}} permissions",
+    "system": "System roles: {{count}}"
+  },
+  "cta": {
+    "newRole": "New role"
+  },
+  "table": {
+    "name": "Name",
+    "slug": "Slug",
+    "description": "Description",
+    "permissions": "Permissions",
+    "type": "Type",
+    "actions": "Actions",
+    "system": "System",
+    "custom": "Custom",
+    "empty": "No roles yet."
+  },
+  "tableTitle": "Roles",
+  "tableSubtitle": "Click a role to edit it.",
+  "form": {
+    "createTitle": "Create role",
+    "editTitle": "Edit role",
+    "name": "Name",
+    "slug": "Slug",
+    "description": "Description",
+    "permissionsHint": "Select permissions to grant to this role.",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "create": "Create role",
+    "saving": "Saving…",
+    "close": "Close"
+  },
+  "permList": {
+    "category": "Category"
+  },
+  "toast": {
+    "created": "Role created",
+    "updated": "Role updated",
+    "deleted": "Role deleted",
+    "deleteFailed": "Failed to delete role",
+    "createFailed": "Failed to create role",
+    "updateFailed": "Failed to update role"
+  },
+  "audit": {
+    "subtitle": "Recent changes to roles, permissions, and user-role assignments.",
+    "loading": "Loading audit…",
+    "empty": "No audit entries yet.",
+    "when": "When",
+    "action": "Action",
+    "target": "Target",
+    "actor": "Actor",
+    "diff": "Diff",
+    "prev": "Prev",
+    "next": "Next",
+    "pageLabel": "Page {{page}} of {{pages}}"
+  },
+  "signedInAs": "You are signed in as {{email}}."
+}

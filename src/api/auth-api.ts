@@ -10,6 +10,8 @@ export type LoginResponse = {
   accessToken: string
   refreshToken: string
   user: AuthUser
+  roles?: string[]
+  permissions?: string[]
 }
 
 export type RefreshResponse = {
