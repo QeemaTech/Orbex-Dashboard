@@ -391,7 +391,9 @@
       "tableDescription": "انقر صفًا لفتح تفاصيل المخزن والنقل لهذا المركز.",
       "colTransfers": "النقل",
       "colLocation": "الموقع",
-      "openMap": "فتح على الخريطة"
+      "openMap": "فتح على الخريطة",
+      "mainBranch": "Main Branch",
+      "subBranch": "Sub-branch"
     },
     "detail": {
       "pageTitle": "المخزن",
@@ -401,7 +403,9 @@
       "invalidDescription": "رابط المخزن غير صالح أو ناقص.",
       "accessDeniedTitle": "غير مسموح",
       "accessDeniedDescription": "لا يمكنك فتح هذا المخزن.",
-      "backToWarehouseHub": "نظرة عامة على المخزن"
+      "backToWarehouseHub": "نظرة عامة على المخزن",
+      "subBranchesSection": "Sub-branches",
+      "mainBranchSection": "Main Branch"
     },
     "loading": "جاري تحميل بيانات المخزن…",
     "filter": {

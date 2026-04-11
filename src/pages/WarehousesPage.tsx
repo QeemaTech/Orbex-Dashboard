@@ -1,5 +1,6 @@
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Warehouse } from "react-lucid"
+import { Warehouse, ChevronDown, ChevronRight } from "react-lucid"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
@@ -7,6 +8,7 @@ import { listWarehouseSites } from "@/api/warehouse-api"
 import type { WarehouseSiteRow } from "@/api/warehouse-api"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { Layout } from "@/components/layout/Layout"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -23,12 +25,20 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
+import { isMainBranch } from "@/lib/warehouse-utils"
+
+type WarehouseGroup = {
+  mainBranch: WarehouseSiteRow
+  subBranches: WarehouseSiteRow[]
+}
 
 export function WarehousesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
+
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const sitesQuery = useQuery({
     queryKey: ["warehouse-sites", token],
@@ -37,6 +47,29 @@ export function WarehousesPage() {
   })
 
   const rows = sitesQuery.data?.warehouses ?? []
+
+  const groups: WarehouseGroup[] = rows
+    .filter((w) => isMainBranch(w))
+    .map((mainBranch) => ({
+      mainBranch,
+      subBranches: rows.filter((w) => w.mainBranchId === mainBranch.id),
+    }))
+
+  const orphanSubBranches = rows.filter(
+    (w) => !isMainBranch(w) && !rows.some((m) => m.id === w.mainBranchId),
+  )
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   return (
     <Layout title={t("warehouse.list.pageTitle")}>
@@ -83,13 +116,92 @@ export function WarehousesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((w: WarehouseSiteRow & { transferCount?: number }) => (
+                  {groups.map((group) => {
+                    const isExpanded = expandedIds.has(group.mainBranch.id)
+                    return (
+                      <tbody key={group.mainBranch.id}>
+                        <TableRow
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => toggleExpand(group.mainBranch.id)}
+                        >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown className="size-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="size-4 text-muted-foreground" />
+                              )}
+                              {group.mainBranch.name}
+                              <Badge variant="outline" className="text-xs font-normal">
+                                {t("warehouse.list.mainBranch")}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>{group.mainBranch.governorate}</TableCell>
+                          <TableCell>{group.mainBranch.zone ?? "—"}</TableCell>
+                          <TableCell className="text-end tabular-nums">
+                            {typeof group.mainBranch.transferCount === "number"
+                              ? group.mainBranch.transferCount
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-center">
+                              <CoordinatesMapLink
+                                latitude={group.mainBranch.latitude}
+                                longitude={group.mainBranch.longitude}
+                                stopPropagation
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded &&
+                          group.subBranches.map((sub) => (
+                            <TableRow
+                              key={sub.id}
+                              className="hover:bg-muted/50 cursor-pointer bg-muted/30"
+                              onClick={() => navigate(`/warehouses/${encodeURIComponent(sub.id)}`)}
+                            >
+                              <TableCell className="font-medium pl-8">
+                                <div className="flex items-center gap-2">
+                                  {sub.name}
+                                  <Badge variant="secondary" className="text-xs font-normal">
+                                    {t("warehouse.list.subBranch")}
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell>{sub.governorate}</TableCell>
+                              <TableCell>{sub.zone ?? "—"}</TableCell>
+                              <TableCell className="text-end tabular-nums">
+                                {typeof sub.transferCount === "number" ? sub.transferCount : "—"}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex justify-center">
+                                  <CoordinatesMapLink
+                                    latitude={sub.latitude}
+                                    longitude={sub.longitude}
+                                    stopPropagation
+                                  />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </tbody>
+                    )
+                  })}
+                  {orphanSubBranches.map((w) => (
                     <TableRow
                       key={w.id}
                       className="hover:bg-muted/50 cursor-pointer"
                       onClick={() => navigate(`/warehouses/${encodeURIComponent(w.id)}`)}
                     >
-                      <TableCell className="font-medium">{w.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {w.name}
+                          <Badge variant="secondary" className="text-xs font-normal">
+                            {t("warehouse.list.subBranch")}
+                          </Badge>
+                        </div>
+                      </TableCell>
                       <TableCell>{w.governorate}</TableCell>
                       <TableCell>{w.zone ?? "—"}</TableCell>
                       <TableCell className="text-end tabular-nums">

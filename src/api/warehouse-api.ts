@@ -25,6 +25,7 @@ export type WarehouseSiteRow = {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  mainBranchId: string | null
   /** Active pipeline transfer count for this hub (from directory API when available). */
   transferCount?: number
 }
@@ -39,6 +40,9 @@ export type WarehouseSiteAdmin = {
 export type WarehouseSiteDetail = WarehouseSiteRow & {
   admin: WarehouseSiteAdmin | null
   staffCount: number
+  mainBranch: { id: string; name: string } | null
+  subBranches: { id: string; name: string; governorate: string; zone: string | null }[]
+  mainBranchId: string | null
 }
 
 /**

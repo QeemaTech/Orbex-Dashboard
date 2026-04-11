@@ -16,6 +16,7 @@ import {
   scanShipmentIn,
   scanShipmentOut,
   type WarehouseCourierRow,
+  type WarehouseSiteDetail,
 } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
@@ -101,6 +102,16 @@ function AssignmentTruckIcon({ className, "aria-hidden": ariaHidden }: { classNa
     </svg>
   )
 }
+
+// Define stat cards configuration outside component to avoid recreation
+const transferStatCards = [
+  { statKey: "pending" as const, labelEnum: "PENDING", icon: AwaitingScanIcon, accent: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
+  { statKey: "assigned" as const, labelEnum: "ASSIGNED", icon: AssignmentTruckIcon, accent: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300" },
+  { statKey: "onTheWayToWarehouse" as const, labelEnum: "ON_THE_WAY_TO_WAREHOUSE", icon: WarehouseBoxIcon, accent: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" },
+  { statKey: "inWarehouse" as const, labelEnum: "IN_WAREHOUSE", icon: Warehouse, accent: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" },
+  { statKey: "partiallyDelivered" as const, labelEnum: "PARTIALLY_DELIVERED", icon: Boxes, accent: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
+  { statKey: "delivered" as const, labelEnum: "DELIVERED", icon: Boxes, accent: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+]
 
 export function WarehouseDetailPage() {
   const { t, i18n } = useTranslation()
@@ -198,7 +209,7 @@ export function WarehouseDetailPage() {
 
   const refreshData = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token] }),
+      queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token, warehouseId] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-queue", token] }),
     ])
   }
@@ -211,6 +222,7 @@ export function WarehouseDetailPage() {
     onSuccess: async () => {
       showToast(t("warehouse.feedback.scanInSuccess"), "success")
       await refreshData()
+      setTrackingInput("") // Clear input after successful scan
     },
     onError: (error) => {
       showToast((error as Error).message, "error")
@@ -225,6 +237,7 @@ export function WarehouseDetailPage() {
     onSuccess: async () => {
       showToast(t("warehouse.feedback.scanOutSuccess"), "success")
       await refreshData()
+      setTrackingInput("") // Clear input after successful scan
     },
     onError: (error) => {
       showToast((error as Error).message, "error")
@@ -246,6 +259,8 @@ export function WarehouseDetailPage() {
     onSuccess: async () => {
       showToast(t("warehouse.feedback.returnSuccess"), "success")
       await refreshData()
+      setTrackingInput("") // Clear input after successful return
+      setReturnDiscountInput("") // Clear discount input
     },
     onError: (error) => {
       showToast((error as Error).message, "error")
@@ -288,39 +303,6 @@ export function WarehouseDetailPage() {
   ]
   const maxStatValue = Math.max(...statValues, 0)
 
-  type WarehouseTransferStatKey =
-    | "pending"
-    | "assigned"
-    | "onTheWayToWarehouse"
-    | "inWarehouse"
-    | "partiallyDelivered"
-    | "delivered"
-
-  const transferStatCards: {
-    statKey: WarehouseTransferStatKey
-    /** `ShipmentTransferStatus` value for i18n (`backend.shipmentTransferStatus.*`). */
-    labelEnum: string
-    icon: ElementType<{ className?: string; "aria-hidden"?: boolean }>
-    accent: "warning" | "primary" | "success" | "destructive"
-  }[] = [
-    { statKey: "pending", labelEnum: "PENDING", icon: AwaitingScanIcon, accent: "warning" },
-    { statKey: "assigned", labelEnum: "ASSIGNED", icon: AssignmentTruckIcon, accent: "primary" },
-    {
-      statKey: "onTheWayToWarehouse",
-      labelEnum: "ON_THE_WAY_TO_WAREHOUSE",
-      icon: AssignmentTruckIcon,
-      accent: "primary",
-    },
-    { statKey: "inWarehouse", labelEnum: "IN_WAREHOUSE", icon: WarehouseBoxIcon, accent: "primary" },
-    {
-      statKey: "partiallyDelivered",
-      labelEnum: "PARTIALLY_DELIVERED",
-      icon: AssignmentTruckIcon,
-      accent: "success",
-    },
-    { statKey: "delivered", labelEnum: "DELIVERED", icon: Boxes, accent: "success" },
-  ]
-
   if (!warehouseId) {
     return (
       <Layout title={t("warehouse.detail.invalidTitle")}>
@@ -335,6 +317,11 @@ export function WarehouseDetailPage() {
         <p className="text-destructive text-sm">{t("warehouse.detail.accessDeniedDescription")}</p>
       </Layout>
     )
+  }
+
+  // Helper function to handle sub-branch navigation
+  const handleSubBranchClick = (subBranchId: string) => {
+    nav(`/warehouses/${encodeURIComponent(subBranchId)}`)
   }
 
   return (
@@ -380,83 +367,115 @@ export function WarehouseDetailPage() {
               </p>
             ) : null}
             {hub ? (
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Warehouse className="size-4" aria-hidden />
-                      {t("warehouse.siteDetail.hubCardTitle")}
-                    </CardTitle>
-                    <CardDescription>{t("warehouse.siteDetail.hubCardDescription")}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-muted-foreground space-y-2 text-sm">
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colName")}</span>{" "}
-                      {hub.name}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">
-                        {t("warehouse.sites.colGovernorate")}
-                      </span>{" "}
-                      {hub.governorate}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colZone")}</span>{" "}
-                      {hub.zone ?? "—"}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colCode")}</span>{" "}
-                      {hub.code ?? "—"}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colAddress")}</span>{" "}
-                      {hub.address?.trim() ? hub.address : "—"}
-                    </p>
-                    <p className="flex flex-wrap items-center gap-2">
-                      <span className="text-foreground font-medium">
-                        {t("warehouse.sites.colCoordinates")}
-                      </span>
-                      <CoordinatesMapLink latitude={hub.latitude} longitude={hub.longitude} />
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colStatus")}</span>{" "}
-                      {hub.isActive
-                        ? t("warehouse.sites.statusActive")
-                        : t("warehouse.sites.statusInactive")}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <UserRound className="size-4" aria-hidden />
-                      {t("warehouse.siteDetail.adminCardTitle")}
-                    </CardTitle>
-                    <CardDescription>{t("warehouse.siteDetail.adminCardDescription")}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">{t("warehouse.siteDetail.staffCount")}</span>
-                      <p className="text-foreground text-2xl font-semibold tabular-nums">
-                        {hub.staffCount}
+              <>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Warehouse className="size-4" aria-hidden />
+                        {t("warehouse.siteDetail.hubCardTitle")}
+                      </CardTitle>
+                      <CardDescription>{t("warehouse.siteDetail.hubCardDescription")}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-muted-foreground space-y-2 text-sm">
+                      <p>
+                        <span className="text-foreground font-medium">{t("warehouse.sites.colName")}</span>{" "}
+                        {hub.name}
                       </p>
-                    </div>
-                    {hub.admin ? (
-                      <div className="border-border space-y-1 rounded-lg border p-3">
-                        <p className="text-foreground font-medium">{hub.admin.fullName}</p>
-                        <p className="text-muted-foreground">{hub.admin.email}</p>
-                        {!hub.admin.isActive ? (
-                          <p className="text-destructive text-xs">
-                            {t("warehouse.siteDetail.adminInactive")}
-                          </p>
-                        ) : null}
+                      <p>
+                        <span className="text-foreground font-medium">
+                          {t("warehouse.sites.colGovernorate")}
+                        </span>{" "}
+                        {hub.governorate}
+                      </p>
+                      <p>
+                        <span className="text-foreground font-medium">{t("warehouse.sites.colZone")}</span>{" "}
+                        {hub.zone ?? "—"}
+                      </p>
+                      <p>
+                        <span className="text-foreground font-medium">{t("warehouse.sites.colCode")}</span>{" "}
+                        {hub.code ?? "—"}
+                      </p>
+                      <p>
+                        <span className="text-foreground font-medium">{t("warehouse.sites.colAddress")}</span>{" "}
+                        {hub.address?.trim() ? hub.address : "—"}
+                      </p>
+                      <p className="flex flex-wrap items-center gap-2">
+                        <span className="text-foreground font-medium">
+                          {t("warehouse.sites.colCoordinates")}
+                        </span>
+                        <CoordinatesMapLink latitude={hub.latitude} longitude={hub.longitude} />
+                      </p>
+                      <p>
+                        <span className="text-foreground font-medium">{t("warehouse.sites.colStatus")}</span>{" "}
+                        {hub.isActive
+                          ? t("warehouse.sites.statusActive")
+                          : t("warehouse.sites.statusInactive")}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <UserRound className="size-4" aria-hidden />
+                        {t("warehouse.siteDetail.adminCardTitle")}
+                      </CardTitle>
+                      <CardDescription>{t("warehouse.siteDetail.adminCardDescription")}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">{t("warehouse.siteDetail.staffCount")}</span>
+                        <p className="text-foreground text-2xl font-semibold tabular-nums">
+                          {hub.staffCount}
+                        </p>
                       </div>
-                    ) : (
-                      <p className="text-muted-foreground">{t("warehouse.siteDetail.noAdmin")}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                      {hub.admin ? (
+                        <div className="border-border space-y-1 rounded-lg border p-3">
+                          <p className="text-foreground font-medium">{hub.admin.fullName}</p>
+                          <p className="text-muted-foreground">{hub.admin.email}</p>
+                          {!hub.admin.isActive ? (
+                            <p className="text-destructive text-xs">
+                              {t("warehouse.siteDetail.adminInactive")}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">{t("warehouse.siteDetail.noAdmin")}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {hub.subBranches && hub.subBranches.length > 0 && !hub.mainBranchId
+                  ? hub.subBranches.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleSubBranchClick(sub.id)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSubBranchClick(sub.id)}
+                      >
+                        <p className="font-medium text-sm">{sub.name}</p>
+                        <p className="text-muted-foreground text-xs">{sub.governorate}{sub.zone ? ` · ${sub.zone}` : ""}</p>
+                      </div>
+                    ))
+                  : null}
+
+                {hub.mainBranch && hub.mainBranchId
+                  ? (
+                      <div
+                        className="rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleSubBranchClick(hub.mainBranch.id)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSubBranchClick(hub.mainBranch.id)}
+                      >
+                        <p className="font-medium text-sm">{hub.mainBranch.name}</p>
+                      </div>
+                    )
+                  : null}
+              </>
             ) : null}
           </div>
         ) : null}
@@ -492,14 +511,14 @@ export function WarehouseDetailPage() {
                 onClick={() => scanInMutation.mutate()}
                 disabled={!trackingInput.trim() || scanInMutation.isPending}
               >
-                {t("warehouse.operations.scanIn")}
+                {scanInMutation.isPending ? t("common.processing") : t("warehouse.operations.scanIn")}
               </Button>
               <Button
                 type="button"
                 onClick={() => scanOutMutation.mutate()}
                 disabled={!trackingInput.trim() || scanOutMutation.isPending}
               >
-                {t("warehouse.operations.scanOut")}
+                {scanOutMutation.isPending ? t("common.processing") : t("warehouse.operations.scanOut")}
               </Button>
             </div>
 
@@ -515,24 +534,27 @@ export function WarehouseDetailPage() {
                 onClick={() => receiveReturnMutation.mutate()}
                 disabled={!trackingInput.trim() || receiveReturnMutation.isPending}
               >
-                {t("warehouse.operations.receiveReturn")}
+                {receiveReturnMutation.isPending ? t("common.processing") : t("warehouse.operations.receiveReturn")}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  const p = scanPayloadFromInput(trackingInput)
-                  if (p.shipmentId) {
+                  const payload = scanPayloadFromInput(trackingInput)
+                  if (payload.shipmentId) {
                     showToast(t("warehouse.operations.trackNeedsTracking"), "error")
                     return
                   }
-                  if (!p.trackingNumber) return
+                  if (!payload.trackingNumber) {
+                    showToast(t("warehouse.operations.enterValidTracking"), "error")
+                    return
+                  }
                   trackingMutation.mutate()
                 }}
                 disabled={!trackingInput.trim() || trackingMutation.isPending}
               >
                 <Search className="size-5" aria-hidden />
-                {t("warehouse.operations.track")}
+                {trackingMutation.isPending ? t("common.searching") : t("warehouse.operations.track")}
               </Button>
             </div>
 
