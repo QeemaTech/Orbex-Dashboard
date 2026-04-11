@@ -46,13 +46,11 @@ export type WarehouseSiteDetail = WarehouseSiteRow & {
 }
 
 /**
- * One warehouse queue row = one merchant transfer (shipment). `trackingNumber` is derived from
- * order lines (comma-separated when multiple orders each have a tracking number).
+ * One warehouse queue row = one merchant order batch (transfer).
  */
-export type WarehouseShipmentRow = {
+export type WarehouseMerchantOrderRow = {
   id: string
-  shipmentId: string
-  trackingNumber: string | null
+  merchantOrderId: string
   regionId: string | null
   transferStatus: string
   scannedOutAt: string | null
@@ -72,8 +70,15 @@ export type WarehouseShipmentRow = {
   } | null
 }
 
+export type WarehouseOrdersResponse = {
+  merchantOrders: WarehouseMerchantOrderRow[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 export type WarehouseQueueResponse = {
-  shipments: WarehouseShipmentRow[]
+  shipments: WarehouseMerchantOrderRow[]
   total: number
   page: number
   pageSize: number
@@ -84,6 +89,17 @@ export type WarehouseCourierRow = {
   fullName: string | null
   contactPhone: string | null
   servesShipmentRegion: boolean
+}
+
+type WarehouseOrdersParams = {
+  token: string
+  page?: number
+  pageSize?: number
+  search?: string
+  transferStatus?: string
+  returnsOnly?: boolean
+  courierId?: string
+  warehouseId?: string
 }
 
 type WarehouseQueueParams = {
@@ -135,6 +151,23 @@ export function listWarehouseQueue(
     warehouseId: params.warehouseId,
   })
   return apiFetch<WarehouseQueueResponse>(`/api/warehouse/queue${query}`, {
+    token: params.token,
+  })
+}
+
+export function listWarehouseOrders(
+  params: WarehouseOrdersParams,
+): Promise<WarehouseOrdersResponse> {
+  const query = qs({
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 20,
+    search: params.search,
+    transferStatus: params.transferStatus,
+    returnsOnly: params.returnsOnly,
+    courierId: params.courierId,
+    warehouseId: params.warehouseId,
+  })
+  return apiFetch<WarehouseOrdersResponse>(`/api/warehouse/orders${query}`, {
     token: params.token,
   })
 }

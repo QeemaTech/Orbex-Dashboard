@@ -39,7 +39,7 @@ import {
 import { getDashboardKpis } from "@/api/merchant-orders-api"
 import { listUsers } from "@/api/users-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
-import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
+import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { useAuth } from "@/lib/auth-context"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 
@@ -89,7 +89,8 @@ export function DashboardPage() {
     enabled: !!token,
   })
   const totals = kpiQuery.data?.totals
-  const warehouseCount = (warehousesPreview.data?.warehouses ?? []).length
+  const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []
+  const warehouseCount = warehouseList.length
 
   const lineData = useMemo(
     () =>
@@ -119,7 +120,7 @@ export function DashboardPage() {
       status: row.transferStatus,
       value: row.count,
       color: palette[i % palette.length] ?? "var(--primary)",
-      label: backendShipmentTransferLabel(t, row.transferStatus),
+      label: backendMerchantOrderBatchLabel(t, row.transferStatus),
     }))
   }, [kpiQuery.data?.transferStatusBreakdown, t])
 
@@ -187,7 +188,7 @@ export function DashboardPage() {
                 </p>
               ) : null}
               <ul className="space-y-2">
-                {(warehousesPreview.data?.warehouses ?? []).slice(0, 3).map((w) => (
+                {warehouseList.slice(0, 3).map((w) => (
                   <li key={w.id}>
                     <Link
                       to={`/warehouses/${w.id}`}
@@ -203,7 +204,7 @@ export function DashboardPage() {
                   </li>
                 ))}
               </ul>
-              {(warehousesPreview.data?.warehouses ?? []).length === 0 &&
+              {warehouseCount === 0 &&
               !warehousesPreview.isLoading &&
               !warehousesPreview.error ? (
                 <p className="text-muted-foreground text-sm">{t("dashboard.warehouses.empty")}</p>
@@ -277,9 +278,9 @@ export function DashboardPage() {
 
           <Card className="dashboard-card dashboard-card-hover dashboard-animate-in lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg">{t("dashboard.chart.transferPieTitle")}</CardTitle>
+              <CardTitle className="text-lg">{t("dashboard.chart.merchantOrderBatchPieTitle")}</CardTitle>
               <CardDescription>
-                {t("dashboard.chart.transferPieDescription")}
+                {t("dashboard.chart.merchantOrderBatchPieDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-5">
@@ -358,7 +359,7 @@ export function DashboardPage() {
                   <TableRow>
                     <TableHead>{t("dashboard.table.merchant")}</TableHead>
                     <TableHead>{t("dashboard.table.warehouse")}</TableHead>
-                    <TableHead>{t("dashboard.table.transferStatus")}</TableHead>
+                    <TableHead>{t("dashboard.table.merchantOrderBatchStatus")}</TableHead>
                     <TableHead className="text-end">{t("dashboard.table.orderCount")}</TableHead>
                     <TableHead className="text-end">
                       {t("dashboard.table.batchValue")}
@@ -366,9 +367,9 @@ export function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(kpiQuery.data?.recentShipments ?? []).map((row) => (
+                  {(kpiQuery.data?.recentShipments ?? []).map((row, idx) => (
                     <TableRow
-                      key={row.shipmentId}
+                      key={row.shipmentId ?? `row-${idx}`}
                       className="hover:bg-muted/50 cursor-pointer"
                       onClick={() =>
                         void navigate(`/merchant-orders/${encodeURIComponent(row.shipmentId)}`)
@@ -382,7 +383,7 @@ export function DashboardPage() {
                       </TableCell>
                       <TableCell>
                         <BackendStatusBadge
-                          kind="transfer"
+                          kind="merchantOrderBatch"
                           value={row.transferStatus ?? ""}
                         />
                       </TableCell>

@@ -25,6 +25,8 @@ export type AuthUser = {
   email: string
   fullName: string
   role: UserRole
+  roles?: string[]
+  permissions?: string[]
   warehouseId: string | null
   isActive: boolean
   createdAt: string
@@ -61,9 +63,19 @@ function readStoredUser(): AuthUser | null {
     if (u && u.email === undefined && typeof u.username === "string") {
       u.email = u.username
     }
+    if (!u.roles) u.roles = u.role ? [u.role] : []
+    if (!u.permissions) u.permissions = []
     return u as AuthUser
   } catch {
     return null
+  }
+}
+
+function normalizeUser(u: AuthUser): AuthUser {
+  return {
+    ...u,
+    roles: u.roles ?? (u.role ? [u.role] : []),
+    permissions: u.permissions ?? [],
   }
 }
 
@@ -85,8 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     void meRequest(token)
       .then((u) => {
-        setUser(u)
-        localStorage.setItem(STORAGE_USER, JSON.stringify(u))
+        const normalized = normalizeUser(u)
+        setUser(normalized)
+        localStorage.setItem(STORAGE_USER, JSON.stringify(normalized))
       })
       .catch(() => {
         localStorage.removeItem(STORAGE_ACCESS)
@@ -112,13 +125,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await loginRequest({ email, password })
+    const mergedUser: AuthUser = normalizeUser({
+      ...res.user,
+      roles: res.roles ?? res.user.roles,
+      permissions: res.permissions ?? res.user.permissions,
+    })
     localStorage.setItem(STORAGE_ACCESS, res.accessToken)
     localStorage.setItem(STORAGE_REFRESH, res.refreshToken)
-    localStorage.setItem(STORAGE_USER, JSON.stringify(res.user))
+    localStorage.setItem(STORAGE_USER, JSON.stringify(mergedUser))
     setAccessToken(res.accessToken)
     setRefreshToken(res.refreshToken)
-    setUser(res.user)
-    return res.user
+    setUser(mergedUser)
+    return mergedUser
   }, [])
 
   const logout = useCallback(() => {
