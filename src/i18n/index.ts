@@ -4,6 +4,10 @@ import { initReactI18next } from "react-i18next"
 
 import ar from "@/i18n/locales/ar.json"
 import en from "@/i18n/locales/en.json"
+import arRbac from "@/i18n/locales/ar/rbac.json"
+import enRbac from "@/i18n/locales/en/rbac.json"
+import arUsersRoles from "@/i18n/locales/ar/users.roles.json"
+import enUsersRoles from "@/i18n/locales/en/users.roles.json"
 
 function syncDocumentLangDir(lng: string) {
   const html = document.documentElement
@@ -17,8 +21,8 @@ void i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { translation: en },
-      ar: { translation: ar },
+      en: { translation: { ...en, rbac: enRbac, users: { ...en.users, roles: enUsersRoles } } },
+      ar: { translation: { ...ar, rbac: arRbac, users: { ...ar.users, roles: arUsersRoles } } },
     },
     fallbackLng: "en",
     supportedLngs: ["en", "ar"],

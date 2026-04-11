@@ -1,0 +1,63 @@
+{
+  "pageTitle": "الأدوار والصلاحيات",
+  "pageSubtitle": "إدارة الأدوار المخصّصة ومجموعات الصلاحيات ومراجعة الأدوار النظامية.",
+  "stats": {
+    "roles": "{{count}} دور",
+    "perms": "{{count}} صلاحية",
+    "system": "أدوار نظامية: {{count}}"
+  },
+  "cta": {
+    "newRole": "دور جديد"
+  },
+  "table": {
+    "name": "الاسم",
+    "slug": "المعرف (Slug)",
+    "description": "الوصف",
+    "permissions": "الصلاحيات",
+    "type": "النوع",
+    "actions": "إجراءات",
+    "system": "نظامي",
+    "custom": "مخصص",
+    "empty": "لا توجد أدوار بعد."
+  },
+  "tableTitle": "الأدوار",
+  "tableSubtitle": "اضغط على الدور لتعديله.",
+  "form": {
+    "createTitle": "إنشاء دور",
+    "editTitle": "تعديل الدور",
+    "name": "الاسم",
+    "slug": "المعرف (Slug)",
+    "description": "الوصف",
+    "permissionsHint": "اختر الصلاحيات التي سيحصل عليها هذا الدور.",
+    "cancel": "إلغاء",
+    "save": "حفظ التعديلات",
+    "create": "إنشاء الدور",
+    "saving": "جارٍ الحفظ...",
+    "close": "إغلاق"
+  },
+  "permList": {
+    "category": "الفئة"
+  },
+  "toast": {
+    "created": "تم إنشاء الدور",
+    "updated": "تم تحديث الدور",
+    "deleted": "تم حذف الدور",
+    "deleteFailed": "فشل حذف الدور",
+    "createFailed": "فشل إنشاء الدور",
+    "updateFailed": "فشل تحديث الدور"
+  },
+  "audit": {
+    "subtitle": "أحدث التغييرات على الأدوار والصلاحيات وتعيينات المستخدمين.",
+    "loading": "جارٍ تحميل السجل...",
+    "empty": "لا يوجد سجل حتى الآن.",
+    "when": "الوقت",
+    "action": "الإجراء",
+    "target": "الهدف",
+    "actor": "المنفذ",
+    "diff": "التفاصيل",
+    "prev": "السابق",
+    "next": "التالي",
+    "pageLabel": "الصفحة {{page}} من {{pages}}"
+  },
+  "signedInAs": "أنت مسجّل الدخول كـ {{email}}."
+}

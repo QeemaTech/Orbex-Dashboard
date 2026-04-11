@@ -28,6 +28,7 @@ import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
+import { RolesPage } from "@/pages/RolesPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -44,14 +45,18 @@ function Protected({ children }: { children: ReactNode }) {
 
 function ProtectedRole({
   allowed,
+  requiredPermissions,
   children,
 }: {
   allowed: readonly UserRole[]
+  requiredPermissions?: readonly string[]
   children: ReactNode
 }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
-  if (!allowed.includes(user.role)) {
+  const hasPermission =
+    requiredPermissions?.every((p) => user.permissions?.includes(p)) ?? false
+  if (!hasPermission && !allowed.includes(user.role)) {
     return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
   }
   return <>{children}</>
@@ -126,7 +131,10 @@ export default function App() {
           path="/merchant-orders"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN"]}
+                requiredPermissions={["merchant_orders.read"]}
+              >
                 <MerchantOrdersListPage />
               </ProtectedRole>
             </Protected>
@@ -144,7 +152,10 @@ export default function App() {
           path="/couriers"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN"]}
+                requiredPermissions={["couriers.read"]}
+              >
                 <CsCouriersPage />
               </ProtectedRole>
             </Protected>
@@ -154,7 +165,10 @@ export default function App() {
           path="/merchants"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN"]}
+                requiredPermissions={["merchants.read"]}
+              >
                 <MerchantsPage />
               </ProtectedRole>
             </Protected>
@@ -164,8 +178,33 @@ export default function App() {
           path="/users"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN"]}
+                requiredPermissions={["users.read"]}
+              >
                 <UsersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/rbac/roles"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={[
+                  "ADMIN",
+                  "CUSTOMER_SERVICE",
+                  "SALES",
+                  "ACCOUNTS",
+                  "WAREHOUSE",
+                  "WAREHOUSE_ADMIN",
+                  "COURIER",
+                  "MERCHANT",
+                ]}
+                requiredPermissions={["roles.read"]}
+              >
+                <RolesPage />
               </ProtectedRole>
             </Protected>
           }
@@ -174,7 +213,12 @@ export default function App() {
           path="/collections"
           element={
             <Protected>
-              <CollectionsPage />
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS"]}
+                requiredPermissions={["collections.read"]}
+              >
+                <CollectionsPage />
+              </ProtectedRole>
             </Protected>
           }
         />
@@ -182,7 +226,10 @@ export default function App() {
           path="/warehouse"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
                 <WarehouseRedirectPage />
               </ProtectedRole>
             </Protected>
@@ -192,7 +239,10 @@ export default function App() {
           path="/warehouses"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE_ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
                 <WarehousesPage />
               </ProtectedRole>
             </Protected>
@@ -202,7 +252,10 @@ export default function App() {
           path="/warehouses/:warehouseId"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
                 <WarehouseDetailPage />
               </ProtectedRole>
             </Protected>
@@ -232,8 +285,11 @@ export default function App() {
           path="/warehouses/:warehouseId/transfers/:merchantOrderId/shipments"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <RedirectWarehouseMerchantOrderShipmentsToDetail />
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.manage_transfer"]}
+              >
+                <RedirectWarehouseTransferShipmentsToDetail />
               </ProtectedRole>
             </Protected>
           }
@@ -242,8 +298,12 @@ export default function App() {
           path="/warehouses/:warehouseId/transfers/:merchantOrderId"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
-                <RedirectLegacyWarehouseTransfersToMerchantOrder />
+
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.manage_transfer"]}
+              >
+                <MerchantOrderDetailsPage />
               </ProtectedRole>
             </Protected>
           }
@@ -253,7 +313,10 @@ export default function App() {
           path="/cs/shipments"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "CUSTOMER_SERVICE"]}
+                requiredPermissions={["shipments.read"]}
+              >
                 <CsShipmentsListPage />
               </ProtectedRole>
             </Protected>
@@ -263,7 +326,10 @@ export default function App() {
           path="/cs/merchant-orders"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "CUSTOMER_SERVICE"]}
+                requiredPermissions={["merchant_orders.read"]}
+              >
                 <MerchantOrdersListPage />
               </ProtectedRole>
             </Protected>
@@ -273,7 +339,10 @@ export default function App() {
           path="/cs/couriers"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "CUSTOMER_SERVICE"]}
+                requiredPermissions={["couriers.read"]}
+              >
                 <CsCouriersPage />
               </ProtectedRole>
             </Protected>
@@ -283,7 +352,10 @@ export default function App() {
           path="/cs/shipments/:shipmentId"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "CUSTOMER_SERVICE"]}
+                requiredPermissions={["shipments.read"]}
+              >
                 <ShipmentLineDetailsPage />
               </ProtectedRole>
             </Protected>
@@ -293,7 +365,10 @@ export default function App() {
           path="/cs/merchant-orders/:merchantOrderId"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "CUSTOMER_SERVICE"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "CUSTOMER_SERVICE"]}
+                requiredPermissions={["merchant_orders.read"]}
+              >
                 <MerchantOrderDetailsPage />
               </ProtectedRole>
             </Protected>
