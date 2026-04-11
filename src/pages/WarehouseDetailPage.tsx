@@ -102,12 +102,42 @@ function AssignmentTruckIcon({ className, "aria-hidden": ariaHidden }: { classNa
 
 // Define stat cards configuration outside component to avoid recreation
 const transferStatCards = [
-  { statKey: "pending" as const, labelEnum: "PENDING", icon: AwaitingScanIcon, accent: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
-  { statKey: "assigned" as const, labelEnum: "ASSIGNED", icon: AssignmentTruckIcon, accent: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300" },
-  { statKey: "onTheWayToWarehouse" as const, labelEnum: "ON_THE_WAY_TO_WAREHOUSE", icon: WarehouseBoxIcon, accent: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" },
-  { statKey: "inWarehouse" as const, labelEnum: "IN_WAREHOUSE", icon: Warehouse, accent: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" },
-  { statKey: "partiallyDelivered" as const, labelEnum: "PARTIALLY_DELIVERED", icon: Boxes, accent: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
-  { statKey: "delivered" as const, labelEnum: "DELIVERED", icon: Boxes, accent: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+  { 
+    statKey: "pending" as const, 
+    titleI18nKey: "warehouse.hubStats.pending", 
+    icon: AwaitingScanIcon, 
+    accent: "warning" as const 
+  },
+  { 
+    statKey: "assigned" as const, 
+    titleI18nKey: "warehouse.hubStats.assigned", 
+    icon: AssignmentTruckIcon, 
+    accent: "primary" as const 
+  },
+  { 
+    statKey: "onTheWayToWarehouse" as const, 
+    titleI18nKey: "warehouse.hubStats.onTheWayToWarehouse", 
+    icon: WarehouseBoxIcon, 
+    accent: "primary" as const 
+  },
+  { 
+    statKey: "inWarehouse" as const, 
+    titleI18nKey: "warehouse.hubStats.inWarehouse", 
+    icon: Warehouse, 
+    accent: "primary" as const 
+  },
+  { 
+    statKey: "partiallyDelivered" as const, 
+    titleI18nKey: "warehouse.hubStats.partiallyDelivered", 
+    icon: Boxes, 
+    accent: "success" as const 
+  },
+  { 
+    statKey: "delivered" as const, 
+    titleI18nKey: "warehouse.hubStats.delivered", 
+    icon: Boxes, 
+    accent: "success" as const 
+  },
 ]
 
 export function WarehouseDetailPage() {
@@ -206,13 +236,10 @@ export function WarehouseDetailPage() {
 
   const refreshData = async () => {
     await Promise.all([
-<<<<<<< HEAD
       queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token, warehouseId] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-queue", token] }),
-=======
       queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-orders", token] }),
->>>>>>> b0393539bdc965d07c7c675dc323d9f74af23e71
     ])
   }
 
@@ -224,7 +251,7 @@ export function WarehouseDetailPage() {
     onSuccess: async () => {
       showToast(t("warehouse.feedback.scanInSuccess"), "success")
       await refreshData()
-      setTrackingInput("") // Clear input after successful scan
+      setTrackingInput("")
     },
     onError: (error) => {
       showToast((error as Error).message, "error")
@@ -239,7 +266,7 @@ export function WarehouseDetailPage() {
     onSuccess: async () => {
       showToast(t("warehouse.feedback.scanOutSuccess"), "success")
       await refreshData()
-      setTrackingInput("") // Clear input after successful scan
+      setTrackingInput("")
     },
     onError: (error) => {
       showToast((error as Error).message, "error")
@@ -261,8 +288,8 @@ export function WarehouseDetailPage() {
     onSuccess: async () => {
       showToast(t("warehouse.feedback.returnSuccess"), "success")
       await refreshData()
-      setTrackingInput("") // Clear input after successful return
-      setReturnDiscountInput("") // Clear discount input
+      setTrackingInput("")
+      setReturnDiscountInput("")
     },
     onError: (error) => {
       showToast((error as Error).message, "error")
@@ -305,56 +332,6 @@ export function WarehouseDetailPage() {
   ]
   const maxStatValue = Math.max(...statValues, 0)
 
-<<<<<<< HEAD
-=======
-  type WarehouseTransferStatKey =
-    | "pending"
-    | "assigned"
-    | "onTheWayToWarehouse"
-    | "inWarehouse"
-    | "partiallyDelivered"
-    | "delivered"
-
-  const transferStatCards: {
-    statKey: WarehouseTransferStatKey
-    titleI18nKey: `warehouse.hubStats.${WarehouseTransferStatKey}`
-    icon: ElementType<{ className?: string; "aria-hidden"?: boolean }>
-    accent: "warning" | "primary" | "success" | "destructive"
-  }[] = [
-    { statKey: "pending", titleI18nKey: "warehouse.hubStats.pending", icon: AwaitingScanIcon, accent: "warning" },
-    {
-      statKey: "assigned",
-      titleI18nKey: "warehouse.hubStats.assigned",
-      icon: AssignmentTruckIcon,
-      accent: "primary",
-    },
-    {
-      statKey: "onTheWayToWarehouse",
-      titleI18nKey: "warehouse.hubStats.onTheWayToWarehouse",
-      icon: AssignmentTruckIcon,
-      accent: "primary",
-    },
-    {
-      statKey: "inWarehouse",
-      titleI18nKey: "warehouse.hubStats.inWarehouse",
-      icon: WarehouseBoxIcon,
-      accent: "primary",
-    },
-    {
-      statKey: "partiallyDelivered",
-      titleI18nKey: "warehouse.hubStats.partiallyDelivered",
-      icon: AssignmentTruckIcon,
-      accent: "success",
-    },
-    {
-      statKey: "delivered",
-      titleI18nKey: "warehouse.hubStats.delivered",
-      icon: Boxes,
-      accent: "success",
-    },
-  ]
-
->>>>>>> b0393539bdc965d07c7c675dc323d9f74af23e71
   if (!warehouseId) {
     return (
       <Layout title={t("warehouse.detail.invalidTitle")}>
@@ -371,10 +348,11 @@ export function WarehouseDetailPage() {
     )
   }
 
-  // Helper function to handle sub-branch navigation
   const handleSubBranchClick = (subBranchId: string) => {
     nav(`/warehouses/${encodeURIComponent(subBranchId)}`)
   }
+
+  const getNotApplicable = () => t("warehouse.notApplicable") || "—"
 
   return (
     <Layout title={hub?.name ?? t("warehouse.detail.pageTitle")}>
@@ -419,7 +397,6 @@ export function WarehouseDetailPage() {
               </p>
             ) : null}
             {hub ? (
-<<<<<<< HEAD
               <>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <Card>
@@ -434,67 +411,6 @@ export function WarehouseDetailPage() {
                       <p>
                         <span className="text-foreground font-medium">{t("warehouse.sites.colName")}</span>{" "}
                         {hub.name}
-=======
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Warehouse className="size-4" aria-hidden />
-                      {t("warehouse.siteDetail.hubCardTitle")}
-                    </CardTitle>
-                    <CardDescription>{t("warehouse.siteDetail.hubCardDescription")}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-muted-foreground space-y-2 text-sm">
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colName")}</span>{" "}
-                      {hub.name}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">
-                        {t("warehouse.sites.colGovernorate")}
-                      </span>{" "}
-                      {hub.governorate}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colZone")}</span>{" "}
-                      {hub.zone ?? t("warehouse.notApplicable")}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colCode")}</span>{" "}
-                      {hub.code ?? t("warehouse.notApplicable")}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colAddress")}</span>{" "}
-                      {hub.address?.trim() ? hub.address : t("warehouse.notApplicable")}
-                    </p>
-                    <p className="flex flex-wrap items-center gap-2">
-                      <span className="text-foreground font-medium">
-                        {t("warehouse.sites.colCoordinates")}
-                      </span>
-                      <CoordinatesMapLink latitude={hub.latitude} longitude={hub.longitude} />
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">{t("warehouse.sites.colStatus")}</span>{" "}
-                      {hub.isActive
-                        ? t("warehouse.sites.statusActive")
-                        : t("warehouse.sites.statusInactive")}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <UserRound className="size-4" aria-hidden />
-                      {t("warehouse.siteDetail.adminCardTitle")}
-                    </CardTitle>
-                    <CardDescription>{t("warehouse.siteDetail.adminCardDescription")}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">{t("warehouse.siteDetail.staffCount")}</span>
-                      <p className="text-foreground text-2xl font-semibold tabular-nums">
-                        {hub.staffCount}
->>>>>>> b0393539bdc965d07c7c675dc323d9f74af23e71
                       </p>
                       <p>
                         <span className="text-foreground font-medium">
@@ -504,15 +420,15 @@ export function WarehouseDetailPage() {
                       </p>
                       <p>
                         <span className="text-foreground font-medium">{t("warehouse.sites.colZone")}</span>{" "}
-                        {hub.zone ?? "—"}
+                        {hub.zone ?? getNotApplicable()}
                       </p>
                       <p>
                         <span className="text-foreground font-medium">{t("warehouse.sites.colCode")}</span>{" "}
-                        {hub.code ?? "—"}
+                        {hub.code ?? getNotApplicable()}
                       </p>
                       <p>
                         <span className="text-foreground font-medium">{t("warehouse.sites.colAddress")}</span>{" "}
-                        {hub.address?.trim() ? hub.address : "—"}
+                        {hub.address?.trim() ? hub.address : getNotApplicable()}
                       </p>
                       <p className="flex flex-wrap items-center gap-2">
                         <span className="text-foreground font-medium">
@@ -576,19 +492,17 @@ export function WarehouseDetailPage() {
                     ))
                   : null}
 
-                {hub.mainBranch && hub.mainBranchId
-                  ? (
-                      <div
-                        className="rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleSubBranchClick(hub.mainBranch.id)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSubBranchClick(hub.mainBranch.id)}
-                      >
-                        <p className="font-medium text-sm">{hub.mainBranch.name}</p>
-                      </div>
-                    )
-                  : null}
+                {hub.mainBranch && hub.mainBranchId ? (
+                  <div
+                    className="rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSubBranchClick(hub.mainBranch!!.id)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSubBranchClick(hub.mainBranch!!.id)}
+                  >
+                    <p className="font-medium text-sm">{hub.mainBranch.name}</p>
+                  </div>
+                ) : null}
               </>
             ) : null}
           </div>
@@ -770,17 +684,17 @@ export function WarehouseDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {(queueQuery.data?.merchantOrders ?? []).map((row) => {
-                    const fmtMoney = (raw: string) => {
-                      const n = Number.parseFloat(
+                    const fmtMoney = (raw: string | number) => {
+                      const num = typeof raw === 'number' ? raw : Number.parseFloat(
                         String(raw ?? "").replace(/,/g, "").trim(),
                       )
-                      if (!Number.isFinite(n)) return t("warehouse.notApplicable")
+                      if (!Number.isFinite(num)) return getNotApplicable()
                       return new Intl.NumberFormat(locale, {
                         style: "currency",
                         currency: "EGP",
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      }).format(n)
+                      }).format(num)
                     }
                     return (
                       <TableRow
@@ -788,18 +702,18 @@ export function WarehouseDetailPage() {
                         className={`hover:bg-muted/50 cursor-pointer ${warehouseTransferRowTone(row.transferStatus)}`}
                         onClick={() =>
                           nav(
-                            `/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(row.merchantOrderId)}`,
+                            `/warehouses/${encodeURIComponent(warehouseId)}/transfers/${encodeURIComponent(row.id)}`,
                           )
                         }
                       >
-                        <TableCell>{row.merchant?.displayName ?? t("warehouse.notApplicable")}</TableCell>
+                        <TableCell>{row.merchant?.displayName ?? getNotApplicable()}</TableCell>
                         <TableCell>{row.orderCount}</TableCell>
                         <TableCell>{fmtMoney(row.totalShipmentValue)}</TableCell>
                         <TableCell className="max-w-[12rem] text-xs whitespace-normal">
                           <BackendStatusBadge kind="merchantOrderBatch" value={row.transferStatus} />
                         </TableCell>
                         <TableCell className="text-sm">
-                          {row.pickupCourier?.fullName ?? t("warehouse.notApplicable")}
+                          {row.pickupCourier?.fullName ?? getNotApplicable()}
                         </TableCell>
                         <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
                       </TableRow>
