@@ -30,7 +30,7 @@ type Props = {
 }
 
 /**
- * Customer orders under a merchant transfer (shipment). Row click opens **order** detail.
+ * Customer shipments under a merchant order (batch). Row click opens line detail.
  * Warehouse mode: assignment controls; clicks on the assign cell do not navigate.
  */
 export function WarehouseShipmentOrdersTable({

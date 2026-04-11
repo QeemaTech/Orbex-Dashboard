@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-type Kind = "transfer" | "orderDelivery" | "orderPayment"
+type Kind = "merchantOrderBatch" | "orderDelivery" | "orderPayment"
 
 const PREFIX: Record<Kind, string> = {
-  transfer: "backend.shipmentTransferStatus",
+  merchantOrderBatch: "backend.merchantOrderBatchStatus",
   orderDelivery: "backend.orderDeliveryStatus",
   orderPayment: "backend.orderPaymentStatus",
 }
@@ -19,7 +19,7 @@ function badgeClass(kind: Kind, raw: string): string {
     "border-destructive/40 bg-destructive/12 text-destructive dark:border-destructive/45 dark:bg-destructive/18 dark:text-red-100"
   const orange =
     "border-warning/45 bg-warning/14 text-warning dark:border-warning/50 dark:bg-warning/18 dark:text-orange-100"
-  if (kind === "transfer") {
+  if (kind === "merchantOrderBatch") {
     if (s === "DELIVERED") return green
     if (s === "PARTIALLY_DELIVERED")
       return "border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-200"

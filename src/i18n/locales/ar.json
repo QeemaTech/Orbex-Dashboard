@@ -19,7 +19,7 @@
     "pageTitle": "الشحنات",
     "pageHeading": "شحنات العملاء",
     "backToShipment": "العودة للشحنة",
-    "backToTransfer": "العودة للشحنة (النقل)",
+    "backToMerchantOrder": "العودة إلى طلب التاجر",
     "loading": "جاري تحميل الشحنات…",
     "empty": "لا توجد شحنات في طلب التاجر هذا.",
     "subtitle": "كل صف يمثل شحنة عميل واحدة مع مستلمها.",
@@ -44,7 +44,7 @@
       "createdAt": "تاريخ الإنشاء",
       "updatedAt": "آخر تحديث",
       "actions": "إجراءات",
-      "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة النقل.",
+      "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة طلب التاجر.",
       "currencyLocale": "ar-EG"
     }
   },
@@ -70,7 +70,7 @@
     "colWarehouse": "المخزن",
     "colOrderCount": "الشحنات",
     "colTotalValue": "القيمة الإجمالية",
-    "colTransferStatus": "حالة النقل"
+    "colBatchPipelineStatus": "حالة مسار الدفعة"
   },
   "adminOrders": {
     "colCustomer": "العميل",
@@ -79,7 +79,7 @@
     "colDelivery": "التسليم",
     "colValue": "القيمة",
     "colActions": "إجراءات",
-    "openTransfer": "فتح طلب التاجر",
+    "openMerchantOrder": "فتح طلب التاجر",
     "viewBatchOrders": "عرض شحنات طلب التاجر",
     "menuAriaLabel": "فتح قائمة إجراءات الشحنة"
   },
@@ -144,8 +144,8 @@
       "lineTitle": "الشحنات عبر الوقت",
       "lineDescription": "شحنات عملاء جديدة يوميًا (آخر 14 يومًا)",
       "lineSeriesName": "الشحنات",
-      "transferPieTitle": "حالة النقل",
-      "transferPieDescription": "طلبات التجار حسب حالة المسار",
+      "merchantOrderBatchPieTitle": "حالة دفعة طلب التاجر",
+      "merchantOrderBatchPieDescription": "طلبات التجار حسب حالة مسار الدفعة",
       "days": {
         "mon": "الإثنين",
         "tue": "الثلاثاء",
@@ -190,7 +190,7 @@
       "amount": "المبلغ",
       "merchant": "التاجر",
       "warehouse": "المخزن",
-      "transferStatus": "حالة النقل",
+      "merchantOrderBatchStatus": "حالة مسار الدفعة",
       "orderCount": "الشحنات",
       "batchValue": "قيمة الدفعة"
     }
@@ -385,16 +385,16 @@
     "subtitle": "نفّذ المسح، التتبع، التعيين، واستلام المرتجعات من لوحة واحدة.",
     "list": {
       "pageTitle": "المخازن",
-      "subtitle": "كل صف يمثل مركزًا. افتح المخزن لعرض عمليات النقل (الدفعات) وأدوات المسح والمؤشرات لهذا الموقع فقط.",
+      "subtitle": "كل صف يمثل مركزًا. افتح المخزن لعرض دفعات طلبات التجار وأدوات المسح والمؤشرات لهذا الموقع فقط.",
       "tableTitle": "المخازن",
-      "tableDescription": "انقر صفًا لفتح تفاصيل المخزن والنقل لهذا المركز.",
-      "colTransfers": "النقل",
+      "tableDescription": "انقر صفًا لفتح تفاصيل المخزن ونشاط طلبات التجار لهذا المركز.",
+      "colMerchantOrderBatches": "دفعات طلبات التجار",
       "colLocation": "الموقع",
       "openMap": "فتح على الخريطة"
     },
     "detail": {
       "pageTitle": "المخزن",
-      "subtitle": "عمليات النقل (الشحنات) والمسح والمؤشرات لهذا المخزن فقط.",
+      "subtitle": "دفعات طلبات التجار والمسح والمؤشرات لهذا المخزن فقط.",
       "backToWarehouses": "← كل المخازن",
       "invalidTitle": "المخزن",
       "invalidDescription": "رابط المخزن غير صالح أو ناقص.",
@@ -430,7 +430,7 @@
       "openDirectory": "فتح دليل المخازن ←",
       "colActions": "إجراءات",
       "viewDetails": "عرض",
-      "viewShipmentsQueue": "قائمة الشحنات (النقل)"
+      "viewShipmentsQueue": "قائمة الشحنات (دفعات طلبات التجار)"
     },
     "siteDetail": {
       "pageTitle": "تفاصيل المخزن",
@@ -456,6 +456,15 @@
       "description": "بيانات الموقع، مشرف المخزن، وعدد المشغّلين لهذا المركز.",
       "fullDetailsLink": "تفاصيل المخزن الكاملة ←"
     },
+    "notApplicable": "—",
+    "hubStats": {
+      "pending": "بانتظار تعيين مندوب الاستلام",
+      "assigned": "تم تعيين مندوب الاستلام",
+      "onTheWayToWarehouse": "في الطريق إلى المخزن",
+      "inWarehouse": "داخل المخزن",
+      "partiallyDelivered": "دفعات مسلّمة جزئيًا",
+      "delivered": "دفعات مسلّمة بالكامل"
+    },
     "operations": {
       "title": "المسح والمرتجعات",
       "description": "استخدم رقم تتبع الطلب لتنفيذ مسح الدخول/الخروج، تسجيل المرتجع، أو الاطلاع على حالة الشحنة.",
@@ -469,10 +478,12 @@
     },
     "queue": {
       "title": "قائمة المخزن",
-      "titleTransfers": "النقل",
+      "titleMerchantOrderBatches": "دفعات طلبات التجار",
       "description": "تابع الطلبات والحالة لكل سطر من عمليات المخزن.",
       "descriptionExtended": "دفعات فعلية لمخزنك من واجهة المخزن. انقر الصف لعرض كل طلبات العملاء في الدفعة؛ واستخدم الرابط تحت رقم التتبع لملخص الدفعة.",
-      "descriptionTransfers": "كل صف يمثل شحنة نقل (دفعة من التاجر) إلى هذا المخزن. افتح الصف لعرض تفاصيل الشحنة وطلبات العملاء.",
+      "descriptionMerchantOrderBatches": "كل صف يمثل دفعة طلب تاجر واردة إلى هذا المخزن. افتح الصف لعرض تفاصيل الدفعة وشحنات العملاء.",
+      "titleTransfers": "تحويلات دفعات طلبات التجار",
+      "descriptionTransfers": "كل صف يمثل دفعة مرتبطة بهذا المخزن. افتح الصف لعرض التفاصيل وشحنات العملاء وتعيين المندوب.",
       "openBatchSummary": "ملخص الدفعة",
       "openCustomerOrders": "طلبات العملاء",
       "searchPlaceholder": "بحث برقم تتبع الطلب",
@@ -490,14 +501,16 @@
       "pagination": "الإجمالي {{total}} · صفحة {{page}}"
     },
     "table": {
+      "batchId": "معرف الدفعة",
       "trackingNumber": "تتبع الطلب",
       "warehouse": "المخزن",
       "customer": "العميل",
       "merchant": "التاجر",
       "orderCount": "طلبات العملاء",
       "totalValue": "القيمة الإجمالية",
+      "batchTransfer": "حالة التحويل",
       "pickupCourier": "مندوب الاستلام",
-      "batchTransfer": "حالة الدفعة (نقل)",
+      "batchPipelineStatus": "حالة مسار الدفعة",
       "lineDelivery": "تسليم السطر",
       "linePayment": "دفع السطر",
       "status": "الحالة",
@@ -505,12 +518,12 @@
       "updatedAt": "آخر تحديث",
       "actions": "الإجراءات"
     },
-    "transferDetailTitle": "تفاصيل النقل (الدفعة)",
-    "transferDetailSubtitle": "نقل من التاجر — لكل طلب رقم تتبع خاص؛ التفاصيل في الجدول أدناه.",
-    "transferOrdersHint": "تفاصيل المستلم وحالة التسليم تظهر لكل طلب عميل في الجدول أدناه.",
-    "transferDetail": {
-      "ordersSectionTitle": "طلبات العملاء (هذه الشحنة)",
-      "ordersSectionDescription": "التسليم والدفع والتتبع لكل طلب في هذا النقل.",
+    "merchantOrderDetailTitle": "تفاصيل طلب التاجر (الدفعة)",
+    "merchantOrderDetailSubtitle": "دفعة من التاجر — لكل شحنة رقم تتبع خاص؛ التفاصيل في الجدول أدناه.",
+    "merchantOrderBatchOrdersHint": "تفاصيل المستلم وحالة التسليم تظهر لكل شحنة عميل في الجدول أدناه.",
+    "merchantOrderDetail": {
+      "ordersSectionTitle": "شحنات العملاء (هذه الدفعة)",
+      "ordersSectionDescription": "التسليم والدفع والتتبع لكل شحنة في طلب التاجر هذا.",
       "jumpToOrders": "الانتقال إلى طلبات العملاء"
     },
     "orders": {
@@ -545,7 +558,7 @@
       "DAMAGED": "تالف",
       "OVERDUE": "متأخر"
     },
-    "shipmentTransferStatus": {
+    "merchantOrderBatchStatus": {
       "PENDING_PICKUP": "بانتظار الاستلام",
       "PICKED_UP": "تم الاستلام",
       "IN_WAREHOUSE": "داخل المخزن",

@@ -29,10 +29,7 @@ import { WarehouseShipmentOrdersTable } from "@/features/warehouse/components/Wa
 import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labels"
 import type { UserRole } from "@/lib/auth-context"
 import { useAuth } from "@/lib/auth-context"
-
-function isWarehouseTransfersPath(pathname: string): boolean {
-  return /^\/warehouses\/[^/]+\/transfers\//.test(pathname)
-}
+import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
 
 function resolvePerspective(role: UserRole | undefined): DashboardPerspective {
   if (role === "ACCOUNTS") return "accounting"
@@ -71,7 +68,7 @@ export function MerchantOrderDetailsPage() {
     }
   })()
 
-  const isWarehouseRoute = isWarehouseTransfersPath(location.pathname)
+  const isWarehouseRoute = isWarehouseScopedMerchantOrderPath(location.pathname)
   const isCsRoute = location.pathname.startsWith("/cs/")
   const statusPerspective = resolvePerspective(user?.role)
 
@@ -178,14 +175,10 @@ export function MerchantOrderDetailsPage() {
                         <strong>{t("cs.table.brand")}:</strong>{" "}
                         {q.data.merchant?.businessName || "—"}
                       </p>
-                      <p>
-                        <strong>{t("warehouse.table.trackingNumber")}:</strong>{" "}
-                        {q.data.trackingNumber || "—"}
-                      </p>
                       <p className="flex flex-wrap items-center gap-2">
-                        <strong>{t("warehouse.table.batchTransfer")}:</strong>{" "}
+                        <strong>{t("warehouse.table.batchPipelineStatus")}:</strong>{" "}
                         <BackendStatusBadge
-                          kind="transfer"
+                          kind="merchantOrderBatch"
                           value={q.data.transferStatus ?? ""}
                         />
                       </p>
@@ -203,7 +196,7 @@ export function MerchantOrderDetailsPage() {
                       </p>
                     </div>
                     <p className="text-muted-foreground text-sm">
-                      {t("warehouse.transferOrdersHint", {
+                      {t("warehouse.merchantOrderBatchOrdersHint", {
                         defaultValue:
                           "Recipient details and delivery status are shown per customer order — open the table below.",
                       })}
@@ -225,9 +218,9 @@ export function MerchantOrderDetailsPage() {
                         {q.data.assignedWarehouse?.name ?? "—"}
                       </p>
                       <p className="flex flex-wrap items-center gap-2">
-                        <strong>{t("warehouse.table.batchTransfer")}:</strong>{" "}
+                        <strong>{t("warehouse.table.batchPipelineStatus")}:</strong>{" "}
                         <BackendStatusBadge
-                          kind="transfer"
+                          kind="merchantOrderBatch"
                           value={q.data.transferStatus ?? ""}
                         />
                       </p>

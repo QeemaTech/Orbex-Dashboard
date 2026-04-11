@@ -122,7 +122,7 @@ export function AdminShipmentsTable({ rows }: Props) {
                           )
                         }
                       >
-                        {t("adminOrders.openTransfer")}
+                        {t("adminOrders.openMerchantOrder")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() =>

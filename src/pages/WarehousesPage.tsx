@@ -36,7 +36,7 @@ export function WarehousesPage() {
     enabled: !!token,
   })
 
-  const rows = sitesQuery.data?.warehouses ?? []
+  const rows = Array.isArray(sitesQuery.data?.warehouses) ? sitesQuery.data.warehouses : []
 
   return (
     <Layout title={t("warehouse.list.pageTitle")}>
@@ -75,7 +75,7 @@ export function WarehousesPage() {
                     <TableHead>{t("warehouse.sites.colGovernorate")}</TableHead>
                     <TableHead>{t("warehouse.sites.colZone")}</TableHead>
                     <TableHead className="text-end tabular-nums">
-                      {t("warehouse.list.colTransfers")}
+                      {t("warehouse.list.colMerchantOrderBatches")}
                     </TableHead>
                     <TableHead className="w-[100px]">
                       {t("warehouse.list.colLocation")}
