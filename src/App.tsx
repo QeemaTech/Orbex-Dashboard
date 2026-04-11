@@ -89,6 +89,17 @@ function RedirectLegacyWarehouseTransfersToMerchantOrder() {
   )
 }
 
+/** Old bookmarks: `/warehouses/.../transfers/.../shipments` → `.../merchant-orders/...#customer-orders`. */
+function RedirectWarehouseTransferShipmentsToDetail() {
+  const { warehouseId = "", merchantOrderId = "" } = useParams()
+  return (
+    <Navigate
+      to={`${warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}#customer-orders`}
+      replace
+    />
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
