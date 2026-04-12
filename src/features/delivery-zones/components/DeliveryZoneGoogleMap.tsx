@@ -1,10 +1,17 @@
-import { useCallback, useMemo } from "react"
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from "react"
 import { Circle, GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api"
 
-const mapContainerStyle = {
-  width: "100%",
-  height: "280px",
-  borderRadius: "0.5rem",
+const DEFAULT_MAP_HEIGHT = "clamp(340px, 56vh, 680px)"
+
+export type DeliveryZoneMapHandle = {
+  flyTo: (lat: number, lng: number, zoom: number) => void
 }
 
 type LatLng = { lat: number; lng: number }
@@ -14,17 +21,59 @@ type DeliveryZoneGoogleMapProps = {
   center: LatLng
   radiusMeters: number
   onCenterChange: (next: LatLng) => void
+  /** CSS height, e.g. `min(520px, 55vh)` */
+  mapHeight?: string
+  initialZoom?: number
 }
 
-export function DeliveryZoneGoogleMap({
-  apiKey,
-  center,
-  radiusMeters,
-  onCenterChange,
-}: DeliveryZoneGoogleMapProps) {
+export const DeliveryZoneGoogleMap = forwardRef<
+  DeliveryZoneMapHandle,
+  DeliveryZoneGoogleMapProps
+>(function DeliveryZoneGoogleMap(
+  {
+    apiKey,
+    center,
+    radiusMeters,
+    onCenterChange,
+    mapHeight = DEFAULT_MAP_HEIGHT,
+    initialZoom = 12,
+  },
+  ref,
+) {
+  const mapRef = useRef<google.maps.Map | null>(null)
+
+  const mapContainerStyle = useMemo(
+    () => ({
+      width: "100%",
+      height: mapHeight,
+      borderRadius: "0.5rem",
+    }),
+    [mapHeight],
+  )
+
   const { isLoaded, loadError } = useJsApiLoader({
+    id: "orbex-delivery-zones-maps",
     googleMapsApiKey: apiKey,
   })
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      flyTo(lat: number, lng: number, zoom: number) {
+        const m = mapRef.current
+        if (!m) return
+        m.panTo({ lat, lng })
+        m.setZoom(zoom)
+      },
+    }),
+    [],
+  )
+
+  useEffect(() => {
+    const m = mapRef.current
+    if (!m) return
+    m.panTo(center)
+  }, [center.lat, center.lng])
 
   const onMapClick = useCallback(
     (e: google.maps.MapMouseEvent) => {
@@ -34,6 +83,10 @@ export function DeliveryZoneGoogleMap({
     },
     [onCenterChange],
   )
+
+  const onLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map
+  }, [])
 
   const circleOptions = useMemo(
     () => ({
@@ -70,16 +123,17 @@ export function DeliveryZoneGoogleMap({
     <GoogleMap
       mapContainerStyle={mapContainerStyle}
       center={center}
-      zoom={12}
+      zoom={initialZoom}
+      onLoad={onLoad}
       onClick={onMapClick}
       options={{
         streetViewControl: false,
         mapTypeControl: false,
-        fullscreenControl: false,
+        fullscreenControl: true,
       }}
     >
       <Marker position={center} />
       <Circle center={center} radius={radiusMeters} options={circleOptions} />
     </GoogleMap>
   )
-}
+})

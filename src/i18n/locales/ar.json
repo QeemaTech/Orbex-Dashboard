@@ -818,7 +818,17 @@
       "active": "المنطقة نشطة",
       "cancel": "إلغاء",
       "save": "حفظ",
-      "governorateRequired": "المحافظة مطلوبة."
+      "governorateRequired": "المحافظة مطلوبة.",
+      "governoratePlaceholder": "اكتب اسم المحافظة",
+      "selectGovernorate": "اختر المحافظة…",
+      "selectGovernorateFirst": "اختر المحافظة أولاً.",
+      "selectCityOptional": "المدينة / الحي (اختياري)",
+      "cityOther": "أخرى (اكتب بالأسفل)",
+      "cityManualPlaceholder": "مدينة، حي، أو منطقة",
+      "locationsLoading": "جاري تحميل المحافظات…",
+      "citiesLoading": "جاري تحميل المدن…",
+      "locationsError": "تعذّر تحميل القائمة. أدخل الأسماء يدوياً.",
+      "locationsAttribution": "المحافظات والمدن: CountriesNow (بيانات مفتوحة). الأسماء بالإنجليزية كما ترجعها الخدمة."
     },
     "feedback": {
       "created": "تم إنشاء المنطقة.",

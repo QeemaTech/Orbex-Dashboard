@@ -821,7 +821,17 @@
       "active": "Zone active",
       "cancel": "Cancel",
       "save": "Save",
-      "governorateRequired": "Governorate is required."
+      "governorateRequired": "Governorate is required.",
+      "governoratePlaceholder": "Type governorate name",
+      "selectGovernorate": "Select governorate…",
+      "selectGovernorateFirst": "Choose a governorate first.",
+      "selectCityOptional": "City / district (optional)",
+      "cityOther": "Other (type below)",
+      "cityManualPlaceholder": "City, district, or neighborhood",
+      "locationsLoading": "Loading governorates…",
+      "citiesLoading": "Loading cities…",
+      "locationsError": "Could not load location list. Enter names manually.",
+      "locationsAttribution": "Governorates and cities: CountriesNow (open data). Names are in English as returned by the API."
     },
     "feedback": {
       "created": "Zone created.",

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { X } from "react-lucid"
 
@@ -13,8 +13,23 @@ import {
 } from "@/api/delivery-zones-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  EGYPT_LOCATIONS_CUSTOM_CITY,
+  fetchCitiesForGovernorate,
+  fetchEgyptGovernorates,
+} from "@/lib/egypt-locations-api"
+import {
+  governorateArabicForApi,
+  governorateLabelAr,
+  governorateMeta,
+  resolveGovernorateEn,
+} from "@/lib/egypt-governorate-meta"
+import { geocodeEgyptPlace } from "@/lib/google-geocode-egypt"
 import { showToast } from "@/lib/toast"
-import { DeliveryZoneGoogleMap } from "./DeliveryZoneGoogleMap"
+import {
+  DeliveryZoneGoogleMap,
+  type DeliveryZoneMapHandle,
+} from "./DeliveryZoneGoogleMap"
 
 const DEFAULT_CENTER = { lat: 30.0444, lng: 31.2357 }
 
@@ -42,10 +57,19 @@ export function DeliveryZoneFormDialog({
   const { t } = useTranslation()
   const qc = useQueryClient()
   const mapsKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined)?.trim() ?? ""
+  const mapRef = useRef<DeliveryZoneMapHandle | null>(null)
+  const cityHydratedRef = useRef(false)
+  const cityGeocodeGenRef = useRef(0)
+
+  const [geocoderReady, setGeocoderReady] = useState(false)
 
   const [name, setName] = useState("")
-  const [governorate, setGovernorate] = useState("")
-  const [areaZone, setAreaZone] = useState("")
+  /** CountriesNow English key when using dropdown */
+  const [governorateEn, setGovernorateEn] = useState("")
+  const [manualGovernorate, setManualGovernorate] = useState("")
+  const [selectedCityEn, setSelectedCityEn] = useState("")
+  const [areaZoneAr, setAreaZoneAr] = useState("")
+  const [cityArLabels, setCityArLabels] = useState<Map<string, string>>(() => new Map())
   const [regionId, setRegionId] = useState("")
   const [latitude, setLatitude] = useState(DEFAULT_CENTER.lat)
   const [longitude, setLongitude] = useState(DEFAULT_CENTER.lng)
@@ -65,12 +89,52 @@ export function DeliveryZoneFormDialog({
     enabled: open && !!token,
   })
 
+  const governoratesQuery = useQuery({
+    queryKey: ["egypt-governorates"],
+    queryFn: fetchEgyptGovernorates,
+    enabled: open,
+    staleTime: 1000 * 60 * 60 * 24 * 7,
+  })
+
+  useEffect(() => {
+    if (!open || !mapsKey) {
+      setGeocoderReady(false)
+      return
+    }
+    if (typeof google !== "undefined" && google.maps?.Geocoder) {
+      setGeocoderReady(true)
+      return
+    }
+    const interval = window.setInterval(() => {
+      if (typeof google !== "undefined" && google.maps?.Geocoder) {
+        setGeocoderReady(true)
+        window.clearInterval(interval)
+      }
+    }, 120)
+    const stop = window.setTimeout(() => window.clearInterval(interval), 20000)
+    return () => {
+      window.clearInterval(interval)
+      window.clearTimeout(stop)
+    }
+  }, [open, mapsKey])
+
   useEffect(() => {
     if (!open) return
+    cityHydratedRef.current = false
     if (mode === "edit" && initial) {
       setName(initial.name ?? "")
-      setGovernorate(initial.governorate)
-      setAreaZone(initial.areaZone ?? "")
+      const storedGov = (initial.governorate ?? "").trim()
+      const resolved = resolveGovernorateEn(storedGov)
+      if (resolved) {
+        setGovernorateEn(resolved)
+        setManualGovernorate("")
+      } else {
+        setGovernorateEn("")
+        setManualGovernorate(storedGov)
+      }
+      setAreaZoneAr(initial.areaZone ?? "")
+      setSelectedCityEn("")
+      setCityArLabels(new Map())
       setRegionId(initial.regionId ?? "")
       setLatitude(Number.parseFloat(initial.latitude) || DEFAULT_CENTER.lat)
       setLongitude(Number.parseFloat(initial.longitude) || DEFAULT_CENTER.lng)
@@ -79,8 +143,11 @@ export function DeliveryZoneFormDialog({
       setIsActive(initial.isActive)
     } else {
       setName("")
-      setGovernorate("")
-      setAreaZone("")
+      setGovernorateEn("")
+      setManualGovernorate("")
+      setSelectedCityEn("")
+      setAreaZoneAr("")
+      setCityArLabels(new Map())
       setRegionId("")
       setLatitude(DEFAULT_CENTER.lat)
       setLongitude(DEFAULT_CENTER.lng)
@@ -95,6 +162,117 @@ export function DeliveryZoneFormDialog({
     [latitude, longitude],
   )
 
+  const governorates = governoratesQuery.data ?? []
+  const useManualGovernorate =
+    governoratesQuery.isError || (governoratesQuery.isFetched && governorates.length === 0)
+  const showGovernorateDropdown =
+    !useManualGovernorate && (governorateEn !== "" || manualGovernorate === "")
+
+  const citiesQuery = useQuery({
+    queryKey: ["egypt-cities", governorateEn],
+    queryFn: () => fetchCitiesForGovernorate(governorateEn),
+    enabled: open && governorateEn.trim().length > 0 && !useManualGovernorate,
+    staleTime: 1000 * 60 * 60 * 24,
+  })
+
+  const cities = citiesQuery.data ?? []
+  const showCustomCitySelect =
+    showGovernorateDropdown &&
+    governorateEn.trim() &&
+    (cities.length > 0 || citiesQuery.isFetched)
+
+  const governorateForApi = useMemo(() => {
+    if (!showGovernorateDropdown) return manualGovernorate.trim()
+    if (governorateEn) return governorateArabicForApi(governorateEn)
+    return ""
+  }, [showGovernorateDropdown, governorateEn, manualGovernorate])
+
+  const citySelectValue = useMemo(() => {
+    if (selectedCityEn === EGYPT_LOCATIONS_CUSTOM_CITY) return EGYPT_LOCATIONS_CUSTOM_CITY
+    if (selectedCityEn) return selectedCityEn
+    return ""
+  }, [selectedCityEn])
+
+  const citiesListKey = cities.join("|")
+
+  useEffect(() => {
+    if (!open || mode !== "edit" || !initial || cityHydratedRef.current) return
+    if (!showGovernorateDropdown || !governorateEn) {
+      if ((initial.areaZone ?? "").trim()) setSelectedCityEn(EGYPT_LOCATIONS_CUSTOM_CITY)
+      cityHydratedRef.current = true
+      return
+    }
+    if (citiesQuery.isLoading) return
+    const az = (initial.areaZone ?? "").trim()
+    if (!az) {
+      cityHydratedRef.current = true
+      return
+    }
+    if (cities.includes(az)) {
+      setSelectedCityEn(az)
+      cityHydratedRef.current = true
+      return
+    }
+    const enMatch = cities.find((c) => cityArLabels.get(c) === az)
+    if (enMatch) {
+      setSelectedCityEn(enMatch)
+      cityHydratedRef.current = true
+      return
+    }
+    setSelectedCityEn(EGYPT_LOCATIONS_CUSTOM_CITY)
+    cityHydratedRef.current = true
+  }, [
+    open,
+    mode,
+    initial?.id,
+    initial?.areaZone,
+    showGovernorateDropdown,
+    governorateEn,
+    citiesQuery.isLoading,
+    citiesListKey,
+    cityArLabels,
+  ])
+
+  useEffect(() => {
+    if (
+      !open ||
+      !geocoderReady ||
+      !showGovernorateDropdown ||
+      !governorateEn ||
+      cities.length === 0
+    ) {
+      return
+    }
+    let cancelled = false
+    const run = async () => {
+      const next = new Map<string, string>()
+      for (const c of cities) {
+        if (cancelled) return
+        const r = await geocodeEgyptPlace({ cityEn: c, governorateEn })
+        if (r?.labelAr) next.set(c, r.labelAr)
+        await new Promise((r) => setTimeout(r, 130))
+        if (!cancelled) setCityArLabels(new Map(next))
+      }
+    }
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [open, geocoderReady, governorateEn, citiesListKey, showGovernorateDropdown])
+
+  useEffect(() => {
+    if (!open || !geocoderReady || !showGovernorateDropdown || !governorateEn) return
+    if (!selectedCityEn || selectedCityEn === EGYPT_LOCATIONS_CUSTOM_CITY) return
+    const gen = ++cityGeocodeGenRef.current
+    void geocodeEgyptPlace({ cityEn: selectedCityEn, governorateEn }).then((r) => {
+      if (cityGeocodeGenRef.current !== gen || !r) return
+      setLatitude(r.lat)
+      setLongitude(r.lng)
+      mapRef.current?.flyTo(r.lat, r.lng, 14)
+      setAreaZoneAr(r.labelAr)
+    })
+  }, [open, geocoderReady, showGovernorateDropdown, governorateEn, selectedCityEn])
+
   const createMut = useMutation({
     mutationFn: () =>
       createDeliveryZone(token, {
@@ -102,8 +280,8 @@ export function DeliveryZoneFormDialog({
         latitude,
         longitude,
         radiusMeters,
-        governorate: governorate.trim(),
-        areaZone: areaZone.trim() || null,
+        governorate: governorateForApi,
+        areaZone: areaZoneAr.trim() || null,
         regionId: regionId || null,
         courierIds: [...courierIds],
         isActive,
@@ -126,8 +304,8 @@ export function DeliveryZoneFormDialog({
         latitude,
         longitude,
         radiusMeters,
-        governorate: governorate.trim(),
-        areaZone: areaZone.trim() || null,
+        governorate: governorateForApi,
+        areaZone: areaZoneAr.trim() || null,
         regionId: regionId || null,
         courierIds: [...courierIds],
         isActive,
@@ -155,7 +333,7 @@ export function DeliveryZoneFormDialog({
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canWrite) return
-    if (!governorate.trim()) {
+    if (!governorateForApi) {
       showToast(t("deliveryZones.form.governorateRequired"), "error")
       return
     }
@@ -169,6 +347,25 @@ export function DeliveryZoneFormDialog({
   const couriers: CourierOptionRow[] = couriersQuery.data?.couriers ?? []
   const busy = createMut.isPending || patchMut.isPending
 
+  const showManualGovernorateField =
+    useManualGovernorate || !showGovernorateDropdown
+  const needGovernorateForCity = showGovernorateDropdown
+    ? !governorateEn.trim()
+    : !manualGovernorate.trim()
+
+  function onGovernorateSelectChange(v: string) {
+    setGovernorateEn(v)
+    setSelectedCityEn("")
+    setAreaZoneAr("")
+    setCityArLabels(new Map())
+    const meta = governorateMeta(v)
+    if (meta) {
+      setLatitude(meta.lat)
+      setLongitude(meta.lng)
+      queueMicrotask(() => mapRef.current?.flyTo(meta.lat, meta.lng, meta.zoom))
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -176,7 +373,7 @@ export function DeliveryZoneFormDialog({
       aria-modal
       aria-label={t("deliveryZones.form.title")}
     >
-      <div className="bg-card flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border shadow-lg">
+      <div className="bg-card flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border shadow-lg">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 className="text-sm font-semibold">
             {mode === "create"
@@ -212,24 +409,106 @@ export function DeliveryZoneFormDialog({
               <label className="text-muted-foreground text-xs font-medium">
                 {t("deliveryZones.form.governorate")}
               </label>
-              <Input
-                value={governorate}
-                onChange={(e) => setGovernorate(e.target.value)}
-                disabled={!canWrite || busy}
-                required
-              />
+              {governoratesQuery.isLoading ? (
+                <p className="text-muted-foreground py-2 text-sm">
+                  {t("deliveryZones.form.locationsLoading")}
+                </p>
+              ) : showManualGovernorateField ? (
+                <Input
+                  value={manualGovernorate}
+                  onChange={(e) => setManualGovernorate(e.target.value)}
+                  disabled={!canWrite || busy}
+                  required
+                  placeholder={t("deliveryZones.form.governoratePlaceholder")}
+                />
+              ) : (
+                <select
+                  className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                  value={governorates.includes(governorateEn) ? governorateEn : ""}
+                  onChange={(e) => onGovernorateSelectChange(e.target.value)}
+                  disabled={!canWrite || busy}
+                  required
+                >
+                  <option value="">{t("deliveryZones.form.selectGovernorate")}</option>
+                  {governorateEn && !governorates.includes(governorateEn) ? (
+                    <option value={governorateEn}>
+                      {governorateLabelAr(governorateEn)}
+                    </option>
+                  ) : null}
+                  {governorates.map((g) => (
+                    <option key={g} value={g}>
+                      {governorateLabelAr(g)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {governoratesQuery.isError ? (
+                <p className="text-destructive text-xs">{t("deliveryZones.form.locationsError")}</p>
+              ) : null}
             </div>
             <div className="grid gap-2">
               <label className="text-muted-foreground text-xs font-medium">
                 {t("deliveryZones.form.areaZone")}
               </label>
-              <Input
-                value={areaZone}
-                onChange={(e) => setAreaZone(e.target.value)}
-                disabled={!canWrite || busy}
-              />
+              {needGovernorateForCity ? (
+                <p className="text-muted-foreground py-2 text-sm">
+                  {t("deliveryZones.form.selectGovernorateFirst")}
+                </p>
+              ) : citiesQuery.isLoading && showCustomCitySelect ? (
+                <p className="text-muted-foreground py-2 text-sm">
+                  {t("deliveryZones.form.citiesLoading")}
+                </p>
+              ) : showCustomCitySelect ? (
+                <>
+                  <select
+                    className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                    value={citySelectValue}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (v === "") {
+                        setSelectedCityEn("")
+                        setAreaZoneAr("")
+                      } else if (v === EGYPT_LOCATIONS_CUSTOM_CITY) {
+                        setSelectedCityEn(EGYPT_LOCATIONS_CUSTOM_CITY)
+                        setAreaZoneAr("")
+                      } else {
+                        setSelectedCityEn(v)
+                      }
+                    }}
+                    disabled={!canWrite || busy}
+                  >
+                    <option value="">{t("deliveryZones.form.selectCityOptional")}</option>
+                    {cities.map((c) => (
+                      <option key={c} value={c}>
+                        {cityArLabels.get(c) ?? c}
+                      </option>
+                    ))}
+                    <option value={EGYPT_LOCATIONS_CUSTOM_CITY}>
+                      {t("deliveryZones.form.cityOther")}
+                    </option>
+                  </select>
+                  {(citySelectValue === EGYPT_LOCATIONS_CUSTOM_CITY || cities.length === 0) && (
+                    <Input
+                      value={areaZoneAr}
+                      onChange={(e) => setAreaZoneAr(e.target.value)}
+                      disabled={!canWrite || busy}
+                      placeholder={t("deliveryZones.form.cityManualPlaceholder")}
+                    />
+                  )}
+                </>
+              ) : (
+                <Input
+                  value={areaZoneAr}
+                  onChange={(e) => setAreaZoneAr(e.target.value)}
+                  disabled={!canWrite || busy}
+                  placeholder={t("deliveryZones.form.cityManualPlaceholder")}
+                />
+              )}
             </div>
           </div>
+          <p className="text-muted-foreground text-[0.65rem] leading-relaxed">
+            {t("deliveryZones.form.locationsAttribution")}
+          </p>
           <div className="grid gap-2">
             <label className="text-muted-foreground text-xs font-medium">
               {t("deliveryZones.form.region")}
@@ -255,6 +534,7 @@ export function DeliveryZoneFormDialog({
             </span>
             {mapsKey ? (
               <DeliveryZoneGoogleMap
+                ref={mapRef}
                 apiKey={mapsKey}
                 center={center}
                 radiusMeters={radiusMeters}
