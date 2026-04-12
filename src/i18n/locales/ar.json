@@ -786,6 +786,8 @@
     "inactive": "غير نشط",
     "edit": "تعديل",
     "deactivate": "تعطيل",
+    "deletePermanent": "حذف نهائي",
+    "confirmDeletePermanent": "حذف هذه المنطقة نهائياً من قاعدة البيانات؟ سيتم فك ربط المناديب عنها (لن يُحذفوا هم). لا يمكن التراجع.",
     "confirmDeactivate": "تعطيل هذه المنطقة؟ لن يُحتسب ربط المناديب عبرها لصلاحية الـ region.",
     "radiusMeters": "{{m}} م",
     "col": {
@@ -815,6 +817,8 @@
       "longitude": "خط الطول",
       "radiusLabel": "نصف القطر: {{m}} م",
       "couriers": "المناديب",
+      "courierInOtherZone": "معيّن حالياً في: {{zone}}",
+      "courierWillMoveOnSave": "سيُنقل إلى هذه المنطقة عند الحفظ (يُزال من المنطقة السابقة).",
       "active": "المنطقة نشطة",
       "cancel": "إلغاء",
       "save": "حفظ",
@@ -835,7 +839,9 @@
       "updated": "تم تحديث المنطقة.",
       "saveFailed": "تعذّر حفظ المنطقة.",
       "deactivated": "تم تعطيل المنطقة.",
-      "deactivateFailed": "تعذّر تعطيل المنطقة."
+      "deactivateFailed": "تعذّر تعطيل المنطقة.",
+      "deletedPermanent": "تم حذف المنطقة نهائياً.",
+      "deletePermanentFailed": "تعذّر حذف المنطقة."
     }
   },
   "common": {

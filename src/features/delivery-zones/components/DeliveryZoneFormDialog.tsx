@@ -384,6 +384,7 @@ export function DeliveryZoneFormDialog({
   const regions = regionsQuery.data?.regions ?? []
   const couriers: CourierOptionRow[] = couriersQuery.data?.couriers ?? []
   const busy = createMut.isPending || patchMut.isPending
+  const currentZoneId = mode === "edit" && initial ? initial.id : null
 
   const showManualGovernorateField =
     useManualGovernorate || !showGovernorateDropdown
@@ -650,23 +651,44 @@ export function DeliveryZoneFormDialog({
               ) : couriers.length === 0 ? (
                 <p className="text-muted-foreground">{t("deliveryZones.emptyCouriers")}</p>
               ) : (
-                couriers.map((c) => (
-                  <label
-                    key={c.id}
-                    className="hover:bg-muted/60 flex cursor-pointer items-center gap-2 rounded px-1 py-1"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={courierIds.has(c.id)}
-                      onChange={() => toggleCourier(c.id)}
-                      disabled={!canWrite || busy}
-                    />
-                    <span>
-                      {c.fullName ?? c.id}
-                      {c.contactPhone ? ` · ${c.contactPhone}` : ""}
-                    </span>
-                  </label>
-                ))
+                couriers.map((c) => {
+                  const inOtherZone = Boolean(
+                    c.assignedDeliveryZoneId &&
+                      c.assignedDeliveryZoneId !== currentZoneId,
+                  )
+                  const willMove = courierIds.has(c.id) && inOtherZone
+                  return (
+                    <label
+                      key={c.id}
+                      className="hover:bg-muted/60 flex cursor-pointer flex-col gap-0.5 rounded px-1 py-1"
+                    >
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={courierIds.has(c.id)}
+                          onChange={() => toggleCourier(c.id)}
+                          disabled={!canWrite || busy}
+                        />
+                        <span>
+                          {c.fullName ?? c.id}
+                          {c.contactPhone ? ` · ${c.contactPhone}` : ""}
+                        </span>
+                      </span>
+                      {inOtherZone && (c.assignedZoneLabel || c.assignedDeliveryZoneId) ? (
+                        <span className="text-muted-foreground ps-6 text-[0.7rem] leading-snug">
+                          {willMove
+                            ? t("deliveryZones.form.courierWillMoveOnSave")
+                            : t("deliveryZones.form.courierInOtherZone", {
+                                zone:
+                                  c.assignedZoneLabel ??
+                                  c.assignedDeliveryZoneId ??
+                                  "",
+                              })}
+                        </span>
+                      ) : null}
+                    </label>
+                  )
+                })
               )}
             </div>
           </div>

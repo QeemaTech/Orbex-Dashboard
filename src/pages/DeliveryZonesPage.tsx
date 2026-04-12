@@ -1,10 +1,11 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { MapPin, Pencil, Plus } from "react-lucid"
+import { MapPin, Pencil, Plus, Trash2 } from "react-lucid"
 import { useTranslation } from "react-i18next"
 
 import {
   deactivateDeliveryZone,
+  deleteDeliveryZonePermanent,
   listDeliveryZones,
   type DeliveryZoneRow,
 } from "@/api/delivery-zones-api"
@@ -56,6 +57,20 @@ export function DeliveryZonesPage() {
     },
     onError: (e: Error) => {
       showToast(e.message ?? t("deliveryZones.feedback.deactivateFailed"), "error")
+    },
+  })
+
+  const deletePermanentMut = useMutation({
+    mutationFn: (id: string) => deleteDeliveryZonePermanent(token, id),
+    onSuccess: () => {
+      showToast(t("deliveryZones.feedback.deletedPermanent"), "success")
+      void qc.invalidateQueries({ queryKey: ["delivery-zones"] })
+    },
+    onError: (e: Error) => {
+      showToast(
+        e.message ?? t("deliveryZones.feedback.deletePermanentFailed"),
+        "error",
+      )
     },
   })
 
@@ -174,6 +189,26 @@ export function DeliveryZonesPage() {
                                   {t("deliveryZones.deactivate")}
                                 </Button>
                               ) : null}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive size-8"
+                                disabled={deletePermanentMut.isPending}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      t("deliveryZones.confirmDeletePermanent"),
+                                    )
+                                  ) {
+                                    deletePermanentMut.mutate(z.id)
+                                  }
+                                }}
+                                aria-label={t("deliveryZones.deletePermanent")}
+                                title={t("deliveryZones.deletePermanent")}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
                             </>
                           ) : null}
                         </div>

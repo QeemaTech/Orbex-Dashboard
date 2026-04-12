@@ -137,3 +137,17 @@ export async function deactivateDeliveryZone(
     token,
   })
 }
+
+/** Permanently delete zone; courier links are removed (couriers become unassigned). */
+export async function deleteDeliveryZonePermanent(
+  token: string,
+  id: string,
+): Promise<void> {
+  await apiFetch<undefined>(
+    `/api/delivery-zones/${encodeURIComponent(id)}/permanent`,
+    {
+      method: "DELETE",
+      token,
+    },
+  )
+}

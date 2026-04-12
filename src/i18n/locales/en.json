@@ -789,6 +789,8 @@
     "inactive": "Inactive",
     "edit": "Edit",
     "deactivate": "Deactivate",
+    "deletePermanent": "Delete permanently",
+    "confirmDeletePermanent": "Permanently delete this zone from the database? Courier links will be removed (couriers are not deleted). This cannot be undone.",
     "confirmDeactivate": "Deactivate this zone? Couriers will no longer be linked for region eligibility via this zone.",
     "radiusMeters": "{{m}} m",
     "col": {
@@ -818,6 +820,8 @@
       "longitude": "Longitude",
       "radiusLabel": "Radius: {{m}} m",
       "couriers": "Couriers",
+      "courierInOtherZone": "Currently assigned to: {{zone}}",
+      "courierWillMoveOnSave": "Will move to this zone on save (removed from the previous zone).",
       "active": "Zone active",
       "cancel": "Cancel",
       "save": "Save",
@@ -838,7 +842,9 @@
       "updated": "Zone updated.",
       "saveFailed": "Could not save zone.",
       "deactivated": "Zone deactivated.",
-      "deactivateFailed": "Could not deactivate zone."
+      "deactivateFailed": "Could not deactivate zone.",
+      "deletedPermanent": "Zone deleted permanently.",
+      "deletePermanentFailed": "Could not delete zone."
     }
   },
   "common": {
