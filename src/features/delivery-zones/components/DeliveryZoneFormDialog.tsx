@@ -9,7 +9,9 @@ import {
   listRegionsCatalog,
   patchDeliveryZone,
   type CourierOptionRow,
+  type CreateDeliveryZoneBody,
   type DeliveryZoneRow,
+  type PatchDeliveryZoneBody,
 } from "@/api/delivery-zones-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,6 +34,21 @@ import {
 } from "./DeliveryZoneGoogleMap"
 
 const DEFAULT_CENTER = { lat: 30.0444, lng: 31.2357 }
+
+/** Persisted area/city: manual Arabic, or prefetched label, or English city key if geocoder never ran */
+function resolveAreaZoneForSave(
+  areaZoneAr: string,
+  selectedCityEn: string,
+  cityArLabels: Map<string, string>,
+): string | null {
+  const manual = areaZoneAr.trim()
+  if (manual) return manual
+  if (!selectedCityEn || selectedCityEn === EGYPT_LOCATIONS_CUSTOM_CITY) return null
+  const fromPrefetch = cityArLabels.get(selectedCityEn)?.trim()
+  if (fromPrefetch) return fromPrefetch
+  const en = selectedCityEn.trim()
+  return en || null
+}
 
 type FormMode = "create" | "edit"
 
@@ -274,18 +291,7 @@ export function DeliveryZoneFormDialog({
   }, [open, geocoderReady, showGovernorateDropdown, governorateEn, selectedCityEn])
 
   const createMut = useMutation({
-    mutationFn: () =>
-      createDeliveryZone(token, {
-        name: name.trim() || null,
-        latitude,
-        longitude,
-        radiusMeters,
-        governorate: governorateForApi,
-        areaZone: areaZoneAr.trim() || null,
-        regionId: regionId || null,
-        courierIds: [...courierIds],
-        isActive,
-      }),
+    mutationFn: (body: CreateDeliveryZoneBody) => createDeliveryZone(token, body),
     onSuccess: () => {
       showToast(t("deliveryZones.feedback.created"), "success")
       qc.invalidateQueries({ queryKey: ["delivery-zones"] })
@@ -298,18 +304,8 @@ export function DeliveryZoneFormDialog({
   })
 
   const patchMut = useMutation({
-    mutationFn: () =>
-      patchDeliveryZone(token, initial!.id, {
-        name: name.trim() || null,
-        latitude,
-        longitude,
-        radiusMeters,
-        governorate: governorateForApi,
-        areaZone: areaZoneAr.trim() || null,
-        regionId: regionId || null,
-        courierIds: [...courierIds],
-        isActive,
-      }),
+    mutationFn: (body: PatchDeliveryZoneBody) =>
+      patchDeliveryZone(token, initial!.id, body),
     onSuccess: () => {
       showToast(t("deliveryZones.feedback.updated"), "success")
       qc.invalidateQueries({ queryKey: ["delivery-zones"] })
@@ -330,15 +326,57 @@ export function DeliveryZoneFormDialog({
     })
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canWrite) return
     if (!governorateForApi) {
       showToast(t("deliveryZones.form.governorateRequired"), "error")
       return
     }
-    if (mode === "create") createMut.mutate()
-    else patchMut.mutate()
+
+    let areaZone: string | null = resolveAreaZoneForSave(
+      areaZoneAr,
+      selectedCityEn,
+      cityArLabels,
+    )
+
+    if (
+      !areaZone &&
+      selectedCityEn &&
+      selectedCityEn !== EGYPT_LOCATIONS_CUSTOM_CITY &&
+      governorateEn &&
+      showGovernorateDropdown
+    ) {
+      const r = await geocodeEgyptPlace({
+        cityEn: selectedCityEn,
+        governorateEn,
+      })
+      if (r?.labelAr?.trim()) {
+        areaZone = r.labelAr.trim()
+        setAreaZoneAr(r.labelAr)
+      } else if (selectedCityEn.trim()) {
+        areaZone = selectedCityEn.trim()
+      }
+    }
+
+    const body: CreateDeliveryZoneBody = {
+      name: name.trim() || null,
+      latitude,
+      longitude,
+      radiusMeters,
+      governorate: governorateForApi,
+      areaZone,
+      regionId: regionId || null,
+      courierIds: [...courierIds],
+      isActive,
+    }
+
+    try {
+      if (mode === "create") await createMut.mutateAsync(body)
+      else await patchMut.mutateAsync(body)
+    } catch {
+      /* toast via onError */
+    }
   }
 
   if (!open) return null

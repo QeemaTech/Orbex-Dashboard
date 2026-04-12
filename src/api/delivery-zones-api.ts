@@ -26,6 +26,9 @@ export type CourierOptionRow = {
   id: string
   fullName: string | null
   contactPhone: string | null
+  /** Set when courier is already linked to a geo zone (may be this zone or another). */
+  assignedDeliveryZoneId: string | null
+  assignedZoneLabel: string | null
 }
 
 function qs(params: Record<string, string | boolean | undefined>): string {
