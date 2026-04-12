@@ -306,3 +306,143 @@ export function getWarehouseSite(
     token,
   })
 }
+
+export type CreateWarehouseBody = {
+  name: string
+  governorate: string
+  zone?: string
+  code?: string
+  latitude?: number | string
+  longitude?: number | string
+  address?: string
+  mainBranchId?: string
+  adminUserId?: string
+  isActive?: boolean
+}
+
+export type UpdateWarehouseBody = Partial<CreateWarehouseBody>
+
+export type WarehouseStaffMember = {
+  id: string
+  userId: string
+  roleId: string
+  user: {
+    id: string
+    email: string
+    fullName: string
+    isActive: boolean
+  }
+  role: {
+    id: string
+    name: string
+    nameAr: string | null
+    slug: string
+    displayName: string
+  }
+}
+
+export type WarehouseStaffResponse = {
+  staff: WarehouseStaffMember[]
+  admin: WarehouseSiteAdmin | null
+}
+
+export function createWarehouse(
+  token: string,
+  body: CreateWarehouseBody,
+): Promise<WarehouseSiteRow> {
+  return apiFetch<WarehouseSiteRow>("/api/warehouse/sites", {
+    method: "POST",
+    token,
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateWarehouse(
+  token: string,
+  warehouseId: string,
+  body: UpdateWarehouseBody,
+): Promise<WarehouseSiteRow> {
+  return apiFetch<WarehouseSiteRow>(
+    `/api/warehouse/sites/${encodeURIComponent(warehouseId)}`,
+    {
+      method: "PATCH",
+      token,
+      body: JSON.stringify(body),
+    },
+  )
+}
+
+export function deleteWarehouse(token: string, warehouseId: string): Promise<void> {
+  return apiFetch(`/api/warehouse/sites/${encodeURIComponent(warehouseId)}`, {
+    method: "DELETE",
+    token,
+  })
+}
+
+export function setWarehouseAdmin(
+  token: string,
+  warehouseId: string,
+  userId: string,
+): Promise<WarehouseSiteAdmin> {
+  return apiFetch<WarehouseSiteAdmin>(
+    `/api/warehouse/sites/${encodeURIComponent(warehouseId)}/admin`,
+    {
+      method: "POST",
+      token,
+      body: JSON.stringify({ userId }),
+    },
+  )
+}
+
+export function removeWarehouseAdmin(
+  token: string,
+  warehouseId: string,
+): Promise<void> {
+  return apiFetch(
+    `/api/warehouse/sites/${encodeURIComponent(warehouseId)}/admin`,
+    {
+      method: "DELETE",
+      token,
+    },
+  )
+}
+
+export function listWarehouseStaff(
+  token: string,
+  warehouseId: string,
+): Promise<WarehouseStaffResponse> {
+  return apiFetch<WarehouseStaffResponse>(
+    `/api/warehouse/sites/${encodeURIComponent(warehouseId)}/staff`,
+    { token },
+  )
+}
+
+export function assignWarehouseStaff(
+  token: string,
+  warehouseId: string,
+  userId: string,
+  roleId: string,
+): Promise<WarehouseStaffMember> {
+  return apiFetch<WarehouseStaffMember>(
+    `/api/warehouse/sites/${encodeURIComponent(warehouseId)}/staff`,
+    {
+      method: "POST",
+      token,
+      body: JSON.stringify({ userId, roleId }),
+    },
+  )
+}
+
+export function removeWarehouseStaff(
+  token: string,
+  warehouseId: string,
+  userId: string,
+): Promise<void> {
+  return apiFetch(
+    `/api/warehouse/sites/${encodeURIComponent(warehouseId)}/staff/${encodeURIComponent(userId)}`,
+    {
+      method: "DELETE",
+      token,
+    },
+  )
+}

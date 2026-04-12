@@ -1,14 +1,18 @@
 import React, { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { Warehouse, ChevronDown, ChevronRight } from "react-lucid"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Plus, Users, Pencil, Warehouse, ChevronDown, ChevronRight } from "react-lucid"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-import { listWarehouseSites } from "@/api/warehouse-api"
-import type { WarehouseSiteRow } from "@/api/warehouse-api"
+import {
+  listWarehouseSites,
+  deleteWarehouse,
+  type WarehouseSiteRow,
+} from "@/api/warehouse-api"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { Layout } from "@/components/layout/Layout"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -26,6 +30,9 @@ import {
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
 import { isMainBranch } from "@/lib/warehouse-utils"
+import { showToast } from "@/lib/toast"
+import { WarehouseFormDialog } from "@/features/warehouse/components/WarehouseFormDialog"
+import { WarehouseStaffDialog } from "@/features/warehouse/components/WarehouseStaffDialog"
 
 type WarehouseGroup = {
   mainBranch: WarehouseSiteRow
@@ -37,8 +44,26 @@ export function WarehousesPage() {
   const navigate = useNavigate()
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
+  const qc = useQueryClient()
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [formDialogOpen, setFormDialogOpen] = useState(false)
+  const [formMode, setFormMode] = useState<"create" | "edit">("create")
+  const [editingWarehouse, setEditingWarehouse] = useState<WarehouseSiteRow | null>(null)
+  const [staffDialogOpen, setStaffDialogOpen] = useState(false)
+  const [staffWarehouseId, setStaffWarehouseId] = useState("")
+  const [staffWarehouseName, setStaffWarehouseName] = useState("")
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteWarehouse(token, id),
+    onSuccess: () => {
+      showToast(t("warehouse.feedback.deleted") ?? "Warehouse deleted", "success")
+      qc.invalidateQueries({ queryKey: ["warehouse-sites"] })
+    },
+    onError: (e: Error) => {
+      showToast(e.message ?? t("warehouse.feedback.deleteFailed") ?? "Failed to delete", "error")
+    },
+  })
 
   const isRTL = i18n.language?.startsWith("ar")
 
@@ -74,7 +99,8 @@ export function WarehousesPage() {
     })
   }
 
-  const handleMainBranchClick = (id: string) => {
+  const handleMainBranchClick = (id: string, event: React.MouseEvent) => {
+    event.stopPropagation()
     navigate(`/warehouses/${encodeURIComponent(id)}`)
   }
 
@@ -104,9 +130,22 @@ export function WarehousesPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className={isRTL ? "text-right" : "text-left"}>{t("warehouse.list.tableTitle")}</CardTitle>
-            <CardDescription className={isRTL ? "text-right" : "text-left"}>{t("warehouse.list.tableDescription")}</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className={isRTL ? "text-right" : "text-left"}>{t("warehouse.list.tableTitle")}</CardTitle>
+              <CardDescription className={isRTL ? "text-right" : "text-left"}>{t("warehouse.list.tableDescription")}</CardDescription>
+            </div>
+            <Button
+              type="button"
+              onClick={() => {
+                setFormMode("create")
+                setEditingWarehouse(null)
+                setFormDialogOpen(true)
+              }}
+            >
+              <Plus className="size-4" />
+              {t("warehouse.list.addWarehouse")}
+            </Button>
           </CardHeader>
           <CardContent>
             {sitesQuery.isLoading ? (
@@ -136,6 +175,9 @@ export function WarehousesPage() {
                     <TableHead className={`${textAlignClass} w-[100px]`}>
                       {t("warehouse.list.colLocation")}
                     </TableHead>
+                    <TableHead className={`${textAlignClass} w-[150px]`}>
+                      {t("warehouse.list.colActions")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -143,136 +185,99 @@ export function WarehousesPage() {
                     const isExpanded = expandedIds.has(group.mainBranch.id)
                     return (
                       <React.Fragment key={group.mainBranch.id}>
-                        {/* Main Branch Row */}
                         <TableRow className="hover:bg-muted/50">
                           <TableCell className={`align-middle ${textAlignClass}`}>
                             <div className={`flex items-center gap-2 ${flexJustifyClass}`}>
-                              <button
-                                onClick={(e) => toggleExpand(group.mainBranch.id, e)}
-                                className="hover:bg-muted rounded p-0.5 transition-colors"
-                                aria-label={isExpanded ? "Collapse" : "Expand"}
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="size-4 text-muted-foreground" />
-                                ) : (
-                                  <ChevronRight className={`size-4 text-muted-foreground ${isRTL ? "rotate-180" : ""}`} />
-                                )}
+                              <button onClick={(e) => toggleExpand(group.mainBranch.id, e)} className="hover:bg-muted rounded p-0.5 transition-colors">
+                                {isExpanded ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className={`size-4 text-muted-foreground ${isRTL ? "rotate-180" : ""}`} />}
                               </button>
-                              <button
-                                onClick={() => handleMainBranchClick(group.mainBranch.id)}
-                                className="hover:text-primary transition-colors font-medium"
-                              >
+                              <button onClick={(e) => handleMainBranchClick(group.mainBranch.id, e)} className="hover:text-primary transition-colors font-medium">
                                 {group.mainBranch.name}
                               </button>
-                              <Badge variant="outline" className="text-xs font-normal">
-                                {t("warehouse.list.mainBranch")}
-                              </Badge>
+                              <Badge variant="outline" className="text-xs font-normal">{t("warehouse.list.mainBranch")}</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className={`align-middle ${textAlignClass}`}>{group.mainBranch.governorate}</TableCell>
+                          <TableCell className={`align-middle ${textAlignClass}`}>{group.mainBranch.zone ?? "—"}</TableCell>
+                          <TableCell className={`align-middle ${textAlignClass} tabular-nums`}>{typeof group.mainBranch.transferCount === "number" ? group.mainBranch.transferCount : "—"}</TableCell>
+                          <TableCell className={`align-middle ${textAlignClass}`}>
+                            <div className={`flex ${flexJustifyClass}`}>
+                              <CoordinatesMapLink latitude={group.mainBranch.latitude} longitude={group.mainBranch.longitude} stopPropagation />
                             </div>
                           </TableCell>
                           <TableCell className={`align-middle ${textAlignClass}`}>
-                            {group.mainBranch.governorate}
-                          </TableCell>
-                          <TableCell className={`align-middle ${textAlignClass}`}>
-                            {group.mainBranch.zone ?? "—"}
-                          </TableCell>
-                          <TableCell className={`align-middle ${textAlignClass} tabular-nums`}>
-                            {typeof group.mainBranch.transferCount === "number"
-                              ? group.mainBranch.transferCount
-                              : "—"}
-                          </TableCell>
-                          <TableCell className={`align-middle ${textAlignClass}`}>
-                            <div className={`flex ${flexJustifyClass}`}>
-                              <CoordinatesMapLink
-                                latitude={group.mainBranch.latitude}
-                                longitude={group.mainBranch.longitude}
-                                stopPropagation
-                              />
+                            <div className="flex gap-1">
+                              <Button type="button" variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setFormMode("edit"); setEditingWarehouse(group.mainBranch); setFormDialogOpen(true) }}>
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button type="button" variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setStaffWarehouseId(group.mainBranch.id); setStaffWarehouseName(group.mainBranch.name); setStaffDialogOpen(true) }}>
+                                <Users className="size-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
-
-                        {/* Sub-branches Rows (only when expanded) */}
-                        {isExpanded &&
-                          group.subBranches.map((sub) => (
-                            <TableRow
-                              key={sub.id}
-                              className="hover:bg-muted/50 cursor-pointer bg-muted/30"
-                              onClick={(e) => handleSubBranchClick(sub.id, e)}
-                            >
-                              <TableCell className={`align-middle ${textAlignClass} font-medium`}>
-                                <div className={`flex items-center gap-2 ${flexJustifyClass}`}>
-                                  <span className="w-6" /> {/* Spacer for alignment */}
+                        {isExpanded && group.subBranches.map((sub) => (
+                          <TableRow key={sub.id} className="hover:bg-muted/50 bg-muted/30 cursor-pointer" onClick={(e) => handleSubBranchClick(sub.id, e)}>
+                            <TableCell className={`align-middle ${textAlignClass} font-medium`}>
+                              <div className={`flex items-center gap-2 ${flexJustifyClass}`}>
+                                <span className="w-6" />
+                                <button onClick={(e) => handleSubBranchClick(sub.id, e)} className="hover:text-primary transition-colors">
                                   {sub.name}
-                                  <Badge variant="secondary" className="text-xs font-normal">
-                                    {t("warehouse.list.subBranch")}
-                                  </Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell className={`align-middle ${textAlignClass}`}>
-                                {sub.governorate}
-                              </TableCell>
-                              <TableCell className={`align-middle ${textAlignClass}`}>
-                                {sub.zone ?? "—"}
-                              </TableCell>
-                              <TableCell className={`align-middle ${textAlignClass} tabular-nums`}>
-                                {typeof sub.transferCount === "number" ? sub.transferCount : "—"}
-                              </TableCell>
-                              <TableCell className={`align-middle ${textAlignClass}`}>
-                                <div className={`flex ${flexJustifyClass}`}>
-                                  <CoordinatesMapLink
-                                    latitude={sub.latitude}
-                                    longitude={sub.longitude}
-                                    stopPropagation
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                </button>
+                                <Badge variant="secondary" className="text-xs font-normal">{t("warehouse.list.subBranch")}</Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className={`align-middle ${textAlignClass}`}>{sub.governorate}</TableCell>
+                            <TableCell className={`align-middle ${textAlignClass}`}>{sub.zone ?? "—"}</TableCell>
+                            <TableCell className={`align-middle ${textAlignClass} tabular-nums`}>{typeof sub.transferCount === "number" ? sub.transferCount : "—"}</TableCell>
+                            <TableCell className={`align-middle ${textAlignClass}`}>
+                              <div className={`flex ${flexJustifyClass}`}>
+                                <CoordinatesMapLink latitude={sub.latitude} longitude={sub.longitude} stopPropagation />
+                              </div>
+                            </TableCell>
+                            <TableCell className={`align-middle ${textAlignClass}`}>
+                              <div className="flex gap-1">
+                                <Button type="button" variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setFormMode("edit"); setEditingWarehouse(sub); setFormDialogOpen(true) }}>
+                                  <Pencil className="size-4" />
+                                </Button>
+                                <Button type="button" variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setStaffWarehouseId(sub.id); setStaffWarehouseName(sub.name); setStaffDialogOpen(true) }}>
+                                  <Users className="size-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </React.Fragment>
                     )
                   })}
-
-                  {/* Orphan Sub-branches */}
-                  {orphanSubBranches.map((w) => (
-                    <TableRow
-                      key={w.id}
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={(e) => handleSubBranchClick(w.id, e)}
-                    >
-                      <TableCell className={`align-middle ${textAlignClass} font-medium`}>
-                        <div className={`flex items-center gap-2 ${flexJustifyClass}`}>
-                          {w.name}
-                          <Badge variant="secondary" className="text-xs font-normal">
-                            {t("warehouse.list.subBranch")}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className={`align-middle ${textAlignClass}`}>
-                        {w.governorate}
-                      </TableCell>
-                      <TableCell className={`align-middle ${textAlignClass}`}>
-                        {w.zone ?? "—"}
-                      </TableCell>
-                      <TableCell className={`align-middle ${textAlignClass} tabular-nums`}>
-                        {typeof w.transferCount === "number" ? w.transferCount : "—"}
-                      </TableCell>
-                      <TableCell className={`align-middle ${textAlignClass}`}>
-                        <div className={`flex ${flexJustifyClass}`}>
-                          <CoordinatesMapLink
-                            latitude={w.latitude}
-                            longitude={w.longitude}
-                            stopPropagation
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
                 </TableBody>
               </Table>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {formDialogOpen && (
+        <WarehouseFormDialog
+          open={formDialogOpen}
+          mode={formMode}
+          initial={editingWarehouse}
+          token={token}
+          onOpenChange={setFormDialogOpen}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["warehouse-sites"] })}
+        />
+      )}
+
+      {staffDialogOpen && (
+        <WarehouseStaffDialog
+          open={staffDialogOpen}
+          warehouseId={staffWarehouseId}
+          warehouseName={staffWarehouseName}
+          token={token}
+          onOpenChange={setStaffDialogOpen}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["warehouse-staff", staffWarehouseId] })}
+        />
+      )}
     </Layout>
   )
 }

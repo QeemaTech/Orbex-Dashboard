@@ -10,11 +10,17 @@ export type PermissionRow = {
 export type RoleRow = {
   id: string
   name: string
+  nameAr: string | null
   slug: string
   description: string | null
+  descriptionAr: string | null
   isSystem: boolean
   builtInRank: number | null
   permissions: string[]
+  displayName: string
+  displayDescription: string | null
+  requiresWarehouse: boolean
+  requiresAdminWarehouse: boolean
 }
 
 export async function listPermissions(token: string): Promise<PermissionRow[]> {
@@ -24,16 +30,15 @@ export async function listPermissions(token: string): Promise<PermissionRow[]> {
   return res.permissions
 }
 
-export async function listRoles(token: string): Promise<RoleRow[]> {
-  const res = await apiFetch<{ roles: RoleRow[] }>("/api/rbac/roles", {
-    token,
-  })
+export async function listRoles(token: string, lang?: string): Promise<RoleRow[]> {
+  const url = lang ? `/api/rbac/roles?lang=${lang}` : "/api/rbac/roles"
+  const res = await apiFetch<{ roles: RoleRow[] }>(url, { token })
   return res.roles
 }
 
 export async function createRole(params: {
   token: string
-  body: { name: string; slug: string; description?: string; permissions?: string[] }
+  body: { name: string; nameAr?: string; description?: string; descriptionAr?: string; permissions?: string[] }
 }): Promise<RoleRow> {
   const res = await apiFetch<{ role: RoleRow }>("/api/rbac/roles", {
     method: "POST",
@@ -46,7 +51,7 @@ export async function createRole(params: {
 export async function updateRole(params: {
   token: string
   id: string
-  body: { name?: string; description?: string | null }
+  body: { name?: string; nameAr?: string; description?: string; descriptionAr?: string }
 }): Promise<RoleRow> {
   const res = await apiFetch<{ role: RoleRow }>(`/api/rbac/roles/${params.id}`, {
     method: "PATCH",

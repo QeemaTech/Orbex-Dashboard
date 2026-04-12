@@ -388,11 +388,57 @@
       "subtitle": "كل صف يمثل مركزًا. افتح المخزن لعرض دفعات طلبات التجار وأدوات المسح والمؤشرات لهذا الموقع فقط.",
       "tableTitle": "المخازن",
       "tableDescription": "انقر صفًا لفتح تفاصيل المخزن ونشاط طلبات التجار لهذا المركز.",
-      "colMerchantOrderBatches": "دفعات طلبات التجار",
+      "colTransfers": "النقل",
       "colLocation": "الموقع",
       "openMap": "فتح على الخريطة",
       "mainBranch": "فرع رئيسي",
-      "subBranch": "فرع فرعي"
+      "subBranch": "فرع فرعي",
+      "addWarehouse": "إضافة مخزن",
+      "colActions": "الإجراءات",
+      "colMerchantOrderBatches": "الطلبات"
+    },
+    "form": {
+      "createTitle": "إنشاء مخزن",
+      "editTitle": "تعديل المخزن",
+      "name": "الاسم",
+      "namePlaceholder": "اسم المخزن",
+      "governorate": "المحافظة",
+      "governoratePlaceholder": "مثال: القاهرة",
+      "zone": "المنطقة",
+      "zonePlaceholder": "مثال: شمال",
+      "code": "الرمز",
+      "codePlaceholder": "رمز المخزن (اختياري)",
+      "address": "العنوان",
+      "addressPlaceholder": "العنوان الكامل (اختياري)",
+      "locationLink": "رابط الموقع",
+      "locationLinkPlaceholder": "رابط خرائط Google أو إحداثيات",
+      "mainBranch": "الفرع الرئيسي",
+      "selectMainBranch": "اختر فرعًا رئيسيًا (اختياري)",
+      "adminUser": "مشرف المخزن",
+      "selectAdmin": "اختر مستخدمًا مشرفًا (اختياري)",
+      "isActive": "نشط"
+    },
+    "feedback": {
+      "created": "تم إنشاء المخزن بنجاح.",
+      "createFailed": "فشل في إنشاء المخزن.",
+      "updated": "تم تحديث المخزن بنجاح.",
+      "updateFailed": "فشل في تحديث المخزن.",
+      "deleted": "تم حذف المخزن بنجاح.",
+      "deleteFailed": "فشل في حذف المخزن."
+    },
+    "staff": {
+      "title": "إدارة الموظفين",
+      "add": "إضافة موظف",
+      "addForm": "إضافة موظف جديد",
+      "user": "المستخدم",
+      "selectUser": "اختر مستخدمًا",
+      "role": "الدور",
+      "selectRole": "اختر دورًا",
+      "added": "تمت إضافة الموظف بنجاح.",
+      "addFailed": "فشل في إضافة الموظف.",
+      "removed": "تمت إزالة الموظف.",
+      "removeFailed": "فشل في إزالة الموظف.",
+      "admin": "المشرف"
     },
     "detail": {
       "pageTitle": "المخزن",
@@ -474,6 +520,7 @@
       "description": "استخدم رقم تتبع الطلب لتنفيذ مسح الدخول/الخروج، تسجيل المرتجع، أو الاطلاع على حالة الشحنة.",
       "trackingPlaceholder": "رقم تتبع الطلب",
       "trackNeedsTracking": "استخدم رقم التتبع للبحث، أو افتح الطلب من القائمة.",
+      "enterValidTracking": "الرجاء إدخال رقم تتبع صحيح.",
       "discountPlaceholder": "قيمة خصم المرتجع (اختياري)",
       "scanIn": "مسح دخول",
       "scanOut": "مسح خروج",
@@ -730,6 +777,13 @@
     "delete": "حذف",
     "loading": "جارٍ التحميل...",
     "close": "إغلاق",
-    "system": "نظامي"
+    "system": "نظامي",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "create": "إنشاء",
+    "add": "إضافة",
+    "saving": "جارٍ الحفظ...",
+    "processing": "جارٍ المعالجة...",
+    "searching": "جارٍ البحث..."
   }
 }
