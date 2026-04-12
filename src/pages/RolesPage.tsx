@@ -51,21 +51,24 @@ function RoleFormDialog({
 }) {
   const { t } = useTranslation()
   const [name, setName] = useState("")
-  const [slug, setSlug] = useState("")
+  const [nameAr, setNameAr] = useState("")
   const [description, setDescription] = useState("")
+  const [descriptionAr, setDescriptionAr] = useState("")
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!open) return
     if (mode === "edit" && initial) {
       setName(initial.name)
-      setSlug(initial.slug)
+      setNameAr(initial.nameAr ?? "")
       setDescription(initial.description ?? "")
+      setDescriptionAr(initial.descriptionAr ?? "")
       setSelected(new Set(initial.permissions))
     } else {
       setName("")
-      setSlug("")
+      setNameAr("")
       setDescription("")
+      setDescriptionAr("")
       setSelected(new Set())
     }
   }, [open, mode, initial])
@@ -85,8 +88,9 @@ function RoleFormDialog({
         token,
         body: {
           name: name.trim(),
-          slug: slug.trim(),
+          nameAr: nameAr.trim() || undefined,
           description: description.trim() || undefined,
+          descriptionAr: descriptionAr.trim() || undefined,
           permissions: Array.from(selected),
         },
       }),
@@ -108,7 +112,9 @@ function RoleFormDialog({
         id: initial.id,
         body: {
           name: name.trim() || undefined,
+          nameAr: nameAr.trim() || undefined,
           description: description.trim(),
+          descriptionAr: descriptionAr.trim() || undefined,
         },
       })
       await setRolePermissions({
@@ -170,19 +176,20 @@ function RoleFormDialog({
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
             <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">{t("rbac.form.slug", "Slug")}</span>
-              <Input
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                required
-                disabled={mode === "edit"}
-              />
+              <span className="text-muted-foreground">{t("rbac.form.nameAr", "Arabic Name")}</span>
+              <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder={t("rbac.form.nameArPlaceholder", "Optional")} />
             </label>
             <label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">
                 {t("rbac.form.description", "Description")}
               </span>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                {t("rbac.form.descriptionAr", "Arabic Description")}
+              </span>
+              <Input value={descriptionAr} onChange={(e) => setDescriptionAr(e.target.value)} placeholder={t("rbac.form.descriptionArPlaceholder", "Optional")} />
             </label>
           </div>
 
@@ -240,7 +247,7 @@ function RoleFormDialog({
 }
 
 export function RolesPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user, accessToken } = useAuth()
   const token = accessToken ?? ""
   const qc = useQueryClient()
@@ -250,8 +257,8 @@ export function RolesPage() {
   const auditPageSize = 20
 
   const rolesQuery = useQuery({
-    queryKey: ["rbac-roles", token],
-    queryFn: () => listRoles(token),
+    queryKey: ["rbac-roles", token, i18n.language],
+    queryFn: () => listRoles(token, i18n.language),
     enabled: !!token,
   })
 
@@ -329,7 +336,6 @@ export function RolesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("rbac.table.name")}</TableHead>
-                    <TableHead>{t("rbac.table.slug")}</TableHead>
                     <TableHead>{t("rbac.table.description")}</TableHead>
                     <TableHead>{t("rbac.table.permissions")}</TableHead>
                     <TableHead>{t("rbac.table.type")}</TableHead>
@@ -339,10 +345,14 @@ export function RolesPage() {
                 <TableBody>
                   {roles.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{r.slug}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>{r.displayName}</div>
+                        {i18n.language.startsWith("en") && r.nameAr && (
+                          <div className="text-muted-foreground text-sm">{r.nameAr}</div>
+                        )}
+                      </TableCell>
                       <TableCell className="max-w-[240px] truncate text-sm text-muted-foreground">
-                        {r.description ?? "—"}
+                        {r.displayDescription ?? "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">

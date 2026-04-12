@@ -183,7 +183,7 @@ function ManageRolesDialog({
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{role.name}</span>
+                    <span className="font-medium">{role.displayName}</span>
                     {role.isSystem ? (
                       <Badge variant="outline" className="text-2xs">
                         {t("users.roles.system") ?? "System"}
@@ -191,7 +191,7 @@ function ManageRolesDialog({
                     ) : null}
                   </div>
                   <p className="text-muted-foreground text-xs">
-                    {role.description ?? role.slug}
+                    {role.displayDescription ?? role.slug}
                   </p>
                   <p className="text-muted-foreground text-[11px]">
                     {role.permissions.slice(0, 4).join(", ")}
@@ -217,6 +217,7 @@ function UserFormDialog({
   mode,
   initial,
   token,
+  roles,
   onOpenChange,
   onSuccess,
 }: {
@@ -224,6 +225,7 @@ function UserFormDialog({
   mode: UserFormMode
   initial: UserPublicRow | null
   token: string
+  roles: RoleRow[]
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
 }) {
@@ -231,7 +233,7 @@ function UserFormDialog({
   const [accountEmail, setAccountEmail] = useState("")
   const [fullName, setFullName] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState<ManagedStaffRole>("CUSTOMER_SERVICE")
+  const [role, setRole] = useState(roles[0]?.slug ?? "")
   const [warehouseId, setWarehouseId] = useState("")
   const [adminWarehouseId, setAdminWarehouseId] = useState("")
   const [isActive, setIsActive] = useState(true)
@@ -256,7 +258,7 @@ function UserFormDialog({
       setAccountEmail("")
       setFullName("")
       setPassword("")
-      setRole("CUSTOMER_SERVICE")
+      setRole(roles[0]?.slug ?? "")
       setWarehouseId("")
       setAdminWarehouseId("")
       setIsActive(true)
@@ -265,10 +267,11 @@ function UserFormDialog({
 
   const createMut = useMutation({
     mutationFn: () => {
-      if (role === "WAREHOUSE" && !warehouseId.trim()) {
+      const selectedRole = roles.find((r) => r.slug === role)
+      if (selectedRole?.requiresWarehouse && !warehouseId.trim()) {
         throw new Error(t("users.form.errors.warehouseRequired"))
       }
-      if (role === "WAREHOUSE_ADMIN" && !adminWarehouseId.trim()) {
+      if (selectedRole?.requiresAdminWarehouse && !adminWarehouseId.trim()) {
         throw new Error(t("users.form.errors.adminWarehouseRequired"))
       }
       return createStaffUser({
@@ -278,8 +281,8 @@ function UserFormDialog({
           fullName: fullName.trim(),
           password,
           role,
-          ...(role === "WAREHOUSE" ? { warehouseId: warehouseId.trim() } : {}),
-          ...(role === "WAREHOUSE_ADMIN"
+          ...(selectedRole?.requiresWarehouse ? { warehouseId: warehouseId.trim() } : {}),
+          ...(selectedRole?.requiresAdminWarehouse
             ? { adminWarehouseId: adminWarehouseId.trim() }
             : {}),
           isActive,
@@ -423,11 +426,11 @@ function UserFormDialog({
               id="user-role"
               className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
               value={role}
-              onChange={(e) => setRole(e.target.value as ManagedStaffRole)}
+              onChange={(e) => setRole(e.target.value)}
             >
-              {MANAGED_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {t(`users.roles.${r}`)}
+              {roles.map((r) => (
+                <option key={r.id} value={r.slug}>
+                  {r.displayName}
                 </option>
               ))}
             </select>
@@ -573,7 +576,7 @@ function DeactivateConfirmDialog({
 }
 
 export function UsersPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { accessToken, user: authUser } = useAuth()
   const token = accessToken ?? ""
   const [searchParams, setSearchParams] = useSearchParams()
@@ -704,8 +707,8 @@ export function UsersPage() {
     searchQ.trim().length > 0 || !!roleFilter || isActiveFilter !== undefined
 
   const rolesQuery = useQuery({
-    queryKey: ["rbac-roles", token],
-    queryFn: () => listRoles(token),
+    queryKey: ["rbac-roles", token, i18n.language],
+    queryFn: () => listRoles(token, i18n.language),
     enabled: !!token,
   })
   const canManageRoles = (authUser?.permissions ?? []).includes("users.roles")
@@ -970,6 +973,7 @@ export function UsersPage() {
         mode="create"
         initial={null}
         token={token}
+        roles={rolesQuery.data ?? []}
         onOpenChange={setCreateOpen}
         onSuccess={invalidateUsers}
       />
@@ -978,6 +982,7 @@ export function UsersPage() {
         mode="edit"
         initial={editRow}
         token={token}
+        roles={rolesQuery.data ?? []}
         onOpenChange={(o) => {
           if (!o) setEditRow(null)
         }}

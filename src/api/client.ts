@@ -83,6 +83,9 @@ export async function apiFetch<T>(
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json")
   }
+  // Add Accept-Language header based on stored locale
+  const storedLocale = localStorage.getItem("i18nextLng") || "en"
+  headers.set("Accept-Language", storedLocale)
   const storedAccess = localStorage.getItem(STORAGE_ACCESS)
   const authToken = storedAccess ?? init?.token ?? null
   if (authToken) {
