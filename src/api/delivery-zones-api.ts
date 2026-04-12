@@ -6,6 +6,12 @@ export type RegionCatalogRow = {
   code: string
 }
 
+export type DeliveryZoneCourierSummary = {
+  id: string
+  fullName: string | null
+  contactPhone: string | null
+}
+
 export type DeliveryZoneRow = {
   id: string
   name: string | null
@@ -20,6 +26,8 @@ export type DeliveryZoneRow = {
   createdAt: string
   updatedAt: string
   courierIds: string[]
+  /** Populated by API with name/phone; falls back to ids if missing (older servers). */
+  couriers?: DeliveryZoneCourierSummary[]
 }
 
 export type CourierOptionRow = {

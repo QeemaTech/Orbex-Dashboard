@@ -32,6 +32,32 @@ import { DeliveryZoneFormDialog } from "@/features/delivery-zones/components/Del
 import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
 
+function renderZoneCouriersCell(z: DeliveryZoneRow) {
+  const rows =
+    z.couriers && z.couriers.length > 0
+      ? z.couriers
+      : z.courierIds.map((id) => ({
+          id,
+          fullName: null,
+          contactPhone: null,
+        }))
+  if (rows.length === 0) {
+    return <span className="text-muted-foreground">—</span>
+  }
+  return (
+    <ul className="max-h-36 space-y-1 overflow-y-auto text-xs leading-snug">
+      {rows.map((c) => (
+        <li key={c.id}>
+          <span className="font-medium">{c.fullName ?? c.id}</span>
+          {c.contactPhone ? (
+            <span className="text-muted-foreground"> · {c.contactPhone}</span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function DeliveryZonesPage() {
   const { t } = useTranslation()
   const { accessToken, user } = useAuth()
@@ -143,7 +169,9 @@ export function DeliveryZonesPage() {
                       <TableCell>
                         {t("deliveryZones.radiusMeters", { m: z.radiusMeters })}
                       </TableCell>
-                      <TableCell>{z.courierIds.length}</TableCell>
+                      <TableCell className="max-w-[16rem] align-top">
+                        {renderZoneCouriersCell(z)}
+                      </TableCell>
                       <TableCell>
                         <CoordinatesMapLink
                           latitude={z.latitude}
