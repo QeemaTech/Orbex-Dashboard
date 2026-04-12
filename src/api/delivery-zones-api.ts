@@ -1,0 +1,136 @@
+import { apiFetch } from "@/api/client"
+
+export type RegionCatalogRow = {
+  id: string
+  name: string
+  code: string
+}
+
+export type DeliveryZoneRow = {
+  id: string
+  name: string | null
+  latitude: string
+  longitude: string
+  radiusMeters: number
+  governorate: string
+  areaZone: string | null
+  regionId: string | null
+  region: RegionCatalogRow | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  courierIds: string[]
+}
+
+export type CourierOptionRow = {
+  id: string
+  fullName: string | null
+  contactPhone: string | null
+}
+
+function qs(params: Record<string, string | boolean | undefined>): string {
+  const u = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === "") continue
+    u.set(key, String(value))
+  }
+  const query = u.toString()
+  return query ? `?${query}` : ""
+}
+
+export async function listRegionsCatalog(token: string): Promise<{
+  regions: RegionCatalogRow[]
+}> {
+  return apiFetch("/api/regions", { token })
+}
+
+export async function listDeliveryZones(
+  token: string,
+  params?: {
+    governorate?: string
+    regionId?: string
+    isActive?: boolean
+  },
+): Promise<{ zones: DeliveryZoneRow[] }> {
+  const query = qs({
+    governorate: params?.governorate,
+    regionId: params?.regionId,
+    isActive:
+      params?.isActive === true
+        ? "true"
+        : params?.isActive === false
+          ? "false"
+          : undefined,
+  })
+  return apiFetch(`/api/delivery-zones${query}`, { token })
+}
+
+export async function getDeliveryZone(
+  token: string,
+  id: string,
+): Promise<{ zone: DeliveryZoneRow }> {
+  return apiFetch(`/api/delivery-zones/${encodeURIComponent(id)}`, { token })
+}
+
+export async function listDeliveryZoneCourierOptions(token: string): Promise<{
+  couriers: CourierOptionRow[]
+}> {
+  return apiFetch("/api/delivery-zones/courier-options", { token })
+}
+
+export type CreateDeliveryZoneBody = {
+  name?: string | null
+  latitude: number
+  longitude: number
+  radiusMeters: number
+  governorate: string
+  areaZone?: string | null
+  regionId?: string | null
+  courierIds: string[]
+  isActive?: boolean
+}
+
+export async function createDeliveryZone(
+  token: string,
+  body: CreateDeliveryZoneBody,
+): Promise<{ zone: DeliveryZoneRow }> {
+  return apiFetch("/api/delivery-zones", {
+    method: "POST",
+    token,
+    body: JSON.stringify(body),
+  })
+}
+
+export type PatchDeliveryZoneBody = {
+  name?: string | null
+  latitude?: number
+  longitude?: number
+  radiusMeters?: number
+  governorate?: string
+  areaZone?: string | null
+  regionId?: string | null
+  courierIds?: string[]
+  isActive?: boolean
+}
+
+export async function patchDeliveryZone(
+  token: string,
+  id: string,
+  body: PatchDeliveryZoneBody,
+): Promise<{ zone: DeliveryZoneRow }> {
+  return apiFetch(`/api/delivery-zones/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    token,
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deactivateDeliveryZone(
+  token: string,
+  id: string,
+): Promise<void> {
+  await apiFetch<undefined>(`/api/delivery-zones/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    token,
+  })
+}

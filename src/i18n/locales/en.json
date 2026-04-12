@@ -12,6 +12,7 @@
     "roles": "Roles",
     "collections": "Collections",
     "warehouses": "Warehouses",
+    "deliveryZones": "Delivery zones",
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
   },
@@ -773,6 +774,61 @@
       "deactivateFailed": "تعذّر تعطيل المستخدم.",
       "activated": "تم تفعيل المستخدم.",
       "activateFailed": "تعذّر تفعيل المستخدم."
+    }
+  },
+  "deliveryZones": {
+    "pageTitle": "Delivery zones",
+    "cardTitle": "Geo delivery zones",
+    "cardDescription": "Define a center point and radius on the map, link to governorate and optional operational region, and assign couriers.",
+    "addZone": "Add zone",
+    "loading": "Loading zones…",
+    "empty": "No delivery zones yet.",
+    "loadingCouriers": "Loading couriers…",
+    "emptyCouriers": "No active couriers.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "confirmDeactivate": "Deactivate this zone? Couriers will no longer be linked for region eligibility via this zone.",
+    "radiusMeters": "{{m}} m",
+    "col": {
+      "name": "Name",
+      "governorate": "Governorate",
+      "area": "Area",
+      "region": "Region",
+      "radius": "Radius",
+      "couriers": "Couriers",
+      "center": "Map",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "form": {
+      "title": "Delivery zone",
+      "createTitle": "New delivery zone",
+      "editTitle": "Edit delivery zone",
+      "close": "Close",
+      "name": "Label (optional)",
+      "governorate": "Governorate",
+      "areaZone": "Area / district",
+      "region": "Operational region",
+      "regionNone": "None",
+      "mapHint": "Click the map to set the zone center (pin).",
+      "mapNoKey": "Set VITE_GOOGLE_MAPS_API_KEY to enable the interactive map; you can still enter coordinates below.",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "radiusLabel": "Radius: {{m}} m",
+      "couriers": "Couriers",
+      "active": "Zone active",
+      "cancel": "Cancel",
+      "save": "Save",
+      "governorateRequired": "Governorate is required."
+    },
+    "feedback": {
+      "created": "Zone created.",
+      "updated": "Zone updated.",
+      "saveFailed": "Could not save zone.",
+      "deactivated": "Zone deactivated.",
+      "deactivateFailed": "Could not deactivate zone."
     }
   },
   "common": {

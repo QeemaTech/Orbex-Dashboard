@@ -11,6 +11,7 @@
     "users": "المستخدمون",
     "collections": "التحصيل",
     "warehouses": "المخازن",
+    "deliveryZones": "مناطق التوصيل",
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء",
     "roles": "الأدوار"
@@ -770,6 +771,61 @@
       "deactivateFailed": "تعذّر تعطيل المستخدم.",
       "activated": "تم تفعيل المستخدم.",
       "activateFailed": "تعذّر تفعيل المستخدم."
+    }
+  },
+  "deliveryZones": {
+    "pageTitle": "مناطق التوصيل الجغرافية",
+    "cardTitle": "مناطق التوصيل على الخريطة",
+    "cardDescription": "حدد مركز المنطقة ونصف القطر على الخريطة، واربط المحافظة والمنطقة التشغيلية (اختياري)، وعيّن المناديب.",
+    "addZone": "إضافة منطقة",
+    "loading": "جاري تحميل المناطق…",
+    "empty": "لا توجد مناطق بعد.",
+    "loadingCouriers": "جاري تحميل المناديب…",
+    "emptyCouriers": "لا يوجد مناديب نشطون.",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "edit": "تعديل",
+    "deactivate": "تعطيل",
+    "confirmDeactivate": "تعطيل هذه المنطقة؟ لن يُحتسب ربط المناديب عبرها لصلاحية الـ region.",
+    "radiusMeters": "{{m}} م",
+    "col": {
+      "name": "الاسم",
+      "governorate": "المحافظة",
+      "area": "المنطقة",
+      "region": "المنطقة التشغيلية",
+      "radius": "نصف القطر",
+      "couriers": "المناديب",
+      "center": "الخريطة",
+      "status": "الحالة",
+      "actions": "إجراءات"
+    },
+    "form": {
+      "title": "منطقة توصيل",
+      "createTitle": "منطقة توصيل جديدة",
+      "editTitle": "تعديل منطقة التوصيل",
+      "close": "إغلاق",
+      "name": "اسم للعرض (اختياري)",
+      "governorate": "المحافظة",
+      "areaZone": "المنطقة / الحي",
+      "region": "المنطقة التشغيلية",
+      "regionNone": "بدون",
+      "mapHint": "انقر على الخريطة لتحديد مركز المنطقة (الدبوس).",
+      "mapNoKey": "عيّن VITE_GOOGLE_MAPS_API_KEY لتفعيل الخريطة التفاعلية؛ يمكنك إدخال الإحداثيات يدوياً.",
+      "latitude": "خط العرض",
+      "longitude": "خط الطول",
+      "radiusLabel": "نصف القطر: {{m}} م",
+      "couriers": "المناديب",
+      "active": "المنطقة نشطة",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "governorateRequired": "المحافظة مطلوبة."
+    },
+    "feedback": {
+      "created": "تم إنشاء المنطقة.",
+      "updated": "تم تحديث المنطقة.",
+      "saveFailed": "تعذّر حفظ المنطقة.",
+      "deactivated": "تم تعطيل المنطقة.",
+      "deactivateFailed": "تعذّر تعطيل المنطقة."
     }
   },
   "common": {
