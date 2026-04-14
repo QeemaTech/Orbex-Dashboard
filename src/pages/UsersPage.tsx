@@ -44,12 +44,10 @@ import {
 } from "@/components/ui/table"
 import {
   listRoles,
-  listUserRoles,
-  addUserRole,
-  removeUserRole,
   type RoleRow,
 } from "@/api/rbac-api"
 import { useAuth } from "@/lib/auth-context"
+import { localizedRoleName } from "@/lib/localized-role"
 import { showToast } from "@/lib/toast"
 
 const MANAGED_ROLES: ManagedStaffRole[] = [
@@ -60,8 +58,37 @@ const MANAGED_ROLES: ManagedStaffRole[] = [
   "SALES",
 ]
 
-function isManagedStaffRole(value: string): value is ManagedStaffRole {
-  return (MANAGED_ROLES as readonly string[]).includes(value)
+/**
+ * Roles hidden from the Users create/edit dropdown: merchant and courier need
+ * different API payloads (nested merchant/courier bodies), not this staff form.
+ * Custom RBAC roles are included so newly created roles appear here.
+ */
+const ROLE_SLUGS_EXCLUDED_FROM_USER_FORM = new Set(["merchant", "courier"])
+
+const LEGACY_USER_ROLE_TO_STAFF_SLUG: Partial<Record<string, string>> = {
+  WAREHOUSE: "warehouse_staff",
+  WAREHOUSE_ADMIN: "warehouse_admin",
+  CUSTOMER_SERVICE: "customer_service",
+  SALES: "sales",
+  ACCOUNTS: "accounts",
+}
+
+function staffSlugForUserRow(row: UserPublicRow, fallbackSlug: string): string {
+  const fromRbac = row.rbacRoles?.[0]?.slug
+  if (fromRbac) return fromRbac
+  if (row.role && LEGACY_USER_ROLE_TO_STAFF_SLUG[row.role]) {
+    return LEGACY_USER_ROLE_TO_STAFF_SLUG[row.role]!
+  }
+  return fallbackSlug
+}
+
+const SLUG_TO_MANAGED_LEGACY: Record<string, ManagedStaffRole> = {
+  warehouse_staff: "WAREHOUSE",
+  warehouse: "WAREHOUSE",
+  warehouse_admin: "WAREHOUSE_ADMIN",
+  customer_service: "CUSTOMER_SERVICE",
+  sales: "SALES",
+  accounts: "ACCOUNTS",
 }
 
 type StatIcon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>
@@ -97,121 +124,6 @@ const ROLE_STAT_CARD: Record<
 
 type UserFormMode = "create" | "edit"
 
-function ManageRolesDialog({
-  open,
-  user,
-  token,
-  roles,
-  onOpenChange,
-  onChanged,
-}: {
-  open: boolean
-  user: UserPublicRow | null
-  token: string
-  roles: RoleRow[]
-  onOpenChange: (open: boolean) => void
-  onChanged: () => void
-}) {
-  const { t } = useTranslation()
-  const rolesQuery = useQuery({
-    queryKey: ["rbac-user-roles", user?.id, token],
-    queryFn: () => listUserRoles({ token, userId: user!.id }),
-    enabled: open && !!user && !!token,
-  })
-
-  const addMut = useMutation({
-    mutationFn: (roleId: string) => addUserRole({ token, userId: user!.id, roleId }),
-    onSuccess: () => {
-      void rolesQuery.refetch()
-      onChanged()
-      showToast(t("users.feedback.rolesUpdated") ?? "Roles updated", "success")
-    },
-    onError: (e) => showToast(e instanceof Error ? e.message : "Failed to update roles", "error"),
-  })
-
-  const removeMut = useMutation({
-    mutationFn: (roleId: string) => removeUserRole({ token, userId: user!.id, roleId }),
-    onSuccess: () => {
-      void rolesQuery.refetch()
-      onChanged()
-      showToast(t("users.feedback.rolesUpdated") ?? "Roles updated", "success")
-    },
-    onError: (e) => showToast(e instanceof Error ? e.message : "Failed to update roles", "error"),
-  })
-
-  if (!open || !user) return null
-
-  const assignedIds = new Set(rolesQuery.data?.map((r) => r.roleId))
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-card w-full max-w-lg rounded-lg border shadow-xl">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div>
-            <p className="text-sm font-semibold">
-              {t("users.roles.manageTitle", { email: user.email })}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              {t("users.roles.manageHint") ?? "Assign RBAC roles to this user."}
-            </p>
-          </div>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            {t("users.roles.close") ?? "Close"}
-          </Button>
-        </div>
-        <div className="max-h-[70vh] space-y-3 overflow-y-auto p-4">
-          {roles.map((role) => {
-            const checked = assignedIds.has(role.id)
-            const disabled = addMut.isPending || removeMut.isPending
-            return (
-              <label
-                key={role.id}
-                className="border-border hover:bg-muted/40 flex items-start gap-3 rounded-lg border px-3 py-2"
-              >
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4"
-                  checked={checked}
-                  disabled={disabled || role.isSystem}
-                  onChange={() => {
-                    if (checked) {
-                      removeMut.mutate(role.id)
-                    } else {
-                      addMut.mutate(role.id)
-                    }
-                  }}
-                />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{role.displayName}</span>
-                    {role.isSystem ? (
-                      <Badge variant="outline" className="text-2xs">
-                        {t("users.roles.system") ?? "System"}
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    {role.displayDescription ?? role.slug}
-                  </p>
-                  <p className="text-muted-foreground text-[11px]">
-                    {role.permissions.slice(0, 4).join(", ")}
-                    {role.permissions.length > 4 ? ` +${role.permissions.length - 4}` : ""}
-                  </p>
-                </div>
-              </label>
-            )
-          })}
-        </div>
-        <div className="flex justify-end gap-2 border-t px-4 py-3">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {t("users.roles.close") ?? "Close"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function UserFormDialog({
   open,
   mode,
@@ -246,11 +158,12 @@ function UserFormDialog({
 
   useEffect(() => {
     if (!open) return
+    const fallbackSlug = roles[0]?.slug ?? ""
     if (mode === "edit" && initial) {
       setAccountEmail(initial.email)
       setFullName(initial.fullName)
       setPassword("")
-      setRole(initial.role as ManagedStaffRole)
+      setRole(staffSlugForUserRow(initial, fallbackSlug))
       setWarehouseId(initial.warehouseId ?? "")
       setAdminWarehouseId(initial.adminWarehouse?.id ?? "")
       setIsActive(initial.isActive)
@@ -258,12 +171,12 @@ function UserFormDialog({
       setAccountEmail("")
       setFullName("")
       setPassword("")
-      setRole(roles[0]?.slug ?? "")
+      setRole(fallbackSlug)
       setWarehouseId("")
       setAdminWarehouseId("")
       setIsActive(true)
     }
-  }, [open, mode, initial])
+  }, [open, mode, initial, roles])
 
   const createMut = useMutation({
     mutationFn: () => {
@@ -302,14 +215,25 @@ function UserFormDialog({
   const updateMut = useMutation({
     mutationFn: () => {
       if (!initial) throw new Error("No user")
-      if (role === "WAREHOUSE" && !warehouseId.trim()) {
+      const selectedRoleRow = roles.find((r) => r.slug === role)
+      if (!selectedRoleRow) {
+        throw new Error(t("users.form.errors.invalidRole"))
+      }
+      if (selectedRoleRow.requiresWarehouse && !warehouseId.trim()) {
         throw new Error(t("users.form.errors.warehouseRequired"))
       }
+      if (selectedRoleRow.requiresAdminWarehouse && !adminWarehouseId.trim()) {
+        throw new Error(t("users.form.errors.adminWarehouseRequired"))
+      }
+      const legacyRole = SLUG_TO_MANAGED_LEGACY[role]
       const body: Parameters<typeof updateUser>[0]["body"] = {
         email: accountEmail.trim(),
         fullName: fullName.trim(),
-        role,
+        rbacRoleId: selectedRoleRow.id,
         isActive,
+      }
+      if (legacyRole) {
+        body.role = legacyRole
       }
       if (password.trim().length > 0) {
         if (password.trim().length < 8) {
@@ -317,13 +241,10 @@ function UserFormDialog({
         }
         body.password = password.trim()
       }
-      if (role === "WAREHOUSE") {
+      if (selectedRoleRow.requiresWarehouse) {
         body.warehouseId = warehouseId.trim()
       }
-      if (role === "WAREHOUSE_ADMIN") {
-        if (!adminWarehouseId.trim()) {
-          throw new Error(t("users.form.errors.adminWarehouseRequired"))
-        }
+      if (selectedRoleRow.requiresAdminWarehouse) {
         body.adminWarehouseId = adminWarehouseId.trim()
       }
       return updateUser({ token, id: initial.id, body })
@@ -356,6 +277,9 @@ function UserFormDialog({
   if (!open) return null
 
   const warehouses = sitesQuery.data?.warehouses ?? []
+  const selectedRoleRow = roles.find((r) => r.slug === role)
+  const showWarehousePicker = selectedRoleRow?.requiresWarehouse === true
+  const showAdminWarehousePicker = selectedRoleRow?.requiresAdminWarehouse === true
 
   return (
     <div
@@ -435,7 +359,7 @@ function UserFormDialog({
               ))}
             </select>
           </div>
-          {role === "WAREHOUSE" ? (
+          {showWarehousePicker ? (
             <div className="space-y-1">
               <label className="text-sm font-medium" htmlFor="user-warehouse">
                 {t("users.form.warehouse")}
@@ -459,7 +383,7 @@ function UserFormDialog({
               ) : null}
             </div>
           ) : null}
-          {role === "WAREHOUSE_ADMIN" ? (
+          {showAdminWarehousePicker ? (
             <div className="space-y-1">
               <label className="text-sm font-medium" htmlFor="user-admin-warehouse">
                 {t("users.form.adminWarehouse")}
@@ -589,7 +513,7 @@ export function UsersPage() {
   const isActiveRaw = searchParams.get("isActive")
   const isActiveFilter =
     isActiveRaw === "true" ? true : isActiveRaw === "false" ? false : undefined
-  const roleFilter = isManagedStaffRole(roleQ) ? roleQ : undefined
+  const roleFilter = roleQ ? roleQ : undefined
 
   const [searchDraft, setSearchDraft] = useState(searchQ)
   useEffect(() => {
@@ -599,12 +523,11 @@ export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editRow, setEditRow] = useState<UserPublicRow | null>(null)
   const [deactivateRow, setDeactivateRow] = useState<UserPublicRow | null>(null)
-  const [rolesDialogUser, setRolesDialogUser] = useState<UserPublicRow | null>(null)
-  const [rolesDialogOpen, setRolesDialogOpen] = useState(false)
 
   const invalidateUsers = async () => {
     await queryClient.invalidateQueries({ queryKey: ["users", token] })
     await queryClient.invalidateQueries({ queryKey: ["user-stats", token] })
+    await queryClient.invalidateQueries({ queryKey: ["users-by-role"] })
   }
 
   const statsQuery = useQuery({
@@ -635,7 +558,6 @@ export function UsersPage() {
         token,
         page,
         pageSize,
-        managedStaffOnly: true,
         ...(searchQ.trim() ? { search: searchQ.trim() } : {}),
         ...(roleFilter ? { role: roleFilter } : {}),
         ...(isActiveFilter !== undefined ? { isActive: isActiveFilter } : {}),
@@ -711,7 +633,15 @@ export function UsersPage() {
     queryFn: () => listRoles(token, i18n.language),
     enabled: !!token,
   })
-  const canManageRoles = (authUser?.permissions ?? []).includes("users.roles")
+
+  const allRoles = rolesQuery.data ?? []
+  const userFormRoleOptions = useMemo(() => {
+    const base = allRoles.filter((r) => !ROLE_SLUGS_EXCLUDED_FROM_USER_FORM.has(r.slug))
+    const slug = editRow?.rbacRoles?.[0]?.slug
+    if (!slug || base.some((r) => r.slug === slug)) return base
+    const extra = allRoles.find((r) => r.slug === slug)
+    return extra ? [...base, extra] : base
+  }, [allRoles, editRow])
 
   const byRole = statsQuery.data?.byRole
 
@@ -797,9 +727,9 @@ export function UsersPage() {
                   onChange={(e) => setRoleFilterParam(e.target.value)}
                 >
                   <option value="">{t("users.filters.allRoles")}</option>
-                  {MANAGED_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {t(`users.roles.${r}`)}
+                  {(rolesQuery.data ?? []).map((r) => (
+                    <option key={r.id} value={r.slug}>
+                      {r.displayName}
                     </option>
                   ))}
                 </select>
@@ -863,7 +793,9 @@ export function UsersPage() {
                         <TableCell>{row.fullName}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">
-                            {t(`users.roles.${row.role as ManagedStaffRole}`)}
+                            {row.rbacRoles && row.rbacRoles.length > 0
+                              ? localizedRoleName(row.rbacRoles[0], i18n.language)
+                              : t(`users.roles.${row.role as ManagedStaffRole}`)}
                           </Badge>
                         </TableCell>
                         <TableCell>{row.warehouse?.name ?? "—"}</TableCell>
@@ -914,19 +846,6 @@ export function UsersPage() {
                                 {t("users.actions.activate")}
                               </Button>
                             )}
-                            {canManageRoles ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => {
-                                  setRolesDialogUser(row)
-                                  setRolesDialogOpen(true)
-                                }}
-                              >
-                                {t("users.actions.manageRoles", "Manage roles")}
-                              </Button>
-                            ) : null}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -973,7 +892,7 @@ export function UsersPage() {
         mode="create"
         initial={null}
         token={token}
-        roles={rolesQuery.data ?? []}
+        roles={userFormRoleOptions}
         onOpenChange={setCreateOpen}
         onSuccess={invalidateUsers}
       />
@@ -982,7 +901,7 @@ export function UsersPage() {
         mode="edit"
         initial={editRow}
         token={token}
-        roles={rolesQuery.data ?? []}
+        roles={userFormRoleOptions}
         onOpenChange={(o) => {
           if (!o) setEditRow(null)
         }}
@@ -998,19 +917,6 @@ export function UsersPage() {
         }}
         onSuccess={invalidateUsers}
       />
-      {rolesDialogOpen && rolesDialogUser && rolesQuery.data ? (
-        <ManageRolesDialog
-          open={rolesDialogOpen}
-          user={rolesDialogUser}
-          token={token}
-          roles={rolesQuery.data}
-          onOpenChange={(o) => {
-            setRolesDialogOpen(o)
-            if (!o) setRolesDialogUser(null)
-          }}
-          onChanged={invalidateUsers}
-        />
-      ) : null}
     </Layout>
   )
 }

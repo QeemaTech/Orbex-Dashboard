@@ -1,23 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
   assignWarehouseStaff,
   listWarehouseStaff,
-  listWarehouseSites,
   removeWarehouseStaff,
   removeWarehouseAdmin,
-  setWarehouseAdmin,
-  type WarehouseSiteRow,
-  type WarehouseStaffMember,
-  type WarehouseStaffResponse,
 } from "@/api/warehouse-api"
-import { listUsers, type UserPublicRow } from "@/api/users-api"
-import { listRoles, type RoleRow } from "@/api/rbac-api"
+import { listUsers } from "@/api/users-api"
+import { listRoles } from "@/api/rbac-api"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { showToast } from "@/lib/toast"
 
 interface WarehouseStaffDialogProps {
   open: boolean
@@ -49,22 +44,36 @@ export function WarehouseStaffDialog({
     enabled: open && !!warehouseId && !!token,
   })
 
-  const usersQuery = useQuery({
-    queryKey: ["users-all", token],
-    queryFn: () => listUsers({ token, page: 1, pageSize: 1000, managedStaffOnly: false }),
-    enabled: open && !!token,
-  })
-
   const rolesQuery = useQuery({
     queryKey: ["rbac-roles", token, i18n.language],
     queryFn: () => listRoles(token, i18n.language),
     enabled: open && !!token,
   })
 
+  const roles = rolesQuery.data ?? []
+  const selectedRoleSlug = useMemo(() => {
+    const r = roles.find((row) => row.id === selectedRoleId)
+    return r?.slug
+  }, [roles, selectedRoleId])
+
+  const usersByRoleQuery = useQuery({
+    queryKey: ["users-by-role", token, selectedRoleSlug],
+    queryFn: () =>
+      listUsers({
+        token,
+        page: 1,
+        pageSize: 100,
+        role: selectedRoleSlug!,
+        isActive: true,
+        managedStaffOnly: false,
+      }),
+    enabled: open && !!token && !!selectedRoleSlug,
+  })
+
   const assignStaffMut = useMutation({
     mutationFn: () => {
       if (!selectedUserId || !selectedRoleId) {
-        return Promise.reject(new Error("Please select user and role"))
+        return Promise.reject(new Error(t("warehouse.staff.selectUserAndRole")))
       }
       return assignWarehouseStaff(token, warehouseId, selectedUserId, selectedRoleId)
     },
@@ -74,6 +83,7 @@ export function WarehouseStaffDialog({
       setSelectedUserId("")
       setSelectedRoleId("")
       qc.invalidateQueries({ queryKey: ["warehouse-staff", warehouseId] })
+      qc.invalidateQueries({ queryKey: ["users-by-role"] })
     },
     onError: (e: Error) => {
       showToast(e.message ?? t("warehouse.staff.addFailed") ?? "Failed to add staff", "error")
@@ -104,8 +114,7 @@ export function WarehouseStaffDialog({
   const data = staffQuery.data
   const staff = data?.staff ?? []
   const admin = data?.admin
-  const users = usersQuery.data?.users ?? []
-  const roles = rolesQuery.data ?? []
+  const users = usersByRoleQuery.data?.users ?? []
 
   const assignedUserIds = new Set([
     ...staff.map((s) => s.userId),
@@ -207,26 +216,14 @@ export function WarehouseStaffDialog({
                   <p className="mb-3 text-sm font-medium">{t("warehouse.staff.addForm")}</p>
                   <div className="space-y-3">
                     <label className="grid gap-1 text-sm">
-                      <span className="font-medium">{t("warehouse.staff.user")}</span>
-                      <select
-                        className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-                        value={selectedUserId}
-                        onChange={(e) => setSelectedUserId(e.target.value)}
-                      >
-                        <option value="">{t("warehouse.staff.selectUser")}</option>
-                        {availableUsers.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.fullName} ({u.email})
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="grid gap-1 text-sm">
                       <span className="font-medium">{t("warehouse.staff.role")}</span>
                       <select
                         className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
                         value={selectedRoleId}
-                        onChange={(e) => setSelectedRoleId(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedRoleId(e.target.value)
+                          setSelectedUserId("")
+                        }}
                       >
                         <option value="">{t("warehouse.staff.selectRole")}</option>
                         {roles.map((r) => (
@@ -235,6 +232,42 @@ export function WarehouseStaffDialog({
                           </option>
                         ))}
                       </select>
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      <span className="font-medium">{t("warehouse.staff.user")}</span>
+                      <select
+                        className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm disabled:opacity-60"
+                        value={selectedUserId}
+                        disabled={!selectedRoleId}
+                        onChange={(e) => setSelectedUserId(e.target.value)}
+                      >
+                        <option value="">
+                          {!selectedRoleId
+                            ? t("warehouse.staff.selectRoleFirst")
+                            : t("warehouse.staff.selectUser")}
+                        </option>
+                        {availableUsers.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.fullName} ({u.email})
+                          </option>
+                        ))}
+                      </select>
+                      {!selectedRoleId ? (
+                        <span className="text-muted-foreground text-xs">
+                          {t("warehouse.staff.userHintSelectRole")}
+                        </span>
+                      ) : usersByRoleQuery.isLoading ? (
+                        <span className="text-muted-foreground text-xs">{t("common.loading")}</span>
+                      ) : usersByRoleQuery.isError ? (
+                        <span className="text-destructive text-xs">
+                          {(usersByRoleQuery.error as Error)?.message ??
+                            t("warehouse.staff.loadUsersForRoleFailed")}
+                        </span>
+                      ) : availableUsers.length === 0 ? (
+                        <span className="text-muted-foreground text-xs">
+                          {t("warehouse.staff.noUsersForRole")}
+                        </span>
+                      ) : null}
                     </label>
                     <div className="flex gap-2">
                       <Button
@@ -267,12 +300,4 @@ export function WarehouseStaffDialog({
       </div>
     </div>
   )
-}
-
-function showToast(message: string, type: "success" | "error") {
-  if (typeof window !== "undefined" && (window as any).showToast) {
-    ;(window as any).showToast(message, type)
-  } else {
-    console.log(`[${type}] ${message}`)
-  }
 }

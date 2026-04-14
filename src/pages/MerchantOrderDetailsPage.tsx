@@ -31,6 +31,8 @@ import type { UserRole } from "@/lib/auth-context"
 import { useAuth } from "@/lib/auth-context"
 import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
 
+const INVALID_ROUTE_BATCH_ID = new Set(["", "undefined"])
+
 function resolvePerspective(role: UserRole | undefined): DashboardPerspective {
   if (role === "ACCOUNTS") return "accounting"
   if (role === "WAREHOUSE" || role === "WAREHOUSE_ADMIN") return "warehouse"
@@ -68,6 +70,8 @@ export function MerchantOrderDetailsPage() {
     }
   })()
 
+  const hasValidBatchId = !INVALID_ROUTE_BATCH_ID.has(merchantOrderId)
+
   const isWarehouseRoute = isWarehouseScopedMerchantOrderPath(location.pathname)
   const isCsRoute = location.pathname.startsWith("/cs/")
   const statusPerspective = resolvePerspective(user?.role)
@@ -86,13 +90,13 @@ export function MerchantOrderDetailsPage() {
     queryKey: listQueryKey,
     queryFn: () =>
       getShipmentById({ token, shipmentId: merchantOrderId, includeEvents: true }),
-    enabled: !!token && !!merchantOrderId,
+    enabled: !!token && hasValidBatchId,
   })
 
   const ordersSummaryQuery = useQuery({
     queryKey: ["merchant-order", "shipments", merchantOrderId, token],
     queryFn: () => getShipmentOrders({ token, shipmentId: merchantOrderId }),
-    enabled: !!token && !!merchantOrderId,
+    enabled: !!token && hasValidBatchId,
   })
 
   const openMap = useCallback((courierId: string) => {
@@ -144,14 +148,21 @@ export function MerchantOrderDetailsPage() {
           </Button>
         </div>
 
-        {q.isLoading ? (
+        {!hasValidBatchId ? (
+          <p className="text-destructive text-sm">
+            {t("merchantOrders.invalidBatchId", {
+              defaultValue: "Missing or invalid merchant order id.",
+            })}
+          </p>
+        ) : null}
+        {hasValidBatchId && q.isLoading ? (
           <p className="text-muted-foreground text-sm">{t("merchantOrders.loading")}</p>
         ) : null}
-        {q.error ? (
+        {hasValidBatchId && q.error ? (
           <p className="text-destructive text-sm">{(q.error as Error).message}</p>
         ) : null}
 
-        {q.data ? (
+        {hasValidBatchId && q.data ? (
           <>
             <Card>
               <CardHeader>

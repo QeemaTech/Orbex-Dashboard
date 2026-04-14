@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
+import { permissionCategory, permissionLabel } from "@/lib/rbac-permission-i18n"
 import { showToast } from "@/lib/toast"
 
 type RoleFormMode = "create" | "edit"
@@ -138,7 +139,7 @@ function RoleFormDialog({
   if (!open) return null
 
   const permsByCategory = permissions.reduce<Record<string, PermissionRow[]>>((acc, p) => {
-    const cat = t(`rbac.perms.${p.key}.category`, { defaultValue: p.category })
+    const cat = permissionCategory(t, p.key, p.category)
     acc[cat] = acc[cat] ?? []
     acc[cat]!.push(p)
     return acc
@@ -159,7 +160,9 @@ function RoleFormDialog({
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div>
             <p className="text-sm font-semibold">
-              {mode === "create" ? "Create role" : `Edit role: ${initial?.name ?? ""}`}
+              {mode === "create"
+                ? t("rbac.form.createTitle")
+                : t("rbac.form.editTitleWithName", { name: initial?.name ?? "" })}
             </p>
             <p className="text-muted-foreground text-xs">
               {t("rbac.form.permissionsHint", "Select permissions to grant to this role.")}
@@ -177,7 +180,11 @@ function RoleFormDialog({
             </label>
             <label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">{t("rbac.form.nameAr", "Arabic Name")}</span>
-              <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder={t("rbac.form.nameArPlaceholder", "Optional")} />
+              <Input
+                value={nameAr}
+                onChange={(e) => setNameAr(e.target.value)}
+                placeholder={t("rbac.form.nameArPlaceholder")}
+              />
             </label>
             <label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">
@@ -189,7 +196,11 @@ function RoleFormDialog({
               <span className="text-muted-foreground">
                 {t("rbac.form.descriptionAr", "Arabic Description")}
               </span>
-              <Input value={descriptionAr} onChange={(e) => setDescriptionAr(e.target.value)} placeholder={t("rbac.form.descriptionArPlaceholder", "Optional")} />
+              <Input
+                value={descriptionAr}
+                onChange={(e) => setDescriptionAr(e.target.value)}
+                placeholder={t("rbac.form.descriptionArPlaceholder")}
+              />
             </label>
           </div>
 
@@ -202,7 +213,11 @@ function RoleFormDialog({
                     <p className="text-sm font-semibold">{cat}</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {rows
-                        .sort((a, b) => a.label.localeCompare(b.label))
+                        .sort((a, b) =>
+                          permissionLabel(t, a.key, a.label).localeCompare(
+                            permissionLabel(t, b.key, b.label),
+                          ),
+                        )
                         .map((p) => (
                           <label
                             key={p.key}
@@ -216,7 +231,7 @@ function RoleFormDialog({
                             />
                             <div>
                               <div className="font-medium">
-                                {t(`rbac.perms.${p.key}.label`, { defaultValue: p.label })}
+                                {permissionLabel(t, p.key, p.label)}
                               </div>
                               <div className="text-muted-foreground text-xs">{p.key}</div>
                             </div>
@@ -271,10 +286,11 @@ export function RolesPage() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteRole({ token, id }),
     onSuccess: () => {
-      showToast("Role deleted", "success")
+      showToast(t("rbac.toast.deleted"), "success")
       void qc.invalidateQueries({ queryKey: ["rbac-roles"] })
     },
-    onError: (e) => showToast(e instanceof Error ? e.message : "Failed to delete role", "error"),
+    onError: (e) =>
+      showToast(e instanceof Error ? e.message : t("rbac.toast.deleteFailed"), "error"),
   })
 
   const onSaved = () => {
@@ -293,7 +309,7 @@ export function RolesPage() {
   })
 
   return (
-    <Layout title="Roles & Permissions">
+    <Layout title={t("rbac.pageTitle")}>
       <div className="space-y-5">
         <Card className="border-primary/30 bg-gradient-to-br from-primary/10 to-sky-100/40 shadow-sm">
           <CardHeader className="flex items-center gap-3 pb-2">
@@ -358,7 +374,7 @@ export function RolesPage() {
                         <div className="flex flex-wrap gap-1">
                           {r.permissions.slice(0, 6).map((p) => (
                             <Badge key={p} variant="secondary" className="text-2xs">
-                              {t(`rbac.perms.${p}.label`, { defaultValue: p })}
+                              {permissionLabel(t, p, p)}
                             </Badge>
                           ))}
                           {r.permissions.length > 6 ? (
@@ -369,11 +385,11 @@ export function RolesPage() {
                       <TableCell>
                         {r.isSystem ? (
                           <Badge variant="outline" className="text-xs">
-                            System
+                            {t("rbac.roleKind.system")}
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="text-xs">
-                            Custom
+                            {t("rbac.roleKind.custom")}
                           </Badge>
                         )}
                       </TableCell>
@@ -414,7 +430,7 @@ export function RolesPage() {
 
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">RBAC Audit</CardTitle>
+            <CardTitle className="text-base font-semibold">{t("rbac.audit.cardTitle")}</CardTitle>
             <CardDescription>{t("rbac.audit.subtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

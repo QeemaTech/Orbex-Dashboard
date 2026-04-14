@@ -9,6 +9,7 @@ import {
 } from "react"
 
 import { loginRequest, meRequest } from "@/api/auth-api"
+import type { RbacRoleInfo } from "@/api/users-api"
 
 export type UserRole =
   | "ADMIN"
@@ -26,6 +27,7 @@ export type AuthUser = {
   fullName: string
   role: UserRole
   roles?: string[]
+  rbacRoles?: RbacRoleInfo[]
   permissions?: string[]
   warehouseId: string | null
   isActive: boolean
@@ -65,6 +67,7 @@ function readStoredUser(): AuthUser | null {
     }
     if (!u.roles) u.roles = u.role ? [u.role] : []
     if (!u.permissions) u.permissions = []
+    if (!u.rbacRoles) u.rbacRoles = []
     return u as AuthUser
   } catch {
     return null
@@ -76,6 +79,7 @@ function normalizeUser(u: AuthUser): AuthUser {
     ...u,
     roles: u.roles ?? (u.role ? [u.role] : []),
     permissions: u.permissions ?? [],
+    rbacRoles: u.rbacRoles ?? [],
   }
 }
 
@@ -129,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...res.user,
       roles: res.roles ?? res.user.roles,
       permissions: res.permissions ?? res.user.permissions,
+      rbacRoles: res.user.rbacRoles ?? res.rbacRoles ?? [],
     })
     localStorage.setItem(STORAGE_ACCESS, res.accessToken)
     localStorage.setItem(STORAGE_REFRESH, res.refreshToken)

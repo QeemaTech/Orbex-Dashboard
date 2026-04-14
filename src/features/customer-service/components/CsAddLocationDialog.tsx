@@ -4,6 +4,7 @@ import { Copy, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import {
+  merchantOrderBatchId,
   patchShipmentFields,
   type CsShipmentRow,
   type ShipmentListResponse,
@@ -84,7 +85,7 @@ export function CsAddLocationDialog({
       })
       return patchShipmentFields({
         token,
-        shipmentId: row.shipmentId,
+        shipmentId: merchantOrderBatchId(row),
         notes: nextNotes,
         ...(coords ? { customerLat: String(coords.lat) } : {}),
         ...(coords ? { customerLng: String(coords.lng) } : {}),
@@ -103,8 +104,7 @@ export function CsAddLocationDialog({
           return {
             ...list,
             shipments: list.shipments.map((shipment) =>
-              shipment.shipmentId ===
-              (updatedRow.shipmentId ?? updatedRow.id)
+              merchantOrderBatchId(shipment) === merchantOrderBatchId(updatedRow)
                 ? {
                     ...shipment,
                     ...updatedRow,
@@ -120,8 +120,8 @@ export function CsAddLocationDialog({
 
         if (
           "shipmentId" in current &&
-          (current as CsShipmentRow).shipmentId ===
-            (updatedRow.shipmentId ?? updatedRow.id)
+          merchantOrderBatchId(current as CsShipmentRow) ===
+            merchantOrderBatchId(updatedRow)
         ) {
           const detail = current as CsShipmentRow
           return {

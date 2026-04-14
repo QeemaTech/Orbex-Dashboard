@@ -3,8 +3,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { LocateFixed, MapPin, MoreVertical, PhoneCall } from "react-lucid"
 import { useTranslation } from "react-i18next"
 
-import { confirmShipmentCs } from "@/api/merchant-orders-api"
-import type { CsShipmentRow } from "@/api/merchant-orders-api"
+import {
+  confirmShipmentCs,
+  merchantOrderBatchId,
+  type CsShipmentRow,
+} from "@/api/merchant-orders-api"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -47,11 +50,7 @@ export function CsShipmentRowActions({
 
   const confirmMut = useMutation({
     mutationFn: () =>
-      confirmShipmentCs(
-        token,
-        row.shipmentId,
-        row.primaryOrderId ?? row.id,
-      ),
+      confirmShipmentCs(token, batchId, row.primaryOrderId ?? row.id),
     onSuccess: () => qc.invalidateQueries({ queryKey: listQueryKey }),
   })
 
@@ -60,6 +59,7 @@ export function CsShipmentRowActions({
   const hasLocationLink = !!row.locationLink?.trim()
   const allowCustomerUi = showCustomerContact
   const showConfirm = row.status === "PENDING" && row.subStatus === "NONE"
+  const batchId = merchantOrderBatchId(row)
   const hasCourierMenuItems =
     !!row.courier?.contactPhone || !!row.courier?.id
 
@@ -77,7 +77,7 @@ export function CsShipmentRowActions({
       size="sm"
       variant="default"
       className="bg-chart-2 text-white hover:bg-chart-2/90"
-      disabled={confirmMut.isPending}
+      disabled={!batchId || confirmMut.isPending}
       onClick={() => confirmMut.mutate()}
     >
       {t("cs.actions.confirm")}
