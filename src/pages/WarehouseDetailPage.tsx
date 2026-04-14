@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { ElementType } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Boxes, Search, UserRound, Warehouse } from "react-lucid"
@@ -9,15 +9,18 @@ import {
   getWarehouseCouriers,
   getWarehouseSite,
   getWarehouseStats,
+  getWarehouseZoneLinks,
   getWarehouseTracking,
   listWarehouseOrders,
   receiveWarehouseReturn,
   scanPayloadFromInput,
   scanShipmentIn,
   scanShipmentOut,
+  setWarehouseZoneLinks,
   type WarehouseCourierRow,
   type WarehouseSiteDetail,
 } from "@/api/warehouse-api"
+import { listDeliveryZones } from "@/api/delivery-zones-api"
 import { Layout } from "@/components/layout/Layout"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
@@ -199,6 +202,49 @@ export function WarehouseDetailPage() {
   })
 
   const hub = siteDetailQuery.data
+
+  const zoneLinksQuery = useQuery({
+    queryKey: ["warehouse-zone-links", token, warehouseId],
+    queryFn: () => getWarehouseZoneLinks(token, warehouseId),
+    enabled: !!token && !!warehouseId && !accessDenied,
+  })
+
+  const zonesCatalogQuery = useQuery({
+    queryKey: ["delivery-zones", token, "active-only"],
+    queryFn: () => listDeliveryZones(token, { isActive: true }),
+    enabled: !!token && !accessDenied,
+    staleTime: 30_000,
+  })
+
+  const [deliveryZoneIds, setDeliveryZoneIds] = useState<string[]>([])
+  const [pickupZoneIds, setPickupZoneIds] = useState<string[]>([])
+
+  const zoneLinksHydrated = useRef(false)
+  useEffect(() => {
+    if (zoneLinksHydrated.current) return
+    const d = zoneLinksQuery.data
+    if (!d) return
+    setDeliveryZoneIds(d.deliveryZoneIds ?? [])
+    setPickupZoneIds(d.pickupZoneIds ?? [])
+    zoneLinksHydrated.current = true
+  }, [zoneLinksQuery.data])
+
+  const saveZoneLinksMut = useMutation({
+    mutationFn: () =>
+      setWarehouseZoneLinks({
+        token,
+        warehouseId,
+        deliveryZoneIds,
+        pickupZoneIds,
+      }),
+    onSuccess: () => {
+      showToast(t("warehouse.zoneLinks.saved"), "success")
+      void queryClient.invalidateQueries({ queryKey: ["warehouse-zone-links", token, warehouseId] })
+    },
+    onError: (e: Error) => {
+      showToast(e.message ?? t("warehouse.zoneLinks.saveFailed"), "error")
+    },
+  })
 
   const statsQuery = useQuery({
     queryKey: ["warehouse-stats", token, warehouseId],
@@ -475,6 +521,100 @@ export function WarehouseDetailPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Boxes className="size-4" aria-hidden />
+                      {t("warehouse.zoneLinks.title")}
+                    </CardTitle>
+                    <CardDescription>{t("warehouse.zoneLinks.description")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {zoneLinksQuery.isLoading || zonesCatalogQuery.isLoading ? (
+                      <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+                    ) : zoneLinksQuery.error || zonesCatalogQuery.error ? (
+                      <p className="text-destructive text-sm">
+                        {((zoneLinksQuery.error || zonesCatalogQuery.error) as Error).message}
+                      </p>
+                    ) : (
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        <div className="grid gap-2">
+                          <label className="text-muted-foreground text-xs font-medium">
+                            {t("warehouse.zoneLinks.deliveryZones")}
+                          </label>
+                          <select
+                            multiple
+                            className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm"
+                            value={deliveryZoneIds}
+                            onChange={(e) => {
+                              const selected = Array.from(e.target.selectedOptions).map(
+                                (o) => o.value,
+                              )
+                              setDeliveryZoneIds(selected)
+                            }}
+                          >
+                            {(zonesCatalogQuery.data?.zones ?? []).map((z) => (
+                              <option key={z.id} value={z.id}>
+                                {[
+                                  z.governorate,
+                                  z.areaZone ?? "",
+                                  z.name ?? "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <label className="text-muted-foreground text-xs font-medium">
+                            {t("warehouse.zoneLinks.pickupZones")}
+                          </label>
+                          <select
+                            multiple
+                            className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm"
+                            value={pickupZoneIds}
+                            onChange={(e) => {
+                              const selected = Array.from(e.target.selectedOptions).map(
+                                (o) => o.value,
+                              )
+                              setPickupZoneIds(selected)
+                            }}
+                          >
+                            {(zonesCatalogQuery.data?.zones ?? []).map((z) => (
+                              <option key={z.id} value={z.id}>
+                                {[
+                                  z.governorate,
+                                  z.areaZone ?? "",
+                                  z.name ?? "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        disabled={
+                          saveZoneLinksMut.isPending ||
+                          !token ||
+                          accessDenied ||
+                          !warehouseId
+                        }
+                        onClick={() => saveZoneLinksMut.mutate()}
+                      >
+                        {t("common.save")}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {hub.subBranches && hub.subBranches.length > 0 && !hub.mainBranchId
                   ? hub.subBranches.map((sub) => (

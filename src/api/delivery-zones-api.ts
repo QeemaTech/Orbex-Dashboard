@@ -159,3 +159,43 @@ export async function deleteDeliveryZonePermanent(
     },
   )
 }
+
+export type DeliveryZoneLinkedWarehouse = {
+  id: string
+  name: string
+  governorate: string
+  zone: string | null
+  isActive: boolean
+}
+
+export type DeliveryZoneWarehouseLinks = {
+  deliveryWarehouseIds: string[]
+  pickupWarehouseIds: string[]
+  deliveryWarehouses: DeliveryZoneLinkedWarehouse[]
+  pickupWarehouses: DeliveryZoneLinkedWarehouse[]
+}
+
+export async function getDeliveryZoneWarehouseLinks(
+  token: string,
+  zoneId: string,
+): Promise<DeliveryZoneWarehouseLinks> {
+  return apiFetch(`/api/delivery-zones/${encodeURIComponent(zoneId)}/warehouses`, {
+    token,
+  })
+}
+
+export async function setDeliveryZoneWarehouseLinks(params: {
+  token: string
+  zoneId: string
+  deliveryWarehouseIds: string[]
+  pickupWarehouseIds: string[]
+}): Promise<DeliveryZoneWarehouseLinks> {
+  return apiFetch(`/api/delivery-zones/${encodeURIComponent(params.zoneId)}/warehouses`, {
+    method: "PUT",
+    token: params.token,
+    body: JSON.stringify({
+      deliveryWarehouseIds: params.deliveryWarehouseIds,
+      pickupWarehouseIds: params.pickupWarehouseIds,
+    }),
+  })
+}

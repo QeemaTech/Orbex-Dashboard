@@ -45,6 +45,21 @@ export type WarehouseSiteDetail = WarehouseSiteRow & {
   mainBranchId: string | null
 }
 
+export type WarehouseLinkedDeliveryZone = {
+  id: string
+  name: string | null
+  governorate: string
+  areaZone: string | null
+  isActive: boolean
+}
+
+export type WarehouseZoneLinks = {
+  deliveryZoneIds: string[]
+  pickupZoneIds: string[]
+  deliveryZones: WarehouseLinkedDeliveryZone[]
+  pickupZones: WarehouseLinkedDeliveryZone[]
+}
+
 /**
  * One warehouse queue row = one merchant order batch (transfer).
  */
@@ -135,6 +150,35 @@ export function getWarehouseStats(
   return apiFetch<WarehouseStats>(`/api/warehouse/dashboard${query}`, {
     token,
   })
+}
+
+export function getWarehouseZoneLinks(
+  token: string,
+  warehouseId: string,
+): Promise<WarehouseZoneLinks> {
+  return apiFetch<WarehouseZoneLinks>(
+    `/api/warehouse/sites/${encodeURIComponent(warehouseId)}/delivery-zones`,
+    { token },
+  )
+}
+
+export function setWarehouseZoneLinks(params: {
+  token: string
+  warehouseId: string
+  deliveryZoneIds: string[]
+  pickupZoneIds: string[]
+}): Promise<WarehouseZoneLinks> {
+  return apiFetch<WarehouseZoneLinks>(
+    `/api/warehouse/sites/${encodeURIComponent(params.warehouseId)}/delivery-zones`,
+    {
+      method: "PUT",
+      token: params.token,
+      body: JSON.stringify({
+        deliveryZoneIds: params.deliveryZoneIds,
+        pickupZoneIds: params.pickupZoneIds,
+      }),
+    },
+  )
 }
 
 export function listWarehouseQueue(

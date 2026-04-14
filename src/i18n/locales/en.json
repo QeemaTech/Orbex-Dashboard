@@ -505,6 +505,14 @@
       "linkFromOperations": "My warehouse detail ←",
       "viewShipmentsAtHub": "View shipments at this hub ←"
     },
+    "zoneLinks": {
+      "title": "Linked delivery zones",
+      "description": "Select which geo zones this warehouse delivers to and which zones it receives from merchants.",
+      "deliveryZones": "Delivery zones (outbound)",
+      "pickupZones": "Pickup intake zones (from merchants)",
+      "saved": "Warehouse zones saved.",
+      "saveFailed": "Could not save warehouse zones."
+    },
     "stats": {
       "totalWarehouses": "Warehouses (total)",
       "activeWarehouses": "Warehouses (active)"
@@ -841,7 +849,11 @@
       "locationsLoading": "Loading governorates…",
       "citiesLoading": "Loading cities…",
       "locationsError": "Could not load location list. Enter names manually.",
-      "locationsAttribution": "Governorates and cities: CountriesNow (open data). Names are in English as returned by the API."
+      "locationsAttribution": "Governorates and cities: CountriesNow (open data). Names are in English as returned by the API.",
+      "warehouses": "Warehouses",
+      "warehouseDelivery": "Linked warehouses (delivery)",
+      "warehousePickup": "Linked warehouses (pickup intake)",
+      "selectWarehouses": "Select warehouses…"
     },
     "feedback": {
       "created": "Zone created.",
@@ -865,6 +877,7 @@
     "add": "Add",
     "saving": "Saving…",
     "processing": "Processing…",
-    "searching": "Searching…"
+    "searching": "Searching…",
+    "select": "Select…"
   }
 }
