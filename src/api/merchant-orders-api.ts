@@ -83,6 +83,14 @@ export type CsShipmentRow = {
   statusEvents?: CsShipmentStatusEvent[]
 }
 
+/** Batch id for `/merchant-orders/:id` and batch APIs; use `merchantOrderId` or `shipmentId` alias, not line `id`. */
+export function merchantOrderBatchId(
+  row: Pick<CsShipmentRow, "merchantOrderId" | "shipmentId">,
+): string {
+  const v = row.merchantOrderId ?? row.shipmentId
+  return v != null && String(v).trim() !== "" ? String(v).trim() : ""
+}
+
 export type CsShipmentStatusEvent = {
   id: string
   shipmentId: string

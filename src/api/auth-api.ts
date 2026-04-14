@@ -1,5 +1,6 @@
 import { apiFetch } from "@/api/client"
 import type { AuthUser } from "@/lib/auth-context"
+import type { RbacRoleInfo } from "@/api/users-api"
 
 export type LoginBody = {
   email: string
@@ -11,6 +12,7 @@ export type LoginResponse = {
   refreshToken: string
   user: AuthUser
   roles?: string[]
+  rbacRoles?: RbacRoleInfo[]
   permissions?: string[]
 }
 

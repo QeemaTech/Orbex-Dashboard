@@ -477,8 +477,13 @@
       "addForm": "Add new staff member",
       "user": "User",
       "selectUser": "Select a user",
+      "selectRoleFirst": "Select a role first",
+      "userHintSelectRole": "Choose a role to see users who have that role.",
+      "noUsersForRole": "No active users with this role, or all are already assigned here.",
       "role": "Role",
       "selectRole": "Select a role",
+      "selectUserAndRole": "Please select a user and a role.",
+      "loadUsersForRoleFailed": "Could not load users for this role.",
       "added": "Staff member added successfully.",
       "addFailed": "Failed to add staff member.",
       "removed": "Staff member removed.",
@@ -648,132 +653,133 @@
     }
   },
   "merchants": {
-    "pageTitle": "التجار",
-    "subtitle": "راجع طلبات تسجيل التجار واعتمد الحسابات المعلقة.",
-    "tableCardTitle": "طلبات تسجيل التجار",
-    "tableCardDescription": "يجب اعتماد التاجر المعلق قبل تفعيل صلاحياته.",
-    "loading": "جاري تحميل التجار…",
-    "empty": "لا يوجد تجار بهذه التصفية.",
+    "pageTitle": "Merchants",
+    "subtitle": "Review merchant registrations and approve pending accounts.",
+    "tableCardTitle": "Merchant registrations",
+    "tableCardDescription": "Pending merchants must be approved before they can use the platform.",
+    "loading": "Loading merchants…",
+    "empty": "No merchants match these filters.",
     "filters": {
-      "status": "الحالة",
-      "allStatuses": "كل الحالات"
+      "status": "Status",
+      "allStatuses": "All statuses"
     },
     "status": {
-      "PENDING": "معلق",
-      "ACTIVATED": "مفعل"
+      "PENDING": "Pending",
+      "ACTIVATED": "Activated"
     },
     "table": {
-      "displayName": "التاجر",
-      "owner": "المسؤول",
-      "phone": "الهاتف",
-      "businessName": "اسم النشاط",
-      "status": "الحالة",
-      "actions": "الإجراءات"
+      "displayName": "Merchant",
+      "owner": "Owner",
+      "phone": "Phone",
+      "businessName": "Business name",
+      "status": "Status",
+      "actions": "Actions"
     },
     "actions": {
-      "approve": "اعتماد"
+      "approve": "Approve"
     },
     "pagination": {
-      "summary": "{{total}} إجمالي · صفحة {{page}}",
-      "prev": "السابق",
-      "next": "التالي"
+      "summary": "{{total}} total · page {{page}}",
+      "prev": "Previous",
+      "next": "Next"
     }
   },
   "users": {
-    "pageTitle": "المستخدمون",
-    "subtitle": "إنشاء وإدارة حسابات المخازن والعمليات والموظفين الإداريين.",
+    "pageTitle": "Users",
+    "subtitle": "Create and manage warehouse, operations, and administrative staff accounts.",
     "stats": {
-      "activeOnlyHint": "المستخدمون النشطون فقط"
+      "activeOnlyHint": "Active users only"
     },
     "roles": {
       "WAREHOUSE": "Warehouse",
-      "WAREHOUSE_ADMIN": "Warehouse Admin",
-      "CUSTOMER_SERVICE": "Customer Service",
+      "WAREHOUSE_ADMIN": "Warehouse admin",
+      "CUSTOMER_SERVICE": "Customer service",
       "ACCOUNTS": "Accounts",
       "SALES": "Sales",
       "COURIER": "Courier",
       "MERCHANT": "Merchant"
     },
-    "tableCardTitle": "موظفو النظام",
-    "tableCardDescription": "أدوار تُدار من هذه الصفحة (لا يشمل التجار والمناديب والمدراء).",
+    "tableCardTitle": "System staff",
+    "tableCardDescription": "Roles managed from this page (excludes merchants, couriers, and network admins).",
     "filters": {
-      "search": "بحث",
-      "searchPlaceholder": "البريد الإلكتروني أو الاسم الكامل",
-      "applySearch": "تطبيق",
-      "role": "الدور",
-      "allRoles": "كل الأدوار",
-      "activeStatus": "حالة الحساب",
-      "allActive": "الكل",
-      "activeOnly": "نشط فقط",
-      "inactiveOnly": "غير نشط فقط",
-      "clear": "مسح التصفية"
+      "search": "Search",
+      "searchPlaceholder": "Email or full name",
+      "applySearch": "Apply",
+      "role": "Role",
+      "allRoles": "All roles",
+      "activeStatus": "Account status",
+      "allActive": "All",
+      "activeOnly": "Active only",
+      "inactiveOnly": "Inactive only",
+      "clear": "Clear filters"
     },
-    "loading": "جاري تحميل المستخدمين…",
-    "empty": "لا يوجد مستخدمون.",
+    "loading": "Loading users…",
+    "empty": "No users found.",
     "table": {
-      "email": "البريد الإلكتروني",
-      "fullName": "الاسم الكامل",
-      "role": "الدور",
-      "warehouse": "موقع المخزن",
-      "adminWarehouse": "موقع الإشراف",
-      "active": "نشط",
-      "created": "تاريخ الإنشاء",
-      "actions": "الإجراءات"
+      "email": "Email",
+      "fullName": "Full name",
+      "role": "Role",
+      "warehouse": "Warehouse site",
+      "adminWarehouse": "Admin site",
+      "active": "Active",
+      "created": "Created",
+      "actions": "Actions"
     },
     "active": {
-      "yes": "نعم",
-      "no": "لا"
+      "yes": "Yes",
+      "no": "No"
     },
     "actions": {
-      "addUser": "إضافة مستخدم",
-      "edit": "تعديل",
-      "deactivate": "تعطيل",
-      "activate": "تفعيل"
+      "addUser": "Add user",
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "activate": "Activate"
     },
     "pagination": {
-      "summary": "{{total}} إجمالي · صفحة {{page}}",
-      "prev": "السابق",
-      "next": "التالي"
+      "summary": "{{total}} total · page {{page}}",
+      "prev": "Previous",
+      "next": "Next"
     },
     "form": {
-      "createTitle": "إنشاء مستخدم",
-      "editTitle": "تعديل مستخدم",
-      "close": "إغلاق",
-      "email": "البريد الإلكتروني",
-      "fullName": "الاسم الكامل",
-      "password": "كلمة المرور",
-      "passwordOptional": "كلمة مرور جديدة (اختياري، 8 أحرف على الأقل)",
-      "role": "الدور",
-      "warehouse": "موقع المخزن",
-      "adminWarehouse": "المخزن الذي يُشرف عليه",
-      "selectWarehouse": "اختر موقعًا…",
-      "loadingSites": "جاري تحميل المواقع…",
-      "active": "الحساب نشط",
-      "cancel": "إلغاء",
-      "save": "حفظ",
-      "saving": "جاري الحفظ…",
+      "createTitle": "Create user",
+      "editTitle": "Edit user",
+      "close": "Close",
+      "email": "Email",
+      "fullName": "Full name",
+      "password": "Password",
+      "passwordOptional": "New password (optional, min. 8 characters)",
+      "role": "Role",
+      "warehouse": "Warehouse site",
+      "adminWarehouse": "Warehouse they administer",
+      "selectWarehouse": "Select a site…",
+      "loadingSites": "Loading sites…",
+      "active": "Account is active",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
       "errors": {
-        "warehouseRequired": "اختر موقع مخزن لهذا الدور.",
-        "adminWarehouseRequired": "اختر المخزن الذي سيديره هذا المشرف.",
-        "passwordMin": "كلمة المرور يجب أن تكون 8 أحرف على الأقل."
+        "warehouseRequired": "Select a warehouse site for this role.",
+        "adminWarehouseRequired": "Select the warehouse this admin will manage.",
+        "passwordMin": "Password must be at least 8 characters.",
+        "invalidRole": "This role cannot be saved from this form."
       }
     },
     "deactivate": {
-      "title": "تعطيل المستخدم",
-      "body": "سيتم تسجيل خروج {{email}} ومنع الدخول حتى إعادة التفعيل.",
-      "cannotSelf": "لا يمكنك تعطيل حسابك.",
-      "cancel": "إلغاء",
-      "confirm": "تعطيل",
-      "working": "جاري التنفيذ…"
+      "title": "Deactivate user",
+      "body": "{{email}} will be signed out and blocked until reactivated.",
+      "cannotSelf": "You cannot deactivate your own account.",
+      "cancel": "Cancel",
+      "confirm": "Deactivate",
+      "working": "Working…"
     },
     "feedback": {
-      "created": "تم إنشاء المستخدم.",
-      "updated": "تم تحديث المستخدم.",
-      "saveFailed": "تعذّر حفظ المستخدم.",
-      "deactivated": "تم تعطيل المستخدم.",
-      "deactivateFailed": "تعذّر تعطيل المستخدم.",
-      "activated": "تم تفعيل المستخدم.",
-      "activateFailed": "تعذّر تفعيل المستخدم."
+      "created": "User created.",
+      "updated": "User updated.",
+      "saveFailed": "Could not save user.",
+      "deactivated": "User deactivated.",
+      "deactivateFailed": "Could not deactivate user.",
+      "activated": "User activated.",
+      "activateFailed": "Could not activate user."
     }
   },
   "deliveryZones": {

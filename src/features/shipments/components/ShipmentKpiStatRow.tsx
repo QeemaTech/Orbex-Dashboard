@@ -143,7 +143,7 @@ export function ShipmentKpiStatRow({
   const totalShipments = totals?.totalShipments ?? 0
 
   return (
-    <div className="grid gap-5 md:gap-6 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
       <StatCard
         title={t("dashboard.stats.totalShipments")}
         value={totalShipments}

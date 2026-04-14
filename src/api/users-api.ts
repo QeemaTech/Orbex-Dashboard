@@ -8,6 +8,15 @@ export type ManagedStaffRole =
   | "SALES"
   | "ACCOUNTS"
 
+export type RbacRoleInfo = {
+  roleId: string
+  slug: string
+  name: string
+  nameAr: string | null
+  description: string | null
+  descriptionAr: string | null
+}
+
 export type UserPublicRow = {
   id: string
   email: string
@@ -19,6 +28,7 @@ export type UserPublicRow = {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  rbacRoles: RbacRoleInfo[]
 }
 
 export type UserListResponse = {
@@ -115,6 +125,8 @@ export type UpdateUserBody = {
   fullName?: string
   password?: string
   role?: ManagedStaffRole
+  /** Syncs RBAC `UserRoleAssignment` for dashboard staff (required for custom roles). */
+  rbacRoleId?: string
   warehouseId?: string | null
   adminWarehouseId?: string | null
   isActive?: boolean

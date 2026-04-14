@@ -21,8 +21,26 @@ void i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { translation: { ...en, rbac: enRbac, users: { ...en.users, roles: enUsersRoles } } },
-      ar: { translation: { ...ar, rbac: arRbac, users: { ...ar.users, roles: arUsersRoles } } },
+      en: {
+        translation: {
+          ...en,
+          rbac: enRbac,
+          users: {
+            ...en.users,
+            roles: { ...(en.users?.roles as object), ...enUsersRoles },
+          },
+        },
+      },
+      ar: {
+        translation: {
+          ...ar,
+          rbac: arRbac,
+          users: {
+            ...ar.users,
+            roles: { ...(ar.users?.roles as object), ...arUsersRoles },
+          },
+        },
+      },
     },
     fallbackLng: "en",
     supportedLngs: ["en", "ar"],

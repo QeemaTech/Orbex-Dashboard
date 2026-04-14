@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { getDashboardKpis } from "@/api/merchant-orders-api"
+import { getDashboardKpis, merchantOrderBatchId } from "@/api/merchant-orders-api"
 import { listUsers } from "@/api/users-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
@@ -369,11 +369,13 @@ export function DashboardPage() {
                 <TableBody>
                   {(kpiQuery.data?.recentShipments ?? []).map((row, idx) => (
                     <TableRow
-                      key={row.shipmentId ?? `row-${idx}`}
+                      key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
                       className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() =>
-                        void navigate(`/merchant-orders/${encodeURIComponent(row.shipmentId)}`)
-                      }
+                      onClick={() => {
+                        const batchId = merchantOrderBatchId(row)
+                        if (!batchId) return
+                        void navigate(`/merchant-orders/${encodeURIComponent(batchId)}`)
+                      }}
                     >
                       <TableCell className="font-medium">
                         {row.merchant?.displayName ?? "—"}

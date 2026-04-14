@@ -80,8 +80,17 @@ export async function setRolePermissions(params: {
   })
 }
 
+export type UserAssignedRoleRow = {
+  roleId: string
+  slug: string
+  name: string
+  nameAr: string | null
+  description: string | null
+  descriptionAr: string | null
+}
+
 export async function listUserRoles(params: { token: string; userId: string }) {
-  const res = await apiFetch<{ roles: Array<{ roleId: string; slug: string; name: string }> }>(
+  const res = await apiFetch<{ roles: UserAssignedRoleRow[] }>(
     `/api/rbac/users/${params.userId}/roles`,
     { token: params.token },
   )

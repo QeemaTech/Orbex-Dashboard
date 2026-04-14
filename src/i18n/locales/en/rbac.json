@@ -1,10 +1,10 @@
 {
   "pageTitle": "Roles & Permissions",
-  "pageSubtitle": "Manage custom roles, permission sets, and audit system roles.",
+  "pageSubtitle": "Manage custom roles, permission sets, and audit built-in role templates.",
   "stats": {
     "roles": "{{count}} roles",
     "perms": "{{count}} permissions",
-    "system": "System roles: {{count}}"
+    "system": "Built-in roles: {{count}}"
   },
   "cta": {
     "newRole": "New role"
@@ -16,8 +16,8 @@
     "permissions": "Permissions",
     "type": "Type",
     "actions": "Actions",
-    "system": "System",
-    "custom": "Custom",
+    "system": "Built-in",
+    "custom": "Custom role",
     "empty": "No roles yet."
   },
   "tableTitle": "Roles",
@@ -25,15 +25,24 @@
   "form": {
     "createTitle": "Create role",
     "editTitle": "Edit role",
+    "editTitleWithName": "Edit role: {{name}}",
     "name": "Name",
+    "nameAr": "Arabic name",
     "slug": "Slug",
     "description": "Description",
+    "descriptionAr": "Arabic description",
     "permissionsHint": "Select permissions to grant to this role.",
     "cancel": "Cancel",
     "save": "Save changes",
     "create": "Create role",
     "saving": "Saving…",
-    "close": "Close"
+    "close": "Close",
+    "nameArPlaceholder": "Optional",
+    "descriptionArPlaceholder": "Optional"
+  },
+  "roleKind": {
+    "system": "System",
+    "custom": "Custom"
   },
   "permList": {
     "category": "Category"
@@ -47,6 +56,7 @@
     "updateFailed": "Failed to update role"
   },
   "audit": {
+    "cardTitle": "RBAC audit",
     "subtitle": "Recent changes to roles, permissions, and user-role assignments.",
     "loading": "Loading audit…",
     "empty": "No audit entries yet.",
@@ -62,22 +72,40 @@
   "perms": {
     "dashboard.view": { "label": "View dashboard overview", "category": "Dashboard" },
     "users.read": { "label": "List & view users", "category": "Users" },
-    "users.write": { "label": "Create & edit users", "category": "Users" },
+    "users.create": { "label": "Create users", "category": "Users" },
+    "users.update": { "label": "Update users", "category": "Users" },
+    "users.delete": { "label": "Delete users", "category": "Users" },
     "users.roles": { "label": "Assign roles to users", "category": "Users" },
+    "users.write": { "label": "Create, update, and deactivate users (admin UI)", "category": "Users" },
     "roles.read": { "label": "Read roles", "category": "RBAC" },
     "roles.write": { "label": "Create/update/delete roles", "category": "RBAC" },
     "roles.permissions": { "label": "Edit role permissions", "category": "RBAC" },
     "permissions.read": { "label": "View permission catalogue", "category": "RBAC" },
     "rbac.audit.read": { "label": "View RBAC audit log", "category": "RBAC" },
     "shipments.read": { "label": "View shipments", "category": "Shipments" },
+    "shipments.create": { "label": "Create shipments", "category": "Shipments" },
+    "shipments.update": { "label": "Update shipments", "category": "Shipments" },
+    "shipments.assign": { "label": "Assign shipments", "category": "Shipments" },
+    "shipments.deliver": { "label": "Deliver shipments", "category": "Shipments" },
+    "shipments.scan_in": { "label": "Scan shipments in", "category": "Shipments" },
+    "shipments.scan_out": { "label": "Scan shipments out", "category": "Shipments" },
     "shipments.update_status": { "label": "Update shipment status", "category": "Shipments" },
     "couriers.read": { "label": "View couriers", "category": "Couriers" },
+    "couriers.update": { "label": "Update couriers", "category": "Couriers" },
     "merchant_orders.read": { "label": "View merchant orders", "category": "Merchant Orders" },
     "merchant_orders.create": { "label": "Create merchant orders", "category": "Merchant Orders" },
+    "merchant_orders.update": { "label": "Update merchant orders", "category": "Merchant Orders" },
     "merchant_orders.assign_courier": { "label": "Assign courier", "category": "Merchant Orders" },
     "merchants.read": { "label": "View merchants", "category": "Merchants" },
+    "merchants.update": { "label": "Update merchants", "category": "Merchants" },
     "warehouses.read": { "label": "View warehouses", "category": "Warehouses" },
+    "warehouses.create": { "label": "Create warehouses", "category": "Warehouses" },
+    "warehouses.update": { "label": "Update warehouses", "category": "Warehouses" },
+    "warehouses.manage": { "label": "Manage warehouses", "category": "Warehouses" },
+    "warehouses.scan_in": { "label": "Scan into warehouse", "category": "Warehouses" },
+    "warehouses.scan_out": { "label": "Scan out of warehouse", "category": "Warehouses" },
     "warehouses.manage_transfer": { "label": "Manage warehouse transfers", "category": "Warehouses" },
+    "warehouses.staff.manage": { "label": "Assign warehouse staff to sites", "category": "Warehouses" },
     "accounting.settlement_close": { "label": "Close settlements", "category": "Accounting" },
     "collections.read": { "label": "View collections", "category": "Accounting" },
     "notifications.send": { "label": "Send notifications", "category": "Notifications" }

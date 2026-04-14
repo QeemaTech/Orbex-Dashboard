@@ -4,7 +4,11 @@ import { useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 
-import { getDashboardKpis, listShipments } from "@/api/merchant-orders-api"
+import {
+  getDashboardKpis,
+  listShipments,
+  merchantOrderBatchId,
+} from "@/api/merchant-orders-api"
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
@@ -135,9 +139,9 @@ export function MerchantOrdersListPage() {
     : "/merchant-orders"
 
   const onRowClick = (row: CsShipmentRow) => {
-    void navigate(
-      `${detailPrefix}/${encodeURIComponent(row.shipmentId)}`,
-    )
+    const batchId = merchantOrderBatchId(row)
+    if (!batchId) return
+    void navigate(`${detailPrefix}/${encodeURIComponent(batchId)}`)
   }
 
   return (
@@ -178,7 +182,7 @@ export function MerchantOrdersListPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title={t("merchantOrdersList.kpiTotalMerchantOrders")}
             value={totals?.totalShipments ?? 0}
@@ -235,7 +239,7 @@ export function MerchantOrdersListPage() {
                   <TableBody>
                     {shipmentsQuery.data.shipments.map((row, idx) => (
                       <TableRow
-                        key={row.shipmentId ?? `row-${idx}`}
+                        key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
                         className="hover:bg-muted/50 cursor-pointer"
                         onClick={() => onRowClick(row)}
                       >
