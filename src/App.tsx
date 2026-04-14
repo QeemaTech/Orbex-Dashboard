@@ -25,6 +25,7 @@ import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
 import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
+import { DeliveryZonesPage } from "@/pages/DeliveryZonesPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
@@ -168,6 +169,19 @@ export default function App() {
                 requiredPermissions={["couriers.read"]}
               >
                 <CsCouriersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/delivery-zones"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["delivery_zones.read"]}
+              >
+                <DeliveryZonesPage />
               </ProtectedRole>
             </Protected>
           }
