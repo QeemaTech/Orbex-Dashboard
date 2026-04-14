@@ -35,6 +35,14 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Table,
   TableBody,
   TableCell,
@@ -218,6 +226,13 @@ export function WarehouseDetailPage() {
 
   const [deliveryZoneIds, setDeliveryZoneIds] = useState<string[]>([])
   const [pickupZoneIds, setPickupZoneIds] = useState<string[]>([])
+
+  function toggleInList(prev: string[], id: string, nextChecked: boolean): string[] {
+    const has = prev.includes(id)
+    if (nextChecked && !has) return [...prev, id]
+    if (!nextChecked && has) return prev.filter((x) => x !== id)
+    return prev
+  }
 
   const zoneLinksHydrated = useRef(false)
   useEffect(() => {
@@ -543,58 +558,88 @@ export function WarehouseDetailPage() {
                           <label className="text-muted-foreground text-xs font-medium">
                             {t("warehouse.zoneLinks.deliveryZones")}
                           </label>
-                          <select
-                            multiple
-                            className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm"
-                            value={deliveryZoneIds}
-                            onChange={(e) => {
-                              const selected = Array.from(e.target.selectedOptions).map(
-                                (o) => o.value,
-                              )
-                              setDeliveryZoneIds(selected)
-                            }}
-                          >
-                            {(zonesCatalogQuery.data?.zones ?? []).map((z) => (
-                              <option key={z.id} value={z.id}>
-                                {[
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button type="button" variant="outline" className="justify-between">
+                                {deliveryZoneIds.length
+                                  ? `${deliveryZoneIds.length} selected`
+                                  : t("common.select")}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[22rem]">
+                              <DropdownMenuLabel>
+                                {t("warehouse.zoneLinks.deliveryZones")}
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {(zonesCatalogQuery.data?.zones ?? []).map((z) => {
+                                const label = [
                                   z.governorate,
                                   z.areaZone ?? "",
                                   z.name ?? "",
                                 ]
                                   .filter(Boolean)
-                                  .join(" · ")}
-                              </option>
-                            ))}
-                          </select>
+                                  .join(" · ")
+                                const checked = deliveryZoneIds.includes(z.id)
+                                return (
+                                  <DropdownMenuCheckboxItem
+                                    key={z.id}
+                                    checked={checked}
+                                    onCheckedChange={(v) =>
+                                      setDeliveryZoneIds((prev) =>
+                                        toggleInList(prev, z.id, Boolean(v)),
+                                      )
+                                    }
+                                  >
+                                    {label}
+                                  </DropdownMenuCheckboxItem>
+                                )
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
 
                         <div className="grid gap-2">
                           <label className="text-muted-foreground text-xs font-medium">
                             {t("warehouse.zoneLinks.pickupZones")}
                           </label>
-                          <select
-                            multiple
-                            className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm"
-                            value={pickupZoneIds}
-                            onChange={(e) => {
-                              const selected = Array.from(e.target.selectedOptions).map(
-                                (o) => o.value,
-                              )
-                              setPickupZoneIds(selected)
-                            }}
-                          >
-                            {(zonesCatalogQuery.data?.zones ?? []).map((z) => (
-                              <option key={z.id} value={z.id}>
-                                {[
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button type="button" variant="outline" className="justify-between">
+                                {pickupZoneIds.length
+                                  ? `${pickupZoneIds.length} selected`
+                                  : t("common.select")}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[22rem]">
+                              <DropdownMenuLabel>
+                                {t("warehouse.zoneLinks.pickupZones")}
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {(zonesCatalogQuery.data?.zones ?? []).map((z) => {
+                                const label = [
                                   z.governorate,
                                   z.areaZone ?? "",
                                   z.name ?? "",
                                 ]
                                   .filter(Boolean)
-                                  .join(" · ")}
-                              </option>
-                            ))}
-                          </select>
+                                  .join(" · ")
+                                const checked = pickupZoneIds.includes(z.id)
+                                return (
+                                  <DropdownMenuCheckboxItem
+                                    key={z.id}
+                                    checked={checked}
+                                    onCheckedChange={(v) =>
+                                      setPickupZoneIds((prev) =>
+                                        toggleInList(prev, z.id, Boolean(v)),
+                                      )
+                                    }
+                                  >
+                                    {label}
+                                  </DropdownMenuCheckboxItem>
+                                )
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     )}
