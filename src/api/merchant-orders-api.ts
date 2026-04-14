@@ -722,3 +722,84 @@ export async function patchShipmentFields(
   })
 }
 
+export type ImportOrdersParams = {
+  token: string
+  file: File
+  merchantId?: string
+  regionId?: string | null
+  notes?: string | null
+  trackingNumber?: string | null
+}
+
+export type ImportOrdersResponse = {
+  id: string
+  merchantId: string
+  pickupCourierId: string | null
+  regionId: string | null
+  transferStatus: string
+  createdAt: string
+  shipments: Array<{
+    id: string
+    customerName: string
+    phonePrimary: string
+    trackingNumber: string | null
+    status: string
+  }>
+}
+
+export async function importOrdersFromExcel(
+  p: ImportOrdersParams,
+): Promise<ImportOrdersResponse> {
+  const formData = new FormData()
+  formData.append("file", p.file)
+  formData.append(
+    "shipment",
+    JSON.stringify({
+      merchantId: p.merchantId || null,
+      regionId: p.regionId,
+      notes: p.notes,
+      trackingNumber: p.trackingNumber,
+    }),
+  )
+
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/api/merchant-orders/import-orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${p.token}`,
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Upload failed" }))
+    throw new Error(error.message || "Upload failed")
+  }
+
+  return response.json()
+}
+
+export async function downloadImportTemplate(token: string): Promise<void> {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/merchant-orders/import-template`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error("Failed to download template")
+  }
+
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.setAttribute("download", "order-import-template.xlsx")
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => window.URL.revokeObjectURL(url), 100)
+}
+

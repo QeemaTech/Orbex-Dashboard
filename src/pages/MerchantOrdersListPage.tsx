@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query"
-import { Boxes } from "react-lucid"
-import { useCallback, useMemo } from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { Boxes, Upload, Download, Loader2 } from "react-lucid"
+import { useCallback, useMemo, useState, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 
@@ -8,9 +8,12 @@ import {
   getDashboardKpis,
   listShipments,
   merchantOrderBatchId,
+  importOrdersFromExcel,
+  downloadImportTemplate,
 } from "@/api/merchant-orders-api"
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
+import { listMerchants, type MerchantRow } from "@/api/merchants-api"
 import { Layout } from "@/components/layout/Layout"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { StatCard } from "@/components/shared/StatCard"
@@ -30,6 +33,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { useAuth } from "@/lib/auth-context"
 
@@ -144,6 +156,70 @@ export function MerchantOrdersListPage() {
     void navigate(`${detailPrefix}/${encodeURIComponent(batchId)}`)
   }
 
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [selectedMerchant, setSelectedMerchant] = useState<string>("")
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [importError, setImportError] = useState<string>("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const merchantsQuery = useQuery({
+    queryKey: ["merchants-list", token],
+    queryFn: () => listMerchants({ token, pageSize: 100 }),
+    enabled: !!token,
+  })
+
+  const importMutation = useMutation({
+    mutationFn: (file: File) =>
+      importOrdersFromExcel({
+        token,
+        file,
+        merchantId: selectedMerchant || undefined,
+      }),
+    onSuccess: () => {
+      setIsImportModalOpen(false)
+      setSelectedMerchant("")
+      setSelectedFile(null)
+      setImportError("")
+      shipmentsQuery.refetch()
+    },
+    onError: (error: Error) => {
+      setImportError(error.message)
+    },
+  })
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadImportTemplate(token)
+    } catch (error) {
+      setImportError("Failed to download template")
+    }
+  }
+
+  const handleImportClick = () => {
+    setIsImportModalOpen(true)
+    setImportError("")
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.name.endsWith(".xlsx")) {
+        setImportError("Please select an .xlsx file")
+        return
+      }
+      setSelectedFile(file)
+      setImportError("")
+    }
+  }
+
+  const handleSubmitImport = () => {
+    if (!selectedFile) {
+      setImportError("Please select a file")
+      return
+    }
+    importMutation.mutate(selectedFile)
+  }
+
   return (
     <Layout title={t("merchantOrdersList.pageTitle")}>
       <div className="space-y-6">
@@ -179,6 +255,16 @@ export function MerchantOrdersListPage() {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="size-4" />
+              Download Template
+            </Button>
+            <Button onClick={handleImportClick}>
+              <Upload className="size-4" />
+              Import Orders
+            </Button>
           </div>
         </div>
 
@@ -298,6 +384,69 @@ export function MerchantOrdersListPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import Orders from Excel</DialogTitle>
+              <DialogDescription>
+                Select a merchant and upload an Excel file with orders.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Merchant</label>
+                <select
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  value={selectedMerchant}
+                  onChange={(e) => setSelectedMerchant(e.target.value)}
+                >
+                  <option value="">Select a merchant (optional)</option>
+                  {(merchantsQuery.data?.merchants ?? []).map((m) => (
+                    <option key={m.merchantId} value={m.merchantId}>
+                      {m.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Excel File</label>
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleFileChange}
+                />
+              </div>
+              {selectedFile && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedFile.name}
+                </p>
+              )}
+              {importError && (
+                <p className="text-sm text-destructive">{importError}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsImportModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmitImport}
+                disabled={importMutation.isPending || !selectedFile}
+              >
+                {importMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  "Import"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   )
