@@ -21,6 +21,7 @@ import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
 import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
 import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
+import { ShipmentLabelPrintPage } from "@/pages/ShipmentLabelPrintPage"
 import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
 import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
@@ -128,6 +129,16 @@ export default function App() {
           element={
             <Protected>
               <ShipmentLinesListPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/shipments/:shipmentId/print"
+          element={
+            <Protected>
+              <ProtectedRole allowed={[]} requiredPermissions={["shipments.label"]}>
+                <ShipmentLabelPrintPage />
+              </ProtectedRole>
             </Protected>
           }
         />
@@ -369,6 +380,16 @@ export default function App() {
                 requiredPermissions={["couriers.read"]}
               >
                 <CsCouriersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/cs/shipments/:shipmentId/print"
+          element={
+            <Protected>
+              <ProtectedRole allowed={[]} requiredPermissions={["shipments.label"]}>
+                <ShipmentLabelPrintPage />
               </ProtectedRole>
             </Protected>
           }
