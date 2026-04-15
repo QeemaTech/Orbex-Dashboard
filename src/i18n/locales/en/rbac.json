@@ -83,6 +83,10 @@
     "permissions.read": { "label": "View permission catalogue", "category": "RBAC" },
     "rbac.audit.read": { "label": "View RBAC audit log", "category": "RBAC" },
     "shipments.read": { "label": "View shipments", "category": "Shipments" },
+    "shipments.label": {
+      "label": "View and print shipment labels (البوليصة)",
+      "category": "Shipments"
+    },
     "shipments.create": { "label": "Create shipments", "category": "Shipments" },
     "shipments.update": { "label": "Update shipments", "category": "Shipments" },
     "shipments.assign": { "label": "Assign shipments", "category": "Shipments" },
@@ -108,7 +112,11 @@
     "warehouses.staff.manage": { "label": "Assign warehouse staff to sites", "category": "Warehouses" },
     "accounting.settlement_close": { "label": "Close settlements", "category": "Accounting" },
     "collections.read": { "label": "View collections", "category": "Accounting" },
-    "notifications.send": { "label": "Send notifications", "category": "Notifications" }
+    "notifications.send": { "label": "Send notifications", "category": "Notifications" },
+    "delivery_zones.read": { "label": "View delivery zones", "category": "Delivery Zones" },
+    "delivery_zones.create": { "label": "Create delivery zones", "category": "Delivery Zones" },
+    "delivery_zones.update": { "label": "Update delivery zones", "category": "Delivery Zones" },
+    "delivery_zones.delete": { "label": "Delete delivery zones", "category": "Delivery Zones" }
   },
   "signedInAs": "You are signed in as {{email}}."
 }

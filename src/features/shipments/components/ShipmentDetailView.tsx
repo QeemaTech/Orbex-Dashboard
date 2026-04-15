@@ -1,10 +1,11 @@
-import { ExternalLink, PhoneCall } from "lucide-react"
+import { ExternalLink, PhoneCall, Printer } from "lucide-react"
 import { Boxes } from "react-lucid"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { openWhatsAppForOrder } from "@/features/customer-service/lib/whatsapp"
@@ -51,7 +52,9 @@ export function ShipmentDetailView({
   variant = "default",
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
   const locale = resolveNumberLocale(i18n.language)
+  const canPrintLabel = Boolean(user?.permissions?.includes("shipments.label"))
 
   const currencyLocale = t("shipments.detail.currencyLocale", { defaultValue: "en-EG" })
   const formatDateTime = (iso: string | null | undefined): string => {
@@ -66,6 +69,9 @@ export function ShipmentDetailView({
 
   const hasPhone = !!shipment.customer.phonePrimary?.trim()
   const courierPhone = shipment.deliveryCourier?.contactPhone?.trim()
+  const hasTracking = !!shipment.trackingNumber?.trim()
+  const printLabelTo =
+    variant === "cs" ? `/cs/shipments/${shipment.id}/print` : `/shipments/${shipment.id}/print`
 
   return (
     <div className="space-y-4">
@@ -181,6 +187,14 @@ export function ShipmentDetailView({
                   {t("adminOrders.viewBatchOrders")}
                 </Link>
               </Button>
+              {hasTracking && canPrintLabel ? (
+                <Button type="button" variant="outline" size="sm" asChild>
+                  <Link to={printLabelTo} target="_blank" rel="noopener noreferrer">
+                    <Printer className="mr-2 size-4" aria-hidden />
+                    {t("shipments.detail.printLabel", { defaultValue: "Print label" })}
+                  </Link>
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"

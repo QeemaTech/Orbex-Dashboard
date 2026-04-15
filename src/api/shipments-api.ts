@@ -1,6 +1,21 @@
 import { apiFetch } from "@/api/client"
 import type { ListShipmentsParams, ShipmentOrderRow } from "@/api/merchant-orders-api"
 
+/** `GET /api/shipments/:id/label` — thermal label payload. */
+export type ShipmentLabelResponse = {
+  trackingNumber: string
+  merchantName: string
+  customerName: string
+  phone: string
+  address: string
+  governorate: string
+  notes: string
+  codAmount: number | null
+  itemsCount: number
+  createdAt: string
+  warehouseName: string
+}
+
 export type ShipmentsListResponse = {
   shipments: ShipmentOrderRow[]
   total: number
@@ -57,6 +72,17 @@ export async function getShipmentById(p: {
 }): Promise<ShipmentOrderRow> {
   return apiFetch<ShipmentOrderRow>(
     `/api/shipments/${encodeURIComponent(p.shipmentId)}`,
+    { token: p.token },
+  )
+}
+
+/** Print-only label fields: `GET /api/shipments/:id/label`. */
+export async function getShipmentLabel(p: {
+  token: string
+  shipmentId: string
+}): Promise<ShipmentLabelResponse> {
+  return apiFetch<ShipmentLabelResponse>(
+    `/api/shipments/${encodeURIComponent(p.shipmentId)}/label`,
     { token: p.token },
   )
 }

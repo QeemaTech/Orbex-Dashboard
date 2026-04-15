@@ -83,6 +83,10 @@
     "permissions.read": { "label": "عرض قائمة الصلاحيات", "category": "إدارة الصلاحيات" },
     "rbac.audit.read": { "label": "عرض سجل تدقيق الصلاحيات", "category": "إدارة الصلاحيات" },
     "shipments.read": { "label": "عرض الشحنات", "category": "الشحنات" },
+    "shipments.label": {
+      "label": "عرض وطباعة بوليصة الشحنة",
+      "category": "الشحنات"
+    },
     "shipments.create": { "label": "إنشاء الشحنات", "category": "الشحنات" },
     "shipments.update": { "label": "تحديث الشحنات", "category": "الشحنات" },
     "shipments.assign": { "label": "تعيين الشحنات", "category": "الشحنات" },
@@ -108,7 +112,11 @@
     "warehouses.staff.manage": { "label": "تعيين موظفي المخزن على المواقع", "category": "المخازن" },
     "accounting.settlement_close": { "label": "إغلاق التسويات", "category": "المحاسبة" },
     "collections.read": { "label": "عرض التحصيل", "category": "المحاسبة" },
-    "notifications.send": { "label": "إرسال الإشعارات", "category": "الإشعارات" }
+    "notifications.send": { "label": "إرسال الإشعارات", "category": "الإشعارات" },
+    "delivery_zones.read": { "label": "عرض مناطق التوصيل", "category": "مناطق التوصيل" },
+    "delivery_zones.create": { "label": "إنشاء مناطق التوصيل", "category": "مناطق التوصيل" },
+    "delivery_zones.update": { "label": "تعديل مناطق التوصيل", "category": "مناطق التوصيل" },
+    "delivery_zones.delete": { "label": "حذف مناطق التوصيل", "category": "مناطق التوصيل" }
   },
   "signedInAs": "أنت مسجّل الدخول كـ {{email}}."
 }
