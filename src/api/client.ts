@@ -10,17 +10,69 @@ let refreshPromise: Promise<string | null> | null = null
 
 export class ApiError extends Error {
   readonly status: number
+  readonly code?: string
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.name = "ApiError"
     this.status = status
+    if (code !== undefined) {
+      this.code = code
+    }
   }
 }
 
 export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`
   return `${baseUrl}${p}`
+}
+
+/**
+ * JSON GET/POST for unauthenticated endpoints (e.g. public tracking).
+ * Never sends stored access tokens — avoids coupling customer sessions to staff JWTs.
+ */
+export async function publicApiFetch<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const headers = new Headers(init?.headers)
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json")
+  }
+  const storedLocale =
+    typeof localStorage !== "undefined"
+      ? localStorage.getItem("i18nextLng") || "en"
+      : "en"
+  headers.set("Accept-Language", storedLocale)
+
+  const res = await fetch(apiUrl(path), { ...init, headers })
+  if (res.status === 204) {
+    return undefined as T
+  }
+  const text = await res.text()
+  const data = text ? (JSON.parse(text) as unknown) : null
+  if (!res.ok) {
+    let msg = res.statusText
+    let code: string | undefined
+    if (typeof data === "object" && data !== null) {
+      if (
+        "error" in data &&
+        typeof (data as { error: unknown }).error === "string"
+      ) {
+        msg = (data as { error: string }).error
+      } else if (
+        "message" in data &&
+        typeof (data as { message: unknown }).message === "string"
+      ) {
+        msg = (data as { message: string }).message
+      }
+      if ("code" in data && typeof (data as { code: unknown }).code === "string") {
+        code = (data as { code: string }).code
+      }
+    }
+    throw new ApiError(res.status, msg, code)
+  }
+  return data as T
 }
 
 function notifyAuthChanged() {
@@ -110,6 +162,7 @@ export async function apiFetch<T>(
   const data = text ? (JSON.parse(text) as unknown) : null
   if (!res.ok) {
     let msg = res.statusText
+    let code: string | undefined
     if (typeof data === "object" && data !== null) {
       if (
         "error" in data &&
@@ -122,8 +175,70 @@ export async function apiFetch<T>(
       ) {
         msg = (data as { message: string }).message
       }
+      if ("code" in data && typeof (data as { code: unknown }).code === "string") {
+        code = (data as { code: string }).code
+      }
+    }
+    throw new ApiError(res.status, msg, code)
+  }
+  return data as T
+}
+
+export async function apiFetchText(
+  path: string,
+  init?: RequestInit & { token?: string | null },
+): Promise<string> {
+  const headers = new Headers(init?.headers)
+  // Preserve existing language/auth behavior, but do NOT force JSON.
+  const storedLocale = localStorage.getItem("i18nextLng") || "en"
+  headers.set("Accept-Language", storedLocale)
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "text/plain,*/*")
+  }
+
+  const storedAccess = localStorage.getItem(STORAGE_ACCESS)
+  const authToken = storedAccess ?? init?.token ?? null
+  if (authToken) {
+    headers.set("Authorization", `Bearer ${authToken}`)
+  }
+
+  let res = await fetch(apiUrl(path), { ...init, headers })
+  if (res.status === 401 && authToken) {
+    const nextToken = await refreshAccessToken()
+    if (nextToken) {
+      const retryHeaders = new Headers(init?.headers)
+      retryHeaders.set("Accept-Language", storedLocale)
+      if (!retryHeaders.has("Accept")) {
+        retryHeaders.set("Accept", "text/plain,*/*")
+      }
+      retryHeaders.set("Authorization", `Bearer ${nextToken}`)
+      res = await fetch(apiUrl(path), { ...init, headers: retryHeaders })
+    }
+  }
+
+  const text = await res.text()
+  if (!res.ok) {
+    // Best-effort decode of JSON error bodies, otherwise return plain text/status.
+    let msg = res.statusText
+    try {
+      const parsed = text ? (JSON.parse(text) as unknown) : null
+      if (typeof parsed === "object" && parsed !== null) {
+        if ("error" in parsed && typeof (parsed as { error?: unknown }).error === "string") {
+          msg = (parsed as { error: string }).error
+        } else if (
+          "message" in parsed &&
+          typeof (parsed as { message?: unknown }).message === "string"
+        ) {
+          msg = (parsed as { message: string }).message
+        }
+      } else if (text) {
+        msg = text
+      }
+    } catch {
+      if (text) msg = text
     }
     throw new ApiError(res.status, msg)
   }
-  return data as T
+
+  return text
 }

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useLayoutEffect, useRef, useState } from "react"
+import { useCallback, useLayoutEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 import JsBarcode from "jsbarcode"
@@ -48,6 +48,9 @@ export function ShipmentLabelPrintPage() {
 
   const svgMainRef = useRef<SVGSVGElement | null>(null)
   const svgSmallRef = useRef<SVGSVGElement | null>(null)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+  const sheetRef = useRef<HTMLElement | null>(null)
+  const autoPrintDoneRef = useRef(false)
   const [barcodesDrawn, setBarcodesDrawn] = useState(false)
 
   const labelQuery = useQuery({
@@ -66,7 +69,7 @@ export function ShipmentLabelPrintPage() {
     const small = svgSmallRef.current
     if (!main || !small) return
     try {
-      JsBarcode(main, label.trackingNumber, {
+      JsBarcode(main as unknown as HTMLElement, label.trackingNumber, {
         format: "CODE128",
         displayValue: false,
         lineColor: "#000000",
@@ -77,7 +80,7 @@ export function ShipmentLabelPrintPage() {
         height: 52,
         width: 1.85,
       })
-      JsBarcode(small, label.trackingNumber, {
+      JsBarcode(small as unknown as HTMLElement, label.trackingNumber, {
         format: "CODE128",
         displayValue: false,
         lineColor: "#000000",
@@ -92,13 +95,82 @@ export function ShipmentLabelPrintPage() {
     setBarcodesDrawn(true)
   }, [label?.trackingNumber])
 
+  const updateLabelScale = useCallback(() => {
+    const viewport = viewportRef.current
+    const sheet = sheetRef.current
+    if (!viewport || !sheet) return
+    const vw = viewport.clientWidth
+    const vh = viewport.clientHeight
+    const sw = Math.max(sheet.scrollWidth, 1)
+    const sh = Math.max(sheet.scrollHeight, 1)
+    /* Tiny margin avoids subpixel overflow that can create an extra blank print page */
+    const s = Math.min(1, (vw / sw) * 0.998, (vh / sh) * 0.998)
+    viewport.style.setProperty("--label-scale", String(s))
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!label) return
+    document.documentElement.classList.add("label-print-page")
+    document.body.classList.add("label-print-page")
+    return () => {
+      document.documentElement.classList.remove("label-print-page")
+      document.body.classList.remove("label-print-page")
+    }
+  }, [label])
+
+  useLayoutEffect(() => {
+    if (!label || !barcodesDrawn) return
+    const viewport = viewportRef.current
+    const sheet = sheetRef.current
+    if (!viewport || !sheet) return
+
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(updateLabelScale)
+    })
+    ro.observe(viewport)
+    ro.observe(sheet)
+
+    const onResize = () => updateLabelScale()
+    const onBeforePrint = () => updateLabelScale()
+    const onAfterPrint = () => updateLabelScale()
+
+    window.addEventListener("resize", onResize)
+    window.addEventListener("beforeprint", onBeforePrint)
+    window.addEventListener("afterprint", onAfterPrint)
+
+    updateLabelScale()
+    requestAnimationFrame(() => {
+      updateLabelScale()
+    })
+
+    return () => {
+      ro.disconnect()
+      window.removeEventListener("resize", onResize)
+      window.removeEventListener("beforeprint", onBeforePrint)
+      window.removeEventListener("afterprint", onAfterPrint)
+    }
+  }, [label, barcodesDrawn, updateLabelScale])
+
+  useLayoutEffect(() => {
+    autoPrintDoneRef.current = false
+  }, [shipmentId, label?.trackingNumber])
+
   useLayoutEffect(() => {
     if (!label || !barcodesDrawn || !shipmentId) return
-    const t = window.setTimeout(() => {
-      window.print()
-    }, 400)
-    return () => window.clearTimeout(t)
-  }, [label, barcodesDrawn, shipmentId])
+    if (autoPrintDoneRef.current) return
+    const printTimer = window.setTimeout(() => {
+      updateLabelScale()
+      requestAnimationFrame(() => {
+        updateLabelScale()
+        requestAnimationFrame(() => {
+          if (autoPrintDoneRef.current) return
+          autoPrintDoneRef.current = true
+          window.print()
+        })
+      })
+    }, 280)
+    return () => window.clearTimeout(printTimer)
+  }, [label, barcodesDrawn, shipmentId, updateLabelScale])
 
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
 
@@ -155,7 +227,13 @@ export function ShipmentLabelPrintPage() {
         <button
           type="button"
           className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm"
-          onClick={() => window.print()}
+          onClick={() => {
+            updateLabelScale()
+            requestAnimationFrame(() => {
+              updateLabelScale()
+              window.print()
+            })
+          }}
         >
           {t("shipments.label.printAgain", { defaultValue: "Print again" })}
         </button>
@@ -167,7 +245,9 @@ export function ShipmentLabelPrintPage() {
         </Link>
       </div>
 
-      <article className="label-print-sheet" aria-label="Shipment label">
+      <div ref={viewportRef} className="label-print-viewport">
+        <div className="label-print-scale-stage">
+          <article ref={sheetRef} className="label-print-sheet" aria-label="Shipment label">
         <div className="label-barcode-block">
           <svg ref={svgMainRef} role="img" aria-label="Barcode" />
           <div className="label-tracking-human" dir="ltr" style={{ unicodeBidi: "plaintext" }}>
@@ -206,7 +286,7 @@ export function ShipmentLabelPrintPage() {
           </div>
         </div>
 
-        <div className="label-full">
+        <div className="label-full label-address-block">
           <div className="label-kv">
             <span className="label-k">المنطقة | </span>
             <span className="label-v">{label.governorate}</span>
@@ -225,12 +305,10 @@ export function ShipmentLabelPrintPage() {
 
         <div className="label-boxes">
           <div className="label-mini-box">فتح الشحنة: لا</div>
-          <div className="label-mini-box">
-            {label.itemsCount} قطع
-          </div>
+          <div className="label-mini-box">{label.itemsCount} قطع</div>
         </div>
 
-        <div className="label-full">
+        <div className="label-full label-desc-block">
           <span className="label-k">وصف الشحنة | </span>
           <span className="label-v">—</span>
         </div>
@@ -245,7 +323,7 @@ export function ShipmentLabelPrintPage() {
           </div>
         </div>
 
-        <div className="label-full">
+        <div className="label-full label-return-block">
           <span className="label-k">عنوان المرتجع | </span>
           <span className="label-v">—</span>
         </div>
@@ -282,7 +360,9 @@ export function ShipmentLabelPrintPage() {
           <span>Created: {formatLabelDate(label.createdAt, locale)}</span>
           <span>1/1</span>
         </div>
-      </article>
+          </article>
+        </div>
+      </div>
     </div>
   )
 }

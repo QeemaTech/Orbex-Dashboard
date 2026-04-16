@@ -31,6 +31,8 @@ import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { RolesPage } from "@/pages/RolesPage"
+import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
+import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -108,6 +110,8 @@ export default function App() {
       <RealtimeBridge />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/track/:trackingNumber" element={<PublicShipmentTrackingPage />} />
+        <Route path="/delivery-proof/:token" element={<DeliveryProofPage />} />
         <Route
           path="/"
           element={
