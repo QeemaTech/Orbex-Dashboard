@@ -96,6 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_ACCESS)
     if (!token) {
+      // Without a token, API queries stay disabled (`enabled: !!token`) but `Protected`
+      // still allowed a stale `orbex_user` — every list page looked empty. Clear session.
+      if (readStoredUser()) {
+        localStorage.removeItem(STORAGE_USER)
+        localStorage.removeItem(STORAGE_REFRESH)
+        setUser(null)
+        setRefreshToken(null)
+      }
       setLoading(false)
       return
     }

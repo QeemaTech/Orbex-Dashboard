@@ -360,8 +360,10 @@ function scanPayloadFromInput(raw: string): {
   return { trackingNumber: t }
 }
 
+/** Hub is taken from the JWT, not the body — only send `trackingNumber` / optional `note`. */
 export function scanShipmentIn(params: {
   token: string
+  /** Page context only; not sent to the API (avoids strict-schema 400). */
   warehouseId: string
   trackingNumber: string
   note?: string
@@ -387,8 +389,10 @@ export function scanShipmentIn(params: {
   })
 }
 
+/** Hub is taken from the JWT — only send `trackingNumber` / optional `note`. */
 export function scanShipmentOut(params: {
   token: string
+  /** Page context only; not sent to the API. */
   warehouseId: string
   trackingNumber: string
   note?: string
@@ -397,7 +401,6 @@ export function scanShipmentOut(params: {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
-      warehouseId: params.warehouseId,
       trackingNumber: params.trackingNumber.trim(),
       ...(params.note !== undefined ? { note: params.note } : {}),
     }),

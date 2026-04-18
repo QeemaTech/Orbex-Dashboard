@@ -50,6 +50,8 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
   const currentWarehouseId = shipment.currentWarehouseId
   const batchInWarehouse = shipment.transferStatus === "IN_WAREHOUSE"
   const lineInWarehouse = shipment.status === "IN_WAREHOUSE"
+  const lineEligibleForReturnTask =
+    shipment.status === "POSTPONED" || shipment.status === "REJECTED"
   // TODO: re-enable CS confirmation gate for delivery planning when product requires it again.
   // const csConfirmed = Boolean(shipment.csConfirmedAt)
 
@@ -197,7 +199,7 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
           </select>
         </div>
 
-        {taskType === "DELIVERY" || taskType === "RETURN_TO_MERCHANT" || taskType === "TRANSFER" ? (
+        {taskType === "DELIVERY" || taskType === "RETURN_TO_MERCHANT" ? (
           <div className="grid gap-2">
             <label className="text-muted-foreground text-xs font-medium" htmlFor="plan-task-courier">
               {taskType === "DELIVERY"

@@ -89,7 +89,7 @@
     },
     "planTask": {
       "title": "Plan warehouse task",
-      "description": "Creates a planned task for this shipment line at your warehouse (required before scan-out). Uses POST /api/shipments/:id/tasks with this line’s id.",
+      "description": "Creates a planned task for this shipment line at your hub. Scan-out executes this task (delivery, transfer, or return to merchant).",
       "fieldPlanningWarehouse": "Your hub for this plan (must match the line’s warehouse)",
       "fieldType": "Task type",
       "typeDelivery": "Delivery (last mile)",
@@ -105,6 +105,7 @@
       "success": "Planned task created ({{type}}). You can scan out with the tracking number.",
       "hintBatchNotInWarehouse": "The merchant order batch is not in a warehouse yet (transfer must be IN_WAREHOUSE).",
       "hintLineNotInWarehouse": "This shipment line is not IN_WAREHOUSE.",
+      "hintReturnWrongStatus": "Return-to-merchant planning is only available when this line is POSTPONED or REJECTED (and the batch is in the warehouse).",
       "hintCsRequired": "Outbound customer service must confirm this line before planning a delivery task.",
       "errors": {
         "NO_ACTIVE_TASK": "No active task (use after a failed scan only if shown).",
@@ -113,6 +114,7 @@
         "INVALID_TRANSITION": "This task is not allowed for the current status.",
         "CS_DELIVERY_NOT_ALLOWED": "Customer service must confirm the line for delivery planning.",
         "DELIVERY_POSTPONE_LIMIT": "Too many postponements to plan another delivery.",
+        "ACTIVE_TASK_EXISTS": "An active planned or in-progress task already exists for this line. Complete or cancel it before creating another.",
         "generic": "Could not create the planned task."
       }
     },

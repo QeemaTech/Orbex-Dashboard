@@ -8,18 +8,48 @@ const AUTH_CHANGED_EVENT = "orbex-auth-changed"
 
 let refreshPromise: Promise<string | null> | null = null
 
+/** Optional Zod-style payload from `POST` validation (`error: "Validation failed", details: flatten()`). */
 export class ApiError extends Error {
   readonly status: number
   readonly code?: string
+  readonly details?: unknown
 
-  constructor(status: number, message: string, code?: string) {
+  constructor(status: number, message: string, code?: string, details?: unknown) {
     super(message)
     this.name = "ApiError"
     this.status = status
     if (code !== undefined) {
       this.code = code
     }
+    if (details !== undefined) {
+      this.details = details
+    }
   }
+}
+
+/** Turns Zod `flatten()` shape from API `{ details }` into a short user-visible string. */
+export function formatApiValidationDetails(details: unknown): string {
+  if (!details || typeof details !== "object") {
+    return ""
+  }
+  const d = details as {
+    formErrors?: string[]
+    fieldErrors?: Record<string, string[] | undefined>
+  }
+  const parts: string[] = []
+  if (Array.isArray(d.formErrors)) {
+    for (const e of d.formErrors) {
+      if (e) parts.push(e)
+    }
+  }
+  if (d.fieldErrors && typeof d.fieldErrors === "object") {
+    for (const [key, errs] of Object.entries(d.fieldErrors)) {
+      if (errs?.length) {
+        parts.push(`${key}: ${errs.join(", ")}`)
+      }
+    }
+  }
+  return parts.join(" · ")
 }
 
 export function apiUrl(path: string): string {
@@ -54,6 +84,7 @@ export async function publicApiFetch<T>(
   if (!res.ok) {
     let msg = res.statusText
     let code: string | undefined
+    let details: unknown
     if (typeof data === "object" && data !== null) {
       if (
         "error" in data &&
@@ -69,8 +100,11 @@ export async function publicApiFetch<T>(
       if ("code" in data && typeof (data as { code: unknown }).code === "string") {
         code = (data as { code: string }).code
       }
+      if ("details" in data) {
+        details = (data as { details: unknown }).details
+      }
     }
-    throw new ApiError(res.status, msg, code)
+    throw new ApiError(res.status, msg, code, details)
   }
   return data as T
 }
@@ -163,6 +197,7 @@ export async function apiFetch<T>(
   if (!res.ok) {
     let msg = res.statusText
     let code: string | undefined
+    let details: unknown
     if (typeof data === "object" && data !== null) {
       if (
         "error" in data &&
@@ -178,8 +213,11 @@ export async function apiFetch<T>(
       if ("code" in data && typeof (data as { code: unknown }).code === "string") {
         code = (data as { code: string }).code
       }
+      if ("details" in data) {
+        details = (data as { details: unknown }).details
+      }
     }
-    throw new ApiError(res.status, msg, code)
+    throw new ApiError(res.status, msg, code, details)
   }
   return data as T
 }

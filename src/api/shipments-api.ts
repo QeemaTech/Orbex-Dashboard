@@ -159,7 +159,12 @@ export async function createShipmentPlannedTask(p: {
   token: string
   shipmentId: string
   body: CreateShipmentPlannedTaskBody
-}): Promise<{ taskId: string; shipmentId: string; type: string }> {
+}): Promise<{
+  taskId: string
+  shipmentId: string
+  type: string
+  status: string
+}> {
   const body: Record<string, unknown> = {
     type: p.body.type,
   }
@@ -169,7 +174,12 @@ export async function createShipmentPlannedTask(p: {
   if (p.body.toWarehouseId) {
     body.toWarehouseId = p.body.toWarehouseId
   }
-  return apiFetch<{ taskId: string; shipmentId: string; type: string }>(
+  return apiFetch<{
+    taskId: string
+    shipmentId: string
+    type: string
+    status: string
+  }>(
     `/api/shipments/${encodeURIComponent(p.shipmentId)}/tasks`,
     {
       method: "POST",
