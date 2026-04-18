@@ -99,12 +99,26 @@ export function ShipmentLabelPrintPage() {
     const viewport = viewportRef.current
     const sheet = sheetRef.current
     if (!viewport || !sheet) return
+
+    viewport.style.setProperty("--label-scale", "1")
+    void viewport.offsetHeight
+    void sheet.offsetHeight
+
     const vw = viewport.clientWidth
     const vh = viewport.clientHeight
     const sw = Math.max(sheet.scrollWidth, 1)
-    const sh = Math.max(sheet.scrollHeight, 1)
-    /* Tiny margin avoids subpixel overflow that can create an extra blank print page */
-    const s = Math.min(1, (vw / sw) * 0.998, (vh / sh) * 0.998)
+    const sh = Math.max(sheet.scrollHeight, sheet.offsetHeight, 1)
+    const printMq =
+      typeof window !== "undefined" && window.matchMedia("print").matches
+    /* Print preview: tighter margins; height cap avoids width-bound scale overflowing vh */
+    const wM = printMq ? 0.97 : 0.995
+    const hM = printMq ? 0.68 : 0.995
+    const sW = (vw / sw) * wM
+    const sH = (vh / sh) * hM
+    let s = Math.min(1, sW, sH)
+    const maxH = printMq ? 0.9 * vh : vh
+    const sCapH = maxH / sh
+    s = Math.min(s, sCapH)
     viewport.style.setProperty("--label-scale", String(s))
   }, [])
 
@@ -125,10 +139,25 @@ export function ShipmentLabelPrintPage() {
     if (!viewport || !sheet) return
 
     const ro = new ResizeObserver(() => {
-      requestAnimationFrame(updateLabelScale)
+      requestAnimationFrame(() => updateLabelScale())
     })
     ro.observe(viewport)
     ro.observe(sheet)
+
+    const mqlPrint = window.matchMedia("print")
+    const onPrintMediaChange = () => {
+      if (mqlPrint.matches) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              updateLabelScale()
+            })
+          })
+        })
+      } else {
+        updateLabelScale()
+      }
+    }
 
     const onResize = () => updateLabelScale()
     const onBeforePrint = () => updateLabelScale()
@@ -137,6 +166,7 @@ export function ShipmentLabelPrintPage() {
     window.addEventListener("resize", onResize)
     window.addEventListener("beforeprint", onBeforePrint)
     window.addEventListener("afterprint", onAfterPrint)
+    mqlPrint.addEventListener("change", onPrintMediaChange)
 
     updateLabelScale()
     requestAnimationFrame(() => {
@@ -145,6 +175,7 @@ export function ShipmentLabelPrintPage() {
 
     return () => {
       ro.disconnect()
+      mqlPrint.removeEventListener("change", onPrintMediaChange)
       window.removeEventListener("resize", onResize)
       window.removeEventListener("beforeprint", onBeforePrint)
       window.removeEventListener("afterprint", onAfterPrint)

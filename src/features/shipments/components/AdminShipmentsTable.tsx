@@ -25,10 +25,13 @@ import {
   openWhatsAppForOrder,
   openWhatsAppTrackingMessage,
 } from "@/features/customer-service/lib/whatsapp"
+import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
 import { backendOrderDeliveryLabel } from "@/features/warehouse/backend-labels"
 
 type Props = {
   rows: ShipmentOrderRow[]
+  /** When set, list data is refreshed after a successful CS confirm. */
+  listQueryKey?: unknown[]
 }
 
 function formatMoney(raw: string, locale: string) {
@@ -63,7 +66,7 @@ function WhatsAppLogoIcon({ className }: { className?: string }) {
   )
 }
 
-export function AdminShipmentsTable({ rows }: Props) {
+export function AdminShipmentsTable({ rows, listQueryKey }: Props) {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
   const { accessToken } = useAuth()
@@ -114,6 +117,13 @@ export function AdminShipmentsTable({ rows }: Props) {
                   className="flex flex-wrap items-center justify-end gap-2"
                   onClick={stopRowClick}
                 >
+                  <ShipmentCsConfirmButton
+                    line={row}
+                    accessToken={accessToken}
+                    extraInvalidateQueryKeys={
+                      listQueryKey ? [listQueryKey] : undefined
+                    }
+                  />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button

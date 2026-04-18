@@ -202,7 +202,7 @@ export function WarehouseDetailPage() {
   const [lookupTrackingInput, setLookupTrackingInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
   const [trackingResult, setTrackingResult] = useState<string>("")
-  const [activeTab, setActiveTab] = useState<"orders" | "standalone">("orders")
+  const [activeTab, setActiveTab] = useState<"orders" | "shipments">("orders")
 
   const canSeeWarehouseDirectory =
     user?.role === "ADMIN" || user?.role === "WAREHOUSE_ADMIN"
@@ -244,6 +244,18 @@ export function WarehouseDetailPage() {
   })
 
   const hub = siteDetailQuery.data
+
+  /** Main hub: no parent branch. Sub-branch: `mainBranchId` set (and usually `mainBranch` populated from API). */
+  const isMainHub =
+    hub != null &&
+    hub.mainBranchId == null &&
+    hub.mainBranch == null
+
+  useEffect(() => {
+    if (hub != null && hub.mainBranchId != null) {
+      setReturnsOnly(false)
+    }
+  }, [hub])
 
   const zoneLinksQuery = useQuery({
     queryKey: ["warehouse-zone-links", token, warehouseId],
@@ -290,7 +302,7 @@ export function WarehouseDetailPage() {
 
   const statsQuery = useQuery({
     queryKey: ["warehouse-stats", token, warehouseId],
-    queryFn: () => getWarehouseStats(token, warehouseId),
+    queryFn: () => getWarehouseStats(token, { warehouseId }),
     enabled: !!token && !!warehouseId && !accessDenied,
     refetchInterval: 15000,
   })
@@ -312,14 +324,20 @@ export function WarehouseDetailPage() {
             : undefined,
         warehouseId,
       }),
-    enabled: !!token && !!warehouseId && !accessDenied,
+    enabled:
+      !!token &&
+      !!warehouseId &&
+      !accessDenied &&
+      hub != null &&
+      isMainHub &&
+      activeTab === "orders",
     refetchInterval: 10000,
   })
 
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
     queryFn: () => getWarehouseCouriers({ token }),
-    enabled: !!token && returnsOnly && !accessDenied,
+    enabled: !!token && returnsOnly && !accessDenied && isMainHub && activeTab === "orders",
   })
 
   const standaloneQueryKey = useMemo(
@@ -344,7 +362,13 @@ export function WarehouseDetailPage() {
         search: search || undefined,
         warehouseId,
       }),
-    enabled: !!token && !!warehouseId && !accessDenied && activeTab === "standalone",
+    enabled:
+      !!token &&
+      !!warehouseId &&
+      !accessDenied &&
+      hub != null &&
+      ((isMainHub && activeTab === "shipments") ||
+        (hub.mainBranchId !== null)),
     refetchInterval: 10000,
   })
 
@@ -527,15 +551,15 @@ export function WarehouseDetailPage() {
     Math.ceil((standaloneQuery.data?.total ?? 0) / (standaloneQuery.data?.pageSize ?? 20)),
   )
   const stats = statsQuery.data
-  const statValues = [
-    stats?.pending ?? 0,
-    stats?.assigned ?? 0,
-    stats?.onTheWayToWarehouse ?? 0,
-    stats?.inWarehouse ?? 0,
-    stats?.partiallyDelivered ?? 0,
-    stats?.delivered ?? 0,
-  ]
-  const maxStatValue = Math.max(...statValues, 0)
+  const periodStats = stats?.periodMetrics
+  const lifetimeStats = stats?.lifetimeMetrics
+  const periodStatValues = transferStatCards.map((c) => periodStats?.[c.statKey] ?? 0)
+  const maxPeriodStat = Math.max(...periodStatValues, 0)
+
+  const periodRangeLabel =
+    stats?.period != null
+      ? `${new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(stats.period.from))} – ${new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(stats.period.to))}`
+      : null
 
   if (!warehouseId) {
     return (
@@ -790,34 +814,31 @@ export function WarehouseDetailPage() {
                       </div>
                     ))
                   : null}
-
-                {hub.mainBranch && hub.mainBranchId ? (
-                  <div
-                    className="rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleSubBranchClick(hub.mainBranch!!.id)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubBranchClick(hub.mainBranch!!.id)}
-                  >
-                    <p className="font-medium text-sm">{hub.mainBranch.name}</p>
-                  </div>
-                ) : null}
               </>
             ) : null}
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {transferStatCards.map((c) => (
-            <StatCard
-              key={c.statKey}
-              title={t(c.titleI18nKey)}
-              value={stats?.[c.statKey] ?? 0}
-              percentage={toPercentFromMax(stats?.[c.statKey] ?? 0, maxStatValue)}
-              icon={c.icon}
-              accent={c.accent}
-            />
-          ))}
+        <div className="space-y-3">
+          {periodRangeLabel ? (
+            <p className="text-muted-foreground text-sm">
+              {t("warehouse.insights.periodFromSettings")}: {periodRangeLabel}
+            </p>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {transferStatCards.map((c) => (
+              <StatCard
+                key={c.statKey}
+                title={t(c.titleI18nKey)}
+                value={periodStats?.[c.statKey] ?? 0}
+                percentage={toPercentFromMax(periodStats?.[c.statKey] ?? 0, maxPeriodStat)}
+                icon={c.icon}
+                accent={c.accent}
+                secondaryValue={lifetimeStats?.[c.statKey] ?? 0}
+                secondaryLabel={t("warehouse.insights.allTime")}
+              />
+            ))}
+          </div>
         </div>
 
         <Card>
@@ -866,7 +887,7 @@ export function WarehouseDetailPage() {
                 variant="outline"
                 onClick={() => {
                   const payload = scanPayloadFromInput(lookupTrackingInput)
-                  if (payload.shipmentId) {
+                  if (payload.shipmentLineId) {
                     showToast(t("warehouse.operations.trackNeedsTracking"), "error")
                     return
                   }
@@ -893,37 +914,53 @@ export function WarehouseDetailPage() {
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <CardTitle>{t("warehouse.queue.titleTransfers")}</CardTitle>
-                <CardDescription>{t("warehouse.queue.descriptionTransfers")}</CardDescription>
+                <CardTitle>
+                  {isMainHub && activeTab === "orders"
+                    ? t("warehouse.queue.titleTransfers")
+                    : t("warehouse.queue.titleShipments")}
+                </CardTitle>
+                <CardDescription>
+                  {isMainHub && activeTab === "orders"
+                    ? t("warehouse.queue.descriptionTransfers")
+                    : t("warehouse.queue.descriptionShipments")}
+                </CardDescription>
               </div>
-              <div className="flex rounded-lg border p-0.5">
-                <button
-                  type="button"
-                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
-                    activeTab === "orders"
-                      ? "bg-background shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => setActiveTab("orders")}
-                >
-                  {t("warehouse.queue.tabOrders")}
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
-                    activeTab === "standalone"
-                      ? "bg-background shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => setActiveTab("standalone")}
-                >
-                  {t("warehouse.queue.tabStandalone")}
-                </button>
-              </div>
+              {isMainHub ? (
+                <div className="flex rounded-lg border p-0.5">
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      activeTab === "orders"
+                        ? "bg-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setActiveTab("orders")}
+                  >
+                    {t("warehouse.queue.tabOrders")}
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      activeTab === "shipments"
+                        ? "bg-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setActiveTab("shipments")}
+                  >
+                    {t("warehouse.queue.tabShipments")}
+                  </button>
+                </div>
+              ) : null}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-[2fr_1fr_auto]">
+            <div
+              className={
+                isMainHub && activeTab === "orders"
+                  ? "grid gap-3 md:grid-cols-[2fr_1fr_auto]"
+                  : "grid gap-3"
+              }
+            >
               <Input
                 value={search}
                 onChange={(e) => {
@@ -932,37 +969,41 @@ export function WarehouseDetailPage() {
                 }}
                 placeholder={t("warehouse.queue.searchPlaceholder")}
               />
-              <select
-                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
-                value={transferStatusFilter}
-                onChange={(e) => {
-                  setTransferStatusFilter(e.target.value as WarehouseTransferStatusFilter)
-                  setPage(1)
-                }}
-              >
-                {warehouseTransferStatusFilters.map((value) => (
-                  <option key={value || "all"} value={value}>
-                    {value
-                      ? backendShipmentTransferLabel(t, value)
-                      : t("warehouse.queue.allStatuses")}
-                  </option>
-                ))}
-              </select>
-              <label className="text-sm flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={returnsOnly}
-                  onChange={(e) => {
-                    setReturnsOnly(e.target.checked)
-                    if (!e.target.checked) setReturnsCourierFilterId("")
-                    setPage(1)
-                  }}
-                />
-                {t("warehouse.queue.returnsOnly")}
-              </label>
+              {isMainHub && activeTab === "orders" ? (
+                <>
+                  <select
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
+                    value={transferStatusFilter}
+                    onChange={(e) => {
+                      setTransferStatusFilter(e.target.value as WarehouseTransferStatusFilter)
+                      setPage(1)
+                    }}
+                  >
+                    {warehouseTransferStatusFilters.map((value) => (
+                      <option key={value || "all"} value={value}>
+                        {value
+                          ? backendShipmentTransferLabel(t, value)
+                          : t("warehouse.queue.allStatuses")}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="text-sm flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={returnsOnly}
+                      onChange={(e) => {
+                        setReturnsOnly(e.target.checked)
+                        if (!e.target.checked) setReturnsCourierFilterId("")
+                        setPage(1)
+                      }}
+                    />
+                    {t("warehouse.queue.returnsOnly")}
+                  </label>
+                </>
+              ) : null}
             </div>
 
-            {returnsOnly ? (
+            {isMainHub && activeTab === "orders" && returnsOnly ? (
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-muted-foreground text-sm whitespace-nowrap">
                   {t("warehouse.queue.filterReturnsByCourier")}
@@ -985,7 +1026,13 @@ export function WarehouseDetailPage() {
               </div>
             ) : null}
 
-            {activeTab === "orders" ? (
+            {siteDetailQuery.isPending ? (
+              <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
+            ) : siteDetailQuery.isError ? (
+              <p className="text-destructive text-sm">
+                {(siteDetailQuery.error as Error).message}
+              </p>
+            ) : isMainHub && activeTab === "orders" ? (
               <>
                 {queueQuery.isLoading ? (
                   <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
@@ -1096,19 +1143,31 @@ export function WarehouseDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t("warehouse.table.trackingNumber")}</TableHead>
+                        <TableHead>{t("warehouse.table.customer")}</TableHead>
+                        <TableHead>{t("warehouse.table.merchant")}</TableHead>
                         <TableHead>{t("warehouse.table.status")}</TableHead>
-                        <TableHead>{t("warehouse.table.warehouse")}</TableHead>
+                        <TableHead>{t("warehouse.table.transferredFromWarehouse")}</TableHead>
                         <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {(standaloneQuery.data?.shipments ?? []).map((row: WarehouseStandaloneShipmentRow) => (
-                        <TableRow key={row.id} className="hover:bg-muted/50">
+                        <TableRow
+                          key={row.id}
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() =>
+                            nav(`/shipments/${encodeURIComponent(row.id)}`)
+                          }
+                        >
                           <TableCell>{row.trackingNumber ?? getNotApplicable()}</TableCell>
+                          <TableCell>{row.customerName ?? getNotApplicable()}</TableCell>
+                          <TableCell>{row.merchantName ?? getNotApplicable()}</TableCell>
                           <TableCell>
-                            <BackendStatusBadge kind="shipmentStatus" value={row.status} />
+                            <BackendStatusBadge kind="orderDelivery" value={row.status} />
                           </TableCell>
-                          <TableCell>{row.currentWarehouseId ?? getNotApplicable()}</TableCell>
+                          <TableCell>
+                            {row.transferredFromWarehouseName ?? getNotApplicable()}
+                          </TableCell>
                           <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
                         </TableRow>
                       ))}

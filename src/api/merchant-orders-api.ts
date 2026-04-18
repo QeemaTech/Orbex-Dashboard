@@ -41,6 +41,8 @@ export type CsShipmentRow = {
   trackingNumber: string | null
   /** Merchant-order batch pipeline — API field `transferStatus` on the parent `MerchantOrder`. */
   transferStatus?: string
+  /** Line CS outbound confirmation timestamp when present on list/detail APIs. */
+  csConfirmedAt?: string | null
   customerName: string
   phonePrimary: string
   phoneSecondary: string | null
@@ -74,6 +76,9 @@ export type CsShipmentRow = {
   courier?: CsCourier | null
   /** Hub assigned to the batch (`Shipment.assignedWarehouse`); present on list/KPI/detail when returned by API. */
   assignedWarehouse?: { id: string; name: string } | null
+  /** Primary line physical location (`Shipment.currentWarehouse`). */
+  currentWarehouseId?: string | null
+  currentWarehouse?: { id: string; name: string } | null
   /** Line count in batch; from shipment list/KPI aggregates. */
   orderCount?: number
   /** Sum of line values in the batch. */
@@ -269,6 +274,8 @@ export type ShipmentOrderRow = {
   assignedWarehouseId?: string | null
   /** Current warehouse where the shipment is located (from scan in/out operations). */
   currentWarehouseId?: string | null
+  /** Populated when `currentWarehouseId` is set (list/detail/orders APIs). */
+  currentWarehouse?: { id: string; name: string } | null
   subStatus?: string
   statusUi?: string
   shipmentPaymentStatus?: string
@@ -307,6 +314,13 @@ export type DashboardKpisResponse = {
   totals: {
     totalShipments: number
     totalOrders: number
+    /** Same as totalOrders (customer shipment lines). */
+    totalShipmentLines?: number
+    /** Same as totalShipments (merchant-order batches). */
+    totalMerchantOrders?: number
+    totalUsers?: number
+    /** All-time warehouse site count when caller has warehouses.read. */
+    totalWarehouses?: number
     delivered: number
     rejected: number
     postponed: number
@@ -324,6 +338,8 @@ export type DashboardKpisResponse = {
     count: number
   }>
   ordersOverTime: Array<{ date: string; count: number }>
+  merchantOrdersOverTime?: Array<{ date: string; count: number }>
+  insightsPeriod?: { from: string; to: string }
   courierWorkload: Array<{
     courierId: string
     courierName: string | null
@@ -521,6 +537,10 @@ function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisRe
   const totals = {
     totalShipments: 1264,
     totalOrders: 2103,
+    totalShipmentLines: 2103,
+    totalMerchantOrders: 1264,
+    totalUsers: 42,
+    totalWarehouses: 12,
     delivered: 914,
     rejected: 83,
     postponed: 129,
@@ -528,8 +548,20 @@ function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisRe
     inProgress: 92,
   }
 
+  const now = new Date()
+  const insightsPeriod = {
+    from: new Date(now.getTime() - (normalizedDays - 1) * 86400000).toISOString(),
+    to: now.toISOString(),
+  }
+
+  const merchantOrdersOverTime = timeline.map((row, i) => ({
+    date: row.date,
+    count: 12 + ((i * 5) % 20),
+  }))
+
   return {
     totals,
+    insightsPeriod,
     statusBreakdown: [
       {
         status: "DELIVERED",
@@ -560,6 +592,7 @@ function buildSeedDashboardKpis(trendDays = 14, recentTake = 8): DashboardKpisRe
       { transferStatus: "ASSIGNED", count: 154 },
     ],
     ordersOverTime: timeline,
+    merchantOrdersOverTime,
     courierWorkload: [
       { courierId: "cr-01", courierName: "Omar Adel", assignedCount: 28 },
       { courierId: "cr-02", courierName: "Mona Tarek", assignedCount: 23 },
@@ -613,7 +646,11 @@ export async function getDashboardKpis(
     totals: {
       ...data.totals,
       totalOrders: data.totals.totalOrders ?? 0,
+      totalShipmentLines: data.totals.totalShipmentLines ?? data.totals.totalOrders ?? 0,
+      totalMerchantOrders: data.totals.totalMerchantOrders ?? data.totals.totalShipments ?? 0,
     },
+    merchantOrdersOverTime: data.merchantOrdersOverTime ?? [],
+    insightsPeriod: data.insightsPeriod,
     transferStatusBreakdown: data.transferStatusBreakdown ?? [],
     recentShipments: data.recentShipments.map((s) => {
       const location = extractShipmentLocation(s.notes)
@@ -690,14 +727,14 @@ export async function listShipmentTimeline(
 export async function confirmShipmentCs(
   token: string,
   shipmentId: string,
-  orderId: string,
+  shipmentLineId: string,
 ): Promise<void> {
   await apiFetch<unknown>(`/api/merchant-orders/${shipmentId}/status`, {
     method: "PATCH",
     token,
     body: JSON.stringify({
-      orderId,
-      toOrderDeliveryStatus: "IN_WAREHOUSE",
+      shipmentLineId,
+      toShipmentStatus: "IN_WAREHOUSE",
     }),
   })
 }

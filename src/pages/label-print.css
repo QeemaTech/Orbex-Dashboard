@@ -335,8 +335,6 @@
     display: none !important;
   }
 
-  /* Physical feed direction is set in the printer driver / print dialog, not here
-     (print CSS also drives the browser print preview). */
   .label-print-viewport {
     width: 100% !important;
     height: 100% !important;
@@ -348,7 +346,13 @@
   }
 
   .label-print-scale-stage {
+    position: absolute !important;
+    top: 0 !important;
+    left: 50% !important;
     width: 100% !important;
+    box-sizing: border-box !important;
+    transform: translateX(-50%) scale(var(--label-scale, 1)) !important;
+    transform-origin: top center !important;
   }
 
   .label-print-sheet {

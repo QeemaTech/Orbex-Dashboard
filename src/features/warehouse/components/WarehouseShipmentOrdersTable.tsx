@@ -18,6 +18,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { showToast } from "@/lib/toast"
+import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
+import { useAuth } from "@/lib/auth-context"
+
+function isOtherHubInWarehouse(
+  p: ShipmentOrderRow,
+  userWarehouseId: string | null | undefined,
+): boolean {
+  if (p.status !== "IN_WAREHOUSE") return false
+  if (p.currentWarehouseId == null || userWarehouseId == null) return false
+  return p.currentWarehouseId !== userWarehouseId
+}
 
 const WAREHOUSE_COL_COUNT = 10
 const COMPACT_COL_COUNT = 6
@@ -39,6 +50,7 @@ export function WarehouseShipmentOrdersTable({
   mode = "warehouse",
 }: Props) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/shipments" : "/shipments"
@@ -74,7 +86,7 @@ export function WarehouseShipmentOrdersTable({
   const assignMutation = useMutation({
     mutationFn: (payload: {
       shipmentId: string
-      orderId?: string
+      shipmentLineId?: string
       courierId: string
       leg?: "pickup" | "delivery"
     }) =>
@@ -83,7 +95,9 @@ export function WarehouseShipmentOrdersTable({
         shipmentId: payload.shipmentId,
         courierId: payload.courierId,
         leg: payload.leg,
-        ...(payload.orderId ? { orderId: payload.orderId } : {}),
+        ...(payload.shipmentLineId
+          ? { shipmentLineId: payload.shipmentLineId }
+          : {}),
       }),
     onSuccess: async () => {
       showToast(t("warehouse.feedback.assignmentSuccess"), "success")
@@ -192,7 +206,21 @@ export function WarehouseShipmentOrdersTable({
                       </>
                     ) : null}
                     <TableCell className="text-xs">
-                      <BackendStatusBadge kind="orderDelivery" value={p.status} />
+                      <div className="flex flex-col gap-0.5">
+                        <BackendStatusBadge kind="orderDelivery" value={p.status} />
+                        {isOtherHubInWarehouse(p, user?.warehouseId) ? (
+                          <>
+                            <span className="text-muted-foreground text-[10px] leading-tight">
+                              {t("warehouse.shipment.otherLocationLabel", {
+                                defaultValue: "In Warehouse (Other Location)",
+                              })}
+                            </span>
+                            <span className="text-foreground text-[11px] font-medium leading-tight">
+                              {p.currentWarehouse?.name ?? "—"}
+                            </span>
+                          </>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs">
                       <BackendStatusBadge kind="orderPayment" value={p.paymentStatus} />
@@ -262,7 +290,9 @@ export function WarehouseShipmentOrdersTable({
                                   shipmentId,
                                   courierId: assignCourierInput.trim(),
                                   leg: assignLeg,
-                                  ...(assignLeg === "delivery" ? { orderId: p.id } : {}),
+                                  ...(assignLeg === "delivery"
+                                    ? { shipmentLineId: p.id }
+                                    : {}),
                                 })
                               }
                             >

@@ -12,6 +12,7 @@
     "collections": "التحصيل",
     "warehouses": "المخازن",
     "deliveryZones": "مناطق التوصيل",
+    "settings": "الإعدادات",
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء",
     "roles": "الأدوار"
@@ -217,9 +218,12 @@
       "warehouses": "المخازن"
     },
     "chart": {
-      "lineTitle": "الشحنات عبر الوقت",
+      "lineTitle": "خطوط الشحن وطلبات التجار",
       "lineDescription": "شحنات عملاء جديدة يوميًا (آخر 14 يومًا)",
+      "lineDescriptionPeriod": "عدد يومي لخطوط الشحن وطلبات التجار الجديدة وفق فترة الرؤى المضبوطة.",
       "lineSeriesName": "الشحنات",
+      "shipmentLinesSeries": "خطوط الشحن",
+      "merchantOrdersSeries": "طلبات التجار",
       "merchantOrderBatchPieTitle": "حالة دفعة طلب التاجر",
       "merchantOrderBatchPieDescription": "طلبات التجار حسب حالة مسار الدفعة",
       "days": {
@@ -232,6 +236,8 @@
         "sun": "الأحد"
       }
     },
+    "kpiError": "تعذر تحميل مؤشرات لوحة التحكم.",
+    "kpiLoading": "جاري تحميل المؤشرات…",
     "quickActions": {
       "title": "إجراءات سريعة",
       "description": "انتقال إلى طلبات التجار أو شحنات العملاء",
@@ -607,6 +613,10 @@
       "partiallyDelivered": "دفعات مسلّمة جزئيًا",
       "delivered": "دفعات مسلّمة بالكامل"
     },
+    "insights": {
+      "periodFromSettings": "فترة الرؤى (النظام)",
+      "allTime": "كل الأوقات"
+    },
     "operations": {
       "title": "المسح والمرتجعات",
       "description": "مسح الدخول أو الخروج بمفتاح Enter بعد اختيار الاتجاه، أو استخدم الحقل أدناه للمرتجعات والاستعلام عن الحالة.",
@@ -644,6 +654,8 @@
       "descriptionMerchantOrderBatches": "كل صف يمثل دفعة طلب تاجر واردة إلى هذا المخزن. افتح الصف لعرض تفاصيل الدفعة وشحنات العملاء.",
       "titleTransfers": "تحويلات دفعات طلبات التجار",
       "descriptionTransfers": "كل صف يمثل دفعة مرتبطة بهذا المخزن. افتح الصف لعرض التفاصيل وشحنات العملاء وتعيين المندوب.",
+      "titleShipments": "الشحنات",
+      "descriptionShipments": "أسطر الشحنات في هذا المخزن. افتح الصف لتفاصيل السطر والتتبع.",
       "openBatchSummary": "ملخص الدفعة",
       "openCustomerOrders": "طلبات العملاء",
       "searchPlaceholder": "بحث برقم تتبع الطلب",
@@ -660,12 +672,13 @@
       "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}",
       "tabOrders": "طلبات",
-      "tabStandalone": "مستقلة"
+      "tabShipments": "الشحنات"
     },
     "table": {
       "batchId": "معرف الدفعة",
       "trackingNumber": "تتبع الطلب",
       "warehouse": "المخزن",
+      "transferredFromWarehouse": "محوّل من",
       "customer": "العميل",
       "merchant": "التاجر",
       "orderCount": "طلبات العملاء",
@@ -690,6 +703,9 @@
     },
     "orders": {
       "assignColumn": "تعيين مندوب"
+    },
+    "shipment": {
+      "otherLocationLabel": "في المخزن (موقع آخر)"
     },
     "feedback": {
       "scanInSuccess": "تم تسجيل دخول الشحنة إلى المخزن.",
@@ -958,6 +974,24 @@
       "deactivateFailed": "تعذّر تعطيل المنطقة.",
       "deletedPermanent": "تم حذف المنطقة نهائياً.",
       "deletePermanentFailed": "تعذّر حذف المنطقة."
+    }
+  },
+  "settings": {
+    "pageTitle": "الإعدادات",
+    "insightsPeriod": {
+      "title": "فترة الرؤى",
+      "description": "تحدد نافذة التاريخ المستخدمة لمقاييس الفترة في لوحات المخازن والرؤى ذات الصلة. مقاييس العمر تبقى لكل الأوقات.",
+      "mode": "الوضع",
+      "modeLastPeriod": "آخر N يومًا",
+      "modeCustomRange": "نطاق تواريخ مخصص",
+      "lastDays": "عدد الأيام",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "saved": "تم حفظ فترة الرؤى.",
+      "saveFailed": "تعذّر حفظ فترة الرؤى.",
+      "invalidLastDays": "أدخل عدد أيام بين 1 و 3660.",
+      "rangeRequired": "اختر تاريخي البداية والنهاية.",
+      "invalidRange": "يجب أن يكون تاريخ البداية قبل أو يساوي تاريخ النهاية."
     }
   },
   "common": {

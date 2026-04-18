@@ -31,6 +31,7 @@ import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { RolesPage } from "@/pages/RolesPage"
+import { SettingsPage } from "@/pages/SettingsPage"
 import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
 import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 
@@ -223,6 +224,16 @@ export default function App() {
                 requiredPermissions={["users.read"]}
               >
                 <UsersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN"]} requiredPermissions={["users.write"]}>
+                <SettingsPage />
               </ProtectedRole>
             </Protected>
           }

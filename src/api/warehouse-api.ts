@@ -1,16 +1,110 @@
 import { apiFetch } from "@/api/client"
 
-/** Hub dashboard: counts of shipments by `Shipment.transferStatus` only. */
-export type WarehouseStats = {
+/** Six pipeline bucket counts (hub-scoped). */
+export type WarehousePipelineCounts = {
   pending: number
   assigned: number
   onTheWayToWarehouse: number
   inWarehouse: number
   partiallyDelivered: number
   delivered: number
-  /** Populated for unscoped `WAREHOUSE_ADMIN` dashboard calls */
-  totalWarehouses?: number
-  activeWarehouses?: number
+}
+
+/** `GET /api/warehouse/dashboard` — period window vs lifetime snapshot. */
+export type WarehouseDashboardInsights = {
+  periodMetrics: WarehousePipelineCounts
+  lifetimeMetrics: WarehousePipelineCounts & {
+    totalWarehouses?: number
+    activeWarehouses?: number
+  }
+  /** Present when the API returns an insights date window; omitted for flat pipeline-only responses. */
+  period?: { from: string; to: string }
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null
+}
+
+function toPipelineCounts(source: Record<string, unknown>): WarehousePipelineCounts {
+  const n = (k: keyof WarehousePipelineCounts) => {
+    const v = source[k]
+    return typeof v === "number" && Number.isFinite(v) ? v : 0
+  }
+  return {
+    pending: n("pending"),
+    assigned: n("assigned"),
+    onTheWayToWarehouse: n("onTheWayToWarehouse"),
+    inWarehouse: n("inWarehouse"),
+    partiallyDelivered: n("partiallyDelivered"),
+    delivered: n("delivered"),
+  }
+}
+
+/**
+ * Backend currently returns flat `{ pending, assigned, ... }`; UI expects
+ * `periodMetrics` / `lifetimeMetrics`. Normalize without changing the wire format.
+ */
+export function normalizeWarehouseDashboardInsights(
+  raw: unknown,
+): WarehouseDashboardInsights {
+  if (!isRecord(raw)) {
+    const z = toPipelineCounts({})
+    return { periodMetrics: z, lifetimeMetrics: { ...z } }
+  }
+
+  const nestedPm = raw.periodMetrics
+  const nestedLm = raw.lifetimeMetrics
+  if (isRecord(nestedPm) && isRecord(nestedLm)) {
+    const periodRaw = raw.period
+    let period: { from: string; to: string } | undefined
+    if (
+      isRecord(periodRaw) &&
+      typeof periodRaw.from === "string" &&
+      typeof periodRaw.to === "string"
+    ) {
+      period = { from: periodRaw.from, to: periodRaw.to }
+    }
+    return {
+      periodMetrics: toPipelineCounts(nestedPm),
+      lifetimeMetrics: {
+        ...toPipelineCounts(nestedLm),
+        ...(typeof nestedLm.totalWarehouses === "number"
+          ? { totalWarehouses: nestedLm.totalWarehouses }
+          : {}),
+        ...(typeof nestedLm.activeWarehouses === "number"
+          ? { activeWarehouses: nestedLm.activeWarehouses }
+          : {}),
+      },
+      ...(period ? { period } : {}),
+    }
+  }
+
+  const counts = toPipelineCounts(raw)
+  const lifetimeMetrics: WarehouseDashboardInsights["lifetimeMetrics"] = {
+    ...counts,
+    ...(typeof raw.totalWarehouses === "number"
+      ? { totalWarehouses: raw.totalWarehouses }
+      : {}),
+    ...(typeof raw.activeWarehouses === "number"
+      ? { activeWarehouses: raw.activeWarehouses }
+      : {}),
+  }
+
+  const periodRaw = raw.period
+  let period: { from: string; to: string } | undefined
+  if (
+    isRecord(periodRaw) &&
+    typeof periodRaw.from === "string" &&
+    typeof periodRaw.to === "string"
+  ) {
+    period = { from: periodRaw.from, to: periodRaw.to }
+  }
+
+  return {
+    periodMetrics: { ...counts },
+    lifetimeMetrics,
+    ...(period ? { period } : {}),
+  }
 }
 
 export type WarehouseSiteRow = {
@@ -144,12 +238,14 @@ function qs(params: Record<string, string | number | boolean | undefined>): stri
 
 export function getWarehouseStats(
   token: string,
-  warehouseId?: string,
-): Promise<WarehouseStats> {
-  const query = qs({ warehouseId })
-  return apiFetch<WarehouseStats>(`/api/warehouse/dashboard${query}`, {
-    token,
+  options?: { warehouseId?: string },
+): Promise<WarehouseDashboardInsights> {
+  const query = qs({
+    warehouseId: options?.warehouseId,
   })
+  return apiFetch<unknown>(`/api/warehouse/dashboard${query}`, {
+    token,
+  }).then(normalizeWarehouseDashboardInsights)
 }
 
 export function getWarehouseZoneLinks(
@@ -220,7 +316,10 @@ export type WarehouseStandaloneShipmentRow = {
   id: string
   trackingNumber: string | null
   status: string
-  currentWarehouseId: string | null
+  customerName: string
+  merchantName: string
+  transferredFromWarehouseId: string | null
+  transferredFromWarehouseName: string | null
   createdAt: string
   updatedAt: string
 }
@@ -248,7 +347,7 @@ export function listWarehouseStandaloneShipments(
 
 function scanPayloadFromInput(raw: string): {
   trackingNumber?: string
-  shipmentId?: string
+  shipmentLineId?: string
 } {
   const t = raw.trim()
   if (
@@ -256,7 +355,7 @@ function scanPayloadFromInput(raw: string): {
       t,
     )
   ) {
-    return { shipmentId: t }
+    return { shipmentLineId: t }
   }
   return { trackingNumber: t }
 }
@@ -324,7 +423,7 @@ export function assignWarehouseShipment(params: {
   shipmentId: string
   courierId: string
   leg?: "pickup" | "delivery"
-  orderId?: string
+  shipmentLineId?: string
   note?: string | null
 }): Promise<unknown> {
   return apiFetch(
@@ -334,7 +433,9 @@ export function assignWarehouseShipment(params: {
       token: params.token,
       body: JSON.stringify({
         courierId: params.courierId,
-        ...(params.orderId ? { orderId: params.orderId } : {}),
+        ...(params.shipmentLineId
+          ? { shipmentLineId: params.shipmentLineId }
+          : {}),
         ...(params.leg ? { leg: params.leg } : {}),
         ...(params.note !== undefined ? { note: params.note } : {}),
       }),
@@ -345,8 +446,7 @@ export function assignWarehouseShipment(params: {
 export function receiveWarehouseReturn(params: {
   token: string
   trackingNumber?: string
-  shipmentId?: string
-  orderId?: string
+  shipmentLineId?: string
   returnDiscountAmount?: number
   note?: string
 }): Promise<unknown> {
@@ -354,10 +454,9 @@ export function receiveWarehouseReturn(params: {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
-      ...(params.shipmentId
-        ? { shipmentId: params.shipmentId }
+      ...(params.shipmentLineId
+        ? { shipmentLineId: params.shipmentLineId }
         : { trackingNumber: params.trackingNumber }),
-      ...(params.orderId ? { orderId: params.orderId } : {}),
       returnDiscountAmount: params.returnDiscountAmount,
       note: params.note,
     }),

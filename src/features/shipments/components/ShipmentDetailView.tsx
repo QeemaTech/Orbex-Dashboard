@@ -12,6 +12,7 @@ import {
   openWhatsAppTrackingMessage,
 } from "@/features/customer-service/lib/whatsapp"
 import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
+import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
 
 export type ShipmentDetailViewProps = {
   shipment: ShipmentOrderRow
@@ -207,6 +208,7 @@ export function ShipmentDetailView({
                   {t("shipments.detail.printLabel", { defaultValue: "Print label" })}
                 </Button>
               ) : null}
+              <ShipmentCsConfirmButton line={shipment} accessToken={accessToken} />
               <Button
                 type="button"
                 variant="outline"
