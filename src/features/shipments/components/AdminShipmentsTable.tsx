@@ -1,10 +1,11 @@
 import type { MouseEvent } from "react"
-import { MoreVertical, PhoneCall } from "lucide-react"
+import { MessageSquareText, MoreVertical, PhoneCall } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { openWhatsAppForOrder } from "@/features/customer-service/lib/whatsapp"
+import {
+  openWhatsAppForOrder,
+  openWhatsAppTrackingMessage,
+} from "@/features/customer-service/lib/whatsapp"
 import { backendOrderDeliveryLabel } from "@/features/warehouse/backend-labels"
 
 type Props = {
@@ -62,6 +66,7 @@ function WhatsAppLogoIcon({ className }: { className?: string }) {
 export function AdminShipmentsTable({ rows }: Props) {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
+  const { accessToken } = useAuth()
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
 
   return (
@@ -79,6 +84,15 @@ export function AdminShipmentsTable({ rows }: Props) {
       <TableBody>
         {rows.map((row) => {
           const hasPhone = !!row.customer.phonePrimary?.trim()
+          const hasTracking = !!row.trackingNumber?.trim()
+          const sendTrackingDisabled = !hasPhone || !hasTracking || !accessToken
+          const sendTrackingTitle = !hasPhone
+            ? t("cs.actions.whatsappDisabledHint")
+            : !hasTracking
+              ? t("cs.actions.sendTrackingMessageNoTrackingHint")
+              : !accessToken
+                ? t("auth.loginError")
+                : undefined
           const telCustomer = `tel:${row.customer.phonePrimary}`
           const courierPhone = row.deliveryCourier?.contactPhone?.trim()
 
@@ -143,6 +157,18 @@ export function AdminShipmentsTable({ rows }: Props) {
                       >
                         <WhatsAppLogoIcon className="size-4 shrink-0 text-[#25D366]" />
                         {t("cs.actions.whatsappMenu")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={sendTrackingDisabled}
+                        title={sendTrackingTitle}
+                        onClick={() => {
+                          if (!sendTrackingDisabled && accessToken) {
+                            void openWhatsAppTrackingMessage(row, accessToken)
+                          }
+                        }}
+                      >
+                        <MessageSquareText className="size-4 shrink-0" aria-hidden />
+                        {t("adminOrders.sendTrackingMessage")}
                       </DropdownMenuItem>
                       {hasPhone ? (
                         <DropdownMenuItem asChild>

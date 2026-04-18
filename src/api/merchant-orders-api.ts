@@ -265,6 +265,10 @@ export type ShipmentOrderRow = {
   pickupCourierId?: string | null
   /** Parent merchant-order batch pipeline (`MerchantOrder.transferStatus`). */
   transferStatus?: string
+  /** Batch hub assignment when returned from shipment APIs. */
+  assignedWarehouseId?: string | null
+  /** Current warehouse where the shipment is located (from scan in/out operations). */
+  currentWarehouseId?: string | null
   subStatus?: string
   statusUi?: string
   shipmentPaymentStatus?: string

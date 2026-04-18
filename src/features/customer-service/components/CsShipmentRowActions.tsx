@@ -1,6 +1,12 @@
 import type { MouseEvent } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { LocateFixed, MapPin, MoreVertical, PhoneCall } from "react-lucid"
+import {
+  LocateFixed,
+  MapPin,
+  MessageSquareText,
+  MoreVertical,
+  PhoneCall,
+} from "react-lucid"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -16,7 +22,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { openWhatsApp } from "@/features/customer-service/lib/whatsapp"
+import {
+  openWhatsApp,
+  openWhatsAppTrackingMessage,
+} from "@/features/customer-service/lib/whatsapp"
 
 export type CsShipmentRowActionsLayout = "compact" | "inline"
 
@@ -62,6 +71,13 @@ export function CsShipmentRowActions({
   const batchId = merchantOrderBatchId(row)
   const hasCourierMenuItems =
     !!row.courier?.contactPhone || !!row.courier?.id
+  const hasTracking = !!row.trackingNumber?.trim()
+  const sendTrackingDisabled = !hasPhone || !hasTracking || !token?.trim()
+  const sendTrackingTitle = !hasPhone
+    ? t("cs.actions.whatsappDisabledHint")
+    : !hasTracking
+      ? t("cs.actions.sendTrackingMessageNoTrackingHint")
+      : undefined
 
   const handleLocationAction = () => {
     if (hasLocationLink) {
@@ -104,6 +120,22 @@ export function CsShipmentRowActions({
             onClick={() => openWhatsApp(row)}
           >
             <WhatsAppLogoIcon className="size-5 text-white" />
+          </Button>
+        ) : null}
+        {allowCustomerUi ? (
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            title={sendTrackingTitle}
+            disabled={sendTrackingDisabled}
+            className="size-9 shrink-0"
+            aria-label={t("cs.actions.sendTrackingMessage")}
+            onClick={() => {
+              if (!sendTrackingDisabled) void openWhatsAppTrackingMessage(row, token)
+            }}
+          >
+            <MessageSquareText className="size-4" aria-hidden />
           </Button>
         ) : null}
         {allowCustomerUi && showAddLocation ? (
@@ -192,6 +224,18 @@ export function CsShipmentRowActions({
             >
               <WhatsAppLogoIcon className="size-4 shrink-0 text-[#25D366]" />
               {t("cs.actions.whatsappMenu")}
+            </DropdownMenuItem>
+          ) : null}
+          {allowCustomerUi ? (
+            <DropdownMenuItem
+              disabled={sendTrackingDisabled}
+              title={sendTrackingTitle}
+            onClick={() => {
+              if (!sendTrackingDisabled) void openWhatsAppTrackingMessage(row, token)
+            }}
+            >
+              <MessageSquareText className="size-4 shrink-0" aria-hidden />
+              {t("cs.actions.sendTrackingMessage")}
             </DropdownMenuItem>
           ) : null}
           {allowCustomerUi && showAddLocation ? (

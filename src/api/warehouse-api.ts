@@ -216,6 +216,36 @@ export function listWarehouseOrders(
   })
 }
 
+export type WarehouseStandaloneShipmentRow = {
+  id: string
+  trackingNumber: string | null
+  status: string
+  currentWarehouseId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type WarehouseStandaloneShipmentsResponse = {
+  shipments: WarehouseStandaloneShipmentRow[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export function listWarehouseStandaloneShipments(
+  params: WarehouseOrdersParams,
+): Promise<WarehouseStandaloneShipmentsResponse> {
+  const query = qs({
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 20,
+    search: params.search,
+    warehouseId: params.warehouseId,
+  })
+  return apiFetch<WarehouseStandaloneShipmentsResponse>(`/api/warehouse/sites/${params.warehouseId}/standalone-shipments${query}`, {
+    token: params.token,
+  })
+}
+
 function scanPayloadFromInput(raw: string): {
   trackingNumber?: string
   shipmentId?: string
@@ -233,36 +263,44 @@ function scanPayloadFromInput(raw: string): {
 
 export function scanShipmentIn(params: {
   token: string
-  trackingNumber?: string
-  shipmentId?: string
+  warehouseId: string
+  trackingNumber: string
   note?: string
-}): Promise<unknown> {
-  return apiFetch("/api/warehouse/scan-in", {
+}): Promise<{
+  scanResult: "SCANNED" | "ALREADY_SCANNED"
+  shipmentId: string
+  merchantOrderId: string
+  newStatus: "IN_WAREHOUSE"
+}> {
+  return apiFetch<{
+    scanResult: "SCANNED" | "ALREADY_SCANNED"
+    shipmentId: string
+    merchantOrderId: string
+    newStatus: "IN_WAREHOUSE"
+  }>("/api/warehouse/scan-in", {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
-      ...(params.shipmentId
-        ? { shipmentId: params.shipmentId }
-        : { trackingNumber: params.trackingNumber }),
-      note: params.note,
+      warehouseId: params.warehouseId,
+      trackingNumber: params.trackingNumber.trim(),
+      ...(params.note !== undefined ? { note: params.note } : {}),
     }),
   })
 }
 
 export function scanShipmentOut(params: {
   token: string
-  trackingNumber?: string
-  shipmentId?: string
+  warehouseId: string
+  trackingNumber: string
   note?: string
 }): Promise<unknown> {
   return apiFetch("/api/warehouse/scan-out", {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
-      ...(params.shipmentId
-        ? { shipmentId: params.shipmentId }
-        : { trackingNumber: params.trackingNumber }),
-      note: params.note,
+      warehouseId: params.warehouseId,
+      trackingNumber: params.trackingNumber.trim(),
+      ...(params.note !== undefined ? { note: params.note } : {}),
     }),
   })
 }

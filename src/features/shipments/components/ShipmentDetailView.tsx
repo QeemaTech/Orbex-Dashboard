@@ -1,5 +1,4 @@
-import { ExternalLink, PhoneCall, Printer } from "lucide-react"
-import { Boxes } from "react-lucid"
+import { Boxes, ExternalLink, MessageSquareText, PhoneCall, Printer } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
@@ -8,7 +7,11 @@ import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { openWhatsAppForOrder } from "@/features/customer-service/lib/whatsapp"
+import {
+  openWhatsAppForOrder,
+  openWhatsAppTrackingMessage,
+} from "@/features/customer-service/lib/whatsapp"
+import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
 
 export type ShipmentDetailViewProps = {
   shipment: ShipmentOrderRow
@@ -52,7 +55,7 @@ export function ShipmentDetailView({
   variant = "default",
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
-  const { user } = useAuth()
+  const { user, accessToken } = useAuth()
   const locale = resolveNumberLocale(i18n.language)
   const canPrintLabel = Boolean(user?.permissions?.includes("shipments.label"))
 
@@ -70,8 +73,19 @@ export function ShipmentDetailView({
   const hasPhone = !!shipment.customer.phonePrimary?.trim()
   const courierPhone = shipment.deliveryCourier?.contactPhone?.trim()
   const hasTracking = !!shipment.trackingNumber?.trim()
-  const printLabelTo =
-    variant === "cs" ? `/cs/shipments/${shipment.id}/print` : `/shipments/${shipment.id}/print`
+  const sendTrackingDisabled = !hasPhone || !hasTracking || !accessToken
+  const sendTrackingTitle = !hasPhone
+    ? t("cs.actions.whatsappDisabledHint")
+    : !hasTracking
+      ? t("cs.actions.sendTrackingMessageNoTrackingHint")
+      : !accessToken
+        ? t("auth.loginError")
+        : undefined
+
+  const openLegacyLabelPrint = () => {
+    const href = `/shipments/${encodeURIComponent(shipment.id)}/print`
+    window.open(href, "_blank", "noopener,noreferrer")
+  }
 
   return (
     <div className="space-y-4">
@@ -188,11 +202,9 @@ export function ShipmentDetailView({
                 </Link>
               </Button>
               {hasTracking && canPrintLabel ? (
-                <Button type="button" variant="outline" size="sm" asChild>
-                  <Link to={printLabelTo} target="_blank" rel="noopener noreferrer">
-                    <Printer className="mr-2 size-4" aria-hidden />
-                    {t("shipments.detail.printLabel", { defaultValue: "Print label" })}
-                  </Link>
+                <Button type="button" variant="outline" size="sm" onClick={openLegacyLabelPrint}>
+                  <Printer className="mr-2 size-4" aria-hidden />
+                  {t("shipments.detail.printLabel", { defaultValue: "Print label" })}
                 </Button>
               ) : null}
               <Button
@@ -206,6 +218,21 @@ export function ShipmentDetailView({
                 }}
               >
                 {t("cs.actions.whatsappMenu")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={sendTrackingDisabled}
+                title={sendTrackingTitle}
+                onClick={() => {
+                  if (!sendTrackingDisabled && accessToken) {
+                    void openWhatsAppTrackingMessage(shipment, accessToken)
+                  }
+                }}
+              >
+                <MessageSquareText className="mr-2 size-4" aria-hidden />
+                {t("shipments.detail.sendTrackingMessage")}
               </Button>
               {hasPhone ? (
                 <Button type="button" variant="outline" size="sm" asChild>
@@ -227,6 +254,8 @@ export function ShipmentDetailView({
           </section>
         </CardContent>
       </Card>
+
+      <PlanShipmentWarehouseTask shipment={shipment} />
     </div>
   )
 }
