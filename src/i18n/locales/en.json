@@ -87,6 +87,31 @@
       "warehouseHint": "Warehouse tools for this batch are on the merchant order page.",
       "currencyLocale": "en-EG"
     },
+    "timeline": {
+      "heading": "Shipment Timeline",
+      "noHistory": "No tracking history available",
+      "pendingPickup": "Pending Pickup",
+      "pickedUp": "Picked Up",
+      "inWarehouse": "In Warehouse",
+      "assigned": "Assigned",
+      "outForDelivery": "Out for Delivery",
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed",
+      "returnedToWarehouse": "Returned to Warehouse",
+      "returnedToMerchant": "Returned to Merchant"
+    },
+    "tasks": {
+      "heading": "Warehouse Tasks",
+      "noTasks": "No warehouse tasks assigned",
+      "typeDelivery": "Delivery",
+      "typeTransfer": "Transfer",
+      "typeReturn": "Return to Merchant",
+      "statusPlanned": "Planned",
+      "statusInProgress": "In Progress",
+      "statusDone": "Done",
+      "statusCancelled": "Cancelled"
+    },
     "planTask": {
       "title": "Plan warehouse task",
       "description": "Creates a planned task for this shipment line at your hub. Scan-out executes this task (delivery, transfer, or return to merchant).",

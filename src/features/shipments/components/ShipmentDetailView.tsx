@@ -13,6 +13,8 @@ import {
 } from "@/features/customer-service/lib/whatsapp"
 import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
 import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
+import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
+import { ShipmentTasksCard } from "@/features/shipments/components/ShipmentTasksCard"
 
 export type ShipmentDetailViewProps = {
   shipment: ShipmentOrderRow
@@ -184,6 +186,24 @@ export function ShipmentDetailView({
               <DetailRow label={t("shipments.detail.updatedAt")} value={formatDateTime(shipment.updatedAt)} />
             </dl>
           </section>
+
+          {shipment.statusEvents && shipment.statusEvents.length > 0 && (
+            <section className="space-y-3">
+              <h3 className="text-foreground text-sm font-semibold">
+                {t("shipments.timeline.heading", { defaultValue: "Shipment Timeline" })}
+              </h3>
+              <ShipmentTimeline events={shipment.statusEvents} currentStatus={shipment.status} />
+            </section>
+          )}
+
+          {shipment.shipmentTasks && shipment.shipmentTasks.length > 0 && (
+            <section className="space-y-3">
+              <h3 className="text-foreground text-sm font-semibold">
+                {t("shipments.tasks.heading", { defaultValue: "Warehouse Tasks" })}
+              </h3>
+              <ShipmentTasksCard tasks={shipment.shipmentTasks} />
+            </section>
+          )}
 
           <div className="bg-border h-px w-full" />
 

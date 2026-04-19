@@ -57,7 +57,7 @@ export function ShipmentLineDetailsPage() {
   const shipmentDetailQuery = useQuery({
     queryKey: ["shipment", "detail", shipmentName, token],
     queryFn: () => getShipmentById({ token, shipmentId: shipmentName }),
-    enabled: !!token && !!shipmentName && isUuidParam,
+    enabled: !!token && !!shipmentName && (isUuidParam || shipmentName.startsWith("ORX-")),
     retry: false,
   })
 

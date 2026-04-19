@@ -176,14 +176,7 @@ export function DashboardPage() {
     }))
   }, [kpiQuery.data?.transferStatusBreakdown, t])
 
-  const insightCardCount =
-    (canListUsers ? 1 : 0) + 2 + (canListWarehouses ? 1 : 0)
-  const insightGridClass =
-    insightCardCount >= 4
-      ? "grid gap-5 md:gap-6 xl:grid-cols-4"
-      : insightCardCount === 3
-        ? "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-3"
-        : "grid gap-5 md:gap-6 sm:grid-cols-2"
+  const insightGridClass = "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-4"
 
   return (
     <Layout title={t("nav.dashboard")}>

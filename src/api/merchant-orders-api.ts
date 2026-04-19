@@ -292,6 +292,22 @@ export type ShipmentOrderRow = {
   createdAt: string
   updatedAt: string
   customer: ShipmentOrderCustomer
+  statusEvents?: Array<{
+    id: string
+    fromStatus: string | null
+    toStatus: string
+    actorUserId: string | null
+    createdAt: string
+  }>
+  shipmentTasks?: Array<{
+    id: string
+    type: string
+    status: string
+    fromWarehouseId: string | null
+    toWarehouseId: string | null
+    assignedCourierId: string | null
+    createdAt: string
+  }>
 }
 
 export type ShipmentOrdersResponse = {
