@@ -1,4 +1,4 @@
-import { LogOut, ShieldCheck } from "lucide-react"
+import { LogOut, Settings, ShieldCheck } from "lucide-react"
 import {
   Banknote,
   Boxes,
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 const adminNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
   { to: "/users", labelKey: "nav.users", icon: Users, end: false, perm: "users.read" },
+  { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: "users.write" },
   { to: "/rbac/roles", labelKey: "nav.roles", icon: ShieldCheck, end: false, perm: "roles.read" },
   { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },

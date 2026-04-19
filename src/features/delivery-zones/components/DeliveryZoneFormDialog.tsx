@@ -10,11 +10,22 @@ import {
   patchDeliveryZone,
   type CourierOptionRow,
   type CreateDeliveryZoneBody,
+  getDeliveryZoneWarehouseLinks,
   type DeliveryZoneRow,
   type PatchDeliveryZoneBody,
+  setDeliveryZoneWarehouseLinks,
 } from "@/api/delivery-zones-api"
+import { listWarehouseSites } from "@/api/warehouse-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   EGYPT_LOCATIONS_CUSTOM_CITY,
   fetchCitiesForGovernorate,
@@ -48,6 +59,13 @@ function resolveAreaZoneForSave(
   if (fromPrefetch) return fromPrefetch
   const en = selectedCityEn.trim()
   return en || null
+}
+
+function toggleInList(prev: string[], id: string, nextChecked: boolean): string[] {
+  const has = prev.includes(id)
+  if (nextChecked && !has) return [...prev, id]
+  if (!nextChecked && has) return prev.filter((x) => x !== id)
+  return prev
 }
 
 type FormMode = "create" | "edit"
@@ -93,6 +111,8 @@ export function DeliveryZoneFormDialog({
   const [radiusMeters, setRadiusMeters] = useState(1500)
   const [courierIds, setCourierIds] = useState<Set<string>>(() => new Set())
   const [isActive, setIsActive] = useState(true)
+  const [deliveryWarehouseIds, setDeliveryWarehouseIds] = useState<string[]>([])
+  const [pickupWarehouseIds, setPickupWarehouseIds] = useState<string[]>([])
 
   const regionsQuery = useQuery({
     queryKey: ["regions-catalog", token],
@@ -111,6 +131,19 @@ export function DeliveryZoneFormDialog({
     queryFn: fetchEgyptGovernorates,
     enabled: open,
     staleTime: 1000 * 60 * 60 * 24 * 7,
+  })
+
+  const warehousesQuery = useQuery({
+    queryKey: ["warehouse-sites", token],
+    queryFn: () => listWarehouseSites(token),
+    enabled: open && !!token,
+    staleTime: 30_000,
+  })
+
+  const zoneWarehouseLinksQuery = useQuery({
+    queryKey: ["delivery-zone-warehouse-links", token, initial?.id ?? ""],
+    queryFn: () => getDeliveryZoneWarehouseLinks(token, initial!.id),
+    enabled: open && mode === "edit" && !!token && !!initial?.id,
   })
 
   useEffect(() => {
@@ -158,6 +191,8 @@ export function DeliveryZoneFormDialog({
       setRadiusMeters(initial.radiusMeters)
       setCourierIds(new Set(initial.courierIds))
       setIsActive(initial.isActive)
+      setDeliveryWarehouseIds([])
+      setPickupWarehouseIds([])
     } else {
       setName("")
       setGovernorateEn("")
@@ -171,8 +206,18 @@ export function DeliveryZoneFormDialog({
       setRadiusMeters(1500)
       setCourierIds(new Set())
       setIsActive(true)
+      setDeliveryWarehouseIds([])
+      setPickupWarehouseIds([])
     }
   }, [open, mode, initial])
+
+  useEffect(() => {
+    if (!open || mode !== "edit") return
+    const d = zoneWarehouseLinksQuery.data
+    if (!d) return
+    setDeliveryWarehouseIds(d.deliveryWarehouseIds ?? [])
+    setPickupWarehouseIds(d.pickupWarehouseIds ?? [])
+  }, [open, mode, zoneWarehouseLinksQuery.data])
 
   const center = useMemo(
     () => ({ lat: latitude, lng: longitude }),
@@ -295,8 +340,6 @@ export function DeliveryZoneFormDialog({
     onSuccess: () => {
       showToast(t("deliveryZones.feedback.created"), "success")
       qc.invalidateQueries({ queryKey: ["delivery-zones"] })
-      onSaved()
-      onOpenChange(false)
     },
     onError: (e: Error) => {
       showToast(e.message ?? t("deliveryZones.feedback.saveFailed"), "error")
@@ -309,8 +352,6 @@ export function DeliveryZoneFormDialog({
     onSuccess: () => {
       showToast(t("deliveryZones.feedback.updated"), "success")
       qc.invalidateQueries({ queryKey: ["delivery-zones"] })
-      onSaved()
-      onOpenChange(false)
     },
     onError: (e: Error) => {
       showToast(e.message ?? t("deliveryZones.feedback.saveFailed"), "error")
@@ -372,8 +413,19 @@ export function DeliveryZoneFormDialog({
     }
 
     try {
-      if (mode === "create") await createMut.mutateAsync(body)
-      else await patchMut.mutateAsync(body)
+      const resp =
+        mode === "create"
+          ? await createMut.mutateAsync(body)
+          : await patchMut.mutateAsync(body)
+      const zoneId = resp.zone.id
+      await setDeliveryZoneWarehouseLinks({
+        token,
+        zoneId,
+        deliveryWarehouseIds,
+        pickupWarehouseIds,
+      })
+      onSaved()
+      onOpenChange(false)
     } catch {
       /* toast via onError */
     }
@@ -638,6 +690,103 @@ export function DeliveryZoneFormDialog({
                 disabled={!canWrite || busy}
                 className="max-w-[8rem]"
               />
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <span className="text-muted-foreground text-xs font-medium">
+              {t("deliveryZones.form.warehouses")}
+            </span>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-muted-foreground text-xs font-medium">
+                  {t("deliveryZones.form.warehouseDelivery")}
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="justify-between"
+                      disabled={!canWrite || busy}
+                    >
+                      {deliveryWarehouseIds.length
+                        ? `${deliveryWarehouseIds.length} selected`
+                        : t("deliveryZones.form.selectWarehouses")}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[22rem]">
+                    <DropdownMenuLabel>
+                      {t("deliveryZones.form.warehouseDelivery")}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {(warehousesQuery.data?.warehouses ?? []).map((w) => {
+                      const label = [w.name, w.governorate, w.zone ?? ""]
+                        .filter(Boolean)
+                        .join(" · ")
+                      const checked = deliveryWarehouseIds.includes(w.id)
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={w.id}
+                          checked={checked}
+                          onCheckedChange={(v) =>
+                            setDeliveryWarehouseIds((prev) =>
+                              toggleInList(prev, w.id, Boolean(v)),
+                            )
+                          }
+                        >
+                          {label}
+                        </DropdownMenuCheckboxItem>
+                      )
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-muted-foreground text-xs font-medium">
+                  {t("deliveryZones.form.warehousePickup")}
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="justify-between"
+                      disabled={!canWrite || busy}
+                    >
+                      {pickupWarehouseIds.length
+                        ? `${pickupWarehouseIds.length} selected`
+                        : t("deliveryZones.form.selectWarehouses")}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[22rem]">
+                    <DropdownMenuLabel>
+                      {t("deliveryZones.form.warehousePickup")}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {(warehousesQuery.data?.warehouses ?? []).map((w) => {
+                      const label = [w.name, w.governorate, w.zone ?? ""]
+                        .filter(Boolean)
+                        .join(" · ")
+                      const checked = pickupWarehouseIds.includes(w.id)
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={w.id}
+                          checked={checked}
+                          onCheckedChange={(v) =>
+                            setPickupWarehouseIds((prev) =>
+                              toggleInList(prev, w.id, Boolean(v)),
+                            )
+                          }
+                        >
+                          {label}
+                        </DropdownMenuCheckboxItem>
+                      )
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
 

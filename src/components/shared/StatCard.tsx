@@ -63,6 +63,9 @@ export interface StatCardProps {
   to?: string
   /** Omit percentage badge and progress bar (recommended with `to`). */
   hideTrend?: boolean
+  /** Second metric row (e.g. all-time vs selected period). */
+  secondaryValue?: number
+  secondaryLabel?: string
 }
 
 function resolveNumberLocale(language: string) {
@@ -77,6 +80,8 @@ export function StatCard({
   accent,
   to,
   hideTrend = false,
+  secondaryValue,
+  secondaryLabel,
 }: StatCardProps) {
   const { i18n } = useTranslation()
   const locale = resolveNumberLocale(i18n.language)
@@ -120,6 +125,14 @@ export function StatCard({
         <p className="text-foreground text-[2.1rem] leading-none font-bold tabular-nums tracking-tight">
           {typeof value === "number" ? value.toLocaleString(locale) : value}
         </p>
+        {secondaryValue !== undefined && secondaryLabel ? (
+          <div className="border-border mt-3 border-t pt-3">
+            <p className="text-muted-foreground mb-1 text-xs font-medium">{secondaryLabel}</p>
+            <p className="text-foreground text-lg font-semibold tabular-nums">
+              {secondaryValue.toLocaleString(locale)}
+            </p>
+          </div>
+        ) : null}
       </CardContent>
       {!hideTrend ? (
         <div className={cn("h-1 w-full overflow-hidden rounded-full", a.progressTrack)}>

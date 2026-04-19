@@ -13,8 +13,46 @@
     "collections": "Collections",
     "warehouses": "Warehouses",
     "deliveryZones": "Delivery zones",
+    "settings": "Settings",
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
+  },
+  "tracking": {
+    "brandTitle": "Orbex tracking",
+    "loading": "Loading tracking…",
+    "invalidTrackingParam": "This tracking link is missing a tracking number.",
+    "errorTitle": "Could not load tracking",
+    "notFound": "We could not find a shipment for this tracking number.",
+    "genericError": "Something went wrong. Try again later.",
+    "trackingNoLabel": "Tracking number",
+    "codLabel": "Cash on delivery (COD)",
+    "warehouseLabel": "Current hub",
+    "courierLabel": "Courier",
+    "courierUnassigned": "Will be assigned soon",
+    "callCourier": "Call courier",
+    "timelineHeading": "Shipment progress",
+    "stepWarehouse": "Received / warehouse",
+    "stepWarehouseHint": "Pickup, sorting, or storage at our hub.",
+    "stepOutForDelivery": "Out for delivery",
+    "stepOutHint": "On the way to your address.",
+    "stepDelivered": "Delivered",
+    "stepDeliveredHint": "Handed over successfully.",
+    "stepDeliveredFailedHint": "Delivery could not be completed.",
+    "postponedNotice": "This shipment was postponed. Our team or courier will contact you to arrange the next attempt."
+  },
+  "deliveryProof": {
+    "title": "Delivery confirmation",
+    "redirecting": "Opening secure confirmation…",
+    "invalidToken": "This link is missing a valid token.",
+    "scanTitle": "Your delivery QR",
+    "scanHint": "Show this code to the courier or scan it on another device. Confirm only after you receive your order.",
+    "qrLoading": "Generating QR…",
+    "qrError": "Could not generate the QR code. You can still confirm below.",
+    "qrAlt": "QR code for this delivery confirmation link",
+    "confirm": "Confirm delivery",
+    "confirmLoading": "Confirming…",
+    "success": "Delivery confirmed. Thank you!",
+    "genericError": "Something went wrong. Try again or contact support."
   },
   "shipments": {
     "pageTitle": "Shipments",
@@ -45,8 +83,47 @@
       "createdAt": "Created",
       "updatedAt": "Last updated",
       "actions": "Actions",
+      "sendTrackingMessage": "Send tracking message",
       "warehouseHint": "Warehouse tools for this batch are on the merchant order page.",
       "currencyLocale": "en-EG"
+    },
+    "planTask": {
+      "title": "Plan warehouse task",
+      "description": "Creates a planned task for this shipment line at your hub. Scan-out executes this task (delivery, transfer, or return to merchant).",
+      "fieldPlanningWarehouse": "Your hub for this plan (must match the line’s warehouse)",
+      "fieldType": "Task type",
+      "typeDelivery": "Delivery (last mile)",
+      "typeTransfer": "Transfer to another hub",
+      "typeReturn": "Return to merchant",
+      "fieldCourierRequired": "Delivery courier",
+      "fieldCourierOptional": "Courier (optional)",
+      "fieldDestinationWarehouse": "Destination warehouse",
+      "pickCourier": "Select a courier…",
+      "pickWarehouse": "Select a warehouse…",
+      "submit": "Create planned task",
+      "footerHint": "Batch and line must be in the warehouse. Delivery requires outbound customer service confirmation on this line.",
+      "success": "Planned task created ({{type}}). You can scan out with the tracking number.",
+      "hintBatchNotInWarehouse": "The merchant order batch is not in a warehouse yet (transfer must be IN_WAREHOUSE).",
+      "hintLineNotInWarehouse": "This shipment line is not IN_WAREHOUSE.",
+      "hintReturnWrongStatus": "Return-to-merchant planning is only available when this line is POSTPONED or REJECTED (and the batch is in the warehouse).",
+      "hintCsRequired": "Outbound customer service must confirm this line before planning a delivery task.",
+      "errors": {
+        "NO_ACTIVE_TASK": "No active task (use after a failed scan only if shown).",
+        "INVALID_TRACKING": "Invalid shipment reference.",
+        "WRONG_WAREHOUSE": "This line is not at your warehouse.",
+        "INVALID_TRANSITION": "This task is not allowed for the current status.",
+        "CS_DELIVERY_NOT_ALLOWED": "Customer service must confirm the line for delivery planning.",
+        "DELIVERY_POSTPONE_LIMIT": "Too many postponements to plan another delivery.",
+        "ACTIVE_TASK_EXISTS": "An active planned or in-progress task already exists for this line. Complete or cancel it before creating another.",
+        "generic": "Could not create the planned task."
+      }
+    },
+    "printLabel": "Print label",
+    "labelPrinted": "Label sent to printer",
+    "labelsPrinted": "Printed {{count}} labels",
+    "printAll": "Print All Labels",
+    "autoPrint": {
+      "completed": "Printed {{count}} labels"
     }
   },
   "shipmentsList": {
@@ -82,7 +159,8 @@
     "colActions": "Actions",
     "openMerchantOrder": "Open merchant order",
     "viewBatchOrders": "View merchant order shipments",
-    "menuAriaLabel": "Open shipment actions menu"
+    "menuAriaLabel": "Open shipment actions menu",
+    "sendTrackingMessage": "Send tracking message"
   },
   "auth": {
     "loginTitle": "Sign in to Orbex",
@@ -142,9 +220,12 @@
       "warehouses": "Warehouses"
     },
     "chart": {
-      "lineTitle": "Shipments over time",
+      "lineTitle": "Shipment lines & merchant orders",
       "lineDescription": "New customer shipments per day (last 14 days)",
+      "lineDescriptionPeriod": "Daily shipment lines and new merchant orders for the configured insights period.",
       "lineSeriesName": "Shipments",
+      "shipmentLinesSeries": "Shipment lines",
+      "merchantOrdersSeries": "Merchant orders",
       "merchantOrderBatchPieTitle": "Merchant order batch status",
       "merchantOrderBatchPieDescription": "Merchant orders by batch pipeline status",
       "days": {
@@ -157,6 +238,8 @@
         "sun": "Sun"
       }
     },
+    "kpiError": "Could not load dashboard metrics.",
+    "kpiLoading": "Loading metrics…",
     "quickActions": {
       "title": "Quick actions",
       "description": "Jump to merchant orders or customer shipments",
@@ -287,6 +370,9 @@
       "whatsappMenu": "WhatsApp",
       "whatsappTooltip": "Send WhatsApp",
       "whatsappDisabledHint": "No phone number on file",
+      "sendTrackingMessage": "Send tracking message",
+      "sendTrackingMessageNoTrackingHint": "Tracking number is required",
+      "deliveryProofLinkFailed": "Could not create delivery confirmation link. Sign in again or try later.",
       "addLocation": "Add location",
       "callCustomer": "Call customer",
       "callCourier": "Call courier",
@@ -505,6 +591,14 @@
       "linkFromOperations": "My warehouse detail ←",
       "viewShipmentsAtHub": "View shipments at this hub ←"
     },
+    "zoneLinks": {
+      "title": "Linked delivery zones",
+      "description": "Select which geo zones this warehouse delivers to and which zones it receives from merchants.",
+      "deliveryZones": "Delivery zones (outbound)",
+      "pickupZones": "Pickup intake zones (from merchants)",
+      "saved": "Warehouse zones saved.",
+      "saveFailed": "Could not save warehouse zones."
+    },
     "stats": {
       "totalWarehouses": "Warehouses (total)",
       "activeWarehouses": "Warehouses (active)"
@@ -523,10 +617,16 @@
       "partiallyDelivered": "Partially delivered batches",
       "delivered": "Fully delivered batches"
     },
+    "insights": {
+      "periodFromSettings": "Insights period (system)",
+      "allTime": "All time"
+    },
     "operations": {
       "title": "Scan and returns",
-      "description": "Use a shipment tracking number to scan in/out, record a return, or look up status.",
+      "description": "Scan in or out with Enter (after choosing direction), or use the field below for returns and status lookup.",
       "trackingPlaceholder": "Shipment tracking number",
+      "scannerHint": "Choose scan in or scan out, focus the field, scan the barcode, then press Enter. This page sends your hub id with each scan. Submits are ignored while a request is in progress.",
+      "lookupTrackingPlaceholder": "Tracking or shipment id — returns and status lookup",
       "trackNeedsTracking": "Use a tracking number to search, or open the order from the list.",
       "enterValidTracking": "Please enter a valid tracking number.",
       "discountPlaceholder": "Return discount amount (optional)",
@@ -534,6 +634,21 @@
       "scanOut": "Scan out",
       "receiveReturn": "Receive return",
       "track": "Track"
+    },
+    "scanner": {
+      "modeLabel": "Scan direction",
+      "modeOut": "Scan out",
+      "modeIn": "Scan in",
+      "placeholder": "Tracking number — press Enter",
+      "errors": {
+        "noActiveTask": "No active warehouse task for this line. Plan the shipment before scanning out.",
+        "invalidTracking": "Unknown or invalid tracking number.",
+        "wrongWarehouse": "This shipment is not at your warehouse.",
+        "invalidTransition": "This scan is not allowed for the shipment’s current status.",
+        "csDeliveryNotAllowed": "Outbound customer service must confirm this line before planning delivery.",
+        "deliveryPostponeLimit": "Too many postponements on this line to plan another delivery task.",
+        "generic": "Scan failed. Try again or contact support."
+      }
     },
     "queue": {
       "title": "Warehouse queue",
@@ -543,6 +658,8 @@
       "descriptionMerchantOrderBatches": "Each row is one merchant order batch inbound to this hub. Open it for batch detail and customer shipments.",
       "titleTransfers": "Merchant order transfers",
       "descriptionTransfers": "Each row is one batch linked to this hub. Open it for batch detail, customer shipments, and courier assignment.",
+      "titleShipments": "Shipments",
+      "descriptionShipments": "Shipment lines at this hub. Open a row for line detail and tracking.",
       "openBatchSummary": "Batch summary",
       "openCustomerOrders": "Customer shipments",
       "searchPlaceholder": "Search by tracking number",
@@ -557,12 +674,15 @@
       "assignLegDelivery": "Last mile",
       "assignLegPickup": "First mile",
       "assignLegHint": "First mile = merchant to hub (before scan-in). Last mile = delivery from hub.",
-      "pagination": "Total {{total}} · page {{page}}"
+      "pagination": "Total {{total}} · page {{page}}",
+      "tabOrders": "Orders",
+      "tabShipments": "Shipments"
     },
     "table": {
       "batchId": "Batch ID",
       "trackingNumber": "Tracking",
       "warehouse": "Warehouse",
+      "transferredFromWarehouse": "Transferred from",
       "customer": "Customer",
       "merchant": "Merchant",
       "orderCount": "Customer shipments",
@@ -589,8 +709,12 @@
     "orders": {
       "assignColumn": "Assign courier"
     },
+    "shipment": {
+      "otherLocationLabel": "In Warehouse (Other Location)"
+    },
     "feedback": {
       "scanInSuccess": "Shipment scanned into the warehouse.",
+      "scanInAlreadyScanned": "Already scanned into this warehouse.",
       "scanOutSuccess": "Parcel scanned out for delivery.",
       "assignmentSuccess": "Courier assigned successfully.",
       "returnSuccess": "Return received and recorded."
@@ -841,7 +965,11 @@
       "locationsLoading": "Loading governorates…",
       "citiesLoading": "Loading cities…",
       "locationsError": "Could not load location list. Enter names manually.",
-      "locationsAttribution": "Governorates and cities: CountriesNow (open data). Names are in English as returned by the API."
+      "locationsAttribution": "Governorates and cities: CountriesNow (open data). Names are in English as returned by the API.",
+      "warehouses": "Warehouses",
+      "warehouseDelivery": "Linked warehouses (delivery)",
+      "warehousePickup": "Linked warehouses (pickup intake)",
+      "selectWarehouses": "Select warehouses…"
     },
     "feedback": {
       "created": "Zone created.",
@@ -851,6 +979,24 @@
       "deactivateFailed": "Could not deactivate zone.",
       "deletedPermanent": "Zone deleted permanently.",
       "deletePermanentFailed": "Could not delete zone."
+    }
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "insightsPeriod": {
+      "title": "Insights period",
+      "description": "Defines the date window used for period metrics on warehouse dashboards and related insights. Lifetime metrics remain all-time.",
+      "mode": "Mode",
+      "modeLastPeriod": "Last N days",
+      "modeCustomRange": "Custom date range",
+      "lastDays": "Number of days",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "saved": "Insights period saved.",
+      "saveFailed": "Could not save insights period.",
+      "invalidLastDays": "Enter a number of days between 1 and 3660.",
+      "rangeRequired": "Choose both start and end dates.",
+      "invalidRange": "Start date must be before or equal to end date."
     }
   },
   "common": {
@@ -865,6 +1011,7 @@
     "add": "Add",
     "saving": "Saving…",
     "processing": "Processing…",
-    "searching": "Searching…"
+    "searching": "Searching…",
+    "select": "Select…"
   }
 }

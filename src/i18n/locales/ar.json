@@ -12,9 +12,47 @@
     "collections": "التحصيل",
     "warehouses": "المخازن",
     "deliveryZones": "مناطق التوصيل",
+    "settings": "الإعدادات",
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء",
     "roles": "الأدوار"
+  },
+  "tracking": {
+    "brandTitle": "تتبع Orbex",
+    "loading": "جاري تحميل التتبع…",
+    "invalidTrackingParam": "رابط التتبع لا يحتوي على رقم تتبع.",
+    "errorTitle": "تعذّر تحميل التتبع",
+    "notFound": "لم نجد شحنة بهذا رقم التتبع.",
+    "genericError": "حدث خطأ. حاول مرة أخرى لاحقًا.",
+    "trackingNoLabel": "رقم التتبع",
+    "codLabel": "الدفع عند الاستلام (COD)",
+    "warehouseLabel": "المخزن الحالي",
+    "courierLabel": "المندوب",
+    "courierUnassigned": "سيتم التعيين قريبًا",
+    "callCourier": "اتصال بالمندوب",
+    "timelineHeading": "تقدّم الشحنة",
+    "stepWarehouse": "تم الاستلام / المخزن",
+    "stepWarehouseHint": "الاستلام أو الفرز أو التخزين في مركزنا.",
+    "stepOutForDelivery": "جاري التوصيل",
+    "stepOutHint": "في الطريق إلى عنوانك.",
+    "stepDelivered": "تم التسليم",
+    "stepDeliveredHint": "تم تسليم الشحنة بنجاح.",
+    "stepDeliveredFailedHint": "لم يكتمل التسليم.",
+    "postponedNotice": "تم تأجيل هذه الشحنة. سيتواصل معك فريقنا أو المندوب لتحديد موعد المحاولة التالية."
+  },
+  "deliveryProof": {
+    "title": "تأكيد التسليم",
+    "redirecting": "جاري فتح صفحة التأكيد الآمنة…",
+    "invalidToken": "الرابط لا يحتوي على رمز صالح.",
+    "scanTitle": "رمز QR للتسليم",
+    "scanHint": "اعرض هذا الرمز للمندوب أو امسحه من جهاز آخر. أكّد التسليم فقط بعد استلام الطلب.",
+    "qrLoading": "جاري إنشاء رمز QR…",
+    "qrError": "تعذّر إنشاء رمز QR. يمكنك التأكيد بالزر أدناه.",
+    "qrAlt": "رمز QR لرابط تأكيد التسليم",
+    "confirm": "تأكيد التسليم",
+    "confirmLoading": "جاري التأكيد…",
+    "success": "تم تأكيد التسليم. شكرًا لك!",
+    "genericError": "حدث خطأ. حاول مرة أخرى أو تواصل مع الدعم."
   },
   "shipments": {
     "pageTitle": "الشحنات",
@@ -45,8 +83,46 @@
       "createdAt": "تاريخ الإنشاء",
       "updatedAt": "آخر تحديث",
       "actions": "إجراءات",
+      "sendTrackingMessage": "إرسال رسالة التتبع",
       "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة طلب التاجر.",
       "currencyLocale": "ar-EG"
+    },
+    "planTask": {
+      "title": "تخطيط مهمة المخزن",
+      "description": "إنشاء مهمة مخططة لسطر الشحنة هذا في مخزنك (مطلوبة قبل مسح الخروج). يستخدم الطلب معرّف سطر الشحنة الحالي.",
+      "fieldPlanningWarehouse": "المخزن الذي تخطط منه (يجب أن يطابق مخزن السطر)",
+      "fieldType": "نوع المهمة",
+      "typeDelivery": "تسليم (آخر ميل)",
+      "typeTransfer": "تحويل إلى مخزن آخر",
+      "typeReturn": "إرجاع للتاجر",
+      "fieldCourierRequired": "مندوب التسليم",
+      "fieldCourierOptional": "مندوب (اختياري)",
+      "fieldDestinationWarehouse": "مخزن الوجهة",
+      "pickCourier": "اختر مندوبًا…",
+      "pickWarehouse": "اختر مخزنًا…",
+      "submit": "إنشاء مهمة مخططة",
+      "footerHint": "يجب أن تكون الدفعة والسطر داخل المخزن. التسليم يتطلب تأكيد خدمة العملاء الصادر لهذا السطر.",
+      "success": "تم إنشاء المهمة المخططة ({{type}}). يمكنك مسح الخروج برقم التتبع.",
+      "hintBatchNotInWarehouse": "دفعة طلب التاجر ليست داخل المخزن بعد (يجب أن تكون حالة التحويل داخل المخزن).",
+      "hintLineNotInWarehouse": "سطر الشحنة ليس في حالة داخل المخزن.",
+      "hintCsRequired": "يجب أن يؤكد خدمة العملاء الشحنة للخروج قبل تخطيط مهمة التسليم.",
+      "errors": {
+        "NO_ACTIVE_TASK": "لا توجد مهمة نشطة.",
+        "INVALID_TRACKING": "مرجع الشحنة غير صالح.",
+        "WRONG_WAREHOUSE": "هذا السطر ليس في مخزنك.",
+        "INVALID_TRANSITION": "هذه المهمة غير مسموحة للحالة الحالية.",
+        "CS_DELIVERY_NOT_ALLOWED": "خدمة العملاء يجب أن تؤكد السطر لتخطيط التسليم.",
+        "DELIVERY_POSTPONE_LIMIT": "تأجيلات كثيرة لا تسمح بتخطيط تسليم آخر.",
+        "ACTIVE_TASK_EXISTS": "توجد مهمة نشطة (مخططة أو قيد التنفيذ) لهذا السطر. أكملها أو ألغها قبل إنشاء أخرى.",
+        "generic": "تعذر إنشاء المهمة المخططة."
+      }
+    },
+    "printLabel": "طباعة الملصق",
+    "labelPrinted": "تم إرسال الملصق للطابعة",
+    "labelsPrinted": "تم طباعة {{count}} ملصقات",
+    "printAll": "طباعة كل الملصقات",
+    "autoPrint": {
+      "completed": "تم طباعة {{count}} ملصقات"
     }
   },
   "shipmentsList": {
@@ -82,7 +158,8 @@
     "colActions": "إجراءات",
     "openMerchantOrder": "فتح طلب التاجر",
     "viewBatchOrders": "عرض شحنات طلب التاجر",
-    "menuAriaLabel": "فتح قائمة إجراءات الشحنة"
+    "menuAriaLabel": "فتح قائمة إجراءات الشحنة",
+    "sendTrackingMessage": "إرسال رسالة التتبع"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول — Orbex",
@@ -142,9 +219,12 @@
       "warehouses": "المخازن"
     },
     "chart": {
-      "lineTitle": "الشحنات عبر الوقت",
+      "lineTitle": "خطوط الشحن وطلبات التجار",
       "lineDescription": "شحنات عملاء جديدة يوميًا (آخر 14 يومًا)",
+      "lineDescriptionPeriod": "عدد يومي لخطوط الشحن وطلبات التجار الجديدة وفق فترة الرؤى المضبوطة.",
       "lineSeriesName": "الشحنات",
+      "shipmentLinesSeries": "خطوط الشحن",
+      "merchantOrdersSeries": "طلبات التجار",
       "merchantOrderBatchPieTitle": "حالة دفعة طلب التاجر",
       "merchantOrderBatchPieDescription": "طلبات التجار حسب حالة مسار الدفعة",
       "days": {
@@ -157,6 +237,8 @@
         "sun": "الأحد"
       }
     },
+    "kpiError": "تعذر تحميل مؤشرات لوحة التحكم.",
+    "kpiLoading": "جاري تحميل المؤشرات…",
     "quickActions": {
       "title": "إجراءات سريعة",
       "description": "انتقال إلى طلبات التجار أو شحنات العملاء",
@@ -285,6 +367,9 @@
       "whatsappMenu": "واتساب",
       "whatsappTooltip": "إرسال واتساب",
       "whatsappDisabledHint": "لا يوجد رقم هاتف",
+      "sendTrackingMessage": "إرسال رسالة التتبع",
+      "sendTrackingMessageNoTrackingHint": "رقم التتبع مطلوب",
+      "deliveryProofLinkFailed": "تعذّر إنشاء رابط تأكيد التسليم. سجّل الدخول مجددًا أو حاول لاحقًا.",
       "addLocation": "إضافة موقع",
       "callCustomer": "اتصال بالعميل",
       "callCourier": "اتصال بالمندوب",
@@ -503,6 +588,14 @@
       "linkFromOperations": "تفاصيل مخزني ←",
       "viewShipmentsAtHub": "عرض الشحنات في هذا المخزن ←"
     },
+    "zoneLinks": {
+      "title": "الزونات المرتبطة بالمخزن",
+      "description": "حدد الزونات التي يخدمها هذا المخزن للتوصيل، والزونات التي يستقبل منها شحنات التجار.",
+      "deliveryZones": "زونات التوصيل (خارجية)",
+      "pickupZones": "زونات استلام التجار (إدخال للمخزن)",
+      "saved": "تم حفظ زونات المخزن.",
+      "saveFailed": "تعذّر حفظ زونات المخزن."
+    },
     "stats": {
       "totalWarehouses": "المخازن (الإجمالي)",
       "activeWarehouses": "المخازن (النشطة)"
@@ -521,10 +614,16 @@
       "partiallyDelivered": "دفعات مسلّمة جزئيًا",
       "delivered": "دفعات مسلّمة بالكامل"
     },
+    "insights": {
+      "periodFromSettings": "فترة الرؤى (النظام)",
+      "allTime": "كل الأوقات"
+    },
     "operations": {
       "title": "المسح والمرتجعات",
-      "description": "استخدم رقم تتبع الطلب لتنفيذ مسح الدخول/الخروج، تسجيل المرتجع، أو الاطلاع على حالة الشحنة.",
+      "description": "مسح الدخول أو الخروج بمفتاح Enter بعد اختيار الاتجاه، أو استخدم الحقل أدناه للمرتجعات والاستعلام عن الحالة.",
       "trackingPlaceholder": "رقم تتبع الطلب",
+      "scannerHint": "اختر مسح الدخول أو الخروج، ركّز الحقل، امسح الباركود، ثم اضغط Enter. ترسل هذه الصفحة معرّف المخزن مع كل مسح. يُتجاهل الإرسال أثناء تنفيذ الطلب.",
+      "lookupTrackingPlaceholder": "رقم التتبع أو معرف الشحنة — المرتجعات والاستعلام",
       "trackNeedsTracking": "استخدم رقم التتبع للبحث، أو افتح الطلب من القائمة.",
       "enterValidTracking": "الرجاء إدخال رقم تتبع صحيح.",
       "discountPlaceholder": "قيمة خصم المرتجع (اختياري)",
@@ -532,6 +631,21 @@
       "scanOut": "مسح خروج",
       "receiveReturn": "استلام مرتجع",
       "track": "تتبع"
+    },
+    "scanner": {
+      "modeLabel": "اتجاه المسح",
+      "modeOut": "مسح خروج",
+      "modeIn": "مسح دخول",
+      "placeholder": "رقم التتبع — Enter للإرسال",
+      "errors": {
+        "noActiveTask": "لا توجد مهمة مخزن نشطة لهذا السطر. خطّط الشحنة قبل مسح الخروج.",
+        "invalidTracking": "رقم تتبع غير معروف أو غير صالح.",
+        "wrongWarehouse": "هذه الشحنة ليست في مخزنك.",
+        "invalidTransition": "هذا المسح غير مسموح لحالة الشحنة الحالية.",
+        "csDeliveryNotAllowed": "يجب أن يؤكد خدمة العملاء الشحنة قبل تخطيط التسليم.",
+        "deliveryPostponeLimit": "تأجيلات كثيرة على هذا السطر؛ لا يمكن تخطيط مهمة تسليم أخرى.",
+        "generic": "فشل المسح. أعد المحاولة أو تواصل مع الدعم."
+      }
     },
     "queue": {
       "title": "قائمة المخزن",
@@ -541,6 +655,8 @@
       "descriptionMerchantOrderBatches": "كل صف يمثل دفعة طلب تاجر واردة إلى هذا المخزن. افتح الصف لعرض تفاصيل الدفعة وشحنات العملاء.",
       "titleTransfers": "تحويلات دفعات طلبات التجار",
       "descriptionTransfers": "كل صف يمثل دفعة مرتبطة بهذا المخزن. افتح الصف لعرض التفاصيل وشحنات العملاء وتعيين المندوب.",
+      "titleShipments": "الشحنات",
+      "descriptionShipments": "أسطر الشحنات في هذا المخزن. افتح الصف لتفاصيل السطر والتتبع.",
       "openBatchSummary": "ملخص الدفعة",
       "openCustomerOrders": "طلبات العملاء",
       "searchPlaceholder": "بحث برقم تتبع الطلب",
@@ -555,12 +671,15 @@
       "assignLegDelivery": "آخر ميل",
       "assignLegPickup": "أول ميل",
       "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
-      "pagination": "الإجمالي {{total}} · صفحة {{page}}"
+      "pagination": "الإجمالي {{total}} · صفحة {{page}}",
+      "tabOrders": "طلبات",
+      "tabShipments": "الشحنات"
     },
     "table": {
       "batchId": "معرف الدفعة",
       "trackingNumber": "تتبع الطلب",
       "warehouse": "المخزن",
+      "transferredFromWarehouse": "محوّل من",
       "customer": "العميل",
       "merchant": "التاجر",
       "orderCount": "طلبات العملاء",
@@ -586,8 +705,12 @@
     "orders": {
       "assignColumn": "تعيين مندوب"
     },
+    "shipment": {
+      "otherLocationLabel": "في المخزن (موقع آخر)"
+    },
     "feedback": {
       "scanInSuccess": "تم تسجيل دخول الشحنة إلى المخزن.",
+      "scanInAlreadyScanned": "تم مسح الشحنة من قبل في هذا المخزن.",
       "scanOutSuccess": "تم تسجيل خروج الطرد للتسليم.",
       "assignmentSuccess": "تم تعيين المندوب بنجاح.",
       "returnSuccess": "تم استلام المرتجع وتسجيله."
@@ -838,7 +961,11 @@
       "locationsLoading": "جاري تحميل المحافظات…",
       "citiesLoading": "جاري تحميل المدن…",
       "locationsError": "تعذّر تحميل القائمة. أدخل الأسماء يدوياً.",
-      "locationsAttribution": "المحافظات والمدن: CountriesNow (بيانات مفتوحة). الأسماء بالإنجليزية كما ترجعها الخدمة."
+      "locationsAttribution": "المحافظات والمدن: CountriesNow (بيانات مفتوحة). الأسماء بالإنجليزية كما ترجعها الخدمة.",
+      "warehouses": "المخازن",
+      "warehouseDelivery": "المخازن المرتبطة (توصيل)",
+      "warehousePickup": "المخازن المرتبطة (استلام التجار)",
+      "selectWarehouses": "اختر المخازن…"
     },
     "feedback": {
       "created": "تم إنشاء المنطقة.",
@@ -848,6 +975,24 @@
       "deactivateFailed": "تعذّر تعطيل المنطقة.",
       "deletedPermanent": "تم حذف المنطقة نهائياً.",
       "deletePermanentFailed": "تعذّر حذف المنطقة."
+    }
+  },
+  "settings": {
+    "pageTitle": "الإعدادات",
+    "insightsPeriod": {
+      "title": "فترة الرؤى",
+      "description": "تحدد نافذة التاريخ المستخدمة لمقاييس الفترة في لوحات المخازن والرؤى ذات الصلة. مقاييس العمر تبقى لكل الأوقات.",
+      "mode": "الوضع",
+      "modeLastPeriod": "آخر N يومًا",
+      "modeCustomRange": "نطاق تواريخ مخصص",
+      "lastDays": "عدد الأيام",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "saved": "تم حفظ فترة الرؤى.",
+      "saveFailed": "تعذّر حفظ فترة الرؤى.",
+      "invalidLastDays": "أدخل عدد أيام بين 1 و 3660.",
+      "rangeRequired": "اختر تاريخي البداية والنهاية.",
+      "invalidRange": "يجب أن يكون تاريخ البداية قبل أو يساوي تاريخ النهاية."
     }
   },
   "common": {
@@ -862,6 +1007,7 @@
     "add": "إضافة",
     "saving": "جارٍ الحفظ...",
     "processing": "جارٍ المعالجة...",
-    "searching": "جارٍ البحث..."
+    "searching": "جارٍ البحث...",
+    "select": "اختر…"
   }
 }

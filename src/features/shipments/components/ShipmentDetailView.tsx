@@ -1,13 +1,18 @@
-import { ExternalLink, PhoneCall } from "lucide-react"
-import { Boxes } from "react-lucid"
+import { Boxes, ExternalLink, MessageSquareText, PhoneCall, Printer } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { openWhatsAppForOrder } from "@/features/customer-service/lib/whatsapp"
+import {
+  openWhatsAppForOrder,
+  openWhatsAppTrackingMessage,
+} from "@/features/customer-service/lib/whatsapp"
+import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
+import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
 
 export type ShipmentDetailViewProps = {
   shipment: ShipmentOrderRow
@@ -51,7 +56,9 @@ export function ShipmentDetailView({
   variant = "default",
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
+  const { user, accessToken } = useAuth()
   const locale = resolveNumberLocale(i18n.language)
+  const canPrintLabel = Boolean(user?.permissions?.includes("shipments.label"))
 
   const currencyLocale = t("shipments.detail.currencyLocale", { defaultValue: "en-EG" })
   const formatDateTime = (iso: string | null | undefined): string => {
@@ -66,6 +73,20 @@ export function ShipmentDetailView({
 
   const hasPhone = !!shipment.customer.phonePrimary?.trim()
   const courierPhone = shipment.deliveryCourier?.contactPhone?.trim()
+  const hasTracking = !!shipment.trackingNumber?.trim()
+  const sendTrackingDisabled = !hasPhone || !hasTracking || !accessToken
+  const sendTrackingTitle = !hasPhone
+    ? t("cs.actions.whatsappDisabledHint")
+    : !hasTracking
+      ? t("cs.actions.sendTrackingMessageNoTrackingHint")
+      : !accessToken
+        ? t("auth.loginError")
+        : undefined
+
+  const openLegacyLabelPrint = () => {
+    const href = `/shipments/${encodeURIComponent(shipment.id)}/print`
+    window.open(href, "_blank", "noopener,noreferrer")
+  }
 
   return (
     <div className="space-y-4">
@@ -181,6 +202,13 @@ export function ShipmentDetailView({
                   {t("adminOrders.viewBatchOrders")}
                 </Link>
               </Button>
+              {hasTracking && canPrintLabel ? (
+                <Button type="button" variant="outline" size="sm" onClick={openLegacyLabelPrint}>
+                  <Printer className="mr-2 size-4" aria-hidden />
+                  {t("shipments.detail.printLabel", { defaultValue: "Print label" })}
+                </Button>
+              ) : null}
+              <ShipmentCsConfirmButton line={shipment} accessToken={accessToken} />
               <Button
                 type="button"
                 variant="outline"
@@ -192,6 +220,21 @@ export function ShipmentDetailView({
                 }}
               >
                 {t("cs.actions.whatsappMenu")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={sendTrackingDisabled}
+                title={sendTrackingTitle}
+                onClick={() => {
+                  if (!sendTrackingDisabled && accessToken) {
+                    void openWhatsAppTrackingMessage(shipment, accessToken)
+                  }
+                }}
+              >
+                <MessageSquareText className="mr-2 size-4" aria-hidden />
+                {t("shipments.detail.sendTrackingMessage")}
               </Button>
               {hasPhone ? (
                 <Button type="button" variant="outline" size="sm" asChild>
@@ -213,6 +256,8 @@ export function ShipmentDetailView({
           </section>
         </CardContent>
       </Card>
+
+      <PlanShipmentWarehouseTask shipment={shipment} />
     </div>
   )
 }

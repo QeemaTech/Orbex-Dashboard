@@ -5,15 +5,26 @@ import { useTranslation } from "react-i18next"
 
 import {
   createWarehouse,
+  getWarehouseZoneLinks,
   listWarehouseSites,
+  setWarehouseZoneLinks,
   updateWarehouse,
   type WarehouseSiteRow,
   type CreateWarehouseBody,
   type UpdateWarehouseBody,
 } from "@/api/warehouse-api"
+import { listDeliveryZones } from "@/api/delivery-zones-api"
 import { listUsers, type UserPublicRow } from "@/api/users-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { parseCoordinatesFromLocationInput } from "@/features/customer-service/lib/location"
 
 type FormMode = "create" | "edit"
@@ -47,6 +58,15 @@ export function WarehouseFormDialog({
   const [mainBranchId, setMainBranchId] = useState("")
   const [adminUserId, setAdminUserId] = useState("")
   const [isActive, setIsActive] = useState(true)
+  const [deliveryZoneIds, setDeliveryZoneIds] = useState<string[]>([])
+  const [pickupZoneIds, setPickupZoneIds] = useState<string[]>([])
+
+  function toggleInList(prev: string[], id: string, nextChecked: boolean): string[] {
+    const has = prev.includes(id)
+    if (nextChecked && !has) return [...prev, id]
+    if (!nextChecked && has) return prev.filter((x) => x !== id)
+    return prev
+  }
 
   const sitesQuery = useQuery({
     queryKey: ["warehouse-sites", token],
@@ -54,9 +74,22 @@ export function WarehouseFormDialog({
     enabled: open && !!token,
   })
 
+  const zonesCatalogQuery = useQuery({
+    queryKey: ["delivery-zones", token, "active-only"],
+    queryFn: () => listDeliveryZones(token, { isActive: true }),
+    enabled: open && !!token,
+    staleTime: 30_000,
+  })
+
+  const zoneLinksQuery = useQuery({
+    queryKey: ["warehouse-zone-links", token, initial?.id ?? ""],
+    queryFn: () => getWarehouseZoneLinks(token, initial!.id),
+    enabled: open && mode === "edit" && !!token && !!initial?.id,
+  })
+
   const usersQuery = useQuery({
     queryKey: ["users-all", token],
-    queryFn: () => listUsers({ token, page: 1, pageSize: 1000, managedStaffOnly: false }),
+    queryFn: () => listUsers({ token, page: 1, pageSize: 100, managedStaffOnly: false }),
     enabled: open && !!token,
   })
 
@@ -71,6 +104,8 @@ export function WarehouseFormDialog({
       setLocationLink(initial.latitude && initial.longitude ? `https://maps.google.com/?q=${initial.latitude},${initial.longitude}` : "")
       setMainBranchId(initial.mainBranchId ?? "")
       setIsActive(initial.isActive)
+      setDeliveryZoneIds([])
+      setPickupZoneIds([])
     } else {
       setName("")
       setGovernorate("")
@@ -81,15 +116,23 @@ export function WarehouseFormDialog({
       setMainBranchId("")
       setAdminUserId("")
       setIsActive(true)
+      setDeliveryZoneIds([])
+      setPickupZoneIds([])
     }
   }, [open, mode, initial])
+
+  useEffect(() => {
+    if (!open || mode !== "edit") return
+    const d = zoneLinksQuery.data
+    if (!d) return
+    setDeliveryZoneIds(d.deliveryZoneIds ?? [])
+    setPickupZoneIds(d.pickupZoneIds ?? [])
+  }, [open, mode, zoneLinksQuery.data])
 
   const createMut = useMutation({
     mutationFn: (body: CreateWarehouseBody) => createWarehouse(token, body),
     onSuccess: () => {
       showToast(t("warehouse.feedback.created") ?? "Warehouse created", "success")
-      onSaved()
-      onOpenChange(false)
     },
     onError: (e: Error) => {
       showToast(e.message ?? t("warehouse.feedback.createFailed") ?? "Failed to create", "error")
@@ -103,8 +146,6 @@ export function WarehouseFormDialog({
     },
     onSuccess: () => {
       showToast(t("warehouse.feedback.updated") ?? "Warehouse updated", "success")
-      onSaved()
-      onOpenChange(false)
     },
     onError: (e: Error) => {
       showToast(e.message ?? t("warehouse.feedback.updateFailed") ?? "Failed to update", "error")
@@ -113,7 +154,7 @@ export function WarehouseFormDialog({
 
   const pending = createMut.isPending || updateMut.isPending
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     const coords = locationLink.trim() ? parseCoordinatesFromLocationInput(locationLink.trim()) : null
@@ -130,7 +171,19 @@ export function WarehouseFormDialog({
       isActive,
     }
     if (mode === "create") {
-      createMut.mutate(body)
+      try {
+        const created = await createMut.mutateAsync(body)
+        await setWarehouseZoneLinks({
+          token,
+          warehouseId: created.id,
+          deliveryZoneIds,
+          pickupZoneIds,
+        })
+        onSaved()
+        onOpenChange(false)
+      } catch {
+        /* toast via onError */
+      }
     } else {
       const updateBody: UpdateWarehouseBody = {}
       if (name.trim()) updateBody.name = name.trim()
@@ -151,7 +204,19 @@ export function WarehouseFormDialog({
       if (mainBranchId) updateBody.mainBranchId = mainBranchId
       else updateBody.mainBranchId = null
       updateBody.isActive = isActive
-      updateMut.mutate(updateBody)
+      try {
+        await updateMut.mutateAsync(updateBody)
+        await setWarehouseZoneLinks({
+          token,
+          warehouseId: initial!.id,
+          deliveryZoneIds,
+          pickupZoneIds,
+        })
+        onSaved()
+        onOpenChange(false)
+      } catch {
+        /* toast via onError */
+      }
     }
   }
 
@@ -278,6 +343,71 @@ export function WarehouseFormDialog({
               ))}
             </select>
           </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-1 text-sm">
+              <span className="font-medium">{t("warehouse.zoneLinks.deliveryZones")}</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline" className="justify-between">
+                    {deliveryZoneIds.length ? `${deliveryZoneIds.length} selected` : t("common.select")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[22rem]">
+                  <DropdownMenuLabel>{t("warehouse.zoneLinks.deliveryZones")}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {(zonesCatalogQuery.data?.zones ?? []).map((z) => {
+                    const label = [z.governorate, z.areaZone ?? "", z.name ?? ""]
+                      .filter(Boolean)
+                      .join(" · ")
+                    const checked = deliveryZoneIds.includes(z.id)
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={z.id}
+                        checked={checked}
+                        onCheckedChange={(v) =>
+                          setDeliveryZoneIds((prev) => toggleInList(prev, z.id, Boolean(v)))
+                        }
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div className="grid gap-1 text-sm">
+              <span className="font-medium">{t("warehouse.zoneLinks.pickupZones")}</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline" className="justify-between">
+                    {pickupZoneIds.length ? `${pickupZoneIds.length} selected` : t("common.select")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[22rem]">
+                  <DropdownMenuLabel>{t("warehouse.zoneLinks.pickupZones")}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {(zonesCatalogQuery.data?.zones ?? []).map((z) => {
+                    const label = [z.governorate, z.areaZone ?? "", z.name ?? ""]
+                      .filter(Boolean)
+                      .join(" · ")
+                    const checked = pickupZoneIds.includes(z.id)
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={z.id}
+                        checked={checked}
+                        onCheckedChange={(v) =>
+                          setPickupZoneIds((prev) => toggleInList(prev, z.id, Boolean(v)))
+                        }
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
 
           {mode === "edit" && (
             <label className="flex items-center gap-2 text-sm">

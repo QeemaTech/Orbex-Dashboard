@@ -43,6 +43,16 @@ import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-lab
 import { useAuth } from "@/lib/auth-context"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 
+/** Cards and charts need matching JWT permissions; re-fetch `/api/auth/me` after role changes. */
+function hasPermission(
+  user: ReturnType<typeof useAuth>["user"],
+  key: string,
+): boolean {
+  if (!user) return false
+  if (user.role === "ADMIN") return true
+  return user.permissions?.includes(key) ?? false
+}
+
 function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
 }
@@ -58,6 +68,23 @@ function formatEGPFromDecimalString(amountStr: string | undefined, locale: strin
   }).format(n)
 }
 
+function formatInsightsPeriodLabel(
+  period: { from: string; to: string } | undefined,
+  language: string,
+): string | null {
+  if (!period) return null
+  const loc = language.startsWith("ar") ? "ar-EG" : "en-EG"
+  const opts: Intl.DateTimeFormatOptions = { dateStyle: "medium" }
+  try {
+    const a = new Date(period.from)
+    const b = new Date(period.to)
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null
+    return `${a.toLocaleDateString(loc, opts)} – ${b.toLocaleDateString(loc, opts)}`
+  } catch {
+    return null
+  }
+}
+
 export function DashboardPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -66,16 +93,20 @@ export function DashboardPage() {
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
 
+  const canReadMerchantOrderKpis = !!token && hasPermission(user, "merchant_orders.read")
+  const canListUsers = !!token && hasPermission(user, "users.read")
+  const canListWarehouses = !!token && hasPermission(user, "warehouses.read")
+
   const warehousesPreview = useQuery({
     queryKey: ["dashboard-warehouse-sites", token],
     queryFn: () => listWarehouseSites(token),
-    enabled: !!token && user?.role === "ADMIN",
+    enabled: canListWarehouses,
   })
 
   const usersCountQuery = useQuery({
     queryKey: ["dashboard-users-total", token],
     queryFn: () => listUsers({ token, page: 1, pageSize: 1 }),
-    enabled: !!token && user?.role === "ADMIN",
+    enabled: canListUsers,
   })
 
   const kpiQuery = useQuery({
@@ -86,23 +117,44 @@ export function DashboardPage() {
         trendDays: 14,
         recentTake: 8,
       }),
-    enabled: !!token,
+    enabled: canReadMerchantOrderKpis,
   })
   const totals = kpiQuery.data?.totals
   const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []
   const warehouseCount = warehouseList.length
+  const warehouseTotalAllTime =
+    totals?.totalWarehouses !== undefined ? totals.totalWarehouses : warehouseCount
 
-  const lineData = useMemo(
-    () =>
-      (kpiQuery.data?.ordersOverTime ?? []).map((row) => ({
-        date: row.date,
-        count: row.count,
-        label: new Date(row.date).toLocaleDateString(i18n.language, {
-          month: "short",
-          day: "numeric",
-        }),
-      })),
-    [kpiQuery.data?.ordersOverTime, i18n.language]
+  const kpiPending = kpiQuery.isPending
+  const userHeadline =
+    totals?.totalUsers !== undefined
+      ? totals.totalUsers
+      : (usersCountQuery.data?.total ?? 0)
+  const shipmentLinesHeadline =
+    totals?.totalShipmentLines ?? totals?.totalOrders ?? 0
+  const merchantOrdersHeadline =
+    totals?.totalMerchantOrders ?? totals?.totalShipments ?? 0
+
+  const lineData = useMemo(() => {
+    const orders = kpiQuery.data?.ordersOverTime ?? []
+    const mos = kpiQuery.data?.merchantOrdersOverTime ?? []
+    const oMap = new Map(orders.map((o) => [o.date, o.count]))
+    const mMap = new Map(mos.map((o) => [o.date, o.count]))
+    const dates = [...new Set([...oMap.keys(), ...mMap.keys()])].sort()
+    return dates.map((date) => ({
+      date,
+      shipmentLines: oMap.get(date) ?? 0,
+      merchantOrders: mMap.get(date) ?? 0,
+      label: new Date(`${date}T12:00:00.000Z`).toLocaleDateString(i18n.language, {
+        month: "short",
+        day: "numeric",
+      }),
+    }))
+  }, [kpiQuery.data?.ordersOverTime, kpiQuery.data?.merchantOrdersOverTime, i18n.language])
+
+  const insightsPeriodLabel = formatInsightsPeriodLabel(
+    kpiQuery.data?.insightsPeriod,
+    i18n.language,
   )
 
   const pieData = useMemo(() => {
@@ -124,22 +176,42 @@ export function DashboardPage() {
     }))
   }, [kpiQuery.data?.transferStatusBreakdown, t])
 
+  const insightCardCount =
+    (canListUsers ? 1 : 0) + 2 + (canListWarehouses ? 1 : 0)
+  const insightGridClass =
+    insightCardCount >= 4
+      ? "grid gap-5 md:gap-6 xl:grid-cols-4"
+      : insightCardCount === 3
+        ? "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-3"
+        : "grid gap-5 md:gap-6 sm:grid-cols-2"
+
   return (
     <Layout title={t("nav.dashboard")}>
       <div className="space-y-10">
-        {user?.role === "ADMIN" ? (
-          <div className="grid gap-5 md:gap-6 xl:grid-cols-4">
-            <StatCard
-              title={t("dashboard.adminStats.users")}
-              value={usersCountQuery.data?.total ?? 0}
-              icon={Users}
-              accent="primary"
-              to="/users"
-              hideTrend
-            />
+        {canReadMerchantOrderKpis && kpiQuery.isError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {t("dashboard.kpiError")}{" "}
+            {(kpiQuery.error as Error)?.message ? String((kpiQuery.error as Error).message) : ""}
+          </p>
+        ) : null}
+        {canReadMerchantOrderKpis && kpiPending ? (
+          <p className="text-muted-foreground text-sm">{t("dashboard.kpiLoading")}</p>
+        ) : null}
+        {canReadMerchantOrderKpis ? (
+          <div className={insightGridClass}>
+            {canListUsers ? (
+              <StatCard
+                title={t("dashboard.adminStats.users")}
+                value={kpiPending ? "—" : userHeadline}
+                icon={Users}
+                accent="primary"
+                to={user?.role === "ADMIN" ? "/users" : undefined}
+                hideTrend
+              />
+            ) : null}
             <StatCard
               title={t("dashboard.adminStats.orders")}
-              value={totals?.totalOrders ?? 0}
+              value={kpiPending ? "—" : shipmentLinesHeadline}
               icon={Boxes}
               accent="warning"
               to="/shipments"
@@ -147,24 +219,26 @@ export function DashboardPage() {
             />
             <StatCard
               title={t("dashboard.adminStats.shipments")}
-              value={totals?.totalShipments ?? 0}
+              value={kpiPending ? "—" : merchantOrdersHeadline}
               icon={Package}
               accent="success"
               to="/merchant-orders"
               hideTrend
             />
-            <StatCard
-              title={t("dashboard.adminStats.warehouses")}
-              value={warehouseCount}
-              icon={Warehouse}
-              accent="destructive"
-              to="/warehouses"
-              hideTrend
-            />
+            {canListWarehouses ? (
+              <StatCard
+                title={t("dashboard.adminStats.warehouses")}
+                value={kpiPending ? "—" : warehouseTotalAllTime}
+                icon={Warehouse}
+                accent="destructive"
+                to="/warehouses"
+                hideTrend
+              />
+            ) : null}
           </div>
         ) : null}
 
-        {user?.role === "ADMIN" ? (
+        {canListWarehouses ? (
           <Card className="border-border">
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-1.5">
@@ -213,6 +287,7 @@ export function DashboardPage() {
           </Card>
         ) : null}
 
+        {canReadMerchantOrderKpis ? (
         <div className="grid gap-6 xl:gap-7 lg:grid-cols-5">
           <Card className="dashboard-card dashboard-card-hover dashboard-animate-in lg:col-span-3">
             <CardHeader>
@@ -221,7 +296,12 @@ export function DashboardPage() {
                 {t("dashboard.chart.lineTitle")}
               </CardTitle>
               <CardDescription>
-                {t("dashboard.chart.lineDescription")}
+                {t("dashboard.chart.lineDescriptionPeriod")}
+                {insightsPeriodLabel ? (
+                  <span className="text-muted-foreground mt-1 block text-xs">
+                    {insightsPeriodLabel}
+                  </span>
+                ) : null}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-5">
@@ -261,13 +341,23 @@ export function DashboardPage() {
                       }}
                       labelStyle={{ color: "var(--foreground)" }}
                     />
+                    <Legend wrapperStyle={{ fontSize: isMd ? 12 : 11 }} />
                     <Line
                       type="monotone"
-                      dataKey="count"
-                      name={t("dashboard.chart.lineSeriesName")}
+                      dataKey="shipmentLines"
+                      name={t("dashboard.chart.shipmentLinesSeries")}
                       stroke="var(--primary)"
                       strokeWidth={2}
                       dot={{ fill: "var(--primary)", r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="merchantOrders"
+                      name={t("dashboard.chart.merchantOrdersSeries")}
+                      stroke="var(--chart-2)"
+                      strokeWidth={2}
+                      dot={{ fill: "var(--chart-2)", r: 3 }}
                       activeDot={{ r: 5 }}
                     />
                   </LineChart>
@@ -315,6 +405,7 @@ export function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+        ) : null}
 
         <div className="gradient-accent dashboard-animate-in rounded-2xl border border-border/80 p-5 shadow-[var(--shadow-soft)]">
           <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -347,6 +438,7 @@ export function DashboardPage() {
           </div>
         </div>
 
+        {canReadMerchantOrderKpis ? (
         <Card className="dashboard-card dashboard-animate-in overflow-hidden">
           <CardHeader>
             <CardTitle className="text-lg">{t("dashboard.recent.shipmentsTitle")}</CardTitle>
@@ -405,6 +497,7 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+        ) : null}
       </div>
     </Layout>
   )

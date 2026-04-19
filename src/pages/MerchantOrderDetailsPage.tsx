@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, PackageCheck } from "react-lucid"
+import { ArrowLeft, PackageCheck, Printer } from "react-lucid"
 import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useLocation, useParams } from "react-router-dom"
@@ -9,6 +9,7 @@ import {
   getShipmentOrders,
   type CsShipmentRow,
 } from "@/api/merchant-orders-api"
+import { getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-api"
 import { Layout } from "@/components/layout/Layout"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,8 @@ import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labe
 import type { UserRole } from "@/lib/auth-context"
 import { useAuth } from "@/lib/auth-context"
 import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
+import { printerService } from "@/services/printer.service"
+import { showToast } from "@/lib/toast"
 
 const INVALID_ROUTE_BATCH_ID = new Set(["", "undefined"])
 
@@ -103,6 +106,41 @@ export function MerchantOrderDetailsPage() {
     setMapCourierId(courierId)
     setMapOpen(true)
   }, [])
+
+  const canPrintLabel = user?.permissions?.includes("shipments.label") ?? false
+  const [isPrinting, setIsPrinting] = useState(false)
+
+  const handlePrintAllLabels = useCallback(async () => {
+    const shipments = ordersSummaryQuery.data?.shipments
+    if (!shipments || shipments.length === 0) return
+    if (isPrinting) return
+
+    setIsPrinting(true)
+    try {
+      await printerService.connect()
+      let printed = 0
+
+      for (const shipment of shipments) {
+        if (!shipment.trackingNumber) continue
+        try {
+          const label = await getShipmentLabelRaw({ token, shipmentId: shipment.id })
+          if (label?.sbpl) {
+            await printerService.printShipmentLabel(label)
+            await markShipmentLabelPrinted({ token, shipmentId: shipment.id })
+            printed++
+          }
+        } catch {
+          console.error("Failed to print:", shipment.trackingNumber)
+        }
+      }
+
+      showToast(t("shipments.detail.labelsPrinted", { count: printed }), "success")
+    } catch (err) {
+      showToast((err as Error).message, "error")
+    } finally {
+      setIsPrinting(false)
+    }
+  }, [token, ordersSummaryQuery.data, isPrinting])
 
   const openAddLocation = useCallback((row: CsShipmentRow) => {
     setLocationRow(row)
@@ -306,10 +344,28 @@ export function MerchantOrderDetailsPage() {
 
             <Card id="customer-orders">
               <CardHeader>
-                <CardTitle>{t("merchantOrders.detail.customerOrdersTitle")}</CardTitle>
-                <CardDescription>
-                  {t("merchantOrders.detail.customerOrdersDescription")}
-                </CardDescription>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <CardTitle>{t("merchantOrders.detail.customerOrdersTitle")}</CardTitle>
+                    <CardDescription>
+                      {t("merchantOrders.detail.customerOrdersDescription")}
+                    </CardDescription>
+                  </div>
+                  {canPrintLabel ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrintAllLabels}
+                      disabled={isPrinting || !ordersSummaryQuery.data?.shipments.length}
+                    >
+                      <Printer className="mr-2 size-4" />
+                      {isPrinting
+                        ? t("common.printing", { defaultValue: "Printing..." })
+                        : t("shipments.detail.printAll", { defaultValue: "Print All Labels" })}
+                    </Button>
+                  ) : null}
+                </div>
               </CardHeader>
               <CardContent>
                 <WarehouseShipmentOrdersTable

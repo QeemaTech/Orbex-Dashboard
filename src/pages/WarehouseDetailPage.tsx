@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react"
-import type { ElementType } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Boxes, Search, UserRound, Warehouse } from "react-lucid"
+import { Boxes, Search, UserRound, Warehouse } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
@@ -9,15 +8,25 @@ import {
   getWarehouseCouriers,
   getWarehouseSite,
   getWarehouseStats,
+  getWarehouseZoneLinks,
   getWarehouseTracking,
   listWarehouseOrders,
+  listWarehouseStandaloneShipments,
   receiveWarehouseReturn,
   scanPayloadFromInput,
   scanShipmentIn,
   scanShipmentOut,
+  setWarehouseZoneLinks,
   type WarehouseCourierRow,
-  type WarehouseSiteDetail,
+  type WarehouseOrdersResponse,
+  type WarehouseStandaloneShipmentRow,
+  type WarehouseStandaloneShipmentsResponse,
 } from "@/api/warehouse-api"
+import {
+  WarehouseScanner,
+  type WarehouseScanMode,
+} from "@/components/warehouse/WarehouseScanner"
+import { listDeliveryZones } from "@/api/delivery-zones-api"
 import { Layout } from "@/components/layout/Layout"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
@@ -74,6 +83,41 @@ function formatDateTime(dateIso: string, locale: string): string {
 function toPercentFromMax(value: number, max: number) {
   if (!Number.isFinite(value) || !Number.isFinite(max) || max <= 0) return 0
   return Math.round((value / max) * 100)
+}
+
+/** Schedules `fn` after `waitMs`; repeated calls reset the timer. Expose `cancel` for unmount cleanup. */
+function debounceFn(fn: () => void | Promise<void>, waitMs: number) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const debounced = () => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = null
+      void fn()
+    }, waitMs)
+  }
+  debounced.cancel = () => {
+    if (timer) clearTimeout(timer)
+    timer = null
+  }
+  return debounced as typeof debounced & { cancel: () => void }
+}
+
+/** Minimal fields from scan-out merchant-order detail DTO (no API contract change). */
+type ScanOutQueuePatch = {
+  id?: string
+  transferStatus?: string
+  updatedAt?: string
+}
+
+function readScanOutQueuePatch(raw: unknown): ScanOutQueuePatch | null {
+  if (!raw || typeof raw !== "object") return null
+  const o = raw as Record<string, unknown>
+  const id = typeof o.id === "string" ? o.id : undefined
+  const transferStatus =
+    typeof o.transferStatus === "string" ? o.transferStatus : undefined
+  const updatedAt = typeof o.updatedAt === "string" ? o.updatedAt : undefined
+  if (!id || !transferStatus) return null
+  return { id, transferStatus, updatedAt }
 }
 
 function AwaitingScanIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
@@ -155,9 +199,10 @@ export function WarehouseDetailPage() {
   const [returnsOnly, setReturnsOnly] = useState(false)
   const [returnsCourierFilterId, setReturnsCourierFilterId] = useState("")
   const [page, setPage] = useState(1)
-  const [trackingInput, setTrackingInput] = useState("")
+  const [lookupTrackingInput, setLookupTrackingInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
   const [trackingResult, setTrackingResult] = useState<string>("")
+  const [activeTab, setActiveTab] = useState<"orders" | "shipments">("orders")
 
   const canSeeWarehouseDirectory =
     user?.role === "ADMIN" || user?.role === "WAREHOUSE_ADMIN"
@@ -200,9 +245,64 @@ export function WarehouseDetailPage() {
 
   const hub = siteDetailQuery.data
 
+  /** Main hub: no parent branch. Sub-branch: `mainBranchId` set (and usually `mainBranch` populated from API). */
+  const isMainHub =
+    hub != null &&
+    hub.mainBranchId == null &&
+    hub.mainBranch == null
+
+  useEffect(() => {
+    if (hub != null && hub.mainBranchId != null) {
+      setReturnsOnly(false)
+    }
+  }, [hub])
+
+  const zoneLinksQuery = useQuery({
+    queryKey: ["warehouse-zone-links", token, warehouseId],
+    queryFn: () => getWarehouseZoneLinks(token, warehouseId),
+    enabled: !!token && !!warehouseId && !accessDenied,
+  })
+
+  const zonesCatalogQuery = useQuery({
+    queryKey: ["delivery-zones", token, "active-only"],
+    queryFn: () => listDeliveryZones(token, { isActive: true }),
+    enabled: !!token && !accessDenied,
+    staleTime: 30_000,
+  })
+
+  const [deliveryZoneIds, setDeliveryZoneIds] = useState<string[]>([])
+  const [pickupZoneIds, setPickupZoneIds] = useState<string[]>([])
+
+  const zoneLinksHydrated = useRef(false)
+  useEffect(() => {
+    if (zoneLinksHydrated.current) return
+    const d = zoneLinksQuery.data
+    if (!d) return
+    setDeliveryZoneIds(d.deliveryZoneIds ?? [])
+    setPickupZoneIds(d.pickupZoneIds ?? [])
+    zoneLinksHydrated.current = true
+  }, [zoneLinksQuery.data])
+
+  const saveZoneLinksMut = useMutation({
+    mutationFn: () =>
+      setWarehouseZoneLinks({
+        token,
+        warehouseId,
+        deliveryZoneIds,
+        pickupZoneIds,
+      }),
+    onSuccess: () => {
+      showToast(t("warehouse.zoneLinks.saved"), "success")
+      void queryClient.invalidateQueries({ queryKey: ["warehouse-zone-links", token, warehouseId] })
+    },
+    onError: (e: Error) => {
+      showToast(e.message ?? t("warehouse.zoneLinks.saveFailed"), "error")
+    },
+  })
+
   const statsQuery = useQuery({
     queryKey: ["warehouse-stats", token, warehouseId],
-    queryFn: () => getWarehouseStats(token, warehouseId),
+    queryFn: () => getWarehouseStats(token, { warehouseId }),
     enabled: !!token && !!warehouseId && !accessDenied,
     refetchInterval: 15000,
   })
@@ -224,58 +324,182 @@ export function WarehouseDetailPage() {
             : undefined,
         warehouseId,
       }),
-    enabled: !!token && !!warehouseId && !accessDenied,
+    enabled:
+      !!token &&
+      !!warehouseId &&
+      !accessDenied &&
+      hub != null &&
+      isMainHub &&
+      activeTab === "orders",
     refetchInterval: 10000,
   })
 
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
     queryFn: () => getWarehouseCouriers({ token }),
-    enabled: !!token && returnsOnly && !accessDenied,
+    enabled: !!token && returnsOnly && !accessDenied && isMainHub && activeTab === "orders",
   })
 
-  const refreshData = async () => {
+  const standaloneQueryKey = useMemo(
+    () =>
+      [
+        "warehouse-standalone-shipments",
+        token,
+        warehouseId,
+        page,
+        search,
+      ] as const,
+    [token, warehouseId, page, search],
+  )
+
+  const standaloneQuery = useQuery({
+    queryKey: standaloneQueryKey,
+    queryFn: () =>
+      listWarehouseStandaloneShipments({
+        token,
+        page,
+        pageSize: 20,
+        search: search || undefined,
+        warehouseId,
+      }),
+    enabled:
+      !!token &&
+      !!warehouseId &&
+      !accessDenied &&
+      hub != null &&
+      ((isMainHub && activeTab === "shipments") ||
+        (hub.mainBranchId !== null)),
+    refetchInterval: 10000,
+  })
+
+  const refreshData = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token, warehouseId] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-queue", token] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-orders", token] }),
+      queryClient.invalidateQueries({ queryKey: ["warehouse-standalone-shipments", token, warehouseId] }),
     ])
-  }
+  }, [queryClient, token, warehouseId])
 
-  const scanInMutation = useMutation({
-    mutationFn: () => {
-      const payload = scanPayloadFromInput(trackingInput)
-      return scanShipmentIn({ token, ...payload })
-    },
-    onSuccess: async () => {
-      showToast(t("warehouse.feedback.scanInSuccess"), "success")
-      await refreshData()
-      setTrackingInput("")
-    },
-    onError: (error) => {
-      showToast((error as Error).message, "error")
-    },
-  })
+  const debouncedRefresh = useMemo(
+    () => debounceFn(() => void refreshData(), 3500),
+    [refreshData],
+  )
 
-  const scanOutMutation = useMutation({
-    mutationFn: () => {
-      const payload = scanPayloadFromInput(trackingInput)
-      return scanShipmentOut({ token, ...payload })
+  useEffect(() => {
+    return () => debouncedRefresh.cancel()
+  }, [debouncedRefresh])
+
+  const patchQueueAfterScanIn = useCallback(
+    (res: {
+      merchantOrderId: string
+      scanResult: "SCANNED" | "ALREADY_SCANNED"
+    }) => {
+      const now = new Date().toISOString()
+      const nextTransfer = "IN_WAREHOUSE"
+      queryClient.setQueriesData<WarehouseOrdersResponse>(
+        { queryKey: ["warehouse-orders", token], exact: false },
+        (old) => {
+          if (!old) return old
+          const idx = old.merchantOrders.findIndex(
+            (r) =>
+              r.id === res.merchantOrderId ||
+              r.merchantOrderId === res.merchantOrderId,
+          )
+          if (idx < 0) return old
+
+          if (transferStatusFilter && nextTransfer !== transferStatusFilter) {
+            const merchantOrders = old.merchantOrders.filter((_, i) => i !== idx)
+            return {
+              ...old,
+              merchantOrders,
+              total: Math.max(0, old.total - 1),
+            }
+          }
+
+          const merchantOrders = old.merchantOrders.map((r, i) => {
+            if (i !== idx) return r
+            if (res.scanResult === "ALREADY_SCANNED") {
+              return { ...r, updatedAt: now }
+            }
+            return { ...r, transferStatus: nextTransfer, updatedAt: now }
+          })
+          return { ...old, merchantOrders }
+        },
+      )
     },
-    onSuccess: async () => {
-      showToast(t("warehouse.feedback.scanOutSuccess"), "success")
-      await refreshData()
-      setTrackingInput("")
+    [queryClient, token, transferStatusFilter],
+  )
+
+  const patchQueueAfterScanOut = useCallback(
+    (detail: ScanOutQueuePatch) => {
+      const batchId = detail.id
+      const nextTransfer = detail.transferStatus
+      if (!batchId || !nextTransfer) return
+      const updatedAt = detail.updatedAt ?? new Date().toISOString()
+      queryClient.setQueriesData<WarehouseOrdersResponse>(
+        { queryKey: ["warehouse-orders", token], exact: false },
+        (old) => {
+          if (!old) return old
+          const idx = old.merchantOrders.findIndex(
+            (r) => r.id === batchId || r.merchantOrderId === batchId,
+          )
+          if (idx < 0) return old
+
+          if (transferStatusFilter && nextTransfer !== transferStatusFilter) {
+            const merchantOrders = old.merchantOrders.filter((_, i) => i !== idx)
+            return {
+              ...old,
+              merchantOrders,
+              total: Math.max(0, old.total - 1),
+            }
+          }
+
+          const merchantOrders = old.merchantOrders.map((r, i) =>
+            i === idx ? { ...r, transferStatus: nextTransfer, updatedAt } : r,
+          )
+          return { ...old, merchantOrders }
+        },
+      )
     },
-    onError: (error) => {
-      showToast((error as Error).message, "error")
+    [queryClient, token, transferStatusFilter],
+  )
+
+  const handleWarehouseScan = useCallback(
+    async (mode: WarehouseScanMode, trackingNumber: string) => {
+      if (!warehouseId.trim()) {
+        throw new Error("Missing warehouse id")
+      }
+      if (mode === "in") {
+        const res = await scanShipmentIn({ token, warehouseId, trackingNumber })
+        const msgKey =
+          res.scanResult === "ALREADY_SCANNED"
+            ? "warehouse.feedback.scanInAlreadyScanned"
+            : "warehouse.feedback.scanInSuccess"
+        showToast(t(msgKey), res.scanResult === "ALREADY_SCANNED" ? "info" : "success")
+        patchQueueAfterScanIn(res)
+      } else {
+        const raw = await scanShipmentOut({ token, warehouseId, trackingNumber })
+        showToast(t("warehouse.feedback.scanOutSuccess"), "success")
+        const patch = readScanOutQueuePatch(raw)
+        if (patch) patchQueueAfterScanOut(patch)
+      }
+      debouncedRefresh()
     },
-  })
+    [
+      token,
+      warehouseId,
+      t,
+      debouncedRefresh,
+      patchQueueAfterScanIn,
+      patchQueueAfterScanOut,
+    ],
+  )
 
   const receiveReturnMutation = useMutation({
     mutationFn: () => {
-      const payload = scanPayloadFromInput(trackingInput)
+      const payload = scanPayloadFromInput(lookupTrackingInput)
       return receiveWarehouseReturn({
         token,
         ...payload,
@@ -288,7 +512,7 @@ export function WarehouseDetailPage() {
     onSuccess: async () => {
       showToast(t("warehouse.feedback.returnSuccess"), "success")
       await refreshData()
-      setTrackingInput("")
+      setLookupTrackingInput("")
       setReturnDiscountInput("")
     },
     onError: (error) => {
@@ -300,7 +524,8 @@ export function WarehouseDetailPage() {
     mutationFn: () =>
       getWarehouseTracking({
         token,
-        trackingNumber: scanPayloadFromInput(trackingInput).trackingNumber ?? "",
+        trackingNumber:
+          scanPayloadFromInput(lookupTrackingInput).trackingNumber ?? "",
       }),
     onSuccess: (data) => {
       const row = data as { transferStatus?: string; updatedAt?: string }
@@ -321,16 +546,20 @@ export function WarehouseDetailPage() {
     1,
     Math.ceil((queueQuery.data?.total ?? 0) / (queueQuery.data?.pageSize ?? 20)),
   )
+  const standaloneTotalPages = Math.max(
+    1,
+    Math.ceil((standaloneQuery.data?.total ?? 0) / (standaloneQuery.data?.pageSize ?? 20)),
+  )
   const stats = statsQuery.data
-  const statValues = [
-    stats?.pending ?? 0,
-    stats?.assigned ?? 0,
-    stats?.onTheWayToWarehouse ?? 0,
-    stats?.inWarehouse ?? 0,
-    stats?.partiallyDelivered ?? 0,
-    stats?.delivered ?? 0,
-  ]
-  const maxStatValue = Math.max(...statValues, 0)
+  const periodStats = stats?.periodMetrics
+  const lifetimeStats = stats?.lifetimeMetrics
+  const periodStatValues = transferStatCards.map((c) => periodStats?.[c.statKey] ?? 0)
+  const maxPeriodStat = Math.max(...periodStatValues, 0)
+
+  const periodRangeLabel =
+    stats?.period != null
+      ? `${new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(stats.period.from))} – ${new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(stats.period.to))}`
+      : null
 
   if (!warehouseId) {
     return (
@@ -476,6 +705,100 @@ export function WarehouseDetailPage() {
                   </Card>
                 </div>
 
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Boxes className="size-4" aria-hidden />
+                      {t("warehouse.zoneLinks.title")}
+                    </CardTitle>
+                    <CardDescription>{t("warehouse.zoneLinks.description")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {zoneLinksQuery.isLoading || zonesCatalogQuery.isLoading ? (
+                      <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+                    ) : zoneLinksQuery.error || zonesCatalogQuery.error ? (
+                      <p className="text-destructive text-sm">
+                        {((zoneLinksQuery.error || zonesCatalogQuery.error) as Error).message}
+                      </p>
+                    ) : (
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        <div className="grid gap-2">
+                          <label className="text-muted-foreground text-xs font-medium">
+                            {t("warehouse.zoneLinks.deliveryZones")}
+                          </label>
+                          <select
+                            multiple
+                            className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm"
+                            value={deliveryZoneIds}
+                            onChange={(e) => {
+                              const selected = Array.from(e.target.selectedOptions).map(
+                                (o) => o.value,
+                              )
+                              setDeliveryZoneIds(selected)
+                            }}
+                          >
+                            {(zonesCatalogQuery.data?.zones ?? []).map((z) => (
+                              <option key={z.id} value={z.id}>
+                                {[
+                                  z.governorate,
+                                  z.areaZone ?? "",
+                                  z.name ?? "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <label className="text-muted-foreground text-xs font-medium">
+                            {t("warehouse.zoneLinks.pickupZones")}
+                          </label>
+                          <select
+                            multiple
+                            className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm"
+                            value={pickupZoneIds}
+                            onChange={(e) => {
+                              const selected = Array.from(e.target.selectedOptions).map(
+                                (o) => o.value,
+                              )
+                              setPickupZoneIds(selected)
+                            }}
+                          >
+                            {(zonesCatalogQuery.data?.zones ?? []).map((z) => (
+                              <option key={z.id} value={z.id}>
+                                {[
+                                  z.governorate,
+                                  z.areaZone ?? "",
+                                  z.name ?? "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        disabled={
+                          saveZoneLinksMut.isPending ||
+                          !token ||
+                          accessDenied ||
+                          !warehouseId
+                        }
+                        onClick={() => saveZoneLinksMut.mutate()}
+                      >
+                        {t("common.save")}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {hub.subBranches && hub.subBranches.length > 0 && !hub.mainBranchId
                   ? hub.subBranches.map((sub) => (
                       <div
@@ -491,34 +814,31 @@ export function WarehouseDetailPage() {
                       </div>
                     ))
                   : null}
-
-                {hub.mainBranch && hub.mainBranchId ? (
-                  <div
-                    className="rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleSubBranchClick(hub.mainBranch!!.id)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubBranchClick(hub.mainBranch!!.id)}
-                  >
-                    <p className="font-medium text-sm">{hub.mainBranch.name}</p>
-                  </div>
-                ) : null}
               </>
             ) : null}
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {transferStatCards.map((c) => (
-            <StatCard
-              key={c.statKey}
-              title={t(c.titleI18nKey)}
-              value={stats?.[c.statKey] ?? 0}
-              percentage={toPercentFromMax(stats?.[c.statKey] ?? 0, maxStatValue)}
-              icon={c.icon}
-              accent={c.accent}
-            />
-          ))}
+        <div className="space-y-3">
+          {periodRangeLabel ? (
+            <p className="text-muted-foreground text-sm">
+              {t("warehouse.insights.periodFromSettings")}: {periodRangeLabel}
+            </p>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {transferStatCards.map((c) => (
+              <StatCard
+                key={c.statKey}
+                title={t(c.titleI18nKey)}
+                value={periodStats?.[c.statKey] ?? 0}
+                percentage={toPercentFromMax(periodStats?.[c.statKey] ?? 0, maxPeriodStat)}
+                icon={c.icon}
+                accent={c.accent}
+                secondaryValue={lifetimeStats?.[c.statKey] ?? 0}
+                secondaryLabel={t("warehouse.insights.allTime")}
+              />
+            ))}
+          </div>
         </div>
 
         <Card>
@@ -527,30 +847,23 @@ export function WarehouseDetailPage() {
             <CardDescription>{t("warehouse.operations.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
-              <Input
-                value={trackingInput}
-                onChange={(e) => setTrackingInput(e.target.value)}
-                placeholder={t("warehouse.operations.trackingPlaceholder")}
+            <div>
+              <p className="text-muted-foreground mb-2 text-sm">
+                {t("warehouse.operations.scannerHint")}
+              </p>
+              <WarehouseScanner
+                warehouseId={warehouseId}
+                onScan={handleWarehouseScan}
+                disabled={!token || accessDenied}
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => scanInMutation.mutate()}
-                disabled={!trackingInput.trim() || scanInMutation.isPending}
-              >
-                {scanInMutation.isPending ? t("common.processing") : t("warehouse.operations.scanIn")}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => scanOutMutation.mutate()}
-                disabled={!trackingInput.trim() || scanOutMutation.isPending}
-              >
-                {scanOutMutation.isPending ? t("common.processing") : t("warehouse.operations.scanOut")}
-              </Button>
             </div>
 
             <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
+              <Input
+                value={lookupTrackingInput}
+                onChange={(e) => setLookupTrackingInput(e.target.value)}
+                placeholder={t("warehouse.operations.lookupTrackingPlaceholder")}
+              />
               <Input
                 value={returnDiscountInput}
                 onChange={(e) => setReturnDiscountInput(e.target.value)}
@@ -560,16 +873,21 @@ export function WarehouseDetailPage() {
                 type="button"
                 variant="destructive"
                 onClick={() => receiveReturnMutation.mutate()}
-                disabled={!trackingInput.trim() || receiveReturnMutation.isPending}
+                disabled={
+                  !lookupTrackingInput.trim() || receiveReturnMutation.isPending
+                }
               >
                 {receiveReturnMutation.isPending ? t("common.processing") : t("warehouse.operations.receiveReturn")}
               </Button>
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  const payload = scanPayloadFromInput(trackingInput)
-                  if (payload.shipmentId) {
+                  const payload = scanPayloadFromInput(lookupTrackingInput)
+                  if (payload.shipmentLineId) {
                     showToast(t("warehouse.operations.trackNeedsTracking"), "error")
                     return
                   }
@@ -579,7 +897,7 @@ export function WarehouseDetailPage() {
                   }
                   trackingMutation.mutate()
                 }}
-                disabled={!trackingInput.trim() || trackingMutation.isPending}
+                disabled={!lookupTrackingInput.trim() || trackingMutation.isPending}
               >
                 <Search className="size-5" aria-hidden />
                 {trackingMutation.isPending ? t("common.searching") : t("warehouse.operations.track")}
@@ -594,11 +912,55 @@ export function WarehouseDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("warehouse.queue.titleTransfers")}</CardTitle>
-            <CardDescription>{t("warehouse.queue.descriptionTransfers")}</CardDescription>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle>
+                  {isMainHub && activeTab === "orders"
+                    ? t("warehouse.queue.titleTransfers")
+                    : t("warehouse.queue.titleShipments")}
+                </CardTitle>
+                <CardDescription>
+                  {isMainHub && activeTab === "orders"
+                    ? t("warehouse.queue.descriptionTransfers")
+                    : t("warehouse.queue.descriptionShipments")}
+                </CardDescription>
+              </div>
+              {isMainHub ? (
+                <div className="flex rounded-lg border p-0.5">
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      activeTab === "orders"
+                        ? "bg-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setActiveTab("orders")}
+                  >
+                    {t("warehouse.queue.tabOrders")}
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      activeTab === "shipments"
+                        ? "bg-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setActiveTab("shipments")}
+                  >
+                    {t("warehouse.queue.tabShipments")}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-[2fr_1fr_auto]">
+            <div
+              className={
+                isMainHub && activeTab === "orders"
+                  ? "grid gap-3 md:grid-cols-[2fr_1fr_auto]"
+                  : "grid gap-3"
+              }
+            >
               <Input
                 value={search}
                 onChange={(e) => {
@@ -607,37 +969,41 @@ export function WarehouseDetailPage() {
                 }}
                 placeholder={t("warehouse.queue.searchPlaceholder")}
               />
-              <select
-                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
-                value={transferStatusFilter}
-                onChange={(e) => {
-                  setTransferStatusFilter(e.target.value as WarehouseTransferStatusFilter)
-                  setPage(1)
-                }}
-              >
-                {warehouseTransferStatusFilters.map((value) => (
-                  <option key={value || "all"} value={value}>
-                    {value
-                      ? backendShipmentTransferLabel(t, value)
-                      : t("warehouse.queue.allStatuses")}
-                  </option>
-                ))}
-              </select>
-              <label className="text-sm flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={returnsOnly}
-                  onChange={(e) => {
-                    setReturnsOnly(e.target.checked)
-                    if (!e.target.checked) setReturnsCourierFilterId("")
-                    setPage(1)
-                  }}
-                />
-                {t("warehouse.queue.returnsOnly")}
-              </label>
+              {isMainHub && activeTab === "orders" ? (
+                <>
+                  <select
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
+                    value={transferStatusFilter}
+                    onChange={(e) => {
+                      setTransferStatusFilter(e.target.value as WarehouseTransferStatusFilter)
+                      setPage(1)
+                    }}
+                  >
+                    {warehouseTransferStatusFilters.map((value) => (
+                      <option key={value || "all"} value={value}>
+                        {value
+                          ? backendShipmentTransferLabel(t, value)
+                          : t("warehouse.queue.allStatuses")}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="text-sm flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={returnsOnly}
+                      onChange={(e) => {
+                        setReturnsOnly(e.target.checked)
+                        if (!e.target.checked) setReturnsCourierFilterId("")
+                        setPage(1)
+                      }}
+                    />
+                    {t("warehouse.queue.returnsOnly")}
+                  </label>
+                </>
+              ) : null}
             </div>
 
-            {returnsOnly ? (
+            {isMainHub && activeTab === "orders" && returnsOnly ? (
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-muted-foreground text-sm whitespace-nowrap">
                   {t("warehouse.queue.filterReturnsByCourier")}
@@ -660,30 +1026,38 @@ export function WarehouseDetailPage() {
               </div>
             ) : null}
 
-            {queueQuery.isLoading ? (
+            {siteDetailQuery.isPending ? (
               <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
-            ) : null}
-
-            {queueQuery.error ? (
+            ) : siteDetailQuery.isError ? (
               <p className="text-destructive text-sm">
-                {(queueQuery.error as Error).message}
+                {(siteDetailQuery.error as Error).message}
               </p>
-            ) : null}
+            ) : isMainHub && activeTab === "orders" ? (
+              <>
+                {queueQuery.isLoading ? (
+                  <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
+                ) : null}
 
-            <div className="overflow-x-auto rounded-lg border">
-              <Table className="min-w-[56rem]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("warehouse.table.merchant")}</TableHead>
-                    <TableHead>{t("warehouse.table.orderCount")}</TableHead>
-                    <TableHead>{t("warehouse.table.totalValue")}</TableHead>
-                    <TableHead>{t("warehouse.table.batchTransfer")}</TableHead>
-                    <TableHead>{t("warehouse.table.pickupCourier")}</TableHead>
-                    <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(queueQuery.data?.merchantOrders ?? []).map((row) => {
+                {queueQuery.error ? (
+                  <p className="text-destructive text-sm">
+                    {(queueQuery.error as Error).message}
+                  </p>
+                ) : null}
+
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table className="min-w-[56rem]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("warehouse.table.merchant")}</TableHead>
+                        <TableHead>{t("warehouse.table.orderCount")}</TableHead>
+                        <TableHead>{t("warehouse.table.totalValue")}</TableHead>
+                        <TableHead>{t("warehouse.table.batchTransfer")}</TableHead>
+                        <TableHead>{t("warehouse.table.pickupCourier")}</TableHead>
+                        <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(queueQuery.data?.merchantOrders ?? []).map((row) => {
                     const fmtMoney = (raw: string | number) => {
                       const num = typeof raw === 'number' ? raw : Number.parseFloat(
                         String(raw ?? "").replace(/,/g, "").trim(),
@@ -751,6 +1125,86 @@ export function WarehouseDetailPage() {
                 </Button>
               </div>
             </div>
+              </>
+            ) : (
+              <>
+                {standaloneQuery.isLoading ? (
+                  <p className="text-muted-foreground text-sm">{t("warehouse.loading")}</p>
+                ) : null}
+
+                {standaloneQuery.error ? (
+                  <p className="text-destructive text-sm">
+                    {(standaloneQuery.error as Error).message}
+                  </p>
+                ) : null}
+
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table className="min-w-[40rem]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("warehouse.table.trackingNumber")}</TableHead>
+                        <TableHead>{t("warehouse.table.customer")}</TableHead>
+                        <TableHead>{t("warehouse.table.merchant")}</TableHead>
+                        <TableHead>{t("warehouse.table.status")}</TableHead>
+                        <TableHead>{t("warehouse.table.transferredFromWarehouse")}</TableHead>
+                        <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(standaloneQuery.data?.shipments ?? []).map((row: WarehouseStandaloneShipmentRow) => (
+                        <TableRow
+                          key={row.id}
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() =>
+                            nav(`/shipments/${encodeURIComponent(row.id)}`)
+                          }
+                        >
+                          <TableCell>{row.trackingNumber ?? getNotApplicable()}</TableCell>
+                          <TableCell>{row.customerName ?? getNotApplicable()}</TableCell>
+                          <TableCell>{row.merchantName ?? getNotApplicable()}</TableCell>
+                          <TableCell>
+                            <BackendStatusBadge kind="orderDelivery" value={row.status} />
+                          </TableCell>
+                          <TableCell>
+                            {row.transferredFromWarehouseName ?? getNotApplicable()}
+                          </TableCell>
+                          <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-muted-foreground text-sm">
+                    {t("warehouse.queue.pagination", {
+                      page,
+                      total: standaloneQuery.data?.total ?? 0,
+                    })}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={page <= 1}
+                      onClick={() => setPage((v) => v - 1)}
+                    >
+                      {t("cs.pagination.prev")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={page >= standaloneTotalPages}
+                      onClick={() => setPage((v) => v + 1)}
+                    >
+                      {t("cs.pagination.next")}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

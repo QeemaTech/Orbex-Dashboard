@@ -21,6 +21,7 @@ import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
 import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
 import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
+import { ShipmentLabelPrintPage } from "@/pages/ShipmentLabelPrintPage"
 import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
 import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
@@ -30,6 +31,9 @@ import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { RolesPage } from "@/pages/RolesPage"
+import { SettingsPage } from "@/pages/SettingsPage"
+import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
+import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -107,6 +111,8 @@ export default function App() {
       <RealtimeBridge />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/track/:trackingNumber" element={<PublicShipmentTrackingPage />} />
+        <Route path="/delivery-proof/:token" element={<DeliveryProofPage />} />
         <Route
           path="/"
           element={
@@ -128,6 +134,16 @@ export default function App() {
           element={
             <Protected>
               <ShipmentLinesListPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/shipments/:shipmentId/print"
+          element={
+            <Protected>
+              <ProtectedRole allowed={[]} requiredPermissions={["shipments.label"]}>
+                <ShipmentLabelPrintPage />
+              </ProtectedRole>
             </Protected>
           }
         />
@@ -208,6 +224,16 @@ export default function App() {
                 requiredPermissions={["users.read"]}
               >
                 <UsersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN"]} requiredPermissions={["users.write"]}>
+                <SettingsPage />
               </ProtectedRole>
             </Protected>
           }
@@ -369,6 +395,16 @@ export default function App() {
                 requiredPermissions={["couriers.read"]}
               >
                 <CsCouriersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/cs/shipments/:shipmentId/print"
+          element={
+            <Protected>
+              <ProtectedRole allowed={[]} requiredPermissions={["shipments.label"]}>
+                <ShipmentLabelPrintPage />
               </ProtectedRole>
             </Protected>
           }
