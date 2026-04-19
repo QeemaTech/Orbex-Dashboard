@@ -26,19 +26,22 @@ import { CsShipmentRowActions } from "@/features/customer-service/components/CsS
 import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
+import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
 import { WarehouseShipmentOrdersTable } from "@/features/warehouse/components/WarehouseShipmentOrdersTable"
 import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labels"
-import type { UserRole } from "@/lib/auth-context"
+import type { AuthUser } from "@/lib/auth-context"
 import { useAuth } from "@/lib/auth-context"
 import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
+import { isWarehouseSiteAdmin, isWarehouseSiteStaff } from "@/lib/warehouse-access"
 import { printerService } from "@/services/printer.service"
 import { showToast } from "@/lib/toast"
 
 const INVALID_ROUTE_BATCH_ID = new Set(["", "undefined"])
 
-function resolvePerspective(role: UserRole | undefined): DashboardPerspective {
-  if (role === "ACCOUNTS") return "accounting"
-  if (role === "WAREHOUSE" || role === "WAREHOUSE_ADMIN") return "warehouse"
+function resolvePerspective(user: AuthUser | null | undefined): DashboardPerspective {
+  if (!user) return "operations"
+  if (user.role === "ACCOUNTS") return "accounting"
+  if (isWarehouseSiteStaff(user) || isWarehouseSiteAdmin(user)) return "warehouse"
   return "operations"
 }
 
@@ -77,7 +80,7 @@ export function MerchantOrderDetailsPage() {
 
   const isWarehouseRoute = isWarehouseScopedMerchantOrderPath(location.pathname)
   const isCsRoute = location.pathname.startsWith("/cs/")
-  const statusPerspective = resolvePerspective(user?.role)
+  const statusPerspective = resolvePerspective(user)
 
   const [mapOpen, setMapOpen] = useState(false)
   const [mapCourierId, setMapCourierId] = useState<string | null>(null)
@@ -160,6 +163,7 @@ export function MerchantOrderDetailsPage() {
   }
 
   const orders = ordersSummaryQuery.data?.shipments ?? []
+  const primaryLineStatusEvents = orders[0]?.statusEvents ?? []
   const ordersTotalValue = sumMoney(orders.map((p) => p.shipmentValue))
   const ordersTotalShipping = sumMoney(orders.map((p) => p.shippingFee))
   const orderCount =
@@ -371,6 +375,7 @@ export function MerchantOrderDetailsPage() {
                 <WarehouseShipmentOrdersTable
                   token={token}
                   shipmentId={merchantOrderId}
+                  warehouseId={isWarehouseRoute ? warehouseId : undefined}
                   mode={tableMode}
                 />
               </CardContent>
@@ -378,7 +383,8 @@ export function MerchantOrderDetailsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>{t("merchantOrders.detail.timelineTitle")}</CardTitle>
+                <CardTitle>{t("merchantOrders.detail.batchTimelineTitle")}</CardTitle>
+                <CardDescription>{t("merchantOrders.detail.batchTimelineHint")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {(q.data.statusEvents ?? []).length === 0 ? (
@@ -396,6 +402,27 @@ export function MerchantOrderDetailsPage() {
                       </li>
                     ))}
                   </ul>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("merchantOrders.detail.lineTimelineTitle")}</CardTitle>
+                <CardDescription>{t("merchantOrders.detail.lineTimelineSubtitle")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!ordersSummaryQuery.data ? (
+                  <p className="text-muted-foreground text-sm">{t("merchantOrders.loading")}</p>
+                ) : primaryLineStatusEvents.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    {t("merchantOrders.detail.timelineEmpty")}
+                  </p>
+                ) : (
+                  <ShipmentTimeline
+                    events={primaryLineStatusEvents}
+                    contextWarehouseId={isWarehouseRoute ? warehouseId : undefined}
+                  />
                 )}
               </CardContent>
             </Card>

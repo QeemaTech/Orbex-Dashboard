@@ -10,13 +10,31 @@ import {
   Warehouse,
 } from "react-lucid"
 import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { NavLink, useNavigate } from "react-router-dom"
+import { NavLink, useLocation, useNavigate } from "react-router-dom"
 
+import { getWarehouseSite } from "@/api/warehouse-api"
 import { useSidebar } from "@/components/layout/sidebar-context"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
+import { isMainBranch } from "@/lib/warehouse-utils"
+import { isWarehouseStaffRole, isWarehouseSiteStaff } from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
+
+/** Same pathname + `tab` query as sidebar link (staff hub has multiple links under one path). */
+function isWarehouseStaffNavItemActive(
+  location: { pathname: string; search: string },
+  to: string,
+): boolean {
+  const q = to.indexOf("?")
+  const path = q >= 0 ? to.slice(0, q) : to
+  const wantTab = q >= 0 ? new URLSearchParams(to.slice(q + 1)).get("tab") : null
+  if (location.pathname !== path) return false
+  const haveTab = new URLSearchParams(location.search).get("tab")
+  if (wantTab === null) return !haveTab || haveTab === ""
+  return haveTab === wantTab
+}
 
 const adminNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
@@ -52,33 +70,77 @@ const customerServiceNavConfig = [
 
 export function Sidebar() {
   const { t, i18n } = useTranslation()
+  const location = useLocation()
   const { open, setOpen } = useSidebar()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, accessToken } = useAuth()
   const isEn = i18n.language.startsWith("en")
   const perms = user?.permissions ?? []
+  const token = accessToken ?? ""
 
   const hasPerm = (p?: string) => {
     if (!p) return true
     return perms.includes(p)
   }
 
+  const staffSiteQuery = useQuery({
+    queryKey: ["sidebar-warehouse-site", token, user?.warehouseId],
+    queryFn: () => getWarehouseSite(token, user!.warehouseId!),
+    enabled: !!token && !!user?.warehouseId && isWarehouseStaffRole(user),
+  })
+
+  const isMainHubForStaff =
+    staffSiteQuery.data != null && isMainBranch(staffSiteQuery.data)
+
   const warehouseStaffNav = useMemo(() => {
-    if (user?.role === "WAREHOUSE" && user.warehouseId) {
-      return [
+    if (user && isWarehouseSiteStaff(user) && user.warehouseId) {
+      const base = `/warehouses/${user.warehouseId}`
+      const items: Array<{
+        to: string
+        labelKey:
+          | "nav.myWarehouse"
+          | "nav.warehouseMerchantOrders"
+          | "nav.warehouseStandaloneShipments"
+        icon: typeof Warehouse
+        end: boolean
+        perm: string
+      }> = [
         {
-          to: `/warehouses/${user.warehouseId}`,
-          labelKey: "nav.warehouses" as const,
+          to: base,
+          labelKey: "nav.myWarehouse",
           icon: Warehouse,
           end: true,
-          perm: "warehouses.read" as const,
+          perm: "warehouses.read",
         },
-      ] as const
+      ]
+      if (isMainHubForStaff) {
+        items.push({
+          to: `${base}?tab=orders`,
+          labelKey: "nav.warehouseMerchantOrders",
+          icon: Boxes,
+          end: false,
+          perm: "warehouses.read",
+        })
+      }
+      items.push({
+        to: `${base}?tab=shipments`,
+        labelKey: "nav.warehouseStandaloneShipments",
+        icon: Package,
+        end: false,
+        perm: "warehouses.read",
+      })
+      return items
     }
     return [
-      { to: "/warehouse", labelKey: "nav.warehouses" as const, icon: Warehouse, end: true, perm: "warehouses.read" as const },
+      {
+        to: "/warehouse",
+        labelKey: "nav.myWarehouse" as const,
+        icon: Warehouse,
+        end: true,
+        perm: "warehouses.read" as const,
+      },
     ] as const
-  }, [user?.role, user?.warehouseId])
+  }, [user, isMainHubForStaff])
 
   function onSignOut() {
     setOpen(false)
@@ -88,7 +150,7 @@ export function Sidebar() {
   const navConfig =
     user?.role === "CUSTOMER_SERVICE"
       ? customerServiceNavConfig.filter(({ perm }) => hasPerm(perm))
-      : user?.role === "WAREHOUSE"
+      : user && isWarehouseStaffRole(user)
         ? warehouseStaffNav.filter(({ perm }) => hasPerm(perm))
         : user?.role === "WAREHOUSE_ADMIN"
           ? [
@@ -138,9 +200,13 @@ export function Sidebar() {
             className={({ isActive }) =>
               cn(
                 "nav-item group flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-3 text-[0.95rem] font-medium transition-all duration-200",
-                isActive
-                  ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
-                  : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
+                user && isWarehouseStaffRole(user)
+                  ? isWarehouseStaffNavItemActive(location, to)
+                    ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
+                    : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
+                  : isActive
+                    ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
+                    : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
               )
             }
           >

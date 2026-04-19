@@ -318,6 +318,10 @@ export type WarehouseStandaloneShipmentRow = {
   status: string
   customerName: string
   merchantName: string
+  currentWarehouseId: string | null
+  currentWarehouseName: string | null
+  transferTargetWarehouseId: string | null
+  transferTargetWarehouseName: string | null
   transferredFromWarehouseId: string | null
   transferredFromWarehouseName: string | null
   createdAt: string
@@ -360,10 +364,10 @@ function scanPayloadFromInput(raw: string): {
   return { trackingNumber: t }
 }
 
-/** Hub is taken from the JWT, not the body — only send `trackingNumber` / optional `note`. */
+/** Sends `warehouseId` so the API can resolve site scope for admin / multi-hub users (same as queue). */
 export function scanShipmentIn(params: {
   token: string
-  /** Page context only; not sent to the API (avoids strict-schema 400). */
+  /** Hub page context — sent so scan-in visibility matches the warehouse you opened. */
   warehouseId: string
   trackingNumber: string
   note?: string
@@ -389,10 +393,10 @@ export function scanShipmentIn(params: {
   })
 }
 
-/** Hub is taken from the JWT — only send `trackingNumber` / optional `note`. */
+/** Sends `warehouseId` for site scope (same as scan-in). */
 export function scanShipmentOut(params: {
   token: string
-  /** Page context only; not sent to the API. */
+  /** Hub page context for scope resolution. */
   warehouseId: string
   trackingNumber: string
   note?: string
@@ -401,6 +405,7 @@ export function scanShipmentOut(params: {
     method: "POST",
     token: params.token,
     body: JSON.stringify({
+      warehouseId: params.warehouseId,
       trackingNumber: params.trackingNumber.trim(),
       ...(params.note !== undefined ? { note: params.note } : {}),
     }),

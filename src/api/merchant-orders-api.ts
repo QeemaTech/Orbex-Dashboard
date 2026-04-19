@@ -297,7 +297,16 @@ export type ShipmentOrderRow = {
     fromStatus: string | null
     toStatus: string
     actorUserId: string | null
+    /** Audit text, e.g. inter-hub transfer destination warehouse. */
+    note?: string | null
     createdAt: string
+    atWarehouseId?: string | null
+    atWarehouse?: { id: string; name: string } | null
+    fromWarehouseId?: string | null
+    fromWarehouse?: { id: string; name: string } | null
+    toWarehouseId?: string | null
+    toWarehouse?: { id: string; name: string } | null
+    postponeCountAfter?: number | null
   }>
   shipmentTasks?: Array<{
     id: string
@@ -749,7 +758,7 @@ export async function confirmShipmentCs(
     method: "PATCH",
     token,
     body: JSON.stringify({
-      shipmentLineId,
+      orderId: shipmentLineId,
       toShipmentStatus: "IN_WAREHOUSE",
     }),
   })

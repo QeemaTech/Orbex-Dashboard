@@ -10,6 +10,7 @@ import {
 
 import { loginRequest, meRequest } from "@/api/auth-api"
 import type { RbacRoleInfo } from "@/api/users-api"
+import { isWarehouseSiteAdmin, isWarehouseSiteStaff } from "@/lib/warehouse-access"
 
 export type UserRole =
   | "ADMIN"
@@ -189,8 +190,14 @@ export function canAccessCustomerService(role: UserRole | undefined): boolean {
   return role === "CUSTOMER_SERVICE" || role === "ADMIN"
 }
 
-export function getDefaultDashboardRoute(role: UserRole | undefined): string {
-  if (role === "CUSTOMER_SERVICE") return "/cs/shipments"
-  if (role === "WAREHOUSE" || role === "WAREHOUSE_ADMIN") return "/warehouse"
+/** Post-login and role-guard redirects. Pass full `user` so warehouse staff open their hub directly. */
+export function getDefaultDashboardRoute(user: AuthUser | null | undefined): string {
+  if (!user) return "/dashboard"
+  if (user.role === "CUSTOMER_SERVICE") return "/cs/shipments"
+  if (isWarehouseSiteStaff(user) && user.warehouseId) {
+    return `/warehouses/${encodeURIComponent(user.warehouseId)}`
+  }
+  if (isWarehouseSiteStaff(user)) return "/warehouse"
+  if (isWarehouseSiteAdmin(user)) return "/warehouse"
   return "/dashboard"
 }

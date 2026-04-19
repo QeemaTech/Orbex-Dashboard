@@ -20,6 +20,7 @@ import {
 import { showToast } from "@/lib/toast"
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { useAuth } from "@/lib/auth-context"
+import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
 
 function isOtherHubInWarehouse(
   p: ShipmentOrderRow,
@@ -36,6 +37,8 @@ const COMPACT_COL_COUNT = 6
 type Props = {
   token: string
   shipmentId: string
+  /** When set (warehouse merchant-order page), line detail opens with hub in URL for plan task context. */
+  warehouseId?: string
   /** Warehouse hub: full columns including assignment. Other routes: read-only compact list. */
   mode?: "warehouse" | "compact"
 }
@@ -47,6 +50,7 @@ type Props = {
 export function WarehouseShipmentOrdersTable({
   token,
   shipmentId,
+  warehouseId: warehouseIdProp,
   mode = "warehouse",
 }: Props) {
   const { t } = useTranslation()
@@ -133,6 +137,16 @@ export function WarehouseShipmentOrdersTable({
   if (!shipmentId) return null
 
   const goToOrder = (orderId: string) => {
+    if (
+      mode === "warehouse" &&
+      warehouseIdProp?.trim() &&
+      !location.pathname.startsWith("/cs/")
+    ) {
+      void navigate(
+        warehouseShipmentLineDetailPath(warehouseIdProp.trim(), orderId),
+      )
+      return
+    }
     void navigate(`${ordersBase}/${encodeURIComponent(orderId)}`)
   }
 

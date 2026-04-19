@@ -19,7 +19,7 @@ export function LoginPage() {
   const [pending, setPending] = useState(false)
 
   if (!loading && user) {
-    return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
+    return <Navigate to={getDefaultDashboardRoute(user)} replace />
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -28,7 +28,7 @@ export function LoginPage() {
     setPending(true)
     try {
       const loggedInUser = await login(email, password)
-      nav(getDefaultDashboardRoute(loggedInUser.role), { replace: true })
+      nav(getDefaultDashboardRoute(loggedInUser), { replace: true })
     } catch (err) {
       const msg =
         err instanceof ApiError ? err.message : t("auth.loginError")

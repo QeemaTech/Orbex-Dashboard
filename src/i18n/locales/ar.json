@@ -87,6 +87,25 @@
       "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة طلب التاجر.",
       "currencyLocale": "ar-EG"
     },
+    "timeline": {
+      "heading": "الجدول الزمني للشحنة",
+      "auditHeading": "سجل تفصيلي",
+      "noHistory": "لا يوجد سجل تتبع",
+      "pendingPickup": "في انتظار الاستلام",
+      "pickedUp": "تم الاستلام",
+      "inWarehouse": "داخل المخزن",
+      "assigned": "مُعيَّن",
+      "outForDelivery": "خارج للتسليم",
+      "delivered": "تم التسليم",
+      "rejected": "مرفوض",
+      "postponed": "مؤجل",
+      "returnedToWarehouse": "عاد إلى المخزن",
+      "returnedToMerchant": "عاد للتاجر",
+      "atWarehouse": "في {{name}}",
+      "inThisWarehouse": "في هذا المخزن ({{name}})",
+      "postponeAttempt": "تأجيل رقم {{count}}",
+      "transferRoute": "{{from}} ← {{to}}"
+    },
     "planTask": {
       "title": "تخطيط مهمة المخزن",
       "description": "إنشاء مهمة مخططة لسطر الشحنة هذا في مخزنك (مطلوبة قبل مسح الخروج). يستخدم الطلب معرّف سطر الشحنة الحالي.",
@@ -96,6 +115,7 @@
       "typeTransfer": "تحويل إلى مخزن آخر",
       "typeReturn": "إرجاع للتاجر",
       "fieldCourierRequired": "مندوب التسليم",
+      "fieldCourierTransfer": "مندوب النقل بين المخازن",
       "fieldCourierOptional": "مندوب (اختياري)",
       "fieldDestinationWarehouse": "مخزن الوجهة",
       "pickCourier": "اختر مندوبًا…",
@@ -105,6 +125,7 @@
       "success": "تم إنشاء المهمة المخططة ({{type}}). يمكنك مسح الخروج برقم التتبع.",
       "hintBatchNotInWarehouse": "دفعة طلب التاجر ليست داخل المخزن بعد (يجب أن تكون حالة التحويل داخل المخزن).",
       "hintLineNotInWarehouse": "سطر الشحنة ليس في حالة داخل المخزن.",
+      "hintReturnWrongStatus": "تخطيط الإرجاع للتاجر متاح فقط عندما يكون السطر مؤجلاً أو مرفوضاً (والدفعة داخل المخزن).",
       "hintCsRequired": "يجب أن يؤكد خدمة العملاء الشحنة للخروج قبل تخطيط مهمة التسليم.",
       "errors": {
         "NO_ACTIVE_TASK": "لا توجد مهمة نشطة.",
@@ -291,6 +312,10 @@
       "customerOrdersTitle": "شحنات العملاء",
       "customerOrdersDescription": "أسطر الشحنات (الطرود) ضمن طلب التاجر هذا. التحديثات والإسناد لكل شحنة على حدة.",
       "timelineTitle": "سجل الحالة",
+      "batchTimelineTitle": "مسار الدفعة (حالة التحويل)",
+      "batchTimelineHint": "يعرض مراحل تحويل الدفعة فقط. للتسليم والتأجيل وحركة المخازن راجع تتبع سطر الشحنة أدناه.",
+      "lineTimelineTitle": "تتبع سطر الشحنة",
+      "lineTimelineSubtitle": "سجل كامل لأول سطر شحنة في هذه الدفعة (التتبع، التأجيلات، التحويلات). افتح شحنة أخرى لباقي الأسطر.",
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
       "timelineArrow": "→",
@@ -613,6 +638,17 @@
       "inWarehouse": "داخل المخزن",
       "partiallyDelivered": "دفعات مسلّمة جزئيًا",
       "delivered": "دفعات مسلّمة بالكامل"
+    },
+    "shipmentInsights": {
+      "title": "أسطر الشحنات",
+      "subtitle": "عدد الحالات أدناه لصفحة الشحنات الحالية في هذا المخزن. الأشرطة توضح الحصة مقارنة بأكثر حالة في الصفحة.",
+      "hubTotalLabel": "إجمالي الأسطر في هذا المخزن",
+      "inWarehouse": "داخل المخزن",
+      "assigned": "معيّنة",
+      "outForDelivery": "خارجة للتسليم",
+      "delivered": "تم التسليم",
+      "rejected": "مرفوضة",
+      "postponed": "مؤجلة"
     },
     "insights": {
       "periodFromSettings": "فترة الرؤى (النظام)",

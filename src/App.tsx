@@ -62,7 +62,7 @@ function ProtectedRole({
   const hasPermission =
     requiredPermissions?.every((p) => user.permissions?.includes(p)) ?? false
   if (!hasPermission && !allowed.includes(user.role)) {
-    return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
+    return <Navigate to={getDefaultDashboardRoute(user)} replace />
   }
   return <>{children}</>
 }
@@ -70,7 +70,7 @@ function ProtectedRole({
 function RootRedirect() {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
-  return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
+  return <Navigate to={getDefaultDashboardRoute(user)} replace />
 }
 
 function RedirectWarehouseMerchantOrderShipmentsToDetail() {
@@ -78,17 +78,6 @@ function RedirectWarehouseMerchantOrderShipmentsToDetail() {
   return (
     <Navigate
       to={`${warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}#customer-orders`}
-      replace
-    />
-  )
-}
-
-/** Old bookmarks: `/warehouses/.../transfers/...` → `.../merchant-orders/...`. */
-function RedirectLegacyWarehouseTransfersToMerchantOrder() {
-  const { warehouseId = "", merchantOrderId = "" } = useParams()
-  return (
-    <Navigate
-      to={warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}
       replace
     />
   )
@@ -309,6 +298,14 @@ export default function App() {
               >
                 <WarehouseDetailPage />
               </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/shipments/:shipmentId"
+          element={
+            <Protected>
+              <ShipmentLineDetailsPage />
             </Protected>
           }
         />

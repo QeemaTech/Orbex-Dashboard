@@ -1,63 +1,39 @@
-/* SATO WS408 label — 102mm x 152mm (4x6) portrait — screen + print */
+/* SATO WS408 label — 4x6 inches (384x576px at 96dpi) */
 
 .label-print-root {
   min-height: 100dvh;
-  background: #e8e8e8;
-  padding: 1rem;
+  background: #f0f0f0;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
-/* Physical page box: same dimensions for screen preview and print */
-.label-print-viewport {
-  --label-scale: 1;
-  position: relative;
-  width: 102mm;
-  height: 152mm;
-  overflow: hidden;
-  box-sizing: border-box;
-  flex-shrink: 0;
+.label-print-page-container {
+  width: 384px;
+  height: 576px;
   background: #fff;
-}
-
-/* Out of document flow so transform: scale() does not extend page height */
-.label-print-scale-stage {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 102mm;
-  box-sizing: border-box;
-  transform: translateX(-50%) scale(var(--label-scale, 1));
-  transform-origin: top center;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .label-print-sheet {
-  width: 102mm;
-  min-height: 0;
+  width: 100%;
+  height: 100%;
   background: #fff;
   color: #000;
-  border: 1px solid #000;
-  box-sizing: border-box;
   font-family: system-ui, "Segoe UI", Tahoma, Arial, sans-serif;
   font-size: 9px;
   line-height: 1.35;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-  overflow: visible;
-}
-
-.label-print-sheet * {
-  box-sizing: border-box;
-  max-width: 100%;
 }
 
 .label-barcode-block {
-  padding: 4px 6px 2px;
+  padding: 5px 6px 2px;
   text-align: center;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-barcode-block svg {
@@ -83,7 +59,6 @@
   padding: 6px;
   border-bottom: 1px solid #000;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-brand {
@@ -113,7 +88,6 @@
   padding: 6px;
   align-items: center;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-id-badge {
@@ -138,14 +112,12 @@
   grid-template-columns: 1fr 1fr;
   border-bottom: 1px solid #000;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-col {
   padding: 6px;
   border-inline-end: 1px solid #000;
   vertical-align: top;
-  overflow: hidden;
 }
 
 .label-col:last-child {
@@ -162,19 +134,16 @@
   word-break: break-word;
   overflow-wrap: anywhere;
   unicode-bidi: plaintext;
-  overflow: hidden;
 }
 
 .label-full {
   padding: 6px;
   border-bottom: 1px solid #000;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-kv {
   margin-bottom: 4px;
-  overflow: hidden;
 }
 
 .label-kv:last-child {
@@ -199,7 +168,6 @@
   padding: 6px;
   border-bottom: 1px solid #000;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-mini-box {
@@ -208,7 +176,6 @@
   padding: 4px 6px;
   font-weight: 600;
   text-align: center;
-  overflow: hidden;
 }
 
 .label-footer-grid {
@@ -218,21 +185,18 @@
   padding: 6px;
   font-size: 8px;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-footer-notes {
   font-weight: 600;
   unicode-bidi: plaintext;
   word-break: break-word;
-  overflow: hidden;
 }
 
 .label-footer-meta {
   text-align: end;
   color: #333;
   unicode-bidi: plaintext;
-  overflow: hidden;
 }
 
 .label-footer-barcode {
@@ -243,7 +207,6 @@
   gap: 6px;
   align-items: end;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 .label-footer-barcode svg {
@@ -260,109 +223,73 @@
   font-size: 8px;
   border-top: 1px solid #000;
   flex-shrink: 0;
-  overflow: hidden;
 }
 
-/* Print: single 4x6 page, geometry matches screen */
 @media print {
-  /* 4in x 6in portrait = 102mm x 152mm; explicit portrait helps drivers */
   @page {
-    size: 4in 6in portrait;
+    size: 4in 6in;
     margin: 0;
   }
 
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 
-  /* Fill @page box; avoid fixed mm on html/body fighting driver paper selection */
-  html.label-print-page,
-  body.label-print-page {
+  @page {
+    size: 4in 6in portrait;
+    margin: 0;
+  }
+
+  html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    min-height: 0 !important;
-    max-height: 100% !important;
-    max-width: 100% !important;
     overflow: hidden !important;
     background: white !important;
-    break-after: avoid-page !important;
-    break-inside: avoid !important;
   }
 
-  body.label-print-page #root {
+  body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-    background: white !important;
-    break-inside: avoid !important;
   }
 
-  /* Toasts / other portals appended as body siblings must not add a second print page */
-  body.label-print-page > *:not(#root) {
-    display: none !important;
-  }
-
-  /* relative (not fixed): fixed repeats on every printed page in Chromium */
   .label-print-root {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: 100% !important;
-    max-width: 100% !important;
-    background: #fff !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: block !important;
-    overflow: hidden !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .label-print-viewport {
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    background: #fff !important;
-    box-shadow: none !important;
-  }
-
-  .label-print-scale-stage {
     position: absolute !important;
     top: 0 !important;
-    left: 50% !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    transform: translateX(-50%) scale(var(--label-scale, 1)) !important;
-    transform-origin: top center !important;
+    left: 0 !important;
+    width: 384px !important;
+    height: 576px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden !important;
+  }
+
+  .no-print,
+  .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .label-print-page-container {
+    width: 384px !important;
+    height: 576px !important;
+    max-width: 384px !important;
+    max-height: 576px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .label-print-sheet {
-    width: 100% !important;
-    border: none !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
-    page-break-before: avoid !important;
+    width: 384px !important;
+    height: 576px !important;
+    overflow: hidden !important;
   }
 }

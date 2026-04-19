@@ -11,6 +11,14 @@ export function warehouseMerchantOrderDetailPath(
   return `/warehouses/${encodeURIComponent(warehouseId)}/${WAREHOUSE_MERCHANT_ORDERS_SEGMENT}/${encodeURIComponent(merchantOrderId)}`
 }
 
+/** Shipment line detail with hub in the URL (plan task / scan context). */
+export function warehouseShipmentLineDetailPath(
+  warehouseId: string,
+  shipmentLineId: string,
+): string {
+  return `/warehouses/${encodeURIComponent(warehouseId)}/shipments/${encodeURIComponent(shipmentLineId)}`
+}
+
 const WAREHOUSE_MERCHANT_ORDER_PATH_RE =
   /^\/warehouses\/[^/]+\/merchant-orders\//
 

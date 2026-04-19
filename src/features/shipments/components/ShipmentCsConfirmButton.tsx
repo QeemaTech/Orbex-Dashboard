@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import type { TFunction } from "i18next"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -21,7 +22,7 @@ type Props = {
   extraInvalidateQueryKeys?: unknown[][]
 }
 
-function confirmErrorMessage(err: unknown, t: (k: string) => string): string {
+function confirmErrorMessage(err: unknown, t: TFunction): string {
   if (err instanceof ApiError && err.message) return err.message
   if (err instanceof Error) return err.message
   return t("shipments.detail.confirmCsError", { defaultValue: "Could not confirm." })

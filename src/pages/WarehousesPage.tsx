@@ -1,14 +1,10 @@
 import React, { useState } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Users, Pencil, Warehouse, ChevronDown, ChevronRight } from "react-lucid"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-import {
-  listWarehouseSites,
-  deleteWarehouse,
-  type WarehouseSiteRow,
-} from "@/api/warehouse-api"
+import { listWarehouseSites, type WarehouseSiteRow } from "@/api/warehouse-api"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { Layout } from "@/components/layout/Layout"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +26,6 @@ import {
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
 import { isMainBranch } from "@/lib/warehouse-utils"
-import { showToast } from "@/lib/toast"
 import { WarehouseFormDialog } from "@/features/warehouse/components/WarehouseFormDialog"
 import { WarehouseStaffDialog } from "@/features/warehouse/components/WarehouseStaffDialog"
 
@@ -54,17 +49,6 @@ export function WarehousesPage() {
   const [staffWarehouseId, setStaffWarehouseId] = useState("")
   const [staffWarehouseName, setStaffWarehouseName] = useState("")
 
-  const deleteMut = useMutation({
-    mutationFn: (id: string) => deleteWarehouse(token, id),
-    onSuccess: () => {
-      showToast(t("warehouse.feedback.deleted") ?? "Warehouse deleted", "success")
-      qc.invalidateQueries({ queryKey: ["warehouse-sites"] })
-    },
-    onError: (e: Error) => {
-      showToast(e.message ?? t("warehouse.feedback.deleteFailed") ?? "Failed to delete", "error")
-    },
-  })
-
   const isRTL = i18n.language?.startsWith("ar")
 
   const sitesQuery = useQuery({
@@ -81,10 +65,6 @@ export function WarehousesPage() {
       mainBranch,
       subBranches: rows.filter((w) => w.mainBranchId === mainBranch.id),
     }))
-
-  const orphanSubBranches = rows.filter(
-    (w) => !isMainBranch(w) && !rows.some((m) => m.id === w.mainBranchId),
-  )
 
   const toggleExpand = (id: string, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -112,7 +92,6 @@ export function WarehousesPage() {
   // Define alignment classes based on RTL/LTR
   const textAlignClass = isRTL ? "text-right" : "text-left"
   const flexJustifyClass = isRTL ? "justify-end" : "justify-start"
-  const chevronMarginClass = isRTL ? "ml-1" : "mr-1"
 
   return (
     <Layout title={t("warehouse.list.pageTitle")}>

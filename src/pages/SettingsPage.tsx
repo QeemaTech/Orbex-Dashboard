@@ -105,7 +105,8 @@ export function SettingsPage() {
       void queryClient.invalidateQueries({
         queryKey: ["system-settings", "INSIGHTS_PERIOD", token],
       })
-      void queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token] })
+      void queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-kpis", token], exact: false })
     },
     onError: (e: Error) => {
       showToast(e.message || t("settings.insightsPeriod.saveFailed"), "error")

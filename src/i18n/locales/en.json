@@ -89,6 +89,7 @@
     },
     "timeline": {
       "heading": "Shipment Timeline",
+      "auditHeading": "Detailed audit",
       "noHistory": "No tracking history available",
       "pendingPickup": "Pending Pickup",
       "pickedUp": "Picked Up",
@@ -99,7 +100,11 @@
       "rejected": "Rejected",
       "postponed": "Postponed",
       "returnedToWarehouse": "Returned to Warehouse",
-      "returnedToMerchant": "Returned to Merchant"
+      "returnedToMerchant": "Returned to Merchant",
+      "atWarehouse": "At {{name}}",
+      "inThisWarehouse": "In this warehouse ({{name}})",
+      "postponeAttempt": "Postpone #{{count}}",
+      "transferRoute": "{{from}} → {{to}}"
     },
     "tasks": {
       "heading": "Warehouse Tasks",
@@ -121,6 +126,7 @@
       "typeTransfer": "Transfer to another hub",
       "typeReturn": "Return to merchant",
       "fieldCourierRequired": "Delivery courier",
+      "fieldCourierTransfer": "Courier (inter-hub transport)",
       "fieldCourierOptional": "Courier (optional)",
       "fieldDestinationWarehouse": "Destination warehouse",
       "pickCourier": "Select a courier…",
@@ -319,6 +325,10 @@
       "customerOrdersTitle": "Customer shipments",
       "customerOrdersDescription": "Shipment lines (packages) under this merchant order. Assignment and delivery updates are per shipment.",
       "timelineTitle": "Timeline",
+      "batchTimelineTitle": "Batch pipeline (transfer status)",
+      "batchTimelineHint": "Shows batch transfer milestones only. For delivery, postpones, and hub movements, see shipment line tracking below.",
+      "lineTimelineTitle": "Shipment line tracking",
+      "lineTimelineSubtitle": "Full audit for the first shipment line in this batch (tracking, postpones, transfers). Open a shipment for other lines.",
       "timelineEmpty": "No timeline events yet.",
       "timelineStart": "START",
       "timelineArrow": "→",
@@ -641,6 +651,17 @@
       "inWarehouse": "At hub",
       "partiallyDelivered": "Partially delivered batches",
       "delivered": "Fully delivered batches"
+    },
+    "shipmentInsights": {
+      "title": "Shipment lines",
+      "subtitle": "Status counts below are for the current page of standalone lines at this hub. Bars show share of the busiest status on this page.",
+      "hubTotalLabel": "Total lines at this hub",
+      "inWarehouse": "In warehouse",
+      "assigned": "Assigned",
+      "outForDelivery": "Out for delivery",
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed"
     },
     "insights": {
       "periodFromSettings": "Insights period (system)",

@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { getDashboardKpis, merchantOrderBatchId } from "@/api/merchant-orders-api"
+import { getSystemSetting, type InsightsPeriodConfig } from "@/api/system-settings-api"
 import { listUsers } from "@/api/users-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
@@ -109,15 +110,29 @@ export function DashboardPage() {
     enabled: canListUsers,
   })
 
+  const insightsSettingsQuery = useQuery({
+    queryKey: ["system-settings", "INSIGHTS_PERIOD", token],
+    queryFn: () => getSystemSetting<InsightsPeriodConfig>(token, "INSIGHTS_PERIOD"),
+    enabled: !!token,
+  })
+
+  const insightsPeriod = insightsSettingsQuery.data?.value
+  const trendDays = insightsPeriod?.mode === "LAST_PERIOD" ? insightsPeriod.lastDays : undefined
+  const createdFrom = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.startDate : undefined
+  const createdTo = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.endDate : undefined
+  const effectiveTrendDays = trendDays ?? 14
+
   const kpiQuery = useQuery({
-    queryKey: ["dashboard-kpis", "home", token],
+    queryKey: ["dashboard-kpis", "home", token, effectiveTrendDays, createdFrom, createdTo],
     queryFn: () =>
       getDashboardKpis({
         token,
-        trendDays: 14,
         recentTake: 8,
+        trendDays: createdFrom ? undefined : effectiveTrendDays,
+        createdFrom: createdFrom,
+        createdTo: createdTo,
       }),
-    enabled: canReadMerchantOrderKpis,
+    enabled: canReadMerchantOrderKpis && insightsSettingsQuery.isSuccess,
   })
   const totals = kpiQuery.data?.totals
   const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []

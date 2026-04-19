@@ -23,6 +23,8 @@ import { showToast } from "@/lib/toast"
 
 type PlanShipmentWarehouseTaskProps = {
   shipment: ShipmentOrderRow
+  /** Hub from route (`/warehouses/:warehouseId/shipments/...`) or parent page; used when API omits `currentWarehouseId`. */
+  contextWarehouseId?: string | null
 }
 
 function taskErrorMessage(err: unknown, t: (k: string, o?: Record<string, string>) => string): string {
@@ -35,7 +37,10 @@ function taskErrorMessage(err: unknown, t: (k: string, o?: Record<string, string
   return t("shipments.planTask.errors.generic")
 }
 
-export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTaskProps) {
+export function PlanShipmentWarehouseTask({
+  shipment,
+  contextWarehouseId,
+}: PlanShipmentWarehouseTaskProps) {
   const { t } = useTranslation()
   const { accessToken, user } = useAuth()
   const queryClient = useQueryClient()
@@ -47,11 +52,28 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
   const [courierId, setCourierId] = useState("")
   const [toWarehouseId, setToWarehouseId] = useState("")
 
-  const currentWarehouseId = shipment.currentWarehouseId
-  const batchInWarehouse = shipment.transferStatus === "IN_WAREHOUSE"
-  const lineInWarehouse = shipment.status === "IN_WAREHOUSE"
-  const lineEligibleForReturnTask =
-    shipment.status === "POSTPONED" || shipment.status === "REJECTED"
+  /** Line / batch hub, else warehouse from URL, else logged-in operator hub (same as scan-in context). */
+  const hubIdForPlan =
+    shipment.currentWarehouseId ??
+    shipment.currentWarehouse?.id ??
+    shipment.assignedWarehouseId ??
+    (contextWarehouseId?.trim() || null) ??
+    (user?.warehouseId?.trim() || null) ??
+    null
+  const batchInWarehouse =
+    shipment.transferStatus === "IN_WAREHOUSE" ||
+    (shipment.transferStatus == null &&
+      (shipment.status === "IN_WAREHOUSE" ||
+        shipment.status === "POSTPONED" ||
+        shipment.status === "REJECTED"))
+
+  /** Backend: DELIVERY/TRANSFER need line IN_WAREHOUSE; RETURN needs POSTPONED or REJECTED. */
+  const lineMatchesSelectedTask = (() => {
+    if (taskType === "RETURN_TO_MERCHANT") {
+      return shipment.status === "POSTPONED" || shipment.status === "REJECTED"
+    }
+    return shipment.status === "IN_WAREHOUSE"
+  })()
   // TODO: re-enable CS confirmation gate for delivery planning when product requires it again.
   // const csConfirmed = Boolean(shipment.csConfirmedAt)
 
@@ -93,7 +115,11 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
         return createShipmentPlannedTask({
           token,
           shipmentId: shipment.id,
-          body: { type: "TRANSFER", toWarehouseId },
+          body: {
+            type: "TRANSFER",
+            toWarehouseId,
+            assignedCourierId: courierId.trim(),
+          },
         })
       }
       return createShipmentPlannedTask({
@@ -125,26 +151,33 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
 
   const eligibilityHint = useMemo(() => {
     if (!batchInWarehouse) return t("shipments.planTask.hintBatchNotInWarehouse")
-    if (!lineInWarehouse) return t("shipments.planTask.hintLineNotInWarehouse")
-    // if (taskType === "DELIVERY" && !csConfirmed) return t("shipments.planTask.hintCsRequired")
+    if (taskType === "RETURN_TO_MERCHANT") {
+      if (shipment.status !== "POSTPONED" && shipment.status !== "REJECTED") {
+        return t("shipments.planTask.hintReturnWrongStatus")
+      }
+      return null
+    }
+    if (shipment.status !== "IN_WAREHOUSE") {
+      return t("shipments.planTask.hintLineNotInWarehouse")
+    }
     return null
-  }, [batchInWarehouse, lineInWarehouse, t])
+  }, [batchInWarehouse, taskType, shipment.status, t])
 
   const canSubmit = (() => {
-    if (
-      !batchInWarehouse ||
-      !lineInWarehouse ||
-      planMutation.isPending ||
-      !currentWarehouseId
-    ) {
+    if (!batchInWarehouse || !lineMatchesSelectedTask || planMutation.isPending) {
       return false
+    }
+    if (taskType === "TRANSFER") {
+      if (!hubIdForPlan) return false
+      return (
+        !!toWarehouseId.trim() &&
+        toWarehouseId !== hubIdForPlan &&
+        !!courierId.trim()
+      )
     }
     if (taskType === "DELIVERY") {
       // return csConfirmed && !!courierId.trim()
       return !!courierId.trim()
-    }
-    if (taskType === "TRANSFER") {
-      return !!toWarehouseId.trim() && toWarehouseId !== currentWarehouseId
     }
     return true
   })()
@@ -155,7 +188,8 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
 
   const couriers = couriersQuery.data?.couriers ?? []
   const sites = sitesQuery.data?.warehouses ?? []
-  const currentWarehouseName = sites.find((w) => w.id === currentWarehouseId)?.name ?? currentWarehouseId ?? null
+  const currentWarehouseName =
+    sites.find((w) => w.id === hubIdForPlan)?.name ?? hubIdForPlan ?? null
 
   return (
     <Card>
@@ -199,33 +233,6 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
           </select>
         </div>
 
-        {taskType === "DELIVERY" || taskType === "RETURN_TO_MERCHANT" ? (
-          <div className="grid gap-2">
-            <label className="text-muted-foreground text-xs font-medium" htmlFor="plan-task-courier">
-              {taskType === "DELIVERY"
-                ? t("shipments.planTask.fieldCourierRequired")
-                : t("shipments.planTask.fieldCourierOptional")}
-            </label>
-            <select
-              id="plan-task-courier"
-              className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full max-w-md rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
-              value={courierId}
-              disabled={planMutation.isPending || couriersQuery.isLoading}
-              onChange={(e) => setCourierId(e.target.value)}
-            >
-              <option value="">{t("shipments.planTask.pickCourier")}</option>
-              {couriers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {[c.fullName?.trim(), c.contactPhone].filter(Boolean).join(" · ") || c.id}
-                </option>
-              ))}
-            </select>
-            {couriersQuery.error ? (
-              <p className="text-destructive text-xs">{(couriersQuery.error as Error).message}</p>
-            ) : null}
-          </div>
-        ) : null}
-
         {taskType === "TRANSFER" ? (
           <div className="grid gap-2">
             <label className="text-muted-foreground text-xs font-medium" htmlFor="plan-task-warehouse">
@@ -247,6 +254,37 @@ export function PlanShipmentWarehouseTask({ shipment }: PlanShipmentWarehouseTas
             </select>
             {sitesQuery.error ? (
               <p className="text-destructive text-xs">{(sitesQuery.error as Error).message}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {taskType === "DELIVERY" ||
+        taskType === "TRANSFER" ||
+        taskType === "RETURN_TO_MERCHANT" ? (
+          <div className="grid gap-2">
+            <label className="text-muted-foreground text-xs font-medium" htmlFor="plan-task-courier">
+              {taskType === "DELIVERY"
+                ? t("shipments.planTask.fieldCourierRequired")
+                : taskType === "TRANSFER"
+                  ? t("shipments.planTask.fieldCourierTransfer")
+                  : t("shipments.planTask.fieldCourierOptional")}
+            </label>
+            <select
+              id="plan-task-courier"
+              className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full max-w-md rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
+              value={courierId}
+              disabled={planMutation.isPending || couriersQuery.isLoading}
+              onChange={(e) => setCourierId(e.target.value)}
+            >
+              <option value="">{t("shipments.planTask.pickCourier")}</option>
+              {couriers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {[c.fullName?.trim(), c.contactPhone].filter(Boolean).join(" · ") || c.id}
+                </option>
+              ))}
+            </select>
+            {couriersQuery.error ? (
+              <p className="text-destructive text-xs">{(couriersQuery.error as Error).message}</p>
             ) : null}
           </div>
         ) : null}

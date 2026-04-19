@@ -267,7 +267,7 @@ export async function openWhatsAppTrackingMessage(
   try {
     const { link } = await generateShipmentDeliveryProofLink({
       token,
-      shipmentId: row.id,
+      trackingNumber: tn,
     })
     deliveryProofLink = link
   } catch {

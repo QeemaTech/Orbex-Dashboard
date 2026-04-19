@@ -23,6 +23,8 @@ export type ShipmentDetailViewProps = {
   merchantOrderDetailHref: string
   merchantOrderShipmentsHref: string
   variant?: "default" | "warehouse" | "cs"
+  /** Hub opened in the URL (e.g. `/warehouses/:warehouseId/shipments/...`) when line hub fields are missing from API. */
+  planTaskContextWarehouseId?: string
 }
 
 function resolveNumberLocale(language: string) {
@@ -56,6 +58,7 @@ export function ShipmentDetailView({
   merchantOrderDetailHref,
   merchantOrderShipmentsHref,
   variant = "default",
+  planTaskContextWarehouseId,
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
   const { user, accessToken } = useAuth()
@@ -192,7 +195,10 @@ export function ShipmentDetailView({
               <h3 className="text-foreground text-sm font-semibold">
                 {t("shipments.timeline.heading", { defaultValue: "Shipment Timeline" })}
               </h3>
-              <ShipmentTimeline events={shipment.statusEvents} currentStatus={shipment.status} />
+              <ShipmentTimeline
+                events={shipment.statusEvents}
+                contextWarehouseId={planTaskContextWarehouseId}
+              />
             </section>
           )}
 
@@ -277,7 +283,10 @@ export function ShipmentDetailView({
         </CardContent>
       </Card>
 
-      <PlanShipmentWarehouseTask shipment={shipment} />
+      <PlanShipmentWarehouseTask
+        shipment={shipment}
+        contextWarehouseId={planTaskContextWarehouseId}
+      />
     </div>
   )
 }

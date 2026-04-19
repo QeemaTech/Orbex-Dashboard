@@ -80,7 +80,23 @@ export async function publicApiFetch<T>(
     return undefined as T
   }
   const text = await res.text()
-  const data = text ? (JSON.parse(text) as unknown) : null
+  let data: unknown = null
+  try {
+    data = text ? (JSON.parse(text) as unknown) : null
+  } catch (parseErr) {
+    console.error("[publicApiFetch] JSON parse error:", {
+      path,
+      status: res.status,
+      responseLength: text.length,
+      firstChars: text.substring(0, 100),
+      error: parseErr instanceof Error ? parseErr.message : String(parseErr),
+    })
+    // If response is HTML or not valid JSON, it's likely a server error page
+    if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+      throw new ApiError(res.status || 500, "Server returned HTML instead of JSON - this usually means an internal server error or misconfigured endpoint")
+    }
+    throw new ApiError(res.status || 500, "Invalid JSON response from server")
+  }
   if (!res.ok) {
     let msg = res.statusText
     let code: string | undefined
@@ -193,7 +209,23 @@ export async function apiFetch<T>(
     return undefined as T
   }
   const text = await res.text()
-  const data = text ? (JSON.parse(text) as unknown) : null
+  let data: unknown = null
+  try {
+    data = text ? (JSON.parse(text) as unknown) : null
+  } catch (parseErr) {
+    console.error("[apiFetch] JSON parse error:", {
+      path,
+      status: res.status,
+      responseLength: text.length,
+      firstChars: text.substring(0, 100),
+      error: parseErr instanceof Error ? parseErr.message : String(parseErr),
+    })
+    // If response is HTML or not valid JSON, it's likely a server error page
+    if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+      throw new ApiError(res.status || 500, "Server returned HTML instead of JSON - this usually means an internal server error or misconfigured endpoint")
+    }
+    throw new ApiError(res.status || 500, "Invalid JSON response from server")
+  }
   if (!res.ok) {
     let msg = res.statusText
     let code: string | undefined
