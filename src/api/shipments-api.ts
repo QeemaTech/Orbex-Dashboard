@@ -21,6 +21,16 @@ export type ShipmentLabelRaw = ShipmentLabelResponse & {
   sbpl: string
 }
 
+export type PrintLabelRequest = {
+  shipmentId: string
+  labelRaw?: string
+}
+
+export type PrintLabelResponse = {
+  success: boolean
+  message: string
+}
+
 export type ShipmentsListResponse = {
   shipments: ShipmentOrderRow[]
   total: number
@@ -161,6 +171,18 @@ export async function markShipmentLabelPrinted(p: {
     `/api/shipments/${encodeURIComponent(p.shipmentId)}/label/printed`,
     { token: p.token, method: "POST" },
   )
+}
+
+/** New Print Flow (SBPL / Print Agent आधारित): `POST /api/print-label`. */
+export async function postPrintLabel(p: {
+  token: string
+  body: PrintLabelRequest
+}): Promise<PrintLabelResponse> {
+  return apiFetch<PrintLabelResponse>("/api/print-label", {
+    method: "POST",
+    token: p.token,
+    body: JSON.stringify(p.body),
+  })
 }
 
 export type ShipmentPlannedTaskType = "DELIVERY" | "TRANSFER" | "RETURN_TO_MERCHANT"

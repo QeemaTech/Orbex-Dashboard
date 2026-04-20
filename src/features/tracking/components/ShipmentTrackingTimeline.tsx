@@ -8,6 +8,8 @@ export type TimelineStepVisual = "pending" | "active" | "complete" | "failed"
 export type ShipmentTrackingTimelineProps = {
   status: string
   postponedAt: string | null
+  /** Optional hub name shown next to the active “warehouse” step (public tracking has no id for “this warehouse”). */
+  currentWarehouseName?: string | null
 }
 
 const WAREHOUSE_STATUSES = new Set([
@@ -150,9 +152,20 @@ function TimelineStep({
   )
 }
 
-export function ShipmentTrackingTimeline({ status, postponedAt }: ShipmentTrackingTimelineProps) {
+export function ShipmentTrackingTimeline({
+  status,
+  postponedAt,
+  currentWarehouseName,
+}: ShipmentTrackingTimelineProps) {
   const { t } = useTranslation()
   const { warehouse, outForDelivery, delivered, showPostponed } = deriveTimeline(status, postponedAt)
+
+  const warehouseStepTitle =
+    warehouse === "active" && currentWarehouseName?.trim()
+      ? `${t("tracking.stepWarehouse")} ${t("warehouse.context.atNamedWarehouse", {
+          name: currentWarehouseName.trim(),
+        })}`
+      : t("tracking.stepWarehouse")
 
   return (
     <div className="space-y-4">
@@ -173,7 +186,7 @@ export function ShipmentTrackingTimeline({ status, postponedAt }: ShipmentTracki
         <div>
           <TimelineStep
             visual={warehouse}
-            title={t("tracking.stepWarehouse")}
+            title={warehouseStepTitle}
             description={t("tracking.stepWarehouseHint")}
             icon={Package}
             isLast={false}

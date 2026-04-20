@@ -569,6 +569,10 @@
       "mainBranchSection": "الفرع الرئيسي"
     },
     "loading": "جاري تحميل بيانات المخزن…",
+    "context": {
+      "thisWarehouse": "(هذا المخزن)",
+      "atNamedWarehouse": "({{name}})"
+    },
     "filter": {
       "title": "نطاق الطلبات",
       "description": "يمكن لمشرف المخازن تصفية القائمة ومؤشرات الأداء حسب موقع واحد.",

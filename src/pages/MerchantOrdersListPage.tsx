@@ -12,7 +12,7 @@ import {
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
-import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -256,9 +256,11 @@ export function MerchantOrdersListPage() {
                           {formatEGP(row.totalShipmentValue ?? row.shipmentValue, locale)}
                         </TableCell>
                         <TableCell>
-                          <BackendStatusBadge
-                            kind="merchantOrderBatch"
-                            value={row.transferStatus ?? ""}
+                          <MerchantBatchStatusWithWarehouse
+                            transferStatus={row.transferStatus}
+                            assignedWarehouseId={row.assignedWarehouse?.id}
+                            assignedWarehouseName={row.assignedWarehouse?.name}
+                            contextWarehouseId={user?.warehouseId}
                           />
                         </TableCell>
                       </TableRow>

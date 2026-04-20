@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 import {
   CircleDot,
   Package,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { orderDeliveryWarehouseHintLabel } from "@/lib/warehouse-location-hint"
 
 export type ShipmentStatusEventPayload = {
   id: string
@@ -123,7 +125,7 @@ function getStatusConfig(status: string) {
 
 function buildPrimaryLabel(
   event: ShipmentStatusEventPayload,
-  t: (key: string, opts?: Record<string, string | number>) => string,
+  t: TFunction,
   contextWarehouseId?: string,
 ): string {
   const base = formatStatusLabel(event.toStatus, t)
@@ -131,15 +133,17 @@ function buildPrimaryLabel(
   if (event.toStatus === "POSTPONED" && pc != null && pc > 0) {
     return `${base} (${t("shipments.timeline.postponeAttempt", { count: pc })})`
   }
-  const inWhStatuses = new Set(["IN_WAREHOUSE", "RETURNED_TO_WAREHOUSE"])
-  if (inWhStatuses.has(event.toStatus)) {
-    const name = event.atWarehouse?.name?.trim()
-    if (name) {
-      if (contextWarehouseId && event.atWarehouseId === contextWarehouseId) {
-        return t("shipments.timeline.inThisWarehouse", { name })
-      }
-      return t("shipments.timeline.atWarehouse", { name })
-    }
+  const hint = orderDeliveryWarehouseHintLabel(
+    event.toStatus,
+    {
+      locationWarehouseId: event.atWarehouseId,
+      locationWarehouseName: event.atWarehouse?.name,
+      contextWarehouseId,
+    },
+    t,
+  )
+  if (hint) {
+    return `${base} ${hint}`
   }
   if (
     event.toStatus === "ASSIGNED" &&

@@ -39,131 +39,6 @@ function formatLabelDate(iso: string, locale: string): string {
   }).format(d)
 }
 
-function generatePrintWindow(
-  label: ShipmentLabelResponse,
-  shipmentId: string,
-  locale: string,
-  mainBarcodeDataUrl: string,
-  smallBarcodeDataUrl: string
-): string {
-  const codAmount = label.codAmount ?? 0
-  const codText = Number.isFinite(codAmount)
-    ? `مبلغ التحصيل: ${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(codAmount)} ج.م`
-    : "مبلغ التحصيل: —"
-
-  return `<!DOCTYPE html>
-<html dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <title>${label.trackingNumber}</title>
-  <style>
-    body { margin: 0; padding: 8px; background: #f0f0f0; font-family: sans-serif; }
-    .print-btn { display: block; margin: 0 auto 16px; padding: 10px 24px; font-size: 16px; cursor: pointer; background: #333; color: #fff; border: none; border-radius: 4px; }
-    .print-btn:hover { background: #555; }
-    @page { size: 4in 6in; margin: 0; }
-    .label { width: 384px; height: 576px; margin: 0 auto; background: #fff; font-family: system-ui, sans-serif; font-size: 9px; line-height: 1.35; color: #000; display: flex; flex-direction: column; }
-    .barcode-block { padding: 5px 6px 2px; text-align: center; }
-    .barcode-block img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-    .tracking-human { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; padding: 2px 0 4px; }
-    .header-3 { display: grid; grid-template-columns: 1fr 1.4fr 0.6fr; gap: 4px; align-items: center; padding: 6px; border-bottom: 1px solid #000; }
-    .brand { font-weight: 800; font-size: 14px; }
-    .hub { text-align: center; font-weight: 700; font-size: 9px; word-break: break-word; }
-    .delivery-ar { text-align: right; font-weight: 700; font-size: 11px; }
-    .cod-row { display: grid; grid-template-columns: auto 1fr; gap: 8px; padding: 6px; align-items: center; }
-    .id-badge { background: #1a1a1a; color: #fff; font-weight: 800; font-size: 11px; padding: 6px 10px; min-width: 3.2rem; text-align: center; }
-    .cod-ar { font-weight: 800; font-size: 11px; text-align: right; }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #000; }
-    .col { padding: 6px; border-right: 1px solid #000; }
-    .col:last-child { border-right: none; }
-    .col-title { font-weight: 700; margin-bottom: 2px; }
-    .col-value { font-weight: 600; word-break: break-word; }
-    .full { padding: 6px; border-bottom: 1px solid #000; }
-    .kv { margin-bottom: 4px; }
-    .kv:last-child { margin-bottom: 0; }
-    .k { font-weight: 700; }
-    .v { word-break: break-word; }
-    .boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; border-bottom: 1px solid #000; }
-    .mini-box { border: 1px solid #000; border-radius: 4px; padding: 4px 6px; font-weight: 600; text-align: center; }
-    .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; font-size: 8px; }
-    .footer-notes { font-weight: 600; word-break: break-word; }
-    .footer-meta { text-align: end; color: #333; }
-    .footer-barcode { padding: 4px 6px; border-top: 1px solid #000; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: end; }
-    .footer-barcode img { max-width: 100%; height: auto; }
-    .bottom-line { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 4px 8px 6px; font-size: 8px; border-top: 1px solid #000; }
-    .box-label { background: #333; color: #fff; font-size: 8px; font-weight: 700; padding: 4px 6px; margin-bottom: 4px; display: inline-block; }
-    @media print {
-      body { padding: 0 !important; background: #fff !important; }
-      .print-btn { display: none !important; }
-      @page { size: 4in 6in; margin: 0; }
-    }
-  </style>
-</head>
-<body>
-<button class="print-btn" onclick="window.print()">Print Label</button>
-<div class="label">
-  <div class="barcode-block">
-    <img src="${mainBarcodeDataUrl}" alt="Barcode"/>
-    <div class="tracking-human">${trackingSpaced(label.trackingNumber)}</div>
-  </div>
-  <div class="header-3">
-    <div class="brand">Orbex</div>
-    <div class="hub">${label.warehouseName}</div>
-    <div class="delivery-ar">توصيل</div>
-  </div>
-  <div class="cod-row">
-    <div class="id-badge">${trackingShortBadge(label.trackingNumber)}</div>
-    <div class="cod-ar">${codText}</div>
-  </div>
-  <div class="two-col">
-    <div class="col">
-      <div class="col-title">التاجر:</div>
-      <div class="col-value">${label.merchantName}</div>
-    </div>
-    <div class="col">
-      <div class="col-title">توصيل إلى:</div>
-      <div class="col-value">${label.customerName}</div>
-      <div class="col-value" style="margin-top:4px">${label.phone}</div>
-    </div>
-  </div>
-  <div class="full">
-    <div class="kv"><span class="k">المنطقة | </span><span class="v">${label.governorate}</span></div>
-    <div class="kv"><span class="k">العنوان | </span><span class="v">${label.address}</span></div>
-    <div class="kv"><span class="k">علامة مميزة | </span><span class="v">—</span></div>
-  </div>
-  <div class="boxes">
-    <div class="mini-box">فتح الشحنة: لا</div>
-    <div class="mini-box">${label.itemsCount} قطع</div>
-  </div>
-  <div class="full">
-    <span class="k">وصف الشحنة | </span><span class="v">—</span>
-  </div>
-  <div class="footer-grid">
-    <div class="footer-notes"><span class="k">ملاحظات | </span>${label.notes || "—"}</div>
-    <div class="footer-meta">Order ref: ${shipmentId.slice(0, 8)}…</div>
-  </div>
-  <div class="full">
-    <span class="k">عنوان المرت��ع | </span><span class="v">—</span>
-  </div>
-  <div class="footer-barcode">
-    <div>
-      <div style="font-size:7px;margin-bottom:2px">Tracking Number</div>
-      <img src="${smallBarcodeDataUrl}" alt="Barcode"/>
-      <div style="font-size:9px;font-weight:600;text-align:center">${numericTail(label.trackingNumber)}</div>
-    </div>
-    <div style="text-align:end">
-      <div class="box-label">${label.warehouseName !== "—" ? label.warehouseName.slice(0, 14) : "—"}</div>
-    </div>
-  </div>
-  <div class="bottom-line">
-    <span></span>
-    <span>Created: ${formatLabelDate(label.createdAt, locale)}</span>
-    <span>1/1</span>
-  </div>
-</div>
-</body>
-</html>`
-}
-
 export function ShipmentLabelPrintPage() {
   const { t, i18n } = useTranslation()
   const { shipmentId = "" } = useParams<{ shipmentId: string }>()
@@ -174,7 +49,6 @@ export function ShipmentLabelPrintPage() {
   const svgSmallRef = useRef<SVGSVGElement | null>(null)
   const autoPrintDoneRef = useRef(false)
   const [barcodesDrawn, setBarcodesDrawn] = useState(false)
-  const [barcodeDataUrls, setBarcodeDataUrls] = useState<{ main: string; small: string } | null>(null)
 
   const labelQuery = useQuery({
     queryKey: ["shipment", "label", shipmentId, token],
@@ -186,38 +60,6 @@ export function ShipmentLabelPrintPage() {
   const label = labelQuery.data
 
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
-
-  const generateBarcodeDataUrls = useCallback((trackingNumber: string) => {
-    try {
-      const mainCanvas = document.createElement("canvas")
-      JsBarcode(mainCanvas, trackingNumber, {
-        format: "CODE128",
-        displayValue: false,
-        lineColor: "#000000",
-        background: "#ffffff",
-        margin: 0,
-        height: 52,
-        width: 1.85,
-      })
-      const mainDataUrl = mainCanvas.toDataURL("image/png")
-
-      const smallCanvas = document.createElement("canvas")
-      JsBarcode(smallCanvas, trackingNumber, {
-        format: "CODE128",
-        displayValue: false,
-        lineColor: "#000000",
-        background: "#ffffff",
-        margin: 0,
-        height: 28,
-        width: 1.2,
-      })
-      const smallDataUrl = smallCanvas.toDataURL("image/png")
-
-      setBarcodeDataUrls({ main: mainDataUrl, small: smallDataUrl })
-    } catch {
-      console.error("Failed to generate barcodes")
-    }
-  }, [])
 
   useLayoutEffect(() => {
     setBarcodesDrawn(false)
@@ -250,8 +92,7 @@ export function ShipmentLabelPrintPage() {
       /* ignore barcode render errors */
     }
     setBarcodesDrawn(true)
-    generateBarcodeDataUrls(label.trackingNumber)
-  }, [label?.trackingNumber, generateBarcodeDataUrls])
+  }, [label?.trackingNumber])
 
   useLayoutEffect(() => {
     if (!label) return
@@ -267,25 +108,19 @@ export function ShipmentLabelPrintPage() {
     autoPrintDoneRef.current = false
   }, [shipmentId, label?.trackingNumber])
 
-  const openPrintWindow = useCallback(() => {
-    if (!label || !barcodeDataUrls) return
-
-    const printWindow = window.open("", "_blank", "width=420,height=650")
-    if (printWindow) {
-      printWindow.document.write(generatePrintWindow(label, shipmentId, locale, barcodeDataUrls.main, barcodeDataUrls.small))
-      printWindow.document.close()
-    }
-  }, [label, shipmentId, locale, barcodeDataUrls])
+  const printCurrentPage = useCallback(() => {
+    window.print()
+  }, [])
 
   useLayoutEffect(() => {
-    if (!label || !barcodesDrawn || !barcodeDataUrls || !shipmentId) return
+    if (!label || !barcodesDrawn || !shipmentId) return
     if (autoPrintDoneRef.current) return
     autoPrintDoneRef.current = true
     const timer = window.setTimeout(() => {
-      openPrintWindow()
+      printCurrentPage()
     }, 400)
     return () => window.clearTimeout(timer)
-  }, [label, barcodesDrawn, barcodeDataUrls, shipmentId, openPrintWindow])
+  }, [label, barcodesDrawn, shipmentId, printCurrentPage])
 
   const codText = (l: ShipmentLabelResponse): string => {
     if (l.codAmount == null || !Number.isFinite(l.codAmount)) {
@@ -340,7 +175,7 @@ export function ShipmentLabelPrintPage() {
         <button
           type="button"
           className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm"
-          onClick={openPrintWindow}
+          onClick={printCurrentPage}
         >
           {t("shipments.label.printAgain", { defaultValue: "Print again" })}
         </button>

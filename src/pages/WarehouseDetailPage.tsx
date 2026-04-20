@@ -41,7 +41,10 @@ import {
 import { listDeliveryZones } from "@/api/delivery-zones-api"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { Layout } from "@/components/layout/Layout"
-import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import {
+  MerchantBatchStatusWithWarehouse,
+  OrderDeliveryStatusWithWarehouse,
+} from "@/components/shared/StatusWithWarehouseContext"
 import { CoordinatesMapLink } from "@/components/shared/CoordinatesMapLink"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
@@ -101,23 +104,6 @@ function formatDateTime(dateIso: string, locale: string): string {
 function toPercentFromMax(value: number, max: number) {
   if (!Number.isFinite(value) || !Number.isFinite(max) || max <= 0) return 0
   return Math.round((value / max) * 100)
-}
-
-/** Schedules `fn` after `waitMs`; repeated calls reset the timer. Expose `cancel` for unmount cleanup. */
-function debounceFn(fn: () => void | Promise<void>, waitMs: number) {
-  let timer: ReturnType<typeof setTimeout> | null = null
-  const debounced = () => {
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(() => {
-      timer = null
-      void fn()
-    }, waitMs)
-  }
-  debounced.cancel = () => {
-    if (timer) clearTimeout(timer)
-    timer = null
-  }
-  return debounced as typeof debounced & { cancel: () => void }
 }
 
 /** Minimal fields from scan-out merchant-order detail DTO (no API contract change). */
@@ -480,15 +466,6 @@ export function WarehouseDetailPage() {
     ])
   }, [queryClient, token, warehouseId])
 
-  const debouncedRefresh = useMemo(
-    () => debounceFn(() => void refreshData(), 3500),
-    [refreshData],
-  )
-
-  useEffect(() => {
-    return () => debouncedRefresh.cancel()
-  }, [debouncedRefresh])
-
   const patchQueueAfterScanIn = useCallback(
     (res: {
       merchantOrderId: string
@@ -583,15 +560,22 @@ export function WarehouseDetailPage() {
         const patch = readScanOutQueuePatch(raw)
         if (patch) patchQueueAfterScanOut(patch)
       }
-      debouncedRefresh()
+      await refreshData()
+      if (mode === "in") {
+        await queryClient.refetchQueries({
+          queryKey: ["warehouse-standalone-shipments", token, warehouseId],
+          type: "active",
+        })
+      }
     },
     [
       token,
       warehouseId,
       t,
-      debouncedRefresh,
+      refreshData,
       patchQueueAfterScanIn,
       patchQueueAfterScanOut,
+      queryClient,
     ],
   )
 
@@ -1249,7 +1233,12 @@ export function WarehouseDetailPage() {
                         <TableCell>{row.orderCount}</TableCell>
                         <TableCell>{fmtMoney(row.totalShipmentValue)}</TableCell>
                         <TableCell className="max-w-[12rem] text-xs whitespace-normal">
-                          <BackendStatusBadge kind="merchantOrderBatch" value={row.transferStatus} />
+                          <MerchantBatchStatusWithWarehouse
+                            transferStatus={row.transferStatus}
+                            assignedWarehouseId={row.assignedWarehouse?.id}
+                            assignedWarehouseName={row.assignedWarehouse?.name}
+                            contextWarehouseId={warehouseId}
+                          />
                         </TableCell>
                         <TableCell className="text-sm">
                           {row.pickupCourier?.fullName ?? getNotApplicable()}
@@ -1330,7 +1319,12 @@ export function WarehouseDetailPage() {
                           <TableCell>{row.customerName ?? getNotApplicable()}</TableCell>
                           <TableCell>{row.merchantName ?? getNotApplicable()}</TableCell>
                           <TableCell>
-                            <BackendStatusBadge kind="orderDelivery" value={row.status} />
+                            <OrderDeliveryStatusWithWarehouse
+                              status={row.status}
+                              locationWarehouseId={row.currentWarehouseId}
+                              locationWarehouseName={row.currentWarehouseName}
+                              contextWarehouseId={warehouseId}
+                            />
                           </TableCell>
                           <TableCell>
                             {row.transferredFromWarehouseName ?? getNotApplicable()}

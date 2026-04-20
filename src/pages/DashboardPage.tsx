@@ -18,7 +18,7 @@ import {
 } from "recharts"
 
 import { Layout } from "@/components/layout/Layout"
-import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -484,9 +484,11 @@ export function DashboardPage() {
                         {row.assignedWarehouse?.name ?? "—"}
                       </TableCell>
                       <TableCell>
-                        <BackendStatusBadge
-                          kind="merchantOrderBatch"
-                          value={row.transferStatus ?? ""}
+                        <MerchantBatchStatusWithWarehouse
+                          transferStatus={row.transferStatus}
+                          assignedWarehouseId={row.assignedWarehouse?.id}
+                          assignedWarehouseName={row.assignedWarehouse?.name}
+                          contextWarehouseId={user?.warehouseId}
                         />
                       </TableCell>
                       <TableCell className="text-end tabular-nums">

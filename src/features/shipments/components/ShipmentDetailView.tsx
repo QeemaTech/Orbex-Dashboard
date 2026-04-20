@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -62,6 +63,8 @@ export function ShipmentDetailView({
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
   const { user, accessToken } = useAuth()
+  const lineHubContextId =
+    planTaskContextWarehouseId?.trim() || user?.warehouseId || undefined
   const locale = resolveNumberLocale(i18n.language)
   const canPrintLabel = Boolean(user?.permissions?.includes("shipments.label"))
 
@@ -88,9 +91,15 @@ export function ShipmentDetailView({
         ? t("auth.loginError")
         : undefined
 
+  // Temporary fallback: use frontend label print page until network-direct printer path is stable.
   const openLegacyLabelPrint = () => {
     const href = `/shipments/${encodeURIComponent(shipment.id)}/print`
     window.open(href, "_blank", "noopener,noreferrer")
+  }
+
+  // Temporary behavior: redirect print action to legacy frontend flow.
+  const handlePrintLabel = async () => {
+    openLegacyLabelPrint()
   }
 
   return (
@@ -117,7 +126,12 @@ export function ShipmentDetailView({
               <span className="text-muted-foreground text-xs font-medium">
                 {t("shipments.columns.deliveryStatus")}
               </span>
-              <BackendStatusBadge kind="orderDelivery" value={shipment.status} />
+              <OrderDeliveryStatusWithWarehouse
+                status={shipment.status}
+                locationWarehouseId={shipment.currentWarehouseId}
+                locationWarehouseName={shipment.currentWarehouse?.name}
+                contextWarehouseId={lineHubContextId}
+              />
               <span className="text-muted-foreground text-xs font-medium">
                 {t("shipments.columns.paymentStatus")}
               </span>
@@ -197,7 +211,7 @@ export function ShipmentDetailView({
               </h3>
               <ShipmentTimeline
                 events={shipment.statusEvents}
-                contextWarehouseId={planTaskContextWarehouseId}
+                contextWarehouseId={lineHubContextId}
               />
             </section>
           )}
@@ -229,7 +243,7 @@ export function ShipmentDetailView({
                 </Link>
               </Button>
               {hasTracking && canPrintLabel ? (
-                <Button type="button" variant="outline" size="sm" onClick={openLegacyLabelPrint}>
+                <Button type="button" variant="outline" size="sm" onClick={() => void handlePrintLabel()}>
                   <Printer className="mr-2 size-4" aria-hidden />
                   {t("shipments.detail.printLabel", { defaultValue: "Print label" })}
                 </Button>

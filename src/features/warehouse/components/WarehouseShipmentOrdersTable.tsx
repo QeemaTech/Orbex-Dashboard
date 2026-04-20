@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { getShipmentById, getShipmentOrders } from "@/api/merchant-orders-api"
 import { assignWarehouseShipment, getWarehouseCouriers } from "@/api/warehouse-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,18 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { showToast } from "@/lib/toast"
-import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { useAuth } from "@/lib/auth-context"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
-
-function isOtherHubInWarehouse(
-  p: ShipmentOrderRow,
-  userWarehouseId: string | null | undefined,
-): boolean {
-  if (p.status !== "IN_WAREHOUSE") return false
-  if (p.currentWarehouseId == null || userWarehouseId == null) return false
-  return p.currentWarehouseId !== userWarehouseId
-}
 
 const WAREHOUSE_COL_COUNT = 10
 const COMPACT_COL_COUNT = 6
@@ -154,6 +145,9 @@ export function WarehouseShipmentOrdersTable({
     e.stopPropagation()
   }
 
+  const hubContextWarehouseId =
+    warehouseIdProp?.trim() || user?.warehouseId || undefined
+
   return (
     <div className="space-y-3">
       {ordersQuery.isLoading ? (
@@ -220,21 +214,12 @@ export function WarehouseShipmentOrdersTable({
                       </>
                     ) : null}
                     <TableCell className="text-xs">
-                      <div className="flex flex-col gap-0.5">
-                        <BackendStatusBadge kind="orderDelivery" value={p.status} />
-                        {isOtherHubInWarehouse(p, user?.warehouseId) ? (
-                          <>
-                            <span className="text-muted-foreground text-[10px] leading-tight">
-                              {t("warehouse.shipment.otherLocationLabel", {
-                                defaultValue: "In Warehouse (Other Location)",
-                              })}
-                            </span>
-                            <span className="text-foreground text-[11px] font-medium leading-tight">
-                              {p.currentWarehouse?.name ?? "—"}
-                            </span>
-                          </>
-                        ) : null}
-                      </div>
+                      <OrderDeliveryStatusWithWarehouse
+                        status={p.status}
+                        locationWarehouseId={p.currentWarehouseId}
+                        locationWarehouseName={p.currentWarehouse?.name}
+                        contextWarehouseId={hubContextWarehouseId}
+                      />
                     </TableCell>
                     <TableCell className="text-xs">
                       <BackendStatusBadge kind="orderPayment" value={p.paymentStatus} />

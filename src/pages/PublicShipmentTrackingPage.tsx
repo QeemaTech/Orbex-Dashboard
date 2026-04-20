@@ -123,7 +123,11 @@ export function PublicShipmentTrackingPage() {
         ) : q.data ? (
           <div className="space-y-6">
             <PublicTrackingShipmentCard data={q.data} t={t} locale={locale} />
-            <ShipmentTrackingTimeline status={q.data.status} postponedAt={q.data.postponedAt} />
+            <ShipmentTrackingTimeline
+              status={q.data.status}
+              postponedAt={q.data.postponedAt}
+              currentWarehouseName={q.data.currentWarehouse?.name ?? null}
+            />
           </div>
         ) : null}
       </main>

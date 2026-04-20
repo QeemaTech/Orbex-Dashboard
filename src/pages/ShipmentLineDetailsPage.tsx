@@ -177,6 +177,7 @@ export function ShipmentLineDetailsPage() {
               <WarehouseShipmentOrdersTable
                 token={token}
                 shipmentId={matchedMerchantOrderId}
+                warehouseId={isWarehouseRoute ? warehouseId : undefined}
                 mode={isWarehouseRoute ? "warehouse" : "compact"}
               />
             ) : null}

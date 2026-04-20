@@ -177,6 +177,8 @@ export type WarehouseMerchantOrderRow = {
     userId: string
     contactPhone: string | null
   } | null
+  /** Batch hub assignment when returned by queue/orders APIs. */
+  assignedWarehouse?: { id: string; name: string } | null
 }
 
 export type WarehouseOrdersResponse = {

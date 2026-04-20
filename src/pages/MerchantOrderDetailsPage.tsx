@@ -11,7 +11,7 @@ import {
 } from "@/api/merchant-orders-api"
 import { getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-api"
 import { Layout } from "@/components/layout/Layout"
-import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -81,6 +81,10 @@ export function MerchantOrderDetailsPage() {
   const isWarehouseRoute = isWarehouseScopedMerchantOrderPath(location.pathname)
   const isCsRoute = location.pathname.startsWith("/cs/")
   const statusPerspective = resolvePerspective(user)
+  const hubPageContextWarehouseId =
+    isWarehouseRoute && warehouseId.trim()
+      ? warehouseId.trim()
+      : user?.warehouseId ?? undefined
 
   const [mapOpen, setMapOpen] = useState(false)
   const [mapCourierId, setMapCourierId] = useState<string | null>(null)
@@ -230,9 +234,11 @@ export function MerchantOrderDetailsPage() {
                       </p>
                       <p className="flex flex-wrap items-center gap-2">
                         <strong>{t("warehouse.table.batchPipelineStatus")}:</strong>{" "}
-                        <BackendStatusBadge
-                          kind="merchantOrderBatch"
-                          value={q.data.transferStatus ?? ""}
+                        <MerchantBatchStatusWithWarehouse
+                          transferStatus={q.data.transferStatus}
+                          assignedWarehouseId={q.data.assignedWarehouse?.id}
+                          assignedWarehouseName={q.data.assignedWarehouse?.name}
+                          contextWarehouseId={hubPageContextWarehouseId}
                         />
                       </p>
                       <p>
@@ -272,9 +278,11 @@ export function MerchantOrderDetailsPage() {
                       </p>
                       <p className="flex flex-wrap items-center gap-2">
                         <strong>{t("warehouse.table.batchPipelineStatus")}:</strong>{" "}
-                        <BackendStatusBadge
-                          kind="merchantOrderBatch"
-                          value={q.data.transferStatus ?? ""}
+                        <MerchantBatchStatusWithWarehouse
+                          transferStatus={q.data.transferStatus}
+                          assignedWarehouseId={q.data.assignedWarehouse?.id}
+                          assignedWarehouseName={q.data.assignedWarehouse?.name}
+                          contextWarehouseId={hubPageContextWarehouseId}
                         />
                       </p>
                       <p>
@@ -421,7 +429,7 @@ export function MerchantOrderDetailsPage() {
                 ) : (
                   <ShipmentTimeline
                     events={primaryLineStatusEvents}
-                    contextWarehouseId={isWarehouseRoute ? warehouseId : undefined}
+                    contextWarehouseId={hubPageContextWarehouseId}
                   />
                 )}
               </CardContent>

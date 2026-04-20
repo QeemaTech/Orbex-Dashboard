@@ -534,6 +534,10 @@
       "mainBranchSection": "Main Branch"
     },
     "loading": "Loading warehouse data…",
+    "context": {
+      "thisWarehouse": "(this warehouse)",
+      "atNamedWarehouse": "({{name}})"
+    },
     "filter": {
       "title": "Order scope",
       "description": "Warehouse admins can filter the list and KPIs to one site.",
