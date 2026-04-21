@@ -10,6 +10,11 @@ type ShipmentTask = {
   fromWarehouseId: string | null
   toWarehouseId: string | null
   assignedCourierId: string | null
+  assignedCourier: {
+    id: string
+    fullName: string | null
+    contactPhone: string | null
+  } | null
   createdAt: string
 }
 
@@ -106,6 +111,10 @@ export function ShipmentTasksCard({ tasks }: ShipmentTasksCardProps) {
               </div>
               <p className="text-muted-foreground text-xs">
                 {formatTimestamp(task.createdAt, locale)}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {t("shipments.tasks.assignedCourier", { defaultValue: "Assigned courier" })}:{" "}
+                {task.assignedCourier?.fullName?.trim() || "—"}
               </p>
             </div>
           </div>

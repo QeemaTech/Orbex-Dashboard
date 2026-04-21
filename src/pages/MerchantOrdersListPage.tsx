@@ -1,15 +1,18 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Boxes } from "react-lucid"
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 
 import {
+  downloadMerchantOrdersImportTemplate,
   getDashboardKpis,
+  importMerchantOrdersExcel,
   listShipments,
   merchantOrderBatchId,
 } from "@/api/merchant-orders-api"
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
+import { ApiError, formatApiValidationDetails } from "@/api/client"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
@@ -50,11 +53,19 @@ function formatEGP(amountStr: string | undefined, locale: string) {
 
 export function MerchantOrdersListPage() {
   const { t, i18n } = useTranslation()
+  const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
+  const [importFeedback, setImportFeedback] = useState<{
+    type: "success" | "error"
+    message: string
+  } | null>(null)
 
   const [searchParams, setSearchParams] = useSearchParams()
   const warehouseId = searchParams.get("warehouseId") ?? ""
@@ -133,6 +144,9 @@ export function MerchantOrdersListPage() {
 
   const batchPipelineBreakdown = kpiQuery.data?.transferStatusBreakdown ?? []
   const totals = kpiQuery.data?.totals
+  const canImportMerchantOrders =
+    user?.role === "ADMIN" ||
+    !!user?.permissions?.includes("merchant_orders.create")
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
@@ -143,6 +157,78 @@ export function MerchantOrdersListPage() {
     if (!batchId) return
     void navigate(`${detailPrefix}/${encodeURIComponent(batchId)}`)
   }
+
+  const refreshOrdersData = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: listQueryKey }),
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard-kpis", "shipments-list", token, warehouseId] as const,
+      }),
+    ])
+  }, [listQueryKey, queryClient, token, warehouseId])
+
+  const onDownloadTemplate = useCallback(async () => {
+    if (!token || isDownloadingTemplate) return
+    setImportFeedback(null)
+    setIsDownloadingTemplate(true)
+    try {
+      const blob = await downloadMerchantOrdersImportTemplate({ token })
+      const href = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = href
+      anchor.download = "order-import-template.xlsx"
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(href)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t("merchantOrdersList.importGenericError")
+      setImportFeedback({ type: "error", message: msg })
+    } finally {
+      setIsDownloadingTemplate(false)
+    }
+  }, [isDownloadingTemplate, t, token])
+
+  const onImportClick = useCallback(() => {
+    if (!token || isImporting) return
+    fileInputRef.current?.click()
+  }, [isImporting, token])
+
+  const onFileSelected = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      event.target.value = ""
+      if (!file || !token) return
+
+      setImportFeedback(null)
+      setIsImporting(true)
+      try {
+        const result = await importMerchantOrdersExcel({
+          token,
+          file,
+          shipment: {},
+        })
+        await refreshOrdersData()
+        setImportFeedback({
+          type: "success",
+          message: t("merchantOrdersList.importSuccess", { count: result.orderCount }),
+        })
+      } catch (err) {
+        if (err instanceof ApiError) {
+          const details = formatApiValidationDetails(err.details)
+          const msg = details ? `${err.message} · ${details}` : err.message
+          setImportFeedback({ type: "error", message: msg })
+        } else {
+          const msg =
+            err instanceof Error ? err.message : t("merchantOrdersList.importGenericError")
+          setImportFeedback({ type: "error", message: msg })
+        }
+      } finally {
+        setIsImporting(false)
+      }
+    },
+    [refreshOrdersData, t, token],
+  )
 
   return (
     <Layout title={t("merchantOrdersList.pageTitle")}>
@@ -180,7 +266,54 @@ export function MerchantOrdersListPage() {
               ))}
             </select>
           </div>
+          {canImportMerchantOrders ? (
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx"
+                className="hidden"
+                onChange={(e) => {
+                  void onFileSelected(e)
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  void onDownloadTemplate()
+                }}
+                disabled={isDownloadingTemplate || isImporting}
+              >
+                {isDownloadingTemplate
+                  ? t("merchantOrdersList.downloadingTemplate")
+                  : t("merchantOrdersList.downloadTemplate")}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  void onImportClick()
+                }}
+                disabled={isImporting || isDownloadingTemplate}
+              >
+                {isImporting
+                  ? t("merchantOrdersList.importing")
+                  : t("merchantOrdersList.importExcel")}
+              </Button>
+            </div>
+          ) : null}
         </div>
+        {importFeedback ? (
+          <p
+            className={
+              importFeedback.type === "success"
+                ? "text-sm text-emerald-600"
+                : "text-destructive text-sm"
+            }
+          >
+            {importFeedback.message}
+          </p>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard

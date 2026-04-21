@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client"
+import { ApiError, apiFetch, apiUrl } from "@/api/client"
 import { extractShipmentLocation } from "@/features/customer-service/lib/location"
 
 const useDashboardSeedData =
@@ -256,6 +256,12 @@ export type ShipmentOrderRow = {
     userId: string
     contactPhone: string | null
   } | null
+  pickupCourier?: {
+    id: string
+    fullName: string | null
+    userId: string
+    contactPhone: string | null
+  } | null
   csConfirmedAt: string | null
   scannedOutAt: string | null
   receivedByCustomer: boolean | null
@@ -307,6 +313,7 @@ export type ShipmentOrderRow = {
     toWarehouseId?: string | null
     toWarehouse?: { id: string; name: string } | null
     postponeCountAfter?: number | null
+    assignedCourierName?: string | null
   }>
   shipmentTasks?: Array<{
     id: string
@@ -315,6 +322,11 @@ export type ShipmentOrderRow = {
     fromWarehouseId: string | null
     toWarehouseId: string | null
     assignedCourierId: string | null
+    assignedCourier: {
+      id: string
+      fullName: string | null
+      contactPhone: string | null
+    } | null
     createdAt: string
   }>
 }
@@ -786,5 +798,107 @@ export async function patchShipmentFields(
       ...(p.customerLng !== undefined ? { customerLng: p.customerLng } : {}),
     }),
   })
+}
+
+export type MerchantOrderImportMeta = {
+  merchantId?: string
+  regionId?: string | null
+  notes?: string | null
+  trackingNumber?: string | null
+}
+
+export type MerchantOrderImportResponse = {
+  shipment: {
+    id: string
+  }
+  orderCount: number
+}
+
+export async function importMerchantOrdersExcel(params: {
+  token: string
+  file: File
+  shipment?: MerchantOrderImportMeta
+}): Promise<MerchantOrderImportResponse> {
+  const body = new FormData()
+  body.append("file", params.file)
+  body.append("shipment", JSON.stringify(params.shipment ?? {}))
+
+  const locale = localStorage.getItem("i18nextLng") || "en"
+  const headers = new Headers({
+    Authorization: `Bearer ${params.token}`,
+    "Accept-Language": locale,
+  })
+  const res = await fetch(apiUrl("/api/merchant-orders/import-orders"), {
+    method: "POST",
+    headers,
+    body,
+  })
+
+  if (res.status === 204) {
+    return { shipment: { id: "" }, orderCount: 0 }
+  }
+
+  const text = await res.text()
+  const data = text ? (JSON.parse(text) as unknown) : null
+  if (!res.ok) {
+    let message = res.statusText || "Import failed"
+    let code: string | undefined
+    let details: unknown
+    if (typeof data === "object" && data !== null) {
+      if ("error" in data && typeof (data as { error: unknown }).error === "string") {
+        message = (data as { error: string }).error
+      } else if (
+        "message" in data &&
+        typeof (data as { message: unknown }).message === "string"
+      ) {
+        message = (data as { message: string }).message
+      }
+      if ("code" in data && typeof (data as { code: unknown }).code === "string") {
+        code = (data as { code: string }).code
+      }
+      if ("details" in data) {
+        details = (data as { details: unknown }).details
+      }
+    }
+    throw new ApiError(res.status, message, code, details)
+  }
+
+  return data as MerchantOrderImportResponse
+}
+
+export async function downloadMerchantOrdersImportTemplate(params: {
+  token: string
+}): Promise<Blob> {
+  const locale = localStorage.getItem("i18nextLng") || "en"
+  const headers = new Headers({
+    Authorization: `Bearer ${params.token}`,
+    "Accept-Language": locale,
+    Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*",
+  })
+  const res = await fetch(apiUrl("/api/merchant-orders/import-template"), {
+    method: "GET",
+    headers,
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    let msg = res.statusText || "Template download failed"
+    try {
+      const parsed = text ? (JSON.parse(text) as unknown) : null
+      if (typeof parsed === "object" && parsed !== null) {
+        if ("error" in parsed && typeof (parsed as { error: unknown }).error === "string") {
+          msg = (parsed as { error: string }).error
+        } else if (
+          "message" in parsed &&
+          typeof (parsed as { message: unknown }).message === "string"
+        ) {
+          msg = (parsed as { message: string }).message
+        }
+      }
+    } catch {
+      // keep default message
+    }
+    throw new ApiError(res.status, msg)
+  }
+  return res.blob()
 }
 

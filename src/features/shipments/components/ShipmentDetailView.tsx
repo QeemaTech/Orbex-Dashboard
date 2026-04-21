@@ -45,9 +45,13 @@ function formatMoney(raw: string | null | undefined, locale: string) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <dt className="text-muted-foreground text-xs font-medium">{label}</dt>
-      <dd className="text-foreground text-sm font-medium">{value}</dd>
+    <div className="grid grid-cols-1 gap-1 rounded-md border px-3 py-2 sm:grid-cols-[minmax(160px,220px)_1fr] sm:items-start sm:gap-3 sm:px-4 sm:py-3">
+      <dt className="text-muted-foreground text-sm font-medium leading-5 sm:text-[0.95rem]">
+        {label}
+      </dt>
+      <dd className="text-foreground text-sm font-semibold leading-6 break-words sm:text-base">
+        {value}
+      </dd>
     </div>
   )
 }
@@ -118,9 +122,6 @@ export function ShipmentDetailView({
                   ? shipment.trackingNumber
                   : t("shipments.detail.unnamedTracking")}
               </CardTitle>
-              <CardDescription className="font-mono text-xs">
-                {t("shipments.detail.shipmentId")}: {shipment.id}
-              </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-muted-foreground text-xs font-medium">
@@ -141,11 +142,11 @@ export function ShipmentDetailView({
         </CardHeader>
         <div className="bg-border h-px w-full" />
         <CardContent className="space-y-6 pt-6">
-          <section className="space-y-3">
-            <h3 className="text-foreground text-sm font-semibold">
+          <section className="mx-auto w-full max-w-4xl space-y-3">
+            <h3 className="text-foreground text-base font-semibold sm:text-lg">
               {t("shipments.detail.sectionCustomer")}
             </h3>
-            <dl className="space-y-3">
+            <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
               <DetailRow label={t("adminOrders.colCustomer")} value={shipment.customer.customerName} />
               <DetailRow
                 label={t("adminOrders.colPhone")}
@@ -168,11 +169,11 @@ export function ShipmentDetailView({
             </dl>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-foreground text-sm font-semibold">
+          <section className="mx-auto w-full max-w-4xl space-y-3">
+            <h3 className="text-foreground text-base font-semibold sm:text-lg">
               {t("shipments.detail.sectionFinancial")}
             </h3>
-            <dl className="space-y-3">
+            <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
               <DetailRow label={t("adminOrders.colValue")} value={formatMoney(shipment.shipmentValue, locale)} />
               <DetailRow
                 label={t("shipments.detail.shippingFee")}
@@ -186,13 +187,17 @@ export function ShipmentDetailView({
             </dl>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-foreground text-sm font-semibold">
+          <section className="mx-auto w-full max-w-4xl space-y-3">
+            <h3 className="text-foreground text-base font-semibold sm:text-lg">
               {t("shipments.detail.sectionLogistics")}
             </h3>
-            <dl className="space-y-3">
+            <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
               <DetailRow
-                label={t("warehouse.table.courier", { defaultValue: "Courier" })}
+                label={t("warehouse.table.pickupCourier", { defaultValue: "Pickup courier" })}
+                value={shipment.pickupCourier?.fullName?.trim() || "—"}
+              />
+              <DetailRow
+                label={t("warehouse.table.courier", { defaultValue: "Delivery courier" })}
                 value={shipment.deliveryCourier?.fullName?.trim() || "—"}
               />
               <DetailRow

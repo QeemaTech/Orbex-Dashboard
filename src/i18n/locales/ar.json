@@ -168,7 +168,13 @@
     "colWarehouse": "المخزن",
     "colOrderCount": "الشحنات",
     "colTotalValue": "القيمة الإجمالية",
-    "colBatchPipelineStatus": "حالة مسار الدفعة"
+    "colBatchPipelineStatus": "حالة مسار الدفعة",
+    "downloadTemplate": "تحميل القالب",
+    "downloadingTemplate": "جاري تحميل القالب…",
+    "importExcel": "استيراد Excel",
+    "importing": "جاري الاستيراد…",
+    "importSuccess": "تم استيراد ملف Excel بنجاح ({{count}} شحنة).",
+    "importGenericError": "تعذر استيراد ملف Excel لطلبات التجار."
   },
   "adminOrders": {
     "colCustomer": "العميل",

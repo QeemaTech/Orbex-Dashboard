@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 import {
@@ -11,6 +11,7 @@ import {
   Clock,
   RotateCcw,
   UserCheck,
+  ChevronDown,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -30,6 +31,7 @@ export type ShipmentStatusEventPayload = {
   toWarehouseId?: string | null
   toWarehouse?: { id: string; name: string } | null
   postponeCountAfter?: number | null
+  assignedCourierName?: string | null
 }
 
 type ShipmentTimelineProps = {
@@ -159,6 +161,7 @@ function buildPrimaryLabel(
 export function ShipmentTimeline({ events, contextWarehouseId }: ShipmentTimelineProps) {
   const { t, i18n } = useTranslation()
   const locale = resolveDateLocale(i18n.language)
+  const [isAuditOpen, setIsAuditOpen] = useState(false)
 
   const formatEventDateTime = (iso: string): string => {
     const d = new Date(iso)
@@ -178,7 +181,6 @@ export function ShipmentTimeline({ events, contextWarehouseId }: ShipmentTimelin
       status: event.toStatus,
       label: buildPrimaryLabel(event, t, contextWarehouseId),
       timestamp: event.createdAt,
-      note: event.note?.trim() || null,
     }))
   }, [events, t, contextWarehouseId])
 
@@ -217,9 +219,6 @@ export function ShipmentTimeline({ events, contextWarehouseId }: ShipmentTimelin
                     <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
                       {formatEventDateTime(item.timestamp)}
                     </p>
-                    {item.note ? (
-                      <p className="text-muted-foreground mt-1 text-xs leading-snug break-words">{item.note}</p>
-                    ) : null}
                   </div>
                 </div>
               </div>
@@ -235,46 +234,69 @@ export function ShipmentTimeline({ events, contextWarehouseId }: ShipmentTimelin
       </div>
 
       <div className="rounded-lg border bg-muted/20 p-3 sm:p-4">
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("shipments.timeline.auditHeading")}
-        </h4>
-        <ol className="space-y-3 text-sm">
-          {events.map((event) => {
-            const config = getStatusConfig(event.toStatus)
-            const Icon = config.icon
-            const title = buildPrimaryLabel(event, t, contextWarehouseId)
-            return (
-              <li key={event.id} className="flex gap-3 border-b border-border/50 pb-3 last:border-0 last:pb-0">
-                <div
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-full shadow-sm",
-                    config.bgColor,
-                  )}
-                >
-                  <Icon className={cn("size-4", config.color)} aria-hidden />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-foreground font-medium leading-snug">{title}</p>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {formatEventDateTime(event.createdAt)}
-                  </p>
-                  {event.fromStatus != null && event.fromStatus !== event.toStatus ? (
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      {formatStatusLabel(event.fromStatus, t)} → {formatStatusLabel(event.toStatus, t)}
+        <button
+          type="button"
+          className="flex w-full items-center justify-between rounded-md border border-border/70 bg-background/80 px-3 py-2 text-left transition-colors hover:bg-background"
+          aria-expanded={isAuditOpen}
+          onClick={() => setIsAuditOpen((prev) => !prev)}
+        >
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("shipments.timeline.auditHeading")}
+          </span>
+          <ChevronDown
+            className={cn(
+              "size-4 text-muted-foreground transition-transform",
+              isAuditOpen ? "rotate-180" : "rotate-0",
+            )}
+            aria-hidden
+          />
+        </button>
+
+        {isAuditOpen ? (
+          <ol className="mt-3 space-y-3 text-sm">
+            {events.map((event) => {
+              const config = getStatusConfig(event.toStatus)
+              const Icon = config.icon
+              const title = buildPrimaryLabel(event, t, contextWarehouseId)
+              return (
+                <li key={event.id} className="flex gap-3 border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                  <div
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-full shadow-sm",
+                      config.bgColor,
+                    )}
+                  >
+                    <Icon className={cn("size-4", config.color)} aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-foreground font-medium leading-snug">{title}</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">
+                      {formatEventDateTime(event.createdAt)}
                     </p>
-                  ) : event.fromStatus === event.toStatus && event.toStatus === "POSTPONED" ? (
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      {t("shipments.timeline.postponed")}
-                    </p>
-                  ) : null}
-                  {event.note?.trim() ? (
-                    <p className="text-muted-foreground mt-1 text-xs leading-snug break-words">{event.note.trim()}</p>
-                  ) : null}
-                </div>
-              </li>
-            )
-          })}
-        </ol>
+                    {event.fromStatus != null && event.fromStatus !== event.toStatus ? (
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        {formatStatusLabel(event.fromStatus, t)} → {formatStatusLabel(event.toStatus, t)}
+                      </p>
+                    ) : event.fromStatus === event.toStatus && event.toStatus === "POSTPONED" ? (
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        {t("shipments.timeline.postponed")}
+                      </p>
+                    ) : null}
+                    {event.toStatus === "ASSIGNED" && event.assignedCourierName?.trim() ? (
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        {t("shipments.timeline.assignedCourier", { defaultValue: "Assigned courier" })}:{" "}
+                        {event.assignedCourierName.trim()}
+                      </p>
+                    ) : null}
+                    {event.note?.trim() ? (
+                      <p className="text-muted-foreground mt-1 text-xs leading-snug break-words">{event.note.trim()}</p>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        ) : null}
       </div>
     </div>
   )

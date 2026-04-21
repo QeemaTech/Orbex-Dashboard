@@ -103,12 +103,14 @@
       "returnedToMerchant": "Returned to Merchant",
       "atWarehouse": "At {{name}}",
       "inThisWarehouse": "In this warehouse ({{name}})",
+      "assignedCourier": "Assigned courier",
       "postponeAttempt": "Postpone #{{count}}",
       "transferRoute": "{{from}} → {{to}}"
     },
     "tasks": {
       "heading": "Warehouse Tasks",
       "noTasks": "No warehouse tasks assigned",
+      "assignedCourier": "Assigned courier",
       "typeDelivery": "Delivery",
       "typeTransfer": "Transfer",
       "typeReturn": "Return to Merchant",
@@ -179,7 +181,13 @@
     "colWarehouse": "Warehouse",
     "colOrderCount": "Shipments",
     "colTotalValue": "Total value",
-    "colBatchPipelineStatus": "Batch pipeline status"
+    "colBatchPipelineStatus": "Batch pipeline status",
+    "downloadTemplate": "Download template",
+    "downloadingTemplate": "Downloading template…",
+    "importExcel": "Import Excel",
+    "importing": "Importing…",
+    "importSuccess": "Excel imported successfully ({{count}} shipments).",
+    "importGenericError": "Could not import merchant orders Excel file."
   },
   "adminOrders": {
     "colCustomer": "Customer",
