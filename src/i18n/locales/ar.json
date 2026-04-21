@@ -3,6 +3,10 @@
     "dashboard": "لوحة التحكم",
     "shipments": "الشحنات",
     "merchantOrders": "طلبات التجار",
+    "merchantOrderConfirmations": "تأكيدات الطلبات",
+    "myWarehouse": "مخزني",
+    "warehouseMerchantOrders": "طلبات التجار بالمخزن",
+    "warehouseStandaloneShipments": "شحنات المخزن",
     "orders": "الشحنات",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
@@ -174,7 +178,14 @@
     "importExcel": "استيراد Excel",
     "importing": "جاري الاستيراد…",
     "importSuccess": "تم استيراد ملف Excel بنجاح ({{count}} شحنة).",
-    "importGenericError": "تعذر استيراد ملف Excel لطلبات التجار."
+    "importQueuedSuccess": "تم رفع ملف Excel وإرساله لقائمة التأكيد ({{count}} شحنة).",
+    "importGenericError": "تعذر استيراد ملف Excel لطلبات التجار.",
+    "pickupDate": "تاريخ الاستلام",
+    "pendingPageTitle": "تأكيدات طلبات التجار المعلقة",
+    "pendingDescription": "تظهر هنا ملفات Excel المرفوعة حتى يقوم مستخدم لديه صلاحية التأكيد بالموافقة عليها.",
+    "pendingEmpty": "لا توجد ملفات معلقة.",
+    "confirmPending": "تأكيد",
+    "rejectPending": "رفض"
   },
   "adminOrders": {
     "colCustomer": "العميل",
@@ -789,6 +800,7 @@
       "PICKED_UP": "تم الاستلام",
       "IN_WAREHOUSE": "داخل المخزن",
       "PENDING": "معلّق (دفعة)",
+      "PENDING_CONFIRMATION": "بانتظار التأكيد",
       "ASSIGNED": "مُسند (دفعة)",
       "ON_THE_WAY_TO_WAREHOUSE": "في الطريق إلى المخزن",
       "PARTIALLY_DELIVERED": "مُسلَّم جزئيًا",
@@ -1025,6 +1037,16 @@
   },
   "settings": {
     "pageTitle": "الإعدادات",
+    "financial": {
+      "title": "الإعدادات المالية الافتراضية للاستيراد",
+      "description": "تُستخدم عند استيراد طلبات التجار من Excel. لم يعد يتم قراءة العمولة أو عمولة الفيزا من ملف الرفع.",
+      "defaultCommissionFee": "العمولة الافتراضية",
+      "visaCommissionPercent": "عمولة الفيزا (%)",
+      "saved": "تم حفظ الإعدادات المالية.",
+      "saveFailed": "تعذر حفظ الإعدادات المالية.",
+      "invalidCommissionFee": "أدخل قيمة عمولة صحيحة (غير سالبة).",
+      "invalidVisaCommissionPercent": "أدخل نسبة عمولة فيزا بين 0 و 100."
+    },
     "insightsPeriod": {
       "title": "فترة الرؤى",
       "description": "تحدد نافذة التاريخ المستخدمة لمقاييس الفترة في لوحات المخازن والرؤى ذات الصلة. مقاييس العمر تبقى لكل الأوقات.",

@@ -63,7 +63,11 @@ export function DeliveryZonesPage() {
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
   const qc = useQueryClient()
-  const canWrite = Boolean(user?.permissions?.includes("delivery_zones.write"))
+  const canView = Boolean(user?.permissions?.includes("delivery_zones.read"))
+  const canCreate = Boolean(user?.permissions?.includes("delivery_zones.create"))
+  const canUpdate = Boolean(user?.permissions?.includes("delivery_zones.update"))
+  const canDelete = Boolean(user?.permissions?.includes("delivery_zones.delete"))
+  const canManageRows = canUpdate || canDelete
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create")
@@ -72,7 +76,7 @@ export function DeliveryZonesPage() {
   const zonesQuery = useQuery({
     queryKey: ["delivery-zones", token],
     queryFn: () => listDeliveryZones(token),
-    enabled: !!token,
+    enabled: !!token && canView,
   })
 
   const deactivateMut = useMutation({
@@ -117,137 +121,145 @@ export function DeliveryZonesPage() {
   return (
     <Layout title={t("deliveryZones.pageTitle")}>
       <div className="flex flex-col gap-6">
-        <Card>
-          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="size-5" aria-hidden />
-                {t("deliveryZones.cardTitle")}
-              </CardTitle>
-              <CardDescription>{t("deliveryZones.cardDescription")}</CardDescription>
-            </div>
-            {canWrite ? (
-              <Button type="button" size="sm" className="gap-1" onClick={openCreate}>
-                <Plus className="size-4" aria-hidden />
-                {t("deliveryZones.addZone")}
-              </Button>
-            ) : null}
-          </CardHeader>
-          <CardContent>
-            {zonesQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">{t("deliveryZones.loading")}</p>
-            ) : zones.length === 0 ? (
-              <p className="text-muted-foreground text-sm">{t("deliveryZones.empty")}</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("deliveryZones.col.name")}</TableHead>
-                    <TableHead>{t("deliveryZones.col.governorate")}</TableHead>
-                    <TableHead>{t("deliveryZones.col.area")}</TableHead>
-                    <TableHead>{t("deliveryZones.col.region")}</TableHead>
-                    <TableHead>{t("deliveryZones.col.radius")}</TableHead>
-                    <TableHead>{t("deliveryZones.col.couriers")}</TableHead>
-                    <TableHead>{t("deliveryZones.col.center")}</TableHead>
-                    <TableHead>{t("deliveryZones.col.status")}</TableHead>
-                    <TableHead className="w-[120px]">
-                      {t("deliveryZones.col.actions")}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {zones.map((z) => (
-                    <TableRow key={z.id}>
-                      <TableCell className="font-medium">
-                        {z.name ?? "—"}
-                      </TableCell>
-                      <TableCell>{z.governorate}</TableCell>
-                      <TableCell>{z.areaZone ?? "—"}</TableCell>
-                      <TableCell>
-                        {z.region ? `${z.region.name} (${z.region.code})` : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {t("deliveryZones.radiusMeters", { m: z.radiusMeters })}
-                      </TableCell>
-                      <TableCell className="max-w-[16rem] align-top">
-                        {renderZoneCouriersCell(z)}
-                      </TableCell>
-                      <TableCell>
-                        <CoordinatesMapLink
-                          latitude={z.latitude}
-                          longitude={z.longitude}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {z.isActive ? (
-                          <Badge variant="default">{t("deliveryZones.active")}</Badge>
-                        ) : (
-                          <Badge variant="secondary">{t("deliveryZones.inactive")}</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {canWrite ? (
-                            <>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="size-8"
-                                onClick={() => openEdit(z)}
-                                aria-label={t("deliveryZones.edit")}
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                              {z.isActive ? (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive h-8 px-2 text-xs"
-                                  disabled={deactivateMut.isPending}
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(t("deliveryZones.confirmDeactivate"))
-                                    ) {
-                                      deactivateMut.mutate(z.id)
-                                    }
-                                  }}
-                                >
-                                  {t("deliveryZones.deactivate")}
-                                </Button>
-                              ) : null}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive size-8"
-                                disabled={deletePermanentMut.isPending}
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      t("deliveryZones.confirmDeletePermanent"),
-                                    )
-                                  ) {
-                                    deletePermanentMut.mutate(z.id)
-                                  }
-                                }}
-                                aria-label={t("deliveryZones.deletePermanent")}
-                                title={t("deliveryZones.deletePermanent")}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </>
-                          ) : null}
-                        </div>
-                      </TableCell>
+        {canView ? (
+          <Card>
+            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="size-5" aria-hidden />
+                  {t("deliveryZones.cardTitle")}
+                </CardTitle>
+                <CardDescription>{t("deliveryZones.cardDescription")}</CardDescription>
+              </div>
+              {canCreate ? (
+                <Button type="button" size="sm" className="gap-1" onClick={openCreate}>
+                  <Plus className="size-4" aria-hidden />
+                  {t("deliveryZones.addZone")}
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent>
+              {zonesQuery.isLoading ? (
+                <p className="text-muted-foreground text-sm">{t("deliveryZones.loading")}</p>
+              ) : zones.length === 0 ? (
+                <p className="text-muted-foreground text-sm">{t("deliveryZones.empty")}</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("deliveryZones.col.name")}</TableHead>
+                      <TableHead>{t("deliveryZones.col.governorate")}</TableHead>
+                      <TableHead>{t("deliveryZones.col.area")}</TableHead>
+                      <TableHead>{t("deliveryZones.col.region")}</TableHead>
+                      <TableHead>{t("deliveryZones.col.radius")}</TableHead>
+                      <TableHead>{t("deliveryZones.col.couriers")}</TableHead>
+                      <TableHead>{t("deliveryZones.col.center")}</TableHead>
+                      <TableHead>{t("deliveryZones.col.status")}</TableHead>
+                      <TableHead className="w-[120px]">
+                        {t("deliveryZones.col.actions")}
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {zones.map((z) => (
+                      <TableRow key={z.id}>
+                        <TableCell className="font-medium">
+                          {z.name ?? "—"}
+                        </TableCell>
+                        <TableCell>{z.governorate}</TableCell>
+                        <TableCell>{z.areaZone ?? "—"}</TableCell>
+                        <TableCell>
+                          {z.region ? `${z.region.name} (${z.region.code})` : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {t("deliveryZones.radiusMeters", { m: z.radiusMeters })}
+                        </TableCell>
+                        <TableCell className="max-w-[16rem] align-top">
+                          {renderZoneCouriersCell(z)}
+                        </TableCell>
+                        <TableCell>
+                          <CoordinatesMapLink
+                            latitude={z.latitude}
+                            longitude={z.longitude}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {z.isActive ? (
+                            <Badge variant="default">{t("deliveryZones.active")}</Badge>
+                          ) : (
+                            <Badge variant="secondary">{t("deliveryZones.inactive")}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {canManageRows ? (
+                              <>
+                                {canUpdate ? (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-8"
+                                    onClick={() => openEdit(z)}
+                                    aria-label={t("deliveryZones.edit")}
+                                  >
+                                    <Pencil className="size-3.5" />
+                                  </Button>
+                                ) : null}
+                                {canDelete ? (
+                                  <>
+                                    {z.isActive ? (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive h-8 px-2 text-xs"
+                                        disabled={deactivateMut.isPending}
+                                        onClick={() => {
+                                          if (
+                                            window.confirm(t("deliveryZones.confirmDeactivate"))
+                                          ) {
+                                            deactivateMut.mutate(z.id)
+                                          }
+                                        }}
+                                      >
+                                        {t("deliveryZones.deactivate")}
+                                      </Button>
+                                    ) : null}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive size-8"
+                                      disabled={deletePermanentMut.isPending}
+                                      onClick={() => {
+                                        if (
+                                          window.confirm(
+                                            t("deliveryZones.confirmDeletePermanent"),
+                                          )
+                                        ) {
+                                          deletePermanentMut.mutate(z.id)
+                                        }
+                                      }}
+                                      aria-label={t("deliveryZones.deletePermanent")}
+                                      title={t("deliveryZones.deletePermanent")}
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </Button>
+                                  </>
+                                ) : null}
+                              </>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
 
       <DeliveryZoneFormDialog
@@ -255,7 +267,7 @@ export function DeliveryZonesPage() {
         mode={dialogMode}
         initial={editing}
         token={token}
-        canWrite={canWrite}
+        canWrite={dialogMode === "create" ? canCreate : canUpdate}
         onOpenChange={setDialogOpen}
         onSaved={() => void qc.invalidateQueries({ queryKey: ["delivery-zones"] })}
       />

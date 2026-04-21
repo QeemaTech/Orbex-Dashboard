@@ -193,7 +193,7 @@
 
 .label-footer-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 6px;
   padding: 6px;
   font-size: 8px;
@@ -206,20 +206,14 @@
   word-break: break-word;
 }
 
-.label-footer-meta {
-  text-align: end;
-  color: #333;
-  unicode-bidi: plaintext;
-}
-
 .label-footer-barcode {
   padding: 4px 6px;
   border-top: 1px solid #000;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  align-items: end;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   flex-shrink: 0;
+  text-align: center;
 }
 
 .label-footer-barcode svg {
@@ -247,7 +241,6 @@
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
 
   @page {

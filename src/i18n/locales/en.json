@@ -3,6 +3,10 @@
     "dashboard": "Dashboard",
     "shipments": "Shipments",
     "merchantOrders": "Merchant orders",
+    "merchantOrderConfirmations": "Order confirmations",
+    "myWarehouse": "My warehouse",
+    "warehouseMerchantOrders": "Warehouse merchant orders",
+    "warehouseStandaloneShipments": "Warehouse shipments",
     "orders": "Shipments",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
@@ -187,7 +191,14 @@
     "importExcel": "Import Excel",
     "importing": "Importing…",
     "importSuccess": "Excel imported successfully ({{count}} shipments).",
-    "importGenericError": "Could not import merchant orders Excel file."
+    "importQueuedSuccess": "Excel uploaded and queued for confirmation ({{count}} shipments).",
+    "importGenericError": "Could not import merchant orders Excel file.",
+    "pickupDate": "Pickup date",
+    "pendingPageTitle": "Pending merchant order confirmations",
+    "pendingDescription": "Uploaded Excel batches wait here until a user with confirmation permission approves them.",
+    "pendingEmpty": "No pending imports.",
+    "confirmPending": "Confirm",
+    "rejectPending": "Reject"
   },
   "adminOrders": {
     "colCustomer": "Customer",
@@ -495,7 +506,7 @@
       "ON_HOLD": "On hold"
     },
     "couriers": {
-      "pageTitle": "Customer service — Couriers",
+      "pageTitle": "Couriers",
       "subtitle": "Track active couriers and open the latest location quickly.",
       "listTitle": "Couriers",
       "listDescription": "The list refreshes every 25 seconds from live assignment data.",
@@ -828,6 +839,7 @@
       "PICKED_UP": "Picked up",
       "IN_WAREHOUSE": "In warehouse",
       "PENDING": "Pending (batch)",
+      "PENDING_CONFIRMATION": "Pending confirmation",
       "ASSIGNED": "Assigned (batch)",
       "ON_THE_WAY_TO_WAREHOUSE": "On the way to warehouse",
       "PARTIALLY_DELIVERED": "Partially delivered",
@@ -1041,6 +1053,16 @@
   },
   "settings": {
     "pageTitle": "Settings",
+    "financial": {
+      "title": "Import financial defaults",
+      "description": "Used when importing merchant orders from Excel. Commission and visa commission are no longer read from the uploaded sheet.",
+      "defaultCommissionFee": "Default commission fee",
+      "visaCommissionPercent": "Visa commission (%)",
+      "saved": "Financial defaults saved.",
+      "saveFailed": "Could not save financial defaults.",
+      "invalidCommissionFee": "Enter a valid non-negative commission fee.",
+      "invalidVisaCommissionPercent": "Enter a visa commission percentage between 0 and 100."
+    },
     "insightsPeriod": {
       "title": "Insights period",
       "description": "Defines the date window used for period metrics on warehouse dashboards and related insights. Lifetime metrics remain all-time.",

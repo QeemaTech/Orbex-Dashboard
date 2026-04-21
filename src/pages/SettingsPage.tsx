@@ -3,9 +3,11 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
+  DEFAULT_COMMISSION_FEE_KEY,
   getSystemSetting,
   putSystemSetting,
   type InsightsPeriodConfig,
+  VISA_COMMISSION_RATE_KEY,
 } from "@/api/system-settings-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
@@ -55,11 +57,23 @@ export function SettingsPage() {
   const [lastDays, setLastDays] = useState(30)
   const [rangeFrom, setRangeFrom] = useState("")
   const [rangeTo, setRangeTo] = useState("")
+  const [defaultCommissionFee, setDefaultCommissionFee] = useState("0")
+  const [visaCommissionPercent, setVisaCommissionPercent] = useState("2.5")
 
   const insightsQuery = useQuery({
     queryKey: ["system-settings", "INSIGHTS_PERIOD", token],
     queryFn: () =>
       getSystemSetting<InsightsPeriodConfig>(token, "INSIGHTS_PERIOD"),
+    enabled: !!token,
+  })
+  const defaultCommissionQuery = useQuery({
+    queryKey: ["system-settings", DEFAULT_COMMISSION_FEE_KEY, token],
+    queryFn: () => getSystemSetting<number>(token, DEFAULT_COMMISSION_FEE_KEY),
+    enabled: !!token,
+  })
+  const visaCommissionQuery = useQuery({
+    queryKey: ["system-settings", VISA_COMMISSION_RATE_KEY, token],
+    queryFn: () => getSystemSetting<number>(token, VISA_COMMISSION_RATE_KEY),
     enabled: !!token,
   })
 
@@ -75,6 +89,16 @@ export function SettingsPage() {
       setRangeTo(isoToDateInputValue(v.endDate))
     }
   }, [insightsQuery.data])
+  useEffect(() => {
+    const n = Number(defaultCommissionQuery.data?.value)
+    if (Number.isFinite(n) && n >= 0) setDefaultCommissionFee(String(n))
+  }, [defaultCommissionQuery.data?.value])
+  useEffect(() => {
+    const rate = Number(visaCommissionQuery.data?.value)
+    if (Number.isFinite(rate) && rate >= 0) {
+      setVisaCommissionPercent(String(rate * 100))
+    }
+  }, [visaCommissionQuery.data?.value])
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -110,6 +134,35 @@ export function SettingsPage() {
     },
     onError: (e: Error) => {
       showToast(e.message || t("settings.insightsPeriod.saveFailed"), "error")
+    },
+  })
+  const saveFinancialMutation = useMutation({
+    mutationFn: async () => {
+      const commission = Number.parseFloat(defaultCommissionFee)
+      if (!Number.isFinite(commission) || commission < 0) {
+        throw new Error(t("settings.financial.invalidCommissionFee"))
+      }
+      const visaPercent = Number.parseFloat(visaCommissionPercent)
+      if (!Number.isFinite(visaPercent) || visaPercent < 0 || visaPercent > 100) {
+        throw new Error(t("settings.financial.invalidVisaCommissionPercent"))
+      }
+      const visaRate = visaPercent / 100
+      await Promise.all([
+        putSystemSetting(token, DEFAULT_COMMISSION_FEE_KEY, commission),
+        putSystemSetting(token, VISA_COMMISSION_RATE_KEY, visaRate),
+      ])
+    },
+    onSuccess: () => {
+      showToast(t("settings.financial.saved"), "success")
+      void queryClient.invalidateQueries({
+        queryKey: ["system-settings", DEFAULT_COMMISSION_FEE_KEY, token],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["system-settings", VISA_COMMISSION_RATE_KEY, token],
+      })
+    },
+    onError: (e: Error) => {
+      showToast(e.message || t("settings.financial.saveFailed"), "error")
     },
   })
 
@@ -196,6 +249,60 @@ export function SettingsPage() {
               onClick={() => saveMutation.mutate()}
             >
               {saveMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("settings.financial.title")}</CardTitle>
+            <CardDescription>{t("settings.financial.description")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {defaultCommissionQuery.isLoading || visaCommissionQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+            ) : null}
+            {defaultCommissionQuery.error || visaCommissionQuery.error ? (
+              <p className="text-destructive text-sm">
+                {(
+                  (defaultCommissionQuery.error ?? visaCommissionQuery.error) as Error
+                ).message}
+              </p>
+            ) : null}
+            <div className="grid gap-2">
+              <label className="text-sm font-medium" htmlFor="default-commission-fee">
+                {t("settings.financial.defaultCommissionFee")}
+              </label>
+              <Input
+                id="default-commission-fee"
+                type="number"
+                min={0}
+                step="0.01"
+                className="max-w-xs"
+                value={defaultCommissionFee}
+                onChange={(e) => setDefaultCommissionFee(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium" htmlFor="visa-commission-percent">
+                {t("settings.financial.visaCommissionPercent")}
+              </label>
+              <Input
+                id="visa-commission-percent"
+                type="number"
+                min={0}
+                max={100}
+                step="0.1"
+                className="max-w-xs"
+                value={visaCommissionPercent}
+                onChange={(e) => setVisaCommissionPercent(e.target.value)}
+              />
+            </div>
+            <Button
+              type="button"
+              disabled={!token || saveFinancialMutation.isPending}
+              onClick={() => saveFinancialMutation.mutate()}
+            >
+              {saveFinancialMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </CardContent>
         </Card>

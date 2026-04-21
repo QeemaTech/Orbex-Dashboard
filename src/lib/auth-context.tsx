@@ -24,9 +24,11 @@ export type UserRole =
 
 export type AuthUser = {
   id: string
+  merchantId?: string | null
   email: string
   fullName: string
   role: UserRole
+  merchantId?: string | null
   roles?: string[]
   rbacRoles?: RbacRoleInfo[]
   permissions?: string[]
@@ -69,6 +71,7 @@ function readStoredUser(): AuthUser | null {
     if (!u.roles) u.roles = u.role ? [u.role] : []
     if (!u.permissions) u.permissions = []
     if (!u.rbacRoles) u.rbacRoles = []
+    if (u.merchantId === undefined) u.merchantId = null
     return u as AuthUser
   } catch {
     return null
@@ -78,6 +81,7 @@ function readStoredUser(): AuthUser | null {
 function normalizeUser(u: AuthUser): AuthUser {
   return {
     ...u,
+    merchantId: u.merchantId ?? null,
     roles: u.roles ?? (u.role ? [u.role] : []),
     permissions: u.permissions ?? [],
     rbacRoles: u.rbacRoles ?? [],
@@ -188,6 +192,16 @@ export function useAuth(): AuthContextValue {
 
 export function canAccessCustomerService(role: UserRole | undefined): boolean {
   return role === "CUSTOMER_SERVICE" || role === "ADMIN"
+}
+
+export function isMerchantUser(user: AuthUser | null | undefined): boolean {
+  if (!user) return false
+  if (typeof user.merchantId === "string" && user.merchantId.trim().length > 0) return true
+  const roleSlugs = new Set([
+    ...(user.roles ?? []),
+    ...(user.rbacRoles?.map((role) => role.slug) ?? []),
+  ])
+  return Array.from(roleSlugs).some((slug) => slug.toLowerCase().includes("merchant"))
 }
 
 /** Post-login and role-guard redirects. Pass full `user` so warehouse staff open their hub directly. */

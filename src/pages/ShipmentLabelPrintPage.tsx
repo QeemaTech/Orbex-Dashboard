@@ -245,22 +245,29 @@ export function ShipmentLabelPrintPage() {
           </div>
 
           <div className="label-boxes">
-            <div className="label-mini-box">فتح ا��شح��ة: لا</div>
+            <div className="label-mini-box">فتح الشحنة: لا</div>
             <div className="label-mini-box">{label.itemsCount} قطع</div>
           </div>
 
           <div className="label-full label-desc-block">
-            <span className="label-k">وصف الشحنة | </span>
-            <span className="label-v">—</span>
+            <div className="label-kv">
+              <span className="label-k">وصف الشحنة | </span>
+              <span className="label-v">—</span>
+            </div>
+            <div className="label-kv">
+              <span className="label-k">الوزن | </span>
+              <span className="label-v">—</span>
+            </div>
+            <div className="label-kv">
+              <span className="label-k">عدد الوحدات | </span>
+              <span className="label-v">{label.itemsCount}</span>
+            </div>
           </div>
 
           <div className="label-footer-grid">
             <div className="label-footer-notes">
               <span className="label-k">ملاحظات | </span>
               {label.notes}
-            </div>
-            <div className="label-footer-meta" dir="ltr" style={{ unicodeBidi: "plaintext" }}>
-              Order ref: {shipmentId.slice(0, 8)}…
             </div>
           </div>
 
@@ -277,21 +284,6 @@ export function ShipmentLabelPrintPage() {
               <svg ref={svgSmallRef} role="img" aria-label="Tracking barcode" />
               <div dir="ltr" style={{ fontSize: 9, fontWeight: 600, textAlign: "center", unicodeBidi: "plaintext" }}>
                 {numericTail(label.trackingNumber)}
-              </div>
-            </div>
-            <div style={{ alignSelf: "end", textAlign: "end" }} dir="ltr">
-              <div
-                style={{
-                  background: "#333",
-                  color: "#fff",
-                  fontSize: 8,
-                  fontWeight: 700,
-                  padding: "4px 6px",
-                  marginBottom: 4,
-                  display: "inline-block",
-                }}
-              >
-                {label.warehouseName !== "—" ? label.warehouseName.slice(0, 14) : "—"}
               </div>
             </div>
           </div>

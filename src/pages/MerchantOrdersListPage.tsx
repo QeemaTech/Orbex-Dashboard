@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { Boxes } from "react-lucid"
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
@@ -8,10 +8,12 @@ import {
   downloadMerchantOrdersImportTemplate,
   getDashboardKpis,
   importMerchantOrdersExcel,
+  listPendingMerchantOrderImports,
   listShipments,
   merchantOrderBatchId,
 } from "@/api/merchant-orders-api"
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
+import { listMerchants } from "@/api/merchants-api"
 import { ApiError, formatApiValidationDetails } from "@/api/client"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
@@ -33,8 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { SelectMerchantImportModal } from "@/features/merchant-orders/components/SelectMerchantImportModal"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
-import { useAuth } from "@/lib/auth-context"
+import { isMerchantUser, useAuth } from "@/lib/auth-context"
 
 function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
@@ -53,7 +56,6 @@ function formatEGP(amountStr: string | undefined, locale: string) {
 
 export function MerchantOrdersListPage() {
   const { t, i18n } = useTranslation()
-  const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
   const locale = resolveNumberLocale(i18n.language)
@@ -62,6 +64,10 @@ export function MerchantOrdersListPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [isImporting, setIsImporting] = useState(false)
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
+  const [isMerchantPickerOpen, setIsMerchantPickerOpen] = useState(false)
+  const [selectedMerchantId, setSelectedMerchantId] = useState("")
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null)
+  const [pickupDate, setPickupDate] = useState("")
   const [importFeedback, setImportFeedback] = useState<{
     type: "success" | "error"
     message: string
@@ -142,11 +148,24 @@ export function MerchantOrdersListPage() {
     Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
   )
 
-  const batchPipelineBreakdown = kpiQuery.data?.transferStatusBreakdown ?? []
+  const batchPipelineBreakdown = useMemo(() => {
+    const rows = kpiQuery.data?.transferStatusBreakdown ?? []
+    const priority = ["PENDING_CONFIRMATION", "PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
+    const rank = new Map(priority.map((status, idx) => [status, idx]))
+    return [...rows].sort((a, b) => {
+      const aRank = rank.get(String(a.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
+      const bRank = rank.get(String(b.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
+      if (aRank !== bRank) return aRank - bRank
+      return b.count - a.count
+    })
+  }, [kpiQuery.data?.transferStatusBreakdown])
   const totals = kpiQuery.data?.totals
   const canImportMerchantOrders =
     user?.role === "ADMIN" ||
     !!user?.permissions?.includes("merchant_orders.create")
+  const canViewPendingConfirmations =
+    user?.role === "ADMIN" || !!user?.permissions?.includes("merchant_orders.confirm")
+  const merchantContext = isMerchantUser(user)
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
@@ -158,14 +177,18 @@ export function MerchantOrdersListPage() {
     void navigate(`${detailPrefix}/${encodeURIComponent(batchId)}`)
   }
 
-  const refreshOrdersData = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: listQueryKey }),
-      queryClient.invalidateQueries({
-        queryKey: ["dashboard-kpis", "shipments-list", token, warehouseId] as const,
-      }),
-    ])
-  }, [listQueryKey, queryClient, token, warehouseId])
+  const pendingImportsQuery = useQuery({
+    queryKey: ["merchant-order-pending-imports", token],
+    queryFn: () => listPendingMerchantOrderImports({ token }),
+    enabled: !!token && canViewPendingConfirmations,
+  })
+
+  const pendingRows = useMemo(() => {
+    if (!canViewPendingConfirmations || page !== 1) return []
+    return pendingImportsQuery.data?.items ?? []
+  }, [canViewPendingConfirmations, page, pendingImportsQuery.data?.items])
+
+  const totalRowsForPagination = (shipmentsQuery.data?.total ?? 0) + pendingRows.length
 
   const onDownloadTemplate = useCallback(async () => {
     if (!token || isDownloadingTemplate) return
@@ -189,29 +212,33 @@ export function MerchantOrdersListPage() {
     }
   }, [isDownloadingTemplate, t, token])
 
-  const onImportClick = useCallback(() => {
-    if (!token || isImporting) return
-    fileInputRef.current?.click()
-  }, [isImporting, token])
+  const merchantsQuery = useQuery({
+    queryKey: ["merchants-import-options", token],
+    queryFn: () => listMerchants({ token, page: 1, pageSize: 100 }),
+    enabled: !!token && canImportMerchantOrders && !merchantContext,
+  })
+  const merchantsErrorMessage =
+    merchantsQuery.error instanceof Error ? merchantsQuery.error.message : null
 
-  const onFileSelected = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      event.target.value = ""
-      if (!file || !token) return
-
+  const performImport = useCallback(
+    async (file: File, merchantId: string | undefined, importPickupDate: string) => {
       setImportFeedback(null)
       setIsImporting(true)
       try {
         const result = await importMerchantOrdersExcel({
           token,
           file,
-          shipment: {},
+          shipment: {
+            ...(merchantId ? { merchantId } : {}),
+            pickupDate: new Date(`${importPickupDate}T00:00:00.000Z`).toISOString(),
+          },
         })
-        await refreshOrdersData()
         setImportFeedback({
           type: "success",
-          message: t("merchantOrdersList.importSuccess", { count: result.orderCount }),
+          message: t("merchantOrdersList.importQueuedSuccess", {
+            count: result.orderCount,
+            defaultValue: "Import queued for confirmation ({{count}} shipments).",
+          }),
         })
       } catch (err) {
         if (err instanceof ApiError) {
@@ -227,8 +254,51 @@ export function MerchantOrdersListPage() {
         setIsImporting(false)
       }
     },
-    [refreshOrdersData, t, token],
+    [t, token],
   )
+
+  const onImportClick = useCallback(() => {
+    if (!token || isImporting) return
+    fileInputRef.current?.click()
+  }, [isImporting, token])
+
+  const onFileSelected = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      event.target.value = ""
+      if (!file || !token) return
+
+      setImportFeedback(null)
+      setPendingImportFile(file)
+      setSelectedMerchantId("")
+      const today = new Date().toISOString().slice(0, 10)
+      setPickupDate(today)
+      setIsMerchantPickerOpen(true)
+    },
+    [performImport, token],
+  )
+
+  const onCancelMerchantPick = useCallback(() => {
+    if (isImporting) return
+    setIsMerchantPickerOpen(false)
+    setPendingImportFile(null)
+    setSelectedMerchantId("")
+    setPickupDate("")
+  }, [isImporting])
+
+  const onConfirmMerchantPick = useCallback(async () => {
+    if (!pendingImportFile || isImporting || !pickupDate) return
+    if (!merchantContext && !selectedMerchantId) return
+    await performImport(
+      pendingImportFile,
+      merchantContext ? undefined : selectedMerchantId,
+      pickupDate,
+    )
+    setIsMerchantPickerOpen(false)
+    setPendingImportFile(null)
+    setSelectedMerchantId("")
+    setPickupDate("")
+  }, [isImporting, merchantContext, pendingImportFile, performImport, pickupDate, selectedMerchantId])
 
   return (
     <Layout title={t("merchantOrdersList.pageTitle")}>
@@ -348,6 +418,11 @@ export function MerchantOrdersListPage() {
                 {(shipmentsQuery.error as Error).message}
               </p>
             ) : null}
+            {pendingImportsQuery.error ? (
+              <p className="text-destructive text-sm">
+                {(pendingImportsQuery.error as Error).message}
+              </p>
+            ) : null}
 
             {shipmentsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
@@ -359,7 +434,9 @@ export function MerchantOrdersListPage() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead>{t("merchantOrdersList.colMerchant")}</TableHead>
-                      <TableHead>{t("merchantOrdersList.colWarehouse")}</TableHead>
+                      {merchantContext ? null : (
+                        <TableHead>{t("merchantOrdersList.colWarehouse")}</TableHead>
+                      )}
                       <TableHead className="text-end tabular-nums">
                         {t("merchantOrdersList.colOrderCount")}
                       </TableHead>
@@ -370,6 +447,32 @@ export function MerchantOrdersListPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {pendingRows.map((row) => (
+                      <TableRow
+                        key={`pending-${row.id}`}
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => void navigate("/merchant-orders/pending-imports")}
+                      >
+                        <TableCell className="font-medium">
+                          {row.merchantName ?? "—"}
+                        </TableCell>
+                        {merchantContext ? null : (
+                          <TableCell className="text-muted-foreground">—</TableCell>
+                        )}
+                        <TableCell className="text-end tabular-nums">
+                          {row.rowCount ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">—</TableCell>
+                        <TableCell>
+                          <MerchantBatchStatusWithWarehouse
+                            transferStatus="PENDING_CONFIRMATION"
+                            assignedWarehouseId={undefined}
+                            assignedWarehouseName={undefined}
+                            contextWarehouseId={user?.warehouseId}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
                     {shipmentsQuery.data.shipments.map((row, idx) => (
                       <TableRow
                         key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
@@ -379,9 +482,11 @@ export function MerchantOrdersListPage() {
                         <TableCell className="font-medium">
                           {row.merchant?.displayName ?? "—"}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {row.assignedWarehouse?.name ?? "—"}
-                        </TableCell>
+                        {merchantContext ? null : (
+                          <TableCell className="text-muted-foreground">
+                            {row.assignedWarehouse?.name ?? "—"}
+                          </TableCell>
+                        )}
                         <TableCell className="text-end tabular-nums">
                           {row.orderCount ?? "—"}
                         </TableCell>
@@ -392,7 +497,9 @@ export function MerchantOrdersListPage() {
                           <MerchantBatchStatusWithWarehouse
                             transferStatus={row.transferStatus}
                             assignedWarehouseId={row.assignedWarehouse?.id}
-                            assignedWarehouseName={row.assignedWarehouse?.name}
+                            assignedWarehouseName={
+                              merchantContext ? undefined : row.assignedWarehouse?.name
+                            }
                             contextWarehouseId={user?.warehouseId}
                           />
                         </TableCell>
@@ -406,7 +513,7 @@ export function MerchantOrdersListPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-border/60 border-t pt-4">
               <p className="text-muted-foreground text-sm">
                 {t("cs.pagination.summary", {
-                  total: shipmentsQuery.data?.total ?? 0,
+                  total: totalRowsForPagination,
                   page,
                 })}
               </p>
@@ -434,6 +541,22 @@ export function MerchantOrdersListPage() {
           </CardContent>
         </Card>
       </div>
+      <SelectMerchantImportModal
+        open={isMerchantPickerOpen}
+        requireMerchantSelection={!merchantContext}
+        merchants={merchantsQuery.data?.merchants ?? []}
+        selectedMerchantId={selectedMerchantId}
+        pickupDate={pickupDate}
+        isLoadingMerchants={merchantsQuery.isLoading}
+        merchantsErrorMessage={merchantsErrorMessage}
+        isSubmitting={isImporting}
+        onMerchantChange={setSelectedMerchantId}
+        onPickupDateChange={setPickupDate}
+        onCancel={onCancelMerchantPick}
+        onConfirm={() => {
+          void onConfirmMerchantPick()
+        }}
+      />
     </Layout>
   )
 }

@@ -30,7 +30,7 @@ import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeli
 import { WarehouseShipmentOrdersTable } from "@/features/warehouse/components/WarehouseShipmentOrdersTable"
 import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labels"
 import type { AuthUser } from "@/lib/auth-context"
-import { useAuth } from "@/lib/auth-context"
+import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
 import { isWarehouseSiteAdmin, isWarehouseSiteStaff } from "@/lib/warehouse-access"
 import { printerService } from "@/services/printer.service"
@@ -80,6 +80,7 @@ export function MerchantOrderDetailsPage() {
 
   const isWarehouseRoute = isWarehouseScopedMerchantOrderPath(location.pathname)
   const isCsRoute = location.pathname.startsWith("/cs/")
+  const merchantContext = isMerchantUser(user)
   const statusPerspective = resolvePerspective(user)
   const hubPageContextWarehouseId =
     isWarehouseRoute && warehouseId.trim()
@@ -237,7 +238,9 @@ export function MerchantOrderDetailsPage() {
                         <MerchantBatchStatusWithWarehouse
                           transferStatus={q.data.transferStatus}
                           assignedWarehouseId={q.data.assignedWarehouse?.id}
-                          assignedWarehouseName={q.data.assignedWarehouse?.name}
+                          assignedWarehouseName={
+                            merchantContext ? undefined : q.data.assignedWarehouse?.name
+                          }
                           contextWarehouseId={hubPageContextWarehouseId}
                         />
                       </p>
@@ -272,16 +275,20 @@ export function MerchantOrderDetailsPage() {
                         <strong>{t("cs.table.brand")}:</strong>{" "}
                         {q.data.merchant?.businessName || "—"}
                       </p>
-                      <p>
-                        <strong>{t("merchantOrders.detail.assignedWarehouse")}:</strong>{" "}
-                        {q.data.assignedWarehouse?.name ?? "—"}
-                      </p>
+                      {merchantContext ? null : (
+                        <p>
+                          <strong>{t("merchantOrders.detail.assignedWarehouse")}:</strong>{" "}
+                          {q.data.assignedWarehouse?.name ?? "—"}
+                        </p>
+                      )}
                       <p className="flex flex-wrap items-center gap-2">
                         <strong>{t("warehouse.table.batchPipelineStatus")}:</strong>{" "}
                         <MerchantBatchStatusWithWarehouse
                           transferStatus={q.data.transferStatus}
                           assignedWarehouseId={q.data.assignedWarehouse?.id}
-                          assignedWarehouseName={q.data.assignedWarehouse?.name}
+                          assignedWarehouseName={
+                            merchantContext ? undefined : q.data.assignedWarehouse?.name
+                          }
                           contextWarehouseId={hubPageContextWarehouseId}
                         />
                       </p>

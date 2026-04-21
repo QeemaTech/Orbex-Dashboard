@@ -32,6 +32,94 @@ import { permissionCategory, permissionLabel } from "@/lib/rbac-permission-i18n"
 import { showToast } from "@/lib/toast"
 
 type RoleFormMode = "create" | "edit"
+type TranslateFn = ReturnType<typeof useTranslation>["t"]
+
+function shortId(value: string | null | undefined): string {
+  if (!value) return "—"
+  return value.slice(0, 8)
+}
+
+function formatAuditAction(t: TranslateFn, action: string): string {
+  const key = `rbac.audit.actions.${action}`
+  const translated = t(key)
+  return translated === key ? action : translated
+}
+
+function formatAuditTargetType(t: TranslateFn, targetType: string): string {
+  const key = `rbac.audit.targets.${targetType}`
+  const translated = t(key)
+  return translated === key ? targetType : translated
+}
+
+function formatAuditActor(t: TranslateFn, entry: { actor?: { fullName: string; email: string } | null; actorUserId: string | null }): string {
+  if (entry.actor?.fullName) return entry.actor.fullName
+  if (entry.actor?.email) return entry.actor.email
+  if (entry.actorUserId) return `${t("rbac.audit.fallback.userIdPrefix")} ${shortId(entry.actorUserId)}`
+  return "—"
+}
+
+function formatAuditTarget(
+  t: TranslateFn,
+  entry: {
+    targetType: string
+    targetId: string | null
+    target?: { label: string | null; subtitle: string | null } | null
+  },
+): string {
+  const typeLabel = formatAuditTargetType(t, entry.targetType)
+  if (entry.target?.label) {
+    if (entry.target.subtitle) return `${typeLabel}: ${entry.target.label} (${entry.target.subtitle})`
+    return `${typeLabel}: ${entry.target.label}`
+  }
+  if (entry.targetId) return `${typeLabel} (${shortId(entry.targetId)})`
+  return typeLabel
+}
+
+function formatAuditDiff(
+  t: TranslateFn,
+  diff: unknown,
+  rolesById: Map<string, RoleRow>,
+  language: string,
+): string {
+  if (!diff || typeof diff !== "object" || Array.isArray(diff)) return "—"
+  const record = diff as Record<string, unknown>
+  if (Array.isArray(record.permissions)) {
+    return t("rbac.audit.diffSummary.permissionsCount", { count: record.permissions.length })
+  }
+  if (typeof record.roleId === "string") {
+    const role = rolesById.get(record.roleId)
+    if (role) return t("rbac.audit.diffSummary.role", { role: role.displayName })
+    return t("rbac.audit.diffSummary.roleId", { id: shortId(record.roleId) })
+  }
+  if (
+    typeof record.name === "string" ||
+    typeof record.nameAr === "string" ||
+    typeof record.description === "string" ||
+    typeof record.descriptionAr === "string"
+  ) {
+    const parts: string[] = []
+    const name = typeof record.name === "string" ? record.name.trim() : ""
+    const nameAr = typeof record.nameAr === "string" ? record.nameAr.trim() : ""
+    const description = typeof record.description === "string" ? record.description.trim() : ""
+    const descriptionAr = typeof record.descriptionAr === "string" ? record.descriptionAr.trim() : ""
+
+    const prefersArabic = language.startsWith("ar")
+    const displayName = prefersArabic ? (nameAr || name) : (name || nameAr)
+    const displayDescription = prefersArabic
+      ? (descriptionAr || description)
+      : (description || descriptionAr)
+
+    if (displayName) {
+      parts.push(t("rbac.audit.diffSummary.displayName", { value: displayName }))
+    }
+    if (displayDescription) {
+      parts.push(t("rbac.audit.diffSummary.displayDescription", { value: displayDescription }))
+    }
+    if (parts.length > 0) return parts.join(" | ")
+  }
+  const preview = JSON.stringify(record)
+  return preview && preview.length > 120 ? `${preview.slice(0, 120)}...` : (preview || "—")
+}
 
 function RoleFormDialog({
   open,
@@ -299,6 +387,7 @@ export function RolesPage() {
 
   const perms = permissionsQuery.data ?? []
   const roles = rolesQuery.data ?? []
+  const rolesById = new Map(roles.map((r) => [r.id, r]))
 
   const systemCount = roles.filter((r) => r.isSystem).length
 
@@ -454,16 +543,15 @@ export function RolesPage() {
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(e.createdAt).toLocaleString()}
                         </TableCell>
-                        <TableCell className="font-medium">{e.action}</TableCell>
+                        <TableCell className="font-medium">{formatAuditAction(t, e.action)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {e.targetType}
-                          {e.targetId ? ` (${e.targetId.slice(0, 8)})` : ""}
+                          {formatAuditTarget(t, e)}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {e.actorUserId ?? "—"}
+                          {formatAuditActor(t, e)}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground max-w-[240px] truncate">
-                          {e.diffJson ? JSON.stringify(e.diffJson) : "—"}
+                        <TableCell className="text-xs text-muted-foreground max-w-[360px] whitespace-normal break-words">
+                          {formatAuditDiff(t, e.diffJson, rolesById, i18n.language)}
                         </TableCell>
                       </TableRow>
                     ))}

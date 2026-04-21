@@ -61,6 +61,8 @@ export type CsShipmentRow = {
   productType: string
   /** Package / product description (nullable from API). */
   description?: string | null
+  weightGrams?: number
+  itemsCount?: number
   status: string
   subStatus: string
   paymentStatus: string
@@ -249,6 +251,8 @@ export type ShipmentOrderRow = {
   notes: string | null
   productType: string
   description?: string | null
+  weightGrams?: number
+  itemsCount?: number
   deliveryCourierId: string | null
   deliveryCourier?: {
     id: string
@@ -804,14 +808,32 @@ export type MerchantOrderImportMeta = {
   merchantId?: string
   regionId?: string | null
   notes?: string | null
-  trackingNumber?: string | null
+  pickupDate: string
 }
 
 export type MerchantOrderImportResponse = {
-  shipment: {
+  pendingImport: {
     id: string
   }
   orderCount: number
+}
+
+export type PendingMerchantOrderImport = {
+  id: string
+  merchantId: string
+  merchantName: string
+  merchantPhone: string
+  merchantEmail: string | null
+  merchantBusinessName: string
+  merchantPickupAddress: string | null
+  merchantPickupGovernorate: string | null
+  fileName: string
+  rowCount: number
+  pickupDate: string
+  status: string
+  createdAt: string
+  createdByUserId: string | null
+  createdByName: string | null
 }
 
 export async function importMerchantOrdersExcel(params: {
@@ -835,7 +857,7 @@ export async function importMerchantOrdersExcel(params: {
   })
 
   if (res.status === 204) {
-    return { shipment: { id: "" }, orderCount: 0 }
+    return { pendingImport: { id: "" }, orderCount: 0 }
   }
 
   const text = await res.text()
@@ -864,6 +886,45 @@ export async function importMerchantOrdersExcel(params: {
   }
 
   return data as MerchantOrderImportResponse
+}
+
+export async function listPendingMerchantOrderImports(params: {
+  token: string
+}): Promise<{ items: PendingMerchantOrderImport[] }> {
+  return apiFetch<{ items: PendingMerchantOrderImport[] }>(
+    "/api/merchant-orders/pending-imports",
+    {
+      token: params.token,
+    },
+  )
+}
+
+export async function confirmPendingMerchantOrderImport(params: {
+  token: string
+  pendingImportId: string
+}): Promise<{ shipment: { id: string }; orderCount: number }> {
+  return apiFetch<{ shipment: { id: string }; orderCount: number }>(
+    `/api/merchant-orders/pending-imports/${params.pendingImportId}/confirm`,
+    {
+      method: "POST",
+      token: params.token,
+    },
+  )
+}
+
+export async function rejectPendingMerchantOrderImport(params: {
+  token: string
+  pendingImportId: string
+  reason?: string | null
+}): Promise<{ id: string; status: string }> {
+  return apiFetch<{ id: string; status: string }>(
+    `/api/merchant-orders/pending-imports/${params.pendingImportId}/reject`,
+    {
+      method: "POST",
+      token: params.token,
+      body: JSON.stringify({ reason: params.reason ?? null }),
+    },
+  )
 }
 
 export async function downloadMerchantOrdersImportTemplate(params: {
@@ -901,4 +962,3 @@ export async function downloadMerchantOrdersImportTemplate(params: {
   }
   return res.blob()
 }
-

@@ -29,6 +29,8 @@ function badgeClass(kind: Kind, raw: string): string {
       return "border-cyan-300 bg-cyan-100 text-cyan-800 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300"
     if (s === "PENDING_PICKUP" || s === "PENDING")
       return "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+    if (s === "PENDING_CONFIRMATION")
+      return "border-violet-300 bg-violet-100 text-violet-800 dark:border-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
     if (s === "ON_THE_WAY_TO_WAREHOUSE")
       return "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
     if (s === "ASSIGNED")

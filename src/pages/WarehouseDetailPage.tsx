@@ -101,9 +101,9 @@ function formatDateTime(dateIso: string, locale: string): string {
   }).format(new Date(dateIso))
 }
 
-function toPercentFromMax(value: number, max: number) {
-  if (!Number.isFinite(value) || !Number.isFinite(max) || max <= 0) return 0
-  return Math.round((value / max) * 100)
+function toPercentFromTotal(value: number, total: number) {
+  if (!Number.isFinite(value) || !Number.isFinite(total) || total <= 0) return 0
+  return Math.round((value / total) * 100)
 }
 
 /** Minimal fields from scan-out merchant-order detail DTO (no API contract change). */
@@ -445,16 +445,7 @@ export function WarehouseDetailPage() {
     [standaloneQuery.data?.shipments],
   )
 
-  const maxShipmentStatusOnPage = useMemo(
-    () =>
-      Math.max(
-        1,
-        ...shipmentSnapshotStatusCards.map(
-          (c) => shipmentStatusCountsOnPage[c.status] ?? 0,
-        ),
-      ),
-    [shipmentStatusCountsOnPage],
-  )
+  const shipmentHubTotal = standaloneQuery.data?.total ?? 0
 
   const refreshData = useCallback(async () => {
     await Promise.all([
@@ -636,7 +627,7 @@ export function WarehouseDetailPage() {
   const periodStats = stats?.periodMetrics
   const lifetimeStats = stats?.lifetimeMetrics
   const periodStatValues = transferStatCards.map((c) => periodStats?.[c.statKey] ?? 0)
-  const maxPeriodStat = Math.max(...periodStatValues, 0)
+  const totalPeriodStat = periodStatValues.reduce((sum, value) => sum + value, 0)
 
   const periodRangeLabel =
     stats?.period != null
@@ -929,7 +920,7 @@ export function WarehouseDetailPage() {
                   key={c.statKey}
                   title={t(c.titleI18nKey)}
                   value={periodStats?.[c.statKey] ?? 0}
-                  percentage={toPercentFromMax(periodStats?.[c.statKey] ?? 0, maxPeriodStat)}
+                  percentage={toPercentFromTotal(periodStats?.[c.statKey] ?? 0, totalPeriodStat)}
                   icon={c.icon}
                   accent={c.accent}
                   secondaryValue={lifetimeStats?.[c.statKey] ?? 0}
@@ -964,7 +955,7 @@ export function WarehouseDetailPage() {
                     key={c.status}
                     title={t(c.titleI18nKey)}
                     value={v}
-                    percentage={toPercentFromMax(v, maxShipmentStatusOnPage)}
+                    percentage={toPercentFromTotal(v, shipmentHubTotal)}
                     icon={c.icon}
                     accent={c.accent}
                   />

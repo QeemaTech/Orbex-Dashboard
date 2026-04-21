@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { showToast } from "@/lib/toast"
-import { useAuth } from "@/lib/auth-context"
+import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { AssignShipmentTaskModal } from "@/features/shipments/components/AssignShipmentTaskModal"
 
@@ -51,6 +51,7 @@ export function WarehouseShipmentOrdersTable({
 }: Props) {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const merchantContext = isMerchantUser(user)
   const navigate = useNavigate()
   const location = useLocation()
   const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/shipments" : "/shipments"
@@ -243,7 +244,9 @@ export function WarehouseShipmentOrdersTable({
                       <OrderDeliveryStatusWithWarehouse
                         status={p.status}
                         locationWarehouseId={p.currentWarehouseId}
-                        locationWarehouseName={p.currentWarehouse?.name}
+                        locationWarehouseName={
+                          merchantContext ? undefined : p.currentWarehouse?.name
+                        }
                         contextWarehouseId={hubContextWarehouseId}
                       />
                     </TableCell>

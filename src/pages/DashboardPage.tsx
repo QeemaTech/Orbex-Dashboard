@@ -93,10 +93,14 @@ export function DashboardPage() {
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const isMerchantUser = !!user?.merchantId
+  const merchantId = user?.merchantId ?? undefined
 
-  const canReadMerchantOrderKpis = !!token && hasPermission(user, "merchant_orders.read")
-  const canListUsers = !!token && hasPermission(user, "users.read")
-  const canListWarehouses = !!token && hasPermission(user, "warehouses.read")
+  const canReadMerchantOrderKpis =
+    !!token &&
+    (hasPermission(user, "merchant_orders.read") || hasPermission(user, "dashboard.view"))
+  const canListUsers = !!token && !isMerchantUser && hasPermission(user, "users.read")
+  const canListWarehouses = !!token && !isMerchantUser && hasPermission(user, "warehouses.read")
 
   const warehousesPreview = useQuery({
     queryKey: ["dashboard-warehouse-sites", token],
@@ -123,16 +127,28 @@ export function DashboardPage() {
   const effectiveTrendDays = trendDays ?? 14
 
   const kpiQuery = useQuery({
-    queryKey: ["dashboard-kpis", "home", token, effectiveTrendDays, createdFrom, createdTo],
+    queryKey: [
+      "dashboard-kpis",
+      "home",
+      token,
+      merchantId ?? "",
+      effectiveTrendDays,
+      createdFrom,
+      createdTo,
+    ],
     queryFn: () =>
       getDashboardKpis({
         token,
+        merchantId: isMerchantUser ? merchantId : undefined,
         recentTake: 8,
         trendDays: createdFrom ? undefined : effectiveTrendDays,
         createdFrom: createdFrom,
         createdTo: createdTo,
       }),
-    enabled: canReadMerchantOrderKpis && insightsSettingsQuery.isSuccess,
+    // If merchant cannot read INSIGHTS_PERIOD setting, still load KPIs using defaults.
+    enabled:
+      canReadMerchantOrderKpis &&
+      (insightsSettingsQuery.isSuccess || insightsSettingsQuery.isError),
   })
   const totals = kpiQuery.data?.totals
   const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []
@@ -174,6 +190,14 @@ export function DashboardPage() {
 
   const pieData = useMemo(() => {
     const rows = kpiQuery.data?.transferStatusBreakdown ?? []
+    const priority = ["PENDING_CONFIRMATION", "PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
+    const rank = new Map(priority.map((status, idx) => [status, idx]))
+    const sortedRows = [...rows].sort((a, b) => {
+      const aRank = rank.get(String(a.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
+      const bRank = rank.get(String(b.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
+      if (aRank !== bRank) return aRank - bRank
+      return b.count - a.count
+    })
     const palette = [
       "var(--primary)",
       "var(--success)",
@@ -183,7 +207,7 @@ export function DashboardPage() {
       "var(--chart-4)",
       "var(--muted-foreground)",
     ]
-    return rows.map((row, i) => ({
+    return sortedRows.map((row, i) => ({
       status: row.transferStatus,
       value: row.count,
       color: palette[i % palette.length] ?? "var(--primary)",
