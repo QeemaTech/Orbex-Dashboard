@@ -37,10 +37,10 @@ function renderZoneCouriersCell(z: DeliveryZoneRow) {
     z.couriers && z.couriers.length > 0
       ? z.couriers
       : z.courierIds.map((id) => ({
-          id,
-          fullName: null,
-          contactPhone: null,
-        }))
+        id,
+        fullName: null,
+        contactPhone: null,
+      }))
   if (rows.length === 0) {
     return <span className="text-muted-foreground">—</span>
   }
@@ -63,11 +63,11 @@ export function DeliveryZonesPage() {
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
   const qc = useQueryClient()
-  const canView = Boolean(user?.permissions?.includes("delivery_zones.read"))
-  const canCreate = Boolean(user?.permissions?.includes("delivery_zones.create"))
-  const canUpdate = Boolean(user?.permissions?.includes("delivery_zones.update"))
-  const canDelete = Boolean(user?.permissions?.includes("delivery_zones.delete"))
-  const canManageRows = canUpdate || canDelete
+  const canWrite = Boolean(
+    user?.permissions?.includes("delivery_zones.create") ||
+    user?.permissions?.includes("delivery_zones.update") ||
+    user?.permissions?.includes("delivery_zones.delete"),
+  )
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create")

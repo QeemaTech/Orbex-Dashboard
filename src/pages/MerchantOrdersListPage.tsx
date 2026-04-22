@@ -202,7 +202,7 @@ export function MerchantOrdersListPage() {
     ? "/cs/merchant-orders"
     : isWarehouseScopedRoute
       ? `/warehouses/${encodeURIComponent(routeWarehouseId)}/merchant-orders`
-    : "/merchant-orders"
+      : "/merchant-orders"
 
   const onRowClick = (row: CsShipmentRow) => {
     const batchId = merchantOrderBatchId(row)
@@ -311,7 +311,7 @@ export function MerchantOrdersListPage() {
       setPickupDate(today)
       setIsMerchantPickerOpen(true)
     },
-    [performImport, token],
+    [token],
   )
 
   const onCancelMerchantPick = useCallback(() => {
@@ -479,8 +479,8 @@ export function MerchantOrdersListPage() {
               <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
             ) : null}
 
-            {((isWarehouseScopedRoute && warehouseOrdersQuery.data) ||
-              (!isWarehouseScopedRoute && shipmentsQuery.data)) ? (
+            {(isWarehouseScopedRoute && warehouseOrdersQuery.data) ||
+            (!isWarehouseScopedRoute && shipmentsQuery.data) ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
                 <Table>
                   <TableHeader>
@@ -501,63 +501,61 @@ export function MerchantOrdersListPage() {
                   <TableBody>
                     {!isWarehouseScopedRoute &&
                       pendingRows.map((row) => (
-                      <TableRow
-                        key={`pending-${row.id}`}
-                        className="hover:bg-muted/50 cursor-pointer"
-                        onClick={() => void navigate("/merchant-orders/pending-imports")}
-                      >
-                        <TableCell className="font-medium">
-                          {row.merchantName ?? "—"}
-                        </TableCell>
-                        {merchantContext ? null : (
-                          <TableCell className="text-muted-foreground">—</TableCell>
-                        )}
-                        <TableCell className="text-end tabular-nums">
-                          {row.rowCount ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-end tabular-nums">—</TableCell>
-                        <TableCell>
-                          <MerchantBatchStatusWithWarehouse
-                            transferStatus="PENDING_CONFIRMATION"
-                            assignedWarehouseId={undefined}
-                            assignedWarehouseName={undefined}
-                            contextWarehouseId={user?.warehouseId}
-                          />
-                        </TableCell>
-                      </TableRow>
+                        <TableRow
+                          key={`pending-${row.id}`}
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => void navigate("/merchant-orders/pending-imports")}
+                        >
+                          <TableCell className="font-medium">{row.merchantName ?? "—"}</TableCell>
+                          {merchantContext ? null : (
+                            <TableCell className="text-muted-foreground">—</TableCell>
+                          )}
+                          <TableCell className="text-end tabular-nums">
+                            {row.rowCount ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-end tabular-nums">—</TableCell>
+                          <TableCell>
+                            <MerchantBatchStatusWithWarehouse
+                              transferStatus="PENDING_CONFIRMATION"
+                              assignedWarehouseId={undefined}
+                              assignedWarehouseName={undefined}
+                              contextWarehouseId={user?.warehouseId}
+                            />
+                          </TableCell>
+                        </TableRow>
                       ))}
                     {!isWarehouseScopedRoute &&
                       shipmentsQuery.data?.shipments.map((row, idx) => (
-                      <TableRow
-                        key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
-                        className="hover:bg-muted/50 cursor-pointer"
-                        onClick={() => onRowClick(row)}
-                      >
-                        <TableCell className="font-medium">
-                          {row.merchant?.displayName ?? "—"}
-                        </TableCell>
-                        {merchantContext ? null : (
-                          <TableCell className="text-muted-foreground">
-                            {row.assignedWarehouse?.name ?? "—"}
+                        <TableRow
+                          key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => onRowClick(row)}
+                        >
+                          <TableCell className="font-medium">
+                            {row.merchant?.displayName ?? "—"}
                           </TableCell>
-                        )}
-                        <TableCell className="text-end tabular-nums">
-                          {row.orderCount ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-end tabular-nums">
-                          {formatEGP(row.totalShipmentValue ?? row.shipmentValue, locale)}
-                        </TableCell>
-                        <TableCell>
-                          <MerchantBatchStatusWithWarehouse
-                            transferStatus={row.transferStatus}
-                            assignedWarehouseId={row.assignedWarehouse?.id}
-                            assignedWarehouseName={
-                              merchantContext ? undefined : row.assignedWarehouse?.name
-                            }
-                            contextWarehouseId={user?.warehouseId}
-                          />
-                        </TableCell>
-                      </TableRow>
+                          {merchantContext ? null : (
+                            <TableCell className="text-muted-foreground">
+                              {row.assignedWarehouse?.name ?? "—"}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-end tabular-nums">
+                            {row.orderCount ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-end tabular-nums">
+                            {formatEGP(row.totalShipmentValue ?? row.shipmentValue, locale)}
+                          </TableCell>
+                          <TableCell>
+                            <MerchantBatchStatusWithWarehouse
+                              transferStatus={row.transferStatus}
+                              assignedWarehouseId={row.assignedWarehouse?.id}
+                              assignedWarehouseName={
+                                merchantContext ? undefined : row.assignedWarehouse?.name
+                              }
+                              contextWarehouseId={user?.warehouseId}
+                            />
+                          </TableCell>
+                        </TableRow>
                       ))}
                     {isWarehouseScopedRoute &&
                       warehouseOrdersQuery.data?.merchantOrders.map(
@@ -574,6 +572,11 @@ export function MerchantOrdersListPage() {
                             <TableCell className="font-medium">
                               {row.merchant?.displayName ?? "—"}
                             </TableCell>
+                            {merchantContext ? null : (
+                              <TableCell className="text-muted-foreground">
+                                {row.assignedWarehouse?.name ?? "—"}
+                              </TableCell>
+                            )}
                             <TableCell className="text-end tabular-nums">
                               {row.orderCount ?? "—"}
                             </TableCell>
@@ -646,4 +649,3 @@ export function MerchantOrdersListPage() {
     </Layout>
   )
 }
-

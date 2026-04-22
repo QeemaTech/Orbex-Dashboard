@@ -804,6 +804,23 @@ export async function patchShipmentFields(
   })
 }
 
+export async function patchShipmentAssignedWarehouse(params: {
+  token: string
+  shipmentId: string
+  assignedWarehouseId: string | null
+}): Promise<CsShipmentRow> {
+  return apiFetch<CsShipmentRow>(
+    `/api/merchant-orders/${encodeURIComponent(params.shipmentId)}/warehouse`,
+    {
+      method: "PATCH",
+      token: params.token,
+      body: JSON.stringify({
+        assignedWarehouseId: params.assignedWarehouseId,
+      }),
+    },
+  )
+}
+
 export type MerchantOrderImportMeta = {
   merchantId?: string
   regionId?: string | null
