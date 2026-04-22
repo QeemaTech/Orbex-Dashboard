@@ -18,7 +18,7 @@ import {
 } from "recharts"
 
 import { Layout } from "@/components/layout/Layout"
-import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
+import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -58,12 +58,6 @@ function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
 }
 
-function clampTrendDays(days: number | undefined): number {
-  const fallback = 14
-  if (!Number.isFinite(days)) return fallback
-  return Math.max(1, Math.min(60, Number(days)))
-}
-
 function formatEGPFromDecimalString(amountStr: string | undefined, locale: string) {
   const n = Number.parseFloat(String(amountStr ?? "0").replace(/,/g, "").trim())
   if (!Number.isFinite(n)) return "—"
@@ -99,14 +93,10 @@ export function DashboardPage() {
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
-  const isMerchantUser = !!user?.merchantId
-  const merchantId = user?.merchantId ?? undefined
 
-  const canReadMerchantOrderKpis =
-    !!token &&
-    (hasPermission(user, "merchant_orders.read") || hasPermission(user, "dashboard.view"))
-  const canListUsers = !!token && !isMerchantUser && hasPermission(user, "users.read")
-  const canListWarehouses = !!token && !isMerchantUser && hasPermission(user, "warehouses.read")
+  const canReadMerchantOrderKpis = !!token && hasPermission(user, "merchant_orders.read")
+  const canListUsers = !!token && hasPermission(user, "users.read")
+  const canListWarehouses = !!token && hasPermission(user, "warehouses.read")
 
   const warehousesPreview = useQuery({
     queryKey: ["dashboard-warehouse-sites", token],
@@ -130,28 +120,19 @@ export function DashboardPage() {
   const trendDays = insightsPeriod?.mode === "LAST_PERIOD" ? insightsPeriod.lastDays : undefined
   const createdFrom = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.startDate : undefined
   const createdTo = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.endDate : undefined
-  const effectiveTrendDays = clampTrendDays(trendDays)
+  const effectiveTrendDays = trendDays ?? 14
 
   const kpiQuery = useQuery({
-    queryKey: [
-      "dashboard-kpis",
-      "home",
-      token,
-      merchantId ?? "",
-      effectiveTrendDays,
-      createdFrom,
-      createdTo,
-    ],
+    queryKey: ["dashboard-kpis", "home", token, effectiveTrendDays, createdFrom, createdTo],
     queryFn: () =>
       getDashboardKpis({
         token,
-        merchantId: isMerchantUser ? merchantId : undefined,
         recentTake: 8,
         trendDays: createdFrom ? undefined : effectiveTrendDays,
         createdFrom: createdFrom,
         createdTo: createdTo,
       }),
-    enabled: canReadMerchantOrderKpis,
+    enabled: canReadMerchantOrderKpis && insightsSettingsQuery.isSuccess,
   })
   const totals = kpiQuery.data?.totals
   const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []
@@ -193,44 +174,21 @@ export function DashboardPage() {
 
   const pieData = useMemo(() => {
     const rows = kpiQuery.data?.transferStatusBreakdown ?? []
-    const priority = ["PENDING_CONFIRMATION", "PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
-    const rank = new Map(priority.map((status, idx) => [status, idx]))
-    const statusColors = new Map<string, string>([
-      ["PENDING_CONFIRMATION", "#2563eb"],
-      ["PENDING_PICKUP", "#f97316"],
-      ["PICKED_UP", "#10b981"],
-      ["IN_WAREHOUSE", "#8b5cf6"],
-    ])
-    const sortedRows = [...rows].sort((a, b) => {
-      const aRank = rank.get(String(a.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
-      const bRank = rank.get(String(b.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
-      if (aRank !== bRank) return aRank - bRank
-      return b.count - a.count
-    })
-    const usedColors = new Set<string>(statusColors.values())
-    let unknownStatusColorIndex = 0
-    return sortedRows.map((row) => {
-      const normalizedStatus = String(row.transferStatus ?? "").trim().toUpperCase()
-      let color = statusColors.get(normalizedStatus)
-
-      // Ensure every status slice gets a unique color.
-      if (!color) {
-        do {
-          const hue = (unknownStatusColorIndex * 53) % 360
-          const lightness = 46 + (unknownStatusColorIndex % 3) * 8
-          color = `hsl(${hue} 72% ${lightness}%)`
-          unknownStatusColorIndex += 1
-        } while (usedColors.has(color))
-      }
-
-      usedColors.add(color)
-      return {
-        status: row.transferStatus,
-        value: row.count,
-        color,
-        label: backendMerchantOrderBatchLabel(t, row.transferStatus),
-      }
-    })
+    const palette = [
+      "var(--primary)",
+      "var(--success)",
+      "var(--warning)",
+      "var(--chart-2)",
+      "var(--chart-3)",
+      "var(--chart-4)",
+      "var(--muted-foreground)",
+    ]
+    return rows.map((row, i) => ({
+      status: row.transferStatus,
+      value: row.count,
+      color: palette[i % palette.length] ?? "var(--primary)",
+      label: backendMerchantOrderBatchLabel(t, row.transferStatus),
+    }))
   }, [kpiQuery.data?.transferStatusBreakdown, t])
 
   const insightGridClass = "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-4"
@@ -526,11 +484,9 @@ export function DashboardPage() {
                         {row.assignedWarehouse?.name ?? "—"}
                       </TableCell>
                       <TableCell>
-                        <MerchantBatchStatusWithWarehouse
-                          transferStatus={row.transferStatus}
-                          assignedWarehouseId={row.assignedWarehouse?.id}
-                          assignedWarehouseName={row.assignedWarehouse?.name}
-                          contextWarehouseId={user?.warehouseId}
+                        <BackendStatusBadge
+                          kind="merchantOrderBatch"
+                          value={row.transferStatus ?? ""}
                         />
                       </TableCell>
                       <TableCell className="text-end tabular-nums">

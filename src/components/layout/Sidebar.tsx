@@ -43,13 +43,6 @@ const adminNavConfig = [
   { to: "/rbac/roles", labelKey: "nav.roles", icon: ShieldCheck, end: false, perm: "roles.read" },
   { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
-  {
-    to: "/merchant-orders/pending-imports",
-    labelKey: "nav.merchantOrderConfirmations",
-    icon: Boxes,
-    end: false,
-    perm: "merchant_orders.confirm",
-  },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
   {
     to: "/delivery-zones",
@@ -72,13 +65,6 @@ const adminNavConfig = [
 const customerServiceNavConfig = [
   { to: "/cs/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
   { to: "/cs/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
-  {
-    to: "/merchant-orders/pending-imports",
-    labelKey: "nav.merchantOrderConfirmations",
-    icon: Boxes,
-    end: false,
-    perm: "merchant_orders.confirm",
-  },
   { to: "/cs/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
 ] as const
 
@@ -183,8 +169,7 @@ export function Sidebar() {
                 perm: "delivery_zones.read" as const,
               },
             ].filter(({ perm }) => hasPerm(perm))
-          : adminNavConfig
-              .filter(({ perm }) => hasPerm(perm))
+          : adminNavConfig.filter(({ perm }) => hasPerm(perm))
 
   return (
     <aside
