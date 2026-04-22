@@ -91,13 +91,6 @@ const SLUG_TO_MANAGED_LEGACY: Record<string, ManagedStaffRole> = {
   accounts: "ACCOUNTS",
 }
 
-function managedStaffRoleFromFormSlug(slug: string): ManagedStaffRole {
-  const mapped = SLUG_TO_MANAGED_LEGACY[slug]
-  if (mapped) return mapped
-  if ((MANAGED_ROLES as readonly string[]).includes(slug)) return slug as ManagedStaffRole
-  return "WAREHOUSE"
-}
-
 type StatIcon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>
 
 const ROLE_STAT_CARD: Record<
@@ -200,7 +193,7 @@ function UserFormDialog({
           email: accountEmail.trim(),
           fullName: fullName.trim(),
           password,
-          role: managedStaffRoleFromFormSlug(role),
+          role,
           ...(selectedRole?.requiresWarehouse ? { warehouseId: warehouseId.trim() } : {}),
           ...(selectedRole?.requiresAdminWarehouse
             ? { adminWarehouseId: adminWarehouseId.trim() }
