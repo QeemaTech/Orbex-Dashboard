@@ -5,17 +5,22 @@ import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 
 import {
+  downloadMerchantOrdersImportTemplate,
   getDashboardKpis,
+  importMerchantOrdersExcel,
+  listPendingMerchantOrderImports,
   listShipments,
   merchantOrderBatchId,
   importOrdersFromExcel,
   downloadImportTemplate,
 } from "@/api/merchant-orders-api"
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
+import { listMerchants } from "@/api/merchants-api"
+import { ApiError, formatApiValidationDetails } from "@/api/client"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { listMerchants, type MerchantRow } from "@/api/merchants-api"
 import { Layout } from "@/components/layout/Layout"
-import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -43,7 +48,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
-import { useAuth } from "@/lib/auth-context"
+import { isMerchantUser, useAuth } from "@/lib/auth-context"
 
 function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
@@ -67,6 +72,17 @@ export function MerchantOrdersListPage() {
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
+  const [isMerchantPickerOpen, setIsMerchantPickerOpen] = useState(false)
+  const [selectedMerchantId, setSelectedMerchantId] = useState("")
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null)
+  const [pickupDate, setPickupDate] = useState("")
+  const [importFeedback, setImportFeedback] = useState<{
+    type: "success" | "error"
+    message: string
+  } | null>(null)
 
   const [searchParams, setSearchParams] = useSearchParams()
   const warehouseId = searchParams.get("warehouseId") ?? ""
@@ -143,8 +159,24 @@ export function MerchantOrdersListPage() {
     Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
   )
 
-  const batchPipelineBreakdown = kpiQuery.data?.transferStatusBreakdown ?? []
+  const batchPipelineBreakdown = useMemo(() => {
+    const rows = kpiQuery.data?.transferStatusBreakdown ?? []
+    const priority = ["PENDING_CONFIRMATION", "PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
+    const rank = new Map(priority.map((status, idx) => [status, idx]))
+    return [...rows].sort((a, b) => {
+      const aRank = rank.get(String(a.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
+      const bRank = rank.get(String(b.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
+      if (aRank !== bRank) return aRank - bRank
+      return b.count - a.count
+    })
+  }, [kpiQuery.data?.transferStatusBreakdown])
   const totals = kpiQuery.data?.totals
+  const canImportMerchantOrders =
+    user?.role === "ADMIN" ||
+    !!user?.permissions?.includes("merchant_orders.create")
+  const canViewPendingConfirmations =
+    user?.role === "ADMIN" || !!user?.permissions?.includes("merchant_orders.confirm")
+  const merchantContext = isMerchantUser(user)
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
@@ -267,6 +299,17 @@ export function MerchantOrdersListPage() {
             </Button>
           </div>
         </div>
+        {importFeedback ? (
+          <p
+            className={
+              importFeedback.type === "success"
+                ? "text-sm text-emerald-600"
+                : "text-destructive text-sm"
+            }
+          >
+            {importFeedback.message}
+          </p>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
@@ -301,6 +344,11 @@ export function MerchantOrdersListPage() {
                 {(shipmentsQuery.error as Error).message}
               </p>
             ) : null}
+            {pendingImportsQuery.error ? (
+              <p className="text-destructive text-sm">
+                {(pendingImportsQuery.error as Error).message}
+              </p>
+            ) : null}
 
             {shipmentsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
@@ -312,7 +360,9 @@ export function MerchantOrdersListPage() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead>{t("merchantOrdersList.colMerchant")}</TableHead>
-                      <TableHead>{t("merchantOrdersList.colWarehouse")}</TableHead>
+                      {merchantContext ? null : (
+                        <TableHead>{t("merchantOrdersList.colWarehouse")}</TableHead>
+                      )}
                       <TableHead className="text-end tabular-nums">
                         {t("merchantOrdersList.colOrderCount")}
                       </TableHead>
@@ -323,6 +373,32 @@ export function MerchantOrdersListPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {pendingRows.map((row) => (
+                      <TableRow
+                        key={`pending-${row.id}`}
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => void navigate("/merchant-orders/pending-imports")}
+                      >
+                        <TableCell className="font-medium">
+                          {row.merchantName ?? "—"}
+                        </TableCell>
+                        {merchantContext ? null : (
+                          <TableCell className="text-muted-foreground">—</TableCell>
+                        )}
+                        <TableCell className="text-end tabular-nums">
+                          {row.rowCount ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">—</TableCell>
+                        <TableCell>
+                          <MerchantBatchStatusWithWarehouse
+                            transferStatus="PENDING_CONFIRMATION"
+                            assignedWarehouseId={undefined}
+                            assignedWarehouseName={undefined}
+                            contextWarehouseId={user?.warehouseId}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
                     {shipmentsQuery.data.shipments.map((row, idx) => (
                       <TableRow
                         key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
@@ -332,9 +408,11 @@ export function MerchantOrdersListPage() {
                         <TableCell className="font-medium">
                           {row.merchant?.displayName ?? "—"}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {row.assignedWarehouse?.name ?? "—"}
-                        </TableCell>
+                        {merchantContext ? null : (
+                          <TableCell className="text-muted-foreground">
+                            {row.assignedWarehouse?.name ?? "—"}
+                          </TableCell>
+                        )}
                         <TableCell className="text-end tabular-nums">
                           {row.orderCount ?? "—"}
                         </TableCell>
@@ -342,9 +420,13 @@ export function MerchantOrdersListPage() {
                           {formatEGP(row.totalShipmentValue ?? row.shipmentValue, locale)}
                         </TableCell>
                         <TableCell>
-                          <BackendStatusBadge
-                            kind="merchantOrderBatch"
-                            value={row.transferStatus ?? ""}
+                          <MerchantBatchStatusWithWarehouse
+                            transferStatus={row.transferStatus}
+                            assignedWarehouseId={row.assignedWarehouse?.id}
+                            assignedWarehouseName={
+                              merchantContext ? undefined : row.assignedWarehouse?.name
+                            }
+                            contextWarehouseId={user?.warehouseId}
                           />
                         </TableCell>
                       </TableRow>
@@ -357,7 +439,7 @@ export function MerchantOrdersListPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-border/60 border-t pt-4">
               <p className="text-muted-foreground text-sm">
                 {t("cs.pagination.summary", {
-                  total: shipmentsQuery.data?.total ?? 0,
+                  total: totalRowsForPagination,
                   page,
                 })}
               </p>
@@ -448,6 +530,22 @@ export function MerchantOrdersListPage() {
           </DialogContent>
         </Dialog>
       </div>
+      <SelectMerchantImportModal
+        open={isMerchantPickerOpen}
+        requireMerchantSelection={!merchantContext}
+        merchants={merchantsQuery.data?.merchants ?? []}
+        selectedMerchantId={selectedMerchantId}
+        pickupDate={pickupDate}
+        isLoadingMerchants={merchantsQuery.isLoading}
+        merchantsErrorMessage={merchantsErrorMessage}
+        isSubmitting={isImporting}
+        onMerchantChange={setSelectedMerchantId}
+        onPickupDateChange={setPickupDate}
+        onCancel={onCancelMerchantPick}
+        onConfirm={() => {
+          void onConfirmMerchantPick()
+        }}
+      />
     </Layout>
   )
 }

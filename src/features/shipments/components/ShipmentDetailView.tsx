@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +13,9 @@ import {
   openWhatsAppTrackingMessage,
 } from "@/features/customer-service/lib/whatsapp"
 import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
+import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
+import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
+import { ShipmentTasksCard } from "@/features/shipments/components/ShipmentTasksCard"
 
 export type ShipmentDetailViewProps = {
   shipment: ShipmentOrderRow
@@ -20,6 +24,8 @@ export type ShipmentDetailViewProps = {
   merchantOrderDetailHref: string
   merchantOrderShipmentsHref: string
   variant?: "default" | "warehouse" | "cs"
+  /** Hub opened in the URL (e.g. `/warehouses/:warehouseId/shipments/...`) when line hub fields are missing from API. */
+  planTaskContextWarehouseId?: string
 }
 
 function resolveNumberLocale(language: string) {
@@ -39,9 +45,13 @@ function formatMoney(raw: string | null | undefined, locale: string) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <dt className="text-muted-foreground text-xs font-medium">{label}</dt>
-      <dd className="text-foreground text-sm font-medium">{value}</dd>
+    <div className="grid grid-cols-1 gap-1 rounded-md border px-3 py-2 sm:grid-cols-[minmax(160px,220px)_1fr] sm:items-start sm:gap-3 sm:px-4 sm:py-3">
+      <dt className="text-muted-foreground text-sm font-medium leading-5 sm:text-[0.95rem]">
+        {label}
+      </dt>
+      <dd className="text-foreground text-sm font-semibold leading-6 break-words sm:text-base">
+        {value}
+      </dd>
     </div>
   )
 }
@@ -53,9 +63,12 @@ export function ShipmentDetailView({
   merchantOrderDetailHref,
   merchantOrderShipmentsHref,
   variant = "default",
+  planTaskContextWarehouseId,
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
   const { user, accessToken } = useAuth()
+  const lineHubContextId =
+    planTaskContextWarehouseId?.trim() || user?.warehouseId || undefined
   const locale = resolveNumberLocale(i18n.language)
   const canPrintLabel = Boolean(user?.permissions?.includes("shipments.label"))
 
@@ -82,9 +95,15 @@ export function ShipmentDetailView({
         ? t("auth.loginError")
         : undefined
 
+  // Temporary fallback: use frontend label print page until network-direct printer path is stable.
   const openLegacyLabelPrint = () => {
     const href = `/shipments/${encodeURIComponent(shipment.id)}/print`
     window.open(href, "_blank", "noopener,noreferrer")
+  }
+
+  // Temporary behavior: redirect print action to legacy frontend flow.
+  const handlePrintLabel = async () => {
+    openLegacyLabelPrint()
   }
 
   return (
@@ -103,15 +122,17 @@ export function ShipmentDetailView({
                   ? shipment.trackingNumber
                   : t("shipments.detail.unnamedTracking")}
               </CardTitle>
-              <CardDescription className="font-mono text-xs">
-                {t("shipments.detail.shipmentId")}: {shipment.id}
-              </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-muted-foreground text-xs font-medium">
                 {t("shipments.columns.deliveryStatus")}
               </span>
-              <BackendStatusBadge kind="orderDelivery" value={shipment.status} />
+              <OrderDeliveryStatusWithWarehouse
+                status={shipment.status}
+                locationWarehouseId={shipment.currentWarehouseId}
+                locationWarehouseName={shipment.currentWarehouse?.name}
+                contextWarehouseId={lineHubContextId}
+              />
               <span className="text-muted-foreground text-xs font-medium">
                 {t("shipments.columns.paymentStatus")}
               </span>
@@ -121,11 +142,11 @@ export function ShipmentDetailView({
         </CardHeader>
         <div className="bg-border h-px w-full" />
         <CardContent className="space-y-6 pt-6">
-          <section className="space-y-3">
-            <h3 className="text-foreground text-sm font-semibold">
+          <section className="mx-auto w-full max-w-4xl space-y-3">
+            <h3 className="text-foreground text-base font-semibold sm:text-lg">
               {t("shipments.detail.sectionCustomer")}
             </h3>
-            <dl className="space-y-3">
+            <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
               <DetailRow label={t("adminOrders.colCustomer")} value={shipment.customer.customerName} />
               <DetailRow
                 label={t("adminOrders.colPhone")}
@@ -148,11 +169,11 @@ export function ShipmentDetailView({
             </dl>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-foreground text-sm font-semibold">
+          <section className="mx-auto w-full max-w-4xl space-y-3">
+            <h3 className="text-foreground text-base font-semibold sm:text-lg">
               {t("shipments.detail.sectionFinancial")}
             </h3>
-            <dl className="space-y-3">
+            <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
               <DetailRow label={t("adminOrders.colValue")} value={formatMoney(shipment.shipmentValue, locale)} />
               <DetailRow
                 label={t("shipments.detail.shippingFee")}
@@ -166,13 +187,17 @@ export function ShipmentDetailView({
             </dl>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-foreground text-sm font-semibold">
+          <section className="mx-auto w-full max-w-4xl space-y-3">
+            <h3 className="text-foreground text-base font-semibold sm:text-lg">
               {t("shipments.detail.sectionLogistics")}
             </h3>
-            <dl className="space-y-3">
+            <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
               <DetailRow
-                label={t("warehouse.table.courier", { defaultValue: "Courier" })}
+                label={t("warehouse.table.pickupCourier", { defaultValue: "Pickup courier" })}
+                value={shipment.pickupCourier?.fullName?.trim() || "—"}
+              />
+              <DetailRow
+                label={t("warehouse.table.courier", { defaultValue: "Delivery courier" })}
                 value={shipment.deliveryCourier?.fullName?.trim() || "—"}
               />
               <DetailRow
@@ -183,6 +208,27 @@ export function ShipmentDetailView({
               <DetailRow label={t("shipments.detail.updatedAt")} value={formatDateTime(shipment.updatedAt)} />
             </dl>
           </section>
+
+          {shipment.statusEvents && shipment.statusEvents.length > 0 && (
+            <section className="space-y-3">
+              <h3 className="text-foreground text-sm font-semibold">
+                {t("shipments.timeline.heading", { defaultValue: "Shipment Timeline" })}
+              </h3>
+              <ShipmentTimeline
+                events={shipment.statusEvents}
+                contextWarehouseId={lineHubContextId}
+              />
+            </section>
+          )}
+
+          {shipment.shipmentTasks && shipment.shipmentTasks.length > 0 && (
+            <section className="space-y-3">
+              <h3 className="text-foreground text-sm font-semibold">
+                {t("shipments.tasks.heading", { defaultValue: "Warehouse Tasks" })}
+              </h3>
+              <ShipmentTasksCard tasks={shipment.shipmentTasks} />
+            </section>
+          )}
 
           <div className="bg-border h-px w-full" />
 
@@ -202,11 +248,12 @@ export function ShipmentDetailView({
                 </Link>
               </Button>
               {hasTracking && canPrintLabel ? (
-                <Button type="button" variant="outline" size="sm" onClick={openLegacyLabelPrint}>
+                <Button type="button" variant="outline" size="sm" onClick={() => void handlePrintLabel()}>
                   <Printer className="mr-2 size-4" aria-hidden />
                   {t("shipments.detail.printLabel", { defaultValue: "Print label" })}
                 </Button>
               ) : null}
+              <ShipmentCsConfirmButton line={shipment} accessToken={accessToken} />
               <Button
                 type="button"
                 variant="outline"
@@ -255,7 +302,10 @@ export function ShipmentDetailView({
         </CardContent>
       </Card>
 
-      <PlanShipmentWarehouseTask shipment={shipment} />
+      <PlanShipmentWarehouseTask
+        shipment={shipment}
+        contextWarehouseId={planTaskContextWarehouseId}
+      />
     </div>
   )
 }

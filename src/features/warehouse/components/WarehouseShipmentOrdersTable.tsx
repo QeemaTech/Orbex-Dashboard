@@ -4,9 +4,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
-import { getShipmentById, getShipmentOrders } from "@/api/merchant-orders-api"
+import {
+  getShipmentById,
+  getShipmentOrders,
+  type ShipmentOrderRow,
+} from "@/api/merchant-orders-api"
 import { assignWarehouseShipment, getWarehouseCouriers } from "@/api/warehouse-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
+import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,6 +23,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { showToast } from "@/lib/toast"
+import { isMerchantUser, useAuth } from "@/lib/auth-context"
+import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
+import { AssignShipmentTaskModal } from "@/features/shipments/components/AssignShipmentTaskModal"
 
 const WAREHOUSE_COL_COUNT = 10
 const COMPACT_COL_COUNT = 6
@@ -25,6 +33,8 @@ const COMPACT_COL_COUNT = 6
 type Props = {
   token: string
   shipmentId: string
+  /** When set (warehouse merchant-order page), line detail opens with hub in URL for plan task context. */
+  warehouseId?: string
   /** Warehouse hub: full columns including assignment. Other routes: read-only compact list. */
   mode?: "warehouse" | "compact"
 }
@@ -36,9 +46,12 @@ type Props = {
 export function WarehouseShipmentOrdersTable({
   token,
   shipmentId,
+  warehouseId: warehouseIdProp,
   mode = "warehouse",
 }: Props) {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const merchantContext = isMerchantUser(user)
   const navigate = useNavigate()
   const location = useLocation()
   const ordersBase = location.pathname.startsWith("/cs/") ? "/cs/shipments" : "/shipments"
@@ -46,6 +59,7 @@ export function WarehouseShipmentOrdersTable({
   const [assignOrderId, setAssignOrderId] = useState("")
   const [assignCourierInput, setAssignCourierInput] = useState("")
   const [assignLeg, setAssignLeg] = useState<"delivery" | "pickup">("delivery")
+  const [taskModalShipment, setTaskModalShipment] = useState<ShipmentOrderRow | null>(null)
 
   const shipmentDetailQuery = useQuery({
     queryKey: ["shipment-detail-for-orders", shipmentId, token],
@@ -74,7 +88,7 @@ export function WarehouseShipmentOrdersTable({
   const assignMutation = useMutation({
     mutationFn: (payload: {
       shipmentId: string
-      orderId?: string
+      shipmentLineId?: string
       courierId: string
       leg?: "pickup" | "delivery"
     }) =>
@@ -83,7 +97,9 @@ export function WarehouseShipmentOrdersTable({
         shipmentId: payload.shipmentId,
         courierId: payload.courierId,
         leg: payload.leg,
-        ...(payload.orderId ? { orderId: payload.orderId } : {}),
+        ...(payload.shipmentLineId
+          ? { shipmentLineId: payload.shipmentLineId }
+          : {}),
       }),
     onSuccess: async () => {
       showToast(t("warehouse.feedback.assignmentSuccess"), "success")
@@ -119,11 +135,44 @@ export function WarehouseShipmentOrdersTable({
   if (!shipmentId) return null
 
   const goToOrder = (orderId: string) => {
+    if (
+      mode === "warehouse" &&
+      warehouseIdProp?.trim() &&
+      !location.pathname.startsWith("/cs/")
+    ) {
+      void navigate(
+        warehouseShipmentLineDetailPath(warehouseIdProp.trim(), orderId),
+      )
+      return
+    }
     void navigate(`${ordersBase}/${encodeURIComponent(orderId)}`)
   }
 
   const stopAssignClick = (e: MouseEvent<HTMLTableCellElement>) => {
     e.stopPropagation()
+  }
+
+  const hubContextWarehouseId =
+    warehouseIdProp?.trim() || user?.warehouseId || undefined
+
+  const handleTaskAssigned = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["orders", "list", shipmentId, token],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["shipment-detail", shipmentId, token],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["merchant-order", "detail", shipmentId, token],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["merchant-order", "shipments", shipmentId, token],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["shipment", "detail"],
+      }),
+    ])
   }
 
   return (
@@ -192,7 +241,14 @@ export function WarehouseShipmentOrdersTable({
                       </>
                     ) : null}
                     <TableCell className="text-xs">
-                      <BackendStatusBadge kind="orderDelivery" value={p.status} />
+                      <OrderDeliveryStatusWithWarehouse
+                        status={p.status}
+                        locationWarehouseId={p.currentWarehouseId}
+                        locationWarehouseName={
+                          merchantContext ? undefined : p.currentWarehouse?.name
+                        }
+                        contextWarehouseId={hubContextWarehouseId}
+                      />
                     </TableCell>
                     <TableCell className="text-xs">
                       <BackendStatusBadge kind="orderPayment" value={p.paymentStatus} />
@@ -262,11 +318,24 @@ export function WarehouseShipmentOrdersTable({
                                   shipmentId,
                                   courierId: assignCourierInput.trim(),
                                   leg: assignLeg,
-                                  ...(assignLeg === "delivery" ? { orderId: p.id } : {}),
+                                  ...(assignLeg === "delivery"
+                                    ? { shipmentLineId: p.id }
+                                    : {}),
                                 })
                               }
                             >
                               {t("warehouse.queue.assign")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs"
+                              onClick={() => setTaskModalShipment(p)}
+                            >
+                              {t("shipments.planTask.title", {
+                                defaultValue: "Assign a task",
+                              })}
                             </Button>
                           </div>
                         </TableCell>
@@ -279,6 +348,15 @@ export function WarehouseShipmentOrdersTable({
           </Table>
         </div>
       ) : null}
+      <AssignShipmentTaskModal
+        open={!!taskModalShipment}
+        token={token}
+        shipment={taskModalShipment}
+        onAssigned={handleTaskAssigned}
+        onOpenChange={(open) => {
+          if (!open) setTaskModalShipment(null)
+        }}
+      />
     </div>
   )
 }

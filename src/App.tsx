@@ -21,6 +21,7 @@ import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
 import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
 import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
+import { MerchantOrderPendingImportsPage } from "@/pages/MerchantOrderPendingImportsPage"
 import { ShipmentLabelPrintPage } from "@/pages/ShipmentLabelPrintPage"
 import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
 import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
@@ -31,6 +32,7 @@ import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { RolesPage } from "@/pages/RolesPage"
+import { SettingsPage } from "@/pages/SettingsPage"
 import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
 import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 
@@ -61,7 +63,7 @@ function ProtectedRole({
   const hasPermission =
     requiredPermissions?.every((p) => user.permissions?.includes(p)) ?? false
   if (!hasPermission && !allowed.includes(user.role)) {
-    return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
+    return <Navigate to={getDefaultDashboardRoute(user)} replace />
   }
   return <>{children}</>
 }
@@ -69,7 +71,7 @@ function ProtectedRole({
 function RootRedirect() {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
-  return <Navigate to={getDefaultDashboardRoute(user.role)} replace />
+  return <Navigate to={getDefaultDashboardRoute(user)} replace />
 }
 
 function RedirectWarehouseMerchantOrderShipmentsToDetail() {
@@ -77,17 +79,6 @@ function RedirectWarehouseMerchantOrderShipmentsToDetail() {
   return (
     <Navigate
       to={`${warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}#customer-orders`}
-      replace
-    />
-  )
-}
-
-/** Old bookmarks: `/warehouses/.../transfers/...` → `.../merchant-orders/...`. */
-function RedirectLegacyWarehouseTransfersToMerchantOrder() {
-  const { warehouseId = "", merchantOrderId = "" } = useParams()
-  return (
-    <Navigate
-      to={warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}
       replace
     />
   )
@@ -168,6 +159,19 @@ export default function App() {
           }
         />
         <Route
+          path="/merchant-orders/pending-imports"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "MERCHANT"]}
+                requiredPermissions={["merchant_orders.confirm"]}
+              >
+                <MerchantOrderPendingImportsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/merchant-orders/:merchantOrderId"
           element={
             <Protected>
@@ -223,6 +227,16 @@ export default function App() {
                 requiredPermissions={["users.read"]}
               >
                 <UsersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Protected>
+              <ProtectedRole allowed={["ADMIN"]} requiredPermissions={["users.write"]}>
+                <SettingsPage />
               </ProtectedRole>
             </Protected>
           }
@@ -298,6 +312,14 @@ export default function App() {
               >
                 <WarehouseDetailPage />
               </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/shipments/:shipmentId"
+          element={
+            <Protected>
+              <ShipmentLineDetailsPage />
             </Protected>
           }
         />

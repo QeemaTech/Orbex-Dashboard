@@ -22,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { canConfirmCsForShipmentLine } from "@/features/customer-service/lib/cs-confirm-eligibility"
 import {
   openWhatsApp,
   openWhatsAppTrackingMessage,
@@ -67,7 +68,11 @@ export function CsShipmentRowActions({
   const hasPhone = !!row.phonePrimary?.trim()
   const hasLocationLink = !!row.locationLink?.trim()
   const allowCustomerUi = showCustomerContact
-  const showConfirm = row.status === "PENDING" && row.subStatus === "NONE"
+  const showConfirm = canConfirmCsForShipmentLine({
+    status: row.status,
+    transferStatus: row.transferStatus,
+    csConfirmedAt: row.csConfirmedAt,
+  })
   const batchId = merchantOrderBatchId(row)
   const hasCourierMenuItems =
     !!row.courier?.contactPhone || !!row.courier?.id

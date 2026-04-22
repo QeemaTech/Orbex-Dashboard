@@ -67,7 +67,33 @@
     "diff": "Diff",
     "prev": "Prev",
     "next": "Next",
-    "pageLabel": "Page {{page}} of {{pages}}"
+    "pageLabel": "Page {{page}} of {{pages}}",
+    "fallback": {
+      "userIdPrefix": "User"
+    },
+    "targets": {
+      "role": "Role",
+      "user": "User"
+    },
+    "actions": {
+      "role.create": "Role created",
+      "role.update": "Role updated",
+      "role.delete": "Role deleted",
+      "role.permissions.set": "Role permissions updated",
+      "user.role.add": "Role assigned to user",
+      "user.role.remove": "Role removed from user"
+    },
+    "diffSummary": {
+      "permissionsCount": "{{count}} permissions changed",
+      "role": "Role: {{role}}",
+      "roleId": "Role ID: {{id}}",
+      "name": "Name: {{value}}",
+      "nameAr": "Arabic name: {{value}}",
+      "description": "Description: {{value}}",
+      "descriptionAr": "Arabic description: {{value}}",
+      "displayName": "Name: {{value}}",
+      "displayDescription": "Description: {{value}}"
+    }
   },
   "perms": {
     "dashboard.view": { "label": "View dashboard overview", "category": "Dashboard" },
@@ -98,6 +124,7 @@
     "couriers.update": { "label": "Update couriers", "category": "Couriers" },
     "merchant_orders.read": { "label": "View merchant orders", "category": "Merchant Orders" },
     "merchant_orders.create": { "label": "Create merchant orders", "category": "Merchant Orders" },
+    "merchant_orders.confirm": { "label": "Confirm pending merchant orders", "category": "Merchant Orders" },
     "merchant_orders.update": { "label": "Update merchant orders", "category": "Merchant Orders" },
     "merchant_orders.assign_courier": { "label": "Assign courier", "category": "Merchant Orders" },
     "merchants.read": { "label": "View merchants", "category": "Merchants" },

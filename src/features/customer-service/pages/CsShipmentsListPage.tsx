@@ -137,7 +137,7 @@ export function CsShipmentsListPage() {
           row.customerLocationReceivedAt ??
           row.customer.customerLocationReceivedAt,
         subStatus: row.subStatus ?? "NONE",
-      })),
+      })) as CsShipmentRow[],
     [shipmentsQuery.data],
   )
 

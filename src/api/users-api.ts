@@ -102,7 +102,7 @@ export type CreateStaffUserBody = {
   email: string
   fullName: string
   password: string
-  role: ManagedStaffRole
+  role: string
   warehouseId?: string
   adminWarehouseId?: string
   isActive?: boolean

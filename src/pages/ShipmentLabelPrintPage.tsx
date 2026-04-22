@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useCallback, useLayoutEffect, useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 import JsBarcode from "jsbarcode"
@@ -14,7 +14,6 @@ function trackingSpaced(tracking: string): string {
   return tracking.split("").join(" ")
 }
 
-/** Short code for badge (e.g. prefix before long numeric tail). */
 function trackingShortBadge(tracking: string): string {
   const t = tracking.trim()
   if (t.length <= 8) return t
@@ -48,8 +47,6 @@ export function ShipmentLabelPrintPage() {
 
   const svgMainRef = useRef<SVGSVGElement | null>(null)
   const svgSmallRef = useRef<SVGSVGElement | null>(null)
-  const viewportRef = useRef<HTMLDivElement | null>(null)
-  const sheetRef = useRef<HTMLElement | null>(null)
   const autoPrintDoneRef = useRef(false)
   const [barcodesDrawn, setBarcodesDrawn] = useState(false)
 
@@ -61,6 +58,8 @@ export function ShipmentLabelPrintPage() {
   })
 
   const label = labelQuery.data
+
+  const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
 
   useLayoutEffect(() => {
     setBarcodesDrawn(false)
@@ -95,19 +94,6 @@ export function ShipmentLabelPrintPage() {
     setBarcodesDrawn(true)
   }, [label?.trackingNumber])
 
-  const updateLabelScale = useCallback(() => {
-    const viewport = viewportRef.current
-    const sheet = sheetRef.current
-    if (!viewport || !sheet) return
-    const vw = viewport.clientWidth
-    const vh = viewport.clientHeight
-    const sw = Math.max(sheet.scrollWidth, 1)
-    const sh = Math.max(sheet.scrollHeight, 1)
-    /* Tiny margin avoids subpixel overflow that can create an extra blank print page */
-    const s = Math.min(1, (vw / sw) * 0.998, (vh / sh) * 0.998)
-    viewport.style.setProperty("--label-scale", String(s))
-  }, [])
-
   useLayoutEffect(() => {
     if (!label) return
     document.documentElement.classList.add("label-print-page")
@@ -119,60 +105,22 @@ export function ShipmentLabelPrintPage() {
   }, [label])
 
   useLayoutEffect(() => {
-    if (!label || !barcodesDrawn) return
-    const viewport = viewportRef.current
-    const sheet = sheetRef.current
-    if (!viewport || !sheet) return
-
-    const ro = new ResizeObserver(() => {
-      requestAnimationFrame(updateLabelScale)
-    })
-    ro.observe(viewport)
-    ro.observe(sheet)
-
-    const onResize = () => updateLabelScale()
-    const onBeforePrint = () => updateLabelScale()
-    const onAfterPrint = () => updateLabelScale()
-
-    window.addEventListener("resize", onResize)
-    window.addEventListener("beforeprint", onBeforePrint)
-    window.addEventListener("afterprint", onAfterPrint)
-
-    updateLabelScale()
-    requestAnimationFrame(() => {
-      updateLabelScale()
-    })
-
-    return () => {
-      ro.disconnect()
-      window.removeEventListener("resize", onResize)
-      window.removeEventListener("beforeprint", onBeforePrint)
-      window.removeEventListener("afterprint", onAfterPrint)
-    }
-  }, [label, barcodesDrawn, updateLabelScale])
-
-  useLayoutEffect(() => {
     autoPrintDoneRef.current = false
   }, [shipmentId, label?.trackingNumber])
+
+  const printCurrentPage = useCallback(() => {
+    window.print()
+  }, [])
 
   useLayoutEffect(() => {
     if (!label || !barcodesDrawn || !shipmentId) return
     if (autoPrintDoneRef.current) return
-    const printTimer = window.setTimeout(() => {
-      updateLabelScale()
-      requestAnimationFrame(() => {
-        updateLabelScale()
-        requestAnimationFrame(() => {
-          if (autoPrintDoneRef.current) return
-          autoPrintDoneRef.current = true
-          window.print()
-        })
-      })
-    }, 280)
-    return () => window.clearTimeout(printTimer)
-  }, [label, barcodesDrawn, shipmentId, updateLabelScale])
-
-  const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
+    autoPrintDoneRef.current = true
+    const timer = window.setTimeout(() => {
+      printCurrentPage()
+    }, 400)
+    return () => window.clearTimeout(timer)
+  }, [label, barcodesDrawn, shipmentId, printCurrentPage])
 
   const codText = (l: ShipmentLabelResponse): string => {
     if (l.codAmount == null || !Number.isFinite(l.codAmount)) {
@@ -227,13 +175,7 @@ export function ShipmentLabelPrintPage() {
         <button
           type="button"
           className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm"
-          onClick={() => {
-            updateLabelScale()
-            requestAnimationFrame(() => {
-              updateLabelScale()
-              window.print()
-            })
-          }}
+          onClick={printCurrentPage}
         >
           {t("shipments.label.printAgain", { defaultValue: "Print again" })}
         </button>
@@ -245,123 +187,113 @@ export function ShipmentLabelPrintPage() {
         </Link>
       </div>
 
-      <div ref={viewportRef} className="label-print-viewport">
-        <div className="label-print-scale-stage">
-          <article ref={sheetRef} className="label-print-sheet" aria-label="Shipment label">
-        <div className="label-barcode-block">
-          <svg ref={svgMainRef} role="img" aria-label="Barcode" />
-          <div className="label-tracking-human" dir="ltr" style={{ unicodeBidi: "plaintext" }}>
-            {trackingSpaced(label.trackingNumber)}
-          </div>
-        </div>
-
-        <div className="label-header-3">
-          <div className="label-brand" dir="ltr">
-            Orbex
-          </div>
-          <div className="label-hub" dir="auto">
-            {label.warehouseName}
-          </div>
-          <div className="label-delivery-ar">توصيل</div>
-        </div>
-
-        <div className="label-cod-row">
-          <div className="label-id-badge" dir="ltr">
-            {trackingShortBadge(label.trackingNumber)}
-          </div>
-          <div className="label-cod-ar">{codText(label)}</div>
-        </div>
-
-        <div className="label-two-col">
-          <div className="label-col">
-            <div className="label-col-title">التاجر:</div>
-            <div className="label-col-value">{label.merchantName}</div>
-          </div>
-          <div className="label-col">
-            <div className="label-col-title">توصيل إلى:</div>
-            <div className="label-col-value">{label.customerName}</div>
-            <div className="label-col-value" dir="ltr" style={{ marginTop: 4, unicodeBidi: "plaintext" }}>
-              {label.phone}
+      <div className="label-print-page-container">
+        <article className="label-print-sheet" aria-label="Shipment label">
+          <div className="label-barcode-block">
+            <svg ref={svgMainRef} role="img" aria-label="Barcode" />
+            <div className="label-tracking-human" dir="ltr" style={{ unicodeBidi: "plaintext" }}>
+              {trackingSpaced(label.trackingNumber)}
             </div>
           </div>
-        </div>
 
-        <div className="label-full label-address-block">
-          <div className="label-kv">
-            <span className="label-k">المنطقة | </span>
-            <span className="label-v">{label.governorate}</span>
+          <div className="label-header-3">
+            <div className="label-brand" dir="ltr">
+              Orbex
+            </div>
+            <div className="label-hub" dir="auto">
+              {label.warehouseName}
+            </div>
+            <div className="label-delivery-ar">توصيل</div>
           </div>
-          <div className="label-kv">
-            <span className="label-k">العنوان | </span>
-            <span className="label-v" dir="auto">
-              {label.address}
-            </span>
+
+          <div className="label-cod-row">
+            <div className="label-id-badge" dir="ltr">
+              {trackingShortBadge(label.trackingNumber)}
+            </div>
+            <div className="label-cod-ar">{codText(label)}</div>
           </div>
-          <div className="label-kv">
-            <span className="label-k">علامة مميزة | </span>
+
+          <div className="label-two-col">
+            <div className="label-col">
+              <div className="label-col-title">التاجر:</div>
+              <div className="label-col-value">{label.merchantName}</div>
+            </div>
+            <div className="label-col">
+              <div className="label-col-title">توصيل إلى:</div>
+              <div className="label-col-value">{label.customerName}</div>
+              <div className="label-col-value" dir="ltr" style={{ marginTop: 4, unicodeBidi: "plaintext" }}>
+                {label.phone}
+              </div>
+            </div>
+          </div>
+
+          <div className="label-full label-address-block">
+            <div className="label-kv">
+              <span className="label-k">المنطقة | </span>
+              <span className="label-v">{label.governorate}</span>
+            </div>
+            <div className="label-kv">
+              <span className="label-k">العنوان | </span>
+              <span className="label-v" dir="auto">
+                {label.address}
+              </span>
+            </div>
+            <div className="label-kv">
+              <span className="label-k">علامة مميزة | </span>
+              <span className="label-v">—</span>
+            </div>
+          </div>
+
+          <div className="label-boxes">
+            <div className="label-mini-box">فتح الشحنة: لا</div>
+            <div className="label-mini-box">{label.itemsCount} قطع</div>
+          </div>
+
+          <div className="label-full label-desc-block">
+            <div className="label-kv">
+              <span className="label-k">وصف الشحنة | </span>
+              <span className="label-v">—</span>
+            </div>
+            <div className="label-kv">
+              <span className="label-k">الوزن | </span>
+              <span className="label-v">—</span>
+            </div>
+            <div className="label-kv">
+              <span className="label-k">عدد الوحدات | </span>
+              <span className="label-v">{label.itemsCount}</span>
+            </div>
+          </div>
+
+          <div className="label-footer-grid">
+            <div className="label-footer-notes">
+              <span className="label-k">ملاحظات | </span>
+              {label.notes}
+            </div>
+          </div>
+
+          <div className="label-full label-return-block">
+            <span className="label-k">عنوان المرتجع | </span>
             <span className="label-v">—</span>
           </div>
-        </div>
 
-        <div className="label-boxes">
-          <div className="label-mini-box">فتح الشحنة: لا</div>
-          <div className="label-mini-box">{label.itemsCount} قطع</div>
-        </div>
-
-        <div className="label-full label-desc-block">
-          <span className="label-k">وصف الشحنة | </span>
-          <span className="label-v">—</span>
-        </div>
-
-        <div className="label-footer-grid">
-          <div className="label-footer-notes">
-            <span className="label-k">ملاحظات | </span>
-            {label.notes}
-          </div>
-          <div className="label-footer-meta" dir="ltr" style={{ unicodeBidi: "plaintext" }}>
-            Order ref: {shipmentId.slice(0, 8)}…
-          </div>
-        </div>
-
-        <div className="label-full label-return-block">
-          <span className="label-k">عنوان المرتجع | </span>
-          <span className="label-v">—</span>
-        </div>
-
-        <div className="label-footer-barcode">
-          <div>
-            <div style={{ fontSize: 7, marginBottom: 2 }} dir="ltr">
-              Tracking Number
-            </div>
-            <svg ref={svgSmallRef} role="img" aria-label="Tracking barcode" />
-            <div dir="ltr" style={{ fontSize: 9, fontWeight: 600, textAlign: "center", unicodeBidi: "plaintext" }}>
-              {numericTail(label.trackingNumber)}
+          <div className="label-footer-barcode">
+            <div>
+              <div style={{ fontSize: 7, marginBottom: 2 }} dir="ltr">
+                Tracking Number
+              </div>
+              <svg ref={svgSmallRef} role="img" aria-label="Tracking barcode" />
+              <div dir="ltr" style={{ fontSize: 9, fontWeight: 600, textAlign: "center", unicodeBidi: "plaintext" }}>
+                {numericTail(label.trackingNumber)}
+              </div>
             </div>
           </div>
-          <div style={{ alignSelf: "end", textAlign: "end" }} dir="ltr">
-            <div
-              style={{
-                background: "#333",
-                color: "#fff",
-                fontSize: 8,
-                fontWeight: 700,
-                padding: "4px 6px",
-                marginBottom: 4,
-                display: "inline-block",
-              }}
-            >
-              {label.warehouseName !== "—" ? label.warehouseName.slice(0, 14) : "—"}
-            </div>
-          </div>
-        </div>
 
-        <div className="label-bottom-line" dir="ltr" style={{ unicodeBidi: "plaintext" }}>
-          <span />
-          <span>Created: {formatLabelDate(label.createdAt, locale)}</span>
-          <span>1/1</span>
-        </div>
-          </article>
-        </div>
+          <div className="label-bottom-line" dir="ltr" style={{ unicodeBidi: "plaintext" }}>
+            <span />
+            <span>Created: {formatLabelDate(label.createdAt, locale)}</span>
+            <span>1/1</span>
+          </div>
+        </article>
       </div>
     </div>
   )

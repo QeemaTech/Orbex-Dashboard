@@ -3,6 +3,10 @@
     "dashboard": "Dashboard",
     "shipments": "Shipments",
     "merchantOrders": "Merchant orders",
+    "merchantOrderConfirmations": "Order confirmations",
+    "myWarehouse": "My warehouse",
+    "warehouseMerchantOrders": "Warehouse merchant orders",
+    "warehouseStandaloneShipments": "Warehouse shipments",
     "orders": "Shipments",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
@@ -13,6 +17,7 @@
     "collections": "Collections",
     "warehouses": "Warehouses",
     "deliveryZones": "Delivery zones",
+    "settings": "Settings",
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
   },
@@ -86,15 +91,48 @@
       "warehouseHint": "Warehouse tools for this batch are on the merchant order page.",
       "currencyLocale": "en-EG"
     },
+    "timeline": {
+      "heading": "Shipment Timeline",
+      "auditHeading": "Detailed audit",
+      "noHistory": "No tracking history available",
+      "pendingPickup": "Pending Pickup",
+      "pickedUp": "Picked Up",
+      "inWarehouse": "In Warehouse",
+      "assigned": "Assigned",
+      "outForDelivery": "Out for Delivery",
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed",
+      "returnedToWarehouse": "Returned to Warehouse",
+      "returnedToMerchant": "Returned to Merchant",
+      "atWarehouse": "At {{name}}",
+      "inThisWarehouse": "In this warehouse ({{name}})",
+      "assignedCourier": "Assigned courier",
+      "postponeAttempt": "Postpone #{{count}}",
+      "transferRoute": "{{from}} → {{to}}"
+    },
+    "tasks": {
+      "heading": "Warehouse Tasks",
+      "noTasks": "No warehouse tasks assigned",
+      "assignedCourier": "Assigned courier",
+      "typeDelivery": "Delivery",
+      "typeTransfer": "Transfer",
+      "typeReturn": "Return to Merchant",
+      "statusPlanned": "Planned",
+      "statusInProgress": "In Progress",
+      "statusDone": "Done",
+      "statusCancelled": "Cancelled"
+    },
     "planTask": {
       "title": "Plan warehouse task",
-      "description": "Creates a planned task for this shipment line at your warehouse (required before scan-out). Uses POST /api/shipments/:id/tasks with this line’s id.",
+      "description": "Creates a planned task for this shipment line at your hub. Scan-out executes this task (delivery, transfer, or return to merchant).",
       "fieldPlanningWarehouse": "Your hub for this plan (must match the line’s warehouse)",
       "fieldType": "Task type",
       "typeDelivery": "Delivery (last mile)",
       "typeTransfer": "Transfer to another hub",
       "typeReturn": "Return to merchant",
       "fieldCourierRequired": "Delivery courier",
+      "fieldCourierTransfer": "Courier (inter-hub transport)",
       "fieldCourierOptional": "Courier (optional)",
       "fieldDestinationWarehouse": "Destination warehouse",
       "pickCourier": "Select a courier…",
@@ -104,6 +142,7 @@
       "success": "Planned task created ({{type}}). You can scan out with the tracking number.",
       "hintBatchNotInWarehouse": "The merchant order batch is not in a warehouse yet (transfer must be IN_WAREHOUSE).",
       "hintLineNotInWarehouse": "This shipment line is not IN_WAREHOUSE.",
+      "hintReturnWrongStatus": "Return-to-merchant planning is only available when this line is POSTPONED or REJECTED (and the batch is in the warehouse).",
       "hintCsRequired": "Outbound customer service must confirm this line before planning a delivery task.",
       "errors": {
         "NO_ACTIVE_TASK": "No active task (use after a failed scan only if shown).",
@@ -112,6 +151,7 @@
         "INVALID_TRANSITION": "This task is not allowed for the current status.",
         "CS_DELIVERY_NOT_ALLOWED": "Customer service must confirm the line for delivery planning.",
         "DELIVERY_POSTPONE_LIMIT": "Too many postponements to plan another delivery.",
+        "ACTIVE_TASK_EXISTS": "An active planned or in-progress task already exists for this line. Complete or cancel it before creating another.",
         "generic": "Could not create the planned task."
       }
     },
@@ -145,7 +185,20 @@
     "colWarehouse": "Warehouse",
     "colOrderCount": "Shipments",
     "colTotalValue": "Total value",
-    "colBatchPipelineStatus": "Batch pipeline status"
+    "colBatchPipelineStatus": "Batch pipeline status",
+    "downloadTemplate": "Download template",
+    "downloadingTemplate": "Downloading template…",
+    "importExcel": "Import Excel",
+    "importing": "Importing…",
+    "importSuccess": "Excel imported successfully ({{count}} shipments).",
+    "importQueuedSuccess": "Excel uploaded and queued for confirmation ({{count}} shipments).",
+    "importGenericError": "Could not import merchant orders Excel file.",
+    "pickupDate": "Pickup date",
+    "pendingPageTitle": "Pending merchant order confirmations",
+    "pendingDescription": "Uploaded Excel batches wait here until a user with confirmation permission approves them.",
+    "pendingEmpty": "No pending imports.",
+    "confirmPending": "Confirm",
+    "rejectPending": "Reject"
   },
   "adminOrders": {
     "colCustomer": "Customer",
@@ -217,9 +270,12 @@
       "warehouses": "Warehouses"
     },
     "chart": {
-      "lineTitle": "Shipments over time",
+      "lineTitle": "Shipment lines & merchant orders",
       "lineDescription": "New customer shipments per day (last 14 days)",
+      "lineDescriptionPeriod": "Daily shipment lines and new merchant orders for the configured insights period.",
       "lineSeriesName": "Shipments",
+      "shipmentLinesSeries": "Shipment lines",
+      "merchantOrdersSeries": "Merchant orders",
       "merchantOrderBatchPieTitle": "Merchant order batch status",
       "merchantOrderBatchPieDescription": "Merchant orders by batch pipeline status",
       "days": {
@@ -232,6 +288,8 @@
         "sun": "Sun"
       }
     },
+    "kpiError": "Could not load dashboard metrics.",
+    "kpiLoading": "Loading metrics…",
     "quickActions": {
       "title": "Quick actions",
       "description": "Jump to merchant orders or customer shipments",
@@ -286,6 +344,10 @@
       "customerOrdersTitle": "Customer shipments",
       "customerOrdersDescription": "Shipment lines (packages) under this merchant order. Assignment and delivery updates are per shipment.",
       "timelineTitle": "Timeline",
+      "batchTimelineTitle": "Batch pipeline (transfer status)",
+      "batchTimelineHint": "Shows batch transfer milestones only. For delivery, postpones, and hub movements, see shipment line tracking below.",
+      "lineTimelineTitle": "Shipment line tracking",
+      "lineTimelineSubtitle": "Full audit for the first shipment line in this batch (tracking, postpones, transfers). Open a shipment for other lines.",
       "timelineEmpty": "No timeline events yet.",
       "timelineStart": "START",
       "timelineArrow": "→",
@@ -444,7 +506,7 @@
       "ON_HOLD": "On hold"
     },
     "couriers": {
-      "pageTitle": "Customer service — Couriers",
+      "pageTitle": "Couriers",
       "subtitle": "Track active couriers and open the latest location quickly.",
       "listTitle": "Couriers",
       "listDescription": "The list refreshes every 25 seconds from live assignment data.",
@@ -491,6 +553,10 @@
       "mainBranchSection": "Main Branch"
     },
     "loading": "Loading warehouse data…",
+    "context": {
+      "thisWarehouse": "(this warehouse)",
+      "atNamedWarehouse": "({{name}})"
+    },
     "filter": {
       "title": "Order scope",
       "description": "Warehouse admins can filter the list and KPIs to one site.",
@@ -609,6 +675,21 @@
       "partiallyDelivered": "Partially delivered batches",
       "delivered": "Fully delivered batches"
     },
+    "shipmentInsights": {
+      "title": "Shipment lines",
+      "subtitle": "Status counts below are for the current page of standalone lines at this hub. Bars show share of the busiest status on this page.",
+      "hubTotalLabel": "Total lines at this hub",
+      "inWarehouse": "In warehouse",
+      "assigned": "Assigned",
+      "outForDelivery": "Out for delivery",
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed"
+    },
+    "insights": {
+      "periodFromSettings": "Insights period (system)",
+      "allTime": "All time"
+    },
     "operations": {
       "title": "Scan and returns",
       "description": "Scan in or out with Enter (after choosing direction), or use the field below for returns and status lookup.",
@@ -646,6 +727,8 @@
       "descriptionMerchantOrderBatches": "Each row is one merchant order batch inbound to this hub. Open it for batch detail and customer shipments.",
       "titleTransfers": "Merchant order transfers",
       "descriptionTransfers": "Each row is one batch linked to this hub. Open it for batch detail, customer shipments, and courier assignment.",
+      "titleShipments": "Shipments",
+      "descriptionShipments": "Shipment lines at this hub. Open a row for line detail and tracking.",
       "openBatchSummary": "Batch summary",
       "openCustomerOrders": "Customer shipments",
       "searchPlaceholder": "Search by tracking number",
@@ -662,12 +745,13 @@
       "assignLegHint": "First mile = merchant to hub (before scan-in). Last mile = delivery from hub.",
       "pagination": "Total {{total}} · page {{page}}",
       "tabOrders": "Orders",
-      "tabStandalone": "Standalone"
+      "tabShipments": "Shipments"
     },
     "table": {
       "batchId": "Batch ID",
       "trackingNumber": "Tracking",
       "warehouse": "Warehouse",
+      "transferredFromWarehouse": "Transferred from",
       "customer": "Customer",
       "merchant": "Merchant",
       "orderCount": "Customer shipments",
@@ -693,6 +777,9 @@
     },
     "orders": {
       "assignColumn": "Assign courier"
+    },
+    "shipment": {
+      "otherLocationLabel": "In Warehouse (Other Location)"
     },
     "feedback": {
       "scanInSuccess": "Shipment scanned into the warehouse.",
@@ -752,6 +839,7 @@
       "PICKED_UP": "Picked up",
       "IN_WAREHOUSE": "In warehouse",
       "PENDING": "Pending (batch)",
+      "PENDING_CONFIRMATION": "Pending confirmation",
       "ASSIGNED": "Assigned (batch)",
       "ON_THE_WAY_TO_WAREHOUSE": "On the way to warehouse",
       "PARTIALLY_DELIVERED": "Partially delivered",
@@ -961,6 +1049,34 @@
       "deactivateFailed": "Could not deactivate zone.",
       "deletedPermanent": "Zone deleted permanently.",
       "deletePermanentFailed": "Could not delete zone."
+    }
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "financial": {
+      "title": "Import financial defaults",
+      "description": "Used when importing merchant orders from Excel. Commission and visa commission are no longer read from the uploaded sheet.",
+      "defaultCommissionFee": "Default commission fee",
+      "visaCommissionPercent": "Visa commission (%)",
+      "saved": "Financial defaults saved.",
+      "saveFailed": "Could not save financial defaults.",
+      "invalidCommissionFee": "Enter a valid non-negative commission fee.",
+      "invalidVisaCommissionPercent": "Enter a visa commission percentage between 0 and 100."
+    },
+    "insightsPeriod": {
+      "title": "Insights period",
+      "description": "Defines the date window used for period metrics on warehouse dashboards and related insights. Lifetime metrics remain all-time.",
+      "mode": "Mode",
+      "modeLastPeriod": "Last N days",
+      "modeCustomRange": "Custom date range",
+      "lastDays": "Number of days",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "saved": "Insights period saved.",
+      "saveFailed": "Could not save insights period.",
+      "invalidLastDays": "Enter a number of days between 1 and 3660.",
+      "rangeRequired": "Choose both start and end dates.",
+      "invalidRange": "Start date must be before or equal to end date."
     }
   },
   "common": {

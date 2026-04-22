@@ -204,7 +204,10 @@ export function ShipmentLinesListPage() {
 
             {shipmentsQuery.data && shipmentsQuery.data.shipments.length > 0 ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
-                <AdminShipmentsTable rows={shipmentsQuery.data.shipments} />
+                <AdminShipmentsTable
+                  rows={shipmentsQuery.data.shipments}
+                  listQueryKey={[...listQueryKey]}
+                />
               </div>
             ) : null}
 

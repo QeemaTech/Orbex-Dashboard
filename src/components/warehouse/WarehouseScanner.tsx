@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { ApiError } from "@/api/client"
+import { ApiError, formatApiValidationDetails } from "@/api/client"
 import { showToast } from "@/lib/toast"
 
 export type WarehouseScanMode = "in" | "out"
@@ -15,23 +15,33 @@ type WarehouseScannerProps = {
 }
 
 function messageForApiError(err: unknown, t: (k: string) => string): string {
-  if (err instanceof ApiError && err.code) {
-    switch (err.code) {
-      case "NO_ACTIVE_TASK":
-        return t("warehouse.scanner.errors.noActiveTask")
-      case "INVALID_TRACKING":
-        return t("warehouse.scanner.errors.invalidTracking")
-      case "WRONG_WAREHOUSE":
-        return t("warehouse.scanner.errors.wrongWarehouse")
-      case "INVALID_TRANSITION":
-        return t("warehouse.scanner.errors.invalidTransition")
-      case "CS_DELIVERY_NOT_ALLOWED":
-        return t("warehouse.scanner.errors.csDeliveryNotAllowed")
-      case "DELIVERY_POSTPONE_LIMIT":
-        return t("warehouse.scanner.errors.deliveryPostponeLimit")
-      default:
-        return err.message
+  if (err instanceof ApiError) {
+    const detailText = formatApiValidationDetails(err.details)
+    const base =
+      err.code != null
+        ? (() => {
+            switch (err.code) {
+              case "NO_ACTIVE_TASK":
+                return t("warehouse.scanner.errors.noActiveTask")
+              case "INVALID_TRACKING":
+                return t("warehouse.scanner.errors.invalidTracking")
+              case "WRONG_WAREHOUSE":
+                return t("warehouse.scanner.errors.wrongWarehouse")
+              case "INVALID_TRANSITION":
+                return t("warehouse.scanner.errors.invalidTransition")
+              case "CS_DELIVERY_NOT_ALLOWED":
+                return t("warehouse.scanner.errors.csDeliveryNotAllowed")
+              case "DELIVERY_POSTPONE_LIMIT":
+                return t("warehouse.scanner.errors.deliveryPostponeLimit")
+              default:
+                return err.message
+            }
+          })()
+        : err.message
+    if (detailText) {
+      return `${base} — ${detailText}`
     }
+    return base
   }
   if (err instanceof Error) {
     return err.message

@@ -3,6 +3,10 @@
     "dashboard": "لوحة التحكم",
     "shipments": "الشحنات",
     "merchantOrders": "طلبات التجار",
+    "merchantOrderConfirmations": "تأكيدات الطلبات",
+    "myWarehouse": "مخزني",
+    "warehouseMerchantOrders": "طلبات التجار بالمخزن",
+    "warehouseStandaloneShipments": "شحنات المخزن",
     "orders": "الشحنات",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
@@ -12,6 +16,7 @@
     "collections": "التحصيل",
     "warehouses": "المخازن",
     "deliveryZones": "مناطق التوصيل",
+    "settings": "الإعدادات",
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء",
     "roles": "الأدوار"
@@ -86,6 +91,25 @@
       "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة طلب التاجر.",
       "currencyLocale": "ar-EG"
     },
+    "timeline": {
+      "heading": "الجدول الزمني للشحنة",
+      "auditHeading": "سجل تفصيلي",
+      "noHistory": "لا يوجد سجل تتبع",
+      "pendingPickup": "في انتظار الاستلام",
+      "pickedUp": "تم الاستلام",
+      "inWarehouse": "داخل المخزن",
+      "assigned": "مُعيَّن",
+      "outForDelivery": "خارج للتسليم",
+      "delivered": "تم التسليم",
+      "rejected": "مرفوض",
+      "postponed": "مؤجل",
+      "returnedToWarehouse": "عاد إلى المخزن",
+      "returnedToMerchant": "عاد للتاجر",
+      "atWarehouse": "في {{name}}",
+      "inThisWarehouse": "في هذا المخزن ({{name}})",
+      "postponeAttempt": "تأجيل رقم {{count}}",
+      "transferRoute": "{{from}} ← {{to}}"
+    },
     "planTask": {
       "title": "تخطيط مهمة المخزن",
       "description": "إنشاء مهمة مخططة لسطر الشحنة هذا في مخزنك (مطلوبة قبل مسح الخروج). يستخدم الطلب معرّف سطر الشحنة الحالي.",
@@ -95,6 +119,7 @@
       "typeTransfer": "تحويل إلى مخزن آخر",
       "typeReturn": "إرجاع للتاجر",
       "fieldCourierRequired": "مندوب التسليم",
+      "fieldCourierTransfer": "مندوب النقل بين المخازن",
       "fieldCourierOptional": "مندوب (اختياري)",
       "fieldDestinationWarehouse": "مخزن الوجهة",
       "pickCourier": "اختر مندوبًا…",
@@ -104,6 +129,7 @@
       "success": "تم إنشاء المهمة المخططة ({{type}}). يمكنك مسح الخروج برقم التتبع.",
       "hintBatchNotInWarehouse": "دفعة طلب التاجر ليست داخل المخزن بعد (يجب أن تكون حالة التحويل داخل المخزن).",
       "hintLineNotInWarehouse": "سطر الشحنة ليس في حالة داخل المخزن.",
+      "hintReturnWrongStatus": "تخطيط الإرجاع للتاجر متاح فقط عندما يكون السطر مؤجلاً أو مرفوضاً (والدفعة داخل المخزن).",
       "hintCsRequired": "يجب أن يؤكد خدمة العملاء الشحنة للخروج قبل تخطيط مهمة التسليم.",
       "errors": {
         "NO_ACTIVE_TASK": "لا توجد مهمة نشطة.",
@@ -112,6 +138,7 @@
         "INVALID_TRANSITION": "هذه المهمة غير مسموحة للحالة الحالية.",
         "CS_DELIVERY_NOT_ALLOWED": "خدمة العملاء يجب أن تؤكد السطر لتخطيط التسليم.",
         "DELIVERY_POSTPONE_LIMIT": "تأجيلات كثيرة لا تسمح بتخطيط تسليم آخر.",
+        "ACTIVE_TASK_EXISTS": "توجد مهمة نشطة (مخططة أو قيد التنفيذ) لهذا السطر. أكملها أو ألغها قبل إنشاء أخرى.",
         "generic": "تعذر إنشاء المهمة المخططة."
       }
     },
@@ -145,7 +172,20 @@
     "colWarehouse": "المخزن",
     "colOrderCount": "الشحنات",
     "colTotalValue": "القيمة الإجمالية",
-    "colBatchPipelineStatus": "حالة مسار الدفعة"
+    "colBatchPipelineStatus": "حالة مسار الدفعة",
+    "downloadTemplate": "تحميل القالب",
+    "downloadingTemplate": "جاري تحميل القالب…",
+    "importExcel": "استيراد Excel",
+    "importing": "جاري الاستيراد…",
+    "importSuccess": "تم استيراد ملف Excel بنجاح ({{count}} شحنة).",
+    "importQueuedSuccess": "تم رفع ملف Excel وإرساله لقائمة التأكيد ({{count}} شحنة).",
+    "importGenericError": "تعذر استيراد ملف Excel لطلبات التجار.",
+    "pickupDate": "تاريخ الاستلام",
+    "pendingPageTitle": "تأكيدات طلبات التجار المعلقة",
+    "pendingDescription": "تظهر هنا ملفات Excel المرفوعة حتى يقوم مستخدم لديه صلاحية التأكيد بالموافقة عليها.",
+    "pendingEmpty": "لا توجد ملفات معلقة.",
+    "confirmPending": "تأكيد",
+    "rejectPending": "رفض"
   },
   "adminOrders": {
     "colCustomer": "العميل",
@@ -217,9 +257,12 @@
       "warehouses": "المخازن"
     },
     "chart": {
-      "lineTitle": "الشحنات عبر الوقت",
+      "lineTitle": "خطوط الشحن وطلبات التجار",
       "lineDescription": "شحنات عملاء جديدة يوميًا (آخر 14 يومًا)",
+      "lineDescriptionPeriod": "عدد يومي لخطوط الشحن وطلبات التجار الجديدة وفق فترة الرؤى المضبوطة.",
       "lineSeriesName": "الشحنات",
+      "shipmentLinesSeries": "خطوط الشحن",
+      "merchantOrdersSeries": "طلبات التجار",
       "merchantOrderBatchPieTitle": "حالة دفعة طلب التاجر",
       "merchantOrderBatchPieDescription": "طلبات التجار حسب حالة مسار الدفعة",
       "days": {
@@ -232,6 +275,8 @@
         "sun": "الأحد"
       }
     },
+    "kpiError": "تعذر تحميل مؤشرات لوحة التحكم.",
+    "kpiLoading": "جاري تحميل المؤشرات…",
     "quickActions": {
       "title": "إجراءات سريعة",
       "description": "انتقال إلى طلبات التجار أو شحنات العملاء",
@@ -284,6 +329,10 @@
       "customerOrdersTitle": "شحنات العملاء",
       "customerOrdersDescription": "أسطر الشحنات (الطرود) ضمن طلب التاجر هذا. التحديثات والإسناد لكل شحنة على حدة.",
       "timelineTitle": "سجل الحالة",
+      "batchTimelineTitle": "مسار الدفعة (حالة التحويل)",
+      "batchTimelineHint": "يعرض مراحل تحويل الدفعة فقط. للتسليم والتأجيل وحركة المخازن راجع تتبع سطر الشحنة أدناه.",
+      "lineTimelineTitle": "تتبع سطر الشحنة",
+      "lineTimelineSubtitle": "سجل كامل لأول سطر شحنة في هذه الدفعة (التتبع، التأجيلات، التحويلات). افتح شحنة أخرى لباقي الأسطر.",
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
       "timelineArrow": "→",
@@ -537,6 +586,10 @@
       "mainBranchSection": "الفرع الرئيسي"
     },
     "loading": "جاري تحميل بيانات المخزن…",
+    "context": {
+      "thisWarehouse": "(هذا المخزن)",
+      "atNamedWarehouse": "({{name}})"
+    },
     "filter": {
       "title": "نطاق الطلبات",
       "description": "يمكن لمشرف المخازن تصفية القائمة ومؤشرات الأداء حسب موقع واحد.",
@@ -607,6 +660,21 @@
       "partiallyDelivered": "دفعات مسلّمة جزئيًا",
       "delivered": "دفعات مسلّمة بالكامل"
     },
+    "shipmentInsights": {
+      "title": "أسطر الشحنات",
+      "subtitle": "عدد الحالات أدناه لصفحة الشحنات الحالية في هذا المخزن. الأشرطة توضح الحصة مقارنة بأكثر حالة في الصفحة.",
+      "hubTotalLabel": "إجمالي الأسطر في هذا المخزن",
+      "inWarehouse": "داخل المخزن",
+      "assigned": "معيّنة",
+      "outForDelivery": "خارجة للتسليم",
+      "delivered": "تم التسليم",
+      "rejected": "مرفوضة",
+      "postponed": "مؤجلة"
+    },
+    "insights": {
+      "periodFromSettings": "فترة الرؤى (النظام)",
+      "allTime": "كل الأوقات"
+    },
     "operations": {
       "title": "المسح والمرتجعات",
       "description": "مسح الدخول أو الخروج بمفتاح Enter بعد اختيار الاتجاه، أو استخدم الحقل أدناه للمرتجعات والاستعلام عن الحالة.",
@@ -644,6 +712,8 @@
       "descriptionMerchantOrderBatches": "كل صف يمثل دفعة طلب تاجر واردة إلى هذا المخزن. افتح الصف لعرض تفاصيل الدفعة وشحنات العملاء.",
       "titleTransfers": "تحويلات دفعات طلبات التجار",
       "descriptionTransfers": "كل صف يمثل دفعة مرتبطة بهذا المخزن. افتح الصف لعرض التفاصيل وشحنات العملاء وتعيين المندوب.",
+      "titleShipments": "الشحنات",
+      "descriptionShipments": "أسطر الشحنات في هذا المخزن. افتح الصف لتفاصيل السطر والتتبع.",
       "openBatchSummary": "ملخص الدفعة",
       "openCustomerOrders": "طلبات العملاء",
       "searchPlaceholder": "بحث برقم تتبع الطلب",
@@ -660,12 +730,13 @@
       "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}",
       "tabOrders": "طلبات",
-      "tabStandalone": "مستقلة"
+      "tabShipments": "الشحنات"
     },
     "table": {
       "batchId": "معرف الدفعة",
       "trackingNumber": "تتبع الطلب",
       "warehouse": "المخزن",
+      "transferredFromWarehouse": "محوّل من",
       "customer": "العميل",
       "merchant": "التاجر",
       "orderCount": "طلبات العملاء",
@@ -690,6 +761,9 @@
     },
     "orders": {
       "assignColumn": "تعيين مندوب"
+    },
+    "shipment": {
+      "otherLocationLabel": "في المخزن (موقع آخر)"
     },
     "feedback": {
       "scanInSuccess": "تم تسجيل دخول الشحنة إلى المخزن.",
@@ -726,6 +800,7 @@
       "PICKED_UP": "تم الاستلام",
       "IN_WAREHOUSE": "داخل المخزن",
       "PENDING": "معلّق (دفعة)",
+      "PENDING_CONFIRMATION": "بانتظار التأكيد",
       "ASSIGNED": "مُسند (دفعة)",
       "ON_THE_WAY_TO_WAREHOUSE": "في الطريق إلى المخزن",
       "PARTIALLY_DELIVERED": "مُسلَّم جزئيًا",
@@ -958,6 +1033,34 @@
       "deactivateFailed": "تعذّر تعطيل المنطقة.",
       "deletedPermanent": "تم حذف المنطقة نهائياً.",
       "deletePermanentFailed": "تعذّر حذف المنطقة."
+    }
+  },
+  "settings": {
+    "pageTitle": "الإعدادات",
+    "financial": {
+      "title": "الإعدادات المالية الافتراضية للاستيراد",
+      "description": "تُستخدم عند استيراد طلبات التجار من Excel. لم يعد يتم قراءة العمولة أو عمولة الفيزا من ملف الرفع.",
+      "defaultCommissionFee": "العمولة الافتراضية",
+      "visaCommissionPercent": "عمولة الفيزا (%)",
+      "saved": "تم حفظ الإعدادات المالية.",
+      "saveFailed": "تعذر حفظ الإعدادات المالية.",
+      "invalidCommissionFee": "أدخل قيمة عمولة صحيحة (غير سالبة).",
+      "invalidVisaCommissionPercent": "أدخل نسبة عمولة فيزا بين 0 و 100."
+    },
+    "insightsPeriod": {
+      "title": "فترة الرؤى",
+      "description": "تحدد نافذة التاريخ المستخدمة لمقاييس الفترة في لوحات المخازن والرؤى ذات الصلة. مقاييس العمر تبقى لكل الأوقات.",
+      "mode": "الوضع",
+      "modeLastPeriod": "آخر N يومًا",
+      "modeCustomRange": "نطاق تواريخ مخصص",
+      "lastDays": "عدد الأيام",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "saved": "تم حفظ فترة الرؤى.",
+      "saveFailed": "تعذّر حفظ فترة الرؤى.",
+      "invalidLastDays": "أدخل عدد أيام بين 1 و 3660.",
+      "rangeRequired": "اختر تاريخي البداية والنهاية.",
+      "invalidRange": "يجب أن يكون تاريخ البداية قبل أو يساوي تاريخ النهاية."
     }
   },
   "common": {

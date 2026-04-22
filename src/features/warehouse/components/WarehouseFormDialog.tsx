@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -14,7 +14,7 @@ import {
   type UpdateWarehouseBody,
 } from "@/api/warehouse-api"
 import { listDeliveryZones } from "@/api/delivery-zones-api"
-import { listUsers, type UserPublicRow } from "@/api/users-api"
+import { listUsers } from "@/api/users-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -47,7 +47,6 @@ export function WarehouseFormDialog({
   onSaved,
 }: WarehouseFormDialogProps) {
   const { t } = useTranslation()
-  const qc = useQueryClient()
 
   const [name, setName] = useState("")
   const [governorate, setGovernorate] = useState("")
@@ -189,20 +188,20 @@ export function WarehouseFormDialog({
       if (name.trim()) updateBody.name = name.trim()
       if (governorate.trim()) updateBody.governorate = governorate.trim()
       if (zone.trim()) updateBody.zone = zone.trim()
-      else updateBody.zone = null
+      else updateBody.zone = undefined
       if (code.trim()) updateBody.code = code.trim()
-      else updateBody.code = null
+      else updateBody.code = undefined
       if (address.trim()) updateBody.address = address.trim()
-      else updateBody.address = null
+      else updateBody.address = undefined
       if (coords) {
         updateBody.latitude = coords.lat
         updateBody.longitude = coords.lng
       } else {
-        updateBody.latitude = null
-        updateBody.longitude = null
+        updateBody.latitude = undefined
+        updateBody.longitude = undefined
       }
       if (mainBranchId) updateBody.mainBranchId = mainBranchId
-      else updateBody.mainBranchId = null
+      else updateBody.mainBranchId = undefined
       updateBody.isActive = isActive
       try {
         await updateMut.mutateAsync(updateBody)

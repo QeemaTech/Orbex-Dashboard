@@ -140,36 +140,35 @@ export function ShipmentLinesKpiStatRow({
   })
 
   const totals = kpiQuery.data?.totals
-  const totalShipments = totals?.totalOrders ?? 0
-  const totalMerchantOrders = totals?.totalShipments ?? 0
+  const totalOrders = totals?.totalOrders ?? 0
 
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
       <StatCard
         title={t("shipmentsList.kpiTotalShipments")}
-        value={totalShipments}
-        percentage={totalShipments > 0 ? 100 : 0}
+        value={totalOrders}
+        percentage={totalOrders > 0 ? 100 : 0}
         icon={TotalShipmentsIcon}
         accent="primary"
       />
       <StatCard
         title={t("dashboard.stats.delivered")}
         value={totals?.delivered ?? 0}
-        percentage={toPercent(totals?.delivered ?? 0, totalMerchantOrders)}
+        percentage={toPercent(totals?.delivered ?? 0, totalOrders)}
         icon={DeliveredIcon}
         accent="success"
       />
       <StatCard
         title={t("dashboard.stats.rejected")}
         value={totals?.rejected ?? 0}
-        percentage={toPercent(totals?.rejected ?? 0, totalMerchantOrders)}
+        percentage={toPercent(totals?.rejected ?? 0, totalOrders)}
         icon={RejectedIcon}
         accent="destructive"
       />
       <StatCard
         title={t("dashboard.stats.postponed")}
         value={totals?.postponed ?? 0}
-        percentage={toPercent(totals?.postponed ?? 0, totalMerchantOrders)}
+        percentage={toPercent(totals?.postponed ?? 0, totalOrders)}
         icon={PostponedIcon}
         accent="warning"
       />

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft, Boxes } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { Link, useLocation, useParams } from "react-router-dom"
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom"
 
 import { getShipmentById } from "@/api/shipments-api"
 import { ApiError } from "@/api/client"
@@ -34,10 +34,13 @@ const uuidRegex =
 export function ShipmentLineDetailsPage() {
   const { t } = useTranslation()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { shipmentId: shipmentParam = "", warehouseId } = useParams<{
     shipmentId?: string
     warehouseId?: string
   }>()
+  const warehouseIdFromQuery = searchParams.get("warehouseId")?.trim() || undefined
+  const planTaskWarehouseId = warehouseId ?? warehouseIdFromQuery
   const { accessToken } = useAuth()
   const token = accessToken ?? ""
 
@@ -57,7 +60,7 @@ export function ShipmentLineDetailsPage() {
   const shipmentDetailQuery = useQuery({
     queryKey: ["shipment", "detail", shipmentName, token],
     queryFn: () => getShipmentById({ token, shipmentId: shipmentName }),
-    enabled: !!token && !!shipmentName && isUuidParam,
+    enabled: !!token && !!shipmentName && (isUuidParam || shipmentName.startsWith("ORX-")),
     retry: false,
   })
 
@@ -133,6 +136,7 @@ export function ShipmentLineDetailsPage() {
           merchantOrderDetailHref={merchantOrderDetailHref}
           merchantOrderShipmentsHref={merchantOrderShipmentsHref}
           variant={isWarehouseRoute ? "warehouse" : isCsRoute ? "cs" : "default"}
+          planTaskContextWarehouseId={planTaskWarehouseId}
         />
       </Layout>
     )
@@ -173,6 +177,7 @@ export function ShipmentLineDetailsPage() {
               <WarehouseShipmentOrdersTable
                 token={token}
                 shipmentId={matchedMerchantOrderId}
+                warehouseId={isWarehouseRoute ? warehouseId : undefined}
                 mode={isWarehouseRoute ? "warehouse" : "compact"}
               />
             ) : null}

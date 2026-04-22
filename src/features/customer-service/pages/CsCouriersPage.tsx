@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { getDashboardKpis } from "@/api/merchant-orders-api"
+import { getWarehouseCouriers } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,19 +32,30 @@ export function CsCouriersPage() {
 
   const couriersQuery = useQuery({
     queryKey: ["cs-couriers-list", token],
-    queryFn: () => getDashboardKpis({ token }),
+    queryFn: async () => {
+      const [couriersRes, kpis] = await Promise.all([
+        getWarehouseCouriers({ token }),
+        getDashboardKpis({ token }),
+      ])
+      return { couriersRes, kpis }
+    },
     enabled: !!token,
     refetchInterval: 25_000,
   })
 
   const rows = useMemo<CourierRow[]>(() => {
     if (!couriersQuery.data) return []
-    return couriersQuery.data.courierWorkload
-      .map((row) => ({
-        courierId: row.courierId,
-        courierName:
-          row.courierName?.trim() || t("cs.couriers.table.unknownCourier"),
-        assignedCount: row.assignedCount,
+    const workloadByCourierId = new Map(
+      couriersQuery.data.kpis.courierWorkload.map((row) => [
+        row.courierId,
+        row.assignedCount,
+      ]),
+    )
+    return couriersQuery.data.couriersRes.couriers
+      .map((courier) => ({
+        courierId: courier.id,
+        courierName: courier.fullName?.trim() || t("cs.couriers.table.unknownCourier"),
+        assignedCount: workloadByCourierId.get(courier.id) ?? 0,
       }))
       .sort((a, b) => a.courierName.localeCompare(b.courierName))
   }, [couriersQuery.data, t])
@@ -65,9 +77,6 @@ export function CsCouriersPage() {
               <CardTitle className="text-xl font-semibold tracking-tight">
                 {t("cs.couriers.pageTitle")}
               </CardTitle>
-              <CardDescription className="text-muted-foreground text-sm leading-relaxed">
-                {t("cs.couriers.subtitle")}
-              </CardDescription>
             </div>
           </CardHeader>
         </Card>
@@ -77,7 +86,6 @@ export function CsCouriersPage() {
             <CardTitle className="text-base font-semibold">
               {t("cs.couriers.listTitle")}
             </CardTitle>
-            <CardDescription>{t("cs.couriers.listDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             {couriersQuery.error ? (

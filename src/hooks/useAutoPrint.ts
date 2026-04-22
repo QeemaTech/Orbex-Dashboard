@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { getPendingLabelShipments, getShipmentLabelRaw, markShipmentLabelPrinted, type ShipmentLabelResponse } from "@/api/shipments-api"
+import { getPendingLabelShipments, getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-api"
 import { printerService } from "@/services/printer.service"
 import { showToast } from "@/lib/toast"
 import { useTranslation } from "react-i18next"

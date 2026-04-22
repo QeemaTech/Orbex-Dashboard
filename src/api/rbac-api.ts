@@ -115,9 +115,18 @@ export async function removeUserRole(params: { token: string; userId: string; ro
 export type AuditEntry = {
   id: string
   actorUserId: string | null
+  actor: { id: string; email: string; fullName: string } | null
   action: string
   targetType: string
   targetId: string | null
+  target:
+    | {
+        id: string
+        type: string
+        label: string | null
+        subtitle: string | null
+      }
+    | null
   diffJson: unknown
   createdAt: string
 }

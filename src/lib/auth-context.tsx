@@ -10,6 +10,7 @@ import {
 
 import { loginRequest, meRequest } from "@/api/auth-api"
 import type { RbacRoleInfo } from "@/api/users-api"
+import { isWarehouseSiteAdmin, isWarehouseSiteStaff } from "@/lib/warehouse-access"
 
 export type UserRole =
   | "ADMIN"
@@ -23,9 +24,11 @@ export type UserRole =
 
 export type AuthUser = {
   id: string
+  merchantId?: string | null
   email: string
   fullName: string
   role: UserRole
+  merchantId?: string | null
   roles?: string[]
   rbacRoles?: RbacRoleInfo[]
   permissions?: string[]
@@ -68,6 +71,7 @@ function readStoredUser(): AuthUser | null {
     if (!u.roles) u.roles = u.role ? [u.role] : []
     if (!u.permissions) u.permissions = []
     if (!u.rbacRoles) u.rbacRoles = []
+    if (u.merchantId === undefined) u.merchantId = null
     return u as AuthUser
   } catch {
     return null
@@ -77,6 +81,7 @@ function readStoredUser(): AuthUser | null {
 function normalizeUser(u: AuthUser): AuthUser {
   return {
     ...u,
+    merchantId: u.merchantId ?? null,
     roles: u.roles ?? (u.role ? [u.role] : []),
     permissions: u.permissions ?? [],
     rbacRoles: u.rbacRoles ?? [],
@@ -96,6 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_ACCESS)
     if (!token) {
+      // Without a token, API queries stay disabled (`enabled: !!token`) but `Protected`
+      // still allowed a stale `orbex_user` — every list page looked empty. Clear session.
+      if (readStoredUser()) {
+        localStorage.removeItem(STORAGE_USER)
+        localStorage.removeItem(STORAGE_REFRESH)
+        setUser(null)
+        setRefreshToken(null)
+      }
       setLoading(false)
       return
     }
@@ -181,8 +194,24 @@ export function canAccessCustomerService(role: UserRole | undefined): boolean {
   return role === "CUSTOMER_SERVICE" || role === "ADMIN"
 }
 
-export function getDefaultDashboardRoute(role: UserRole | undefined): string {
-  if (role === "CUSTOMER_SERVICE") return "/cs/shipments"
-  if (role === "WAREHOUSE" || role === "WAREHOUSE_ADMIN") return "/warehouse"
+export function isMerchantUser(user: AuthUser | null | undefined): boolean {
+  if (!user) return false
+  if (typeof user.merchantId === "string" && user.merchantId.trim().length > 0) return true
+  const roleSlugs = new Set([
+    ...(user.roles ?? []),
+    ...(user.rbacRoles?.map((role) => role.slug) ?? []),
+  ])
+  return Array.from(roleSlugs).some((slug) => slug.toLowerCase().includes("merchant"))
+}
+
+/** Post-login and role-guard redirects. Pass full `user` so warehouse staff open their hub directly. */
+export function getDefaultDashboardRoute(user: AuthUser | null | undefined): string {
+  if (!user) return "/dashboard"
+  if (user.role === "CUSTOMER_SERVICE") return "/cs/shipments"
+  if (isWarehouseSiteStaff(user) && user.warehouseId) {
+    return `/warehouses/${encodeURIComponent(user.warehouseId)}`
+  }
+  if (isWarehouseSiteStaff(user)) return "/warehouse"
+  if (isWarehouseSiteAdmin(user)) return "/warehouse"
   return "/dashboard"
 }
