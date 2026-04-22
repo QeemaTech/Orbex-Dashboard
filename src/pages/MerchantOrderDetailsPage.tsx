@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, PackageCheck, Printer } from "react-lucid"
 import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -7,9 +7,11 @@ import { Link, useLocation, useParams } from "react-router-dom"
 import {
   getShipmentById,
   getShipmentOrders,
+  patchShipmentAssignedWarehouse,
   type CsShipmentRow,
 } from "@/api/merchant-orders-api"
 import { getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-api"
+import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { Button } from "@/components/ui/button"
@@ -64,6 +66,7 @@ export function MerchantOrderDetailsPage() {
   }>()
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const qc = useQueryClient()
 
   const merchantOrderId = (() => {
     try {
@@ -83,6 +86,7 @@ export function MerchantOrderDetailsPage() {
   const [mapCourierId, setMapCourierId] = useState<string | null>(null)
   const [locationOpen, setLocationOpen] = useState(false)
   const [locationRow, setLocationRow] = useState<CsShipmentRow | null>(null)
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("")
 
   const listQueryKey = useMemo(
     () => ["merchant-order", "detail", merchantOrderId, token] as const,
@@ -140,12 +144,46 @@ export function MerchantOrderDetailsPage() {
     } finally {
       setIsPrinting(false)
     }
-  }, [token, ordersSummaryQuery.data, isPrinting])
+  }, [t, token, ordersSummaryQuery.data, isPrinting])
 
   const openAddLocation = useCallback((row: CsShipmentRow) => {
     setLocationRow(row)
     setLocationOpen(true)
   }, [])
+
+  const canEditWarehouseAssignment =
+    (user?.permissions?.includes("merchant_orders.update") ??
+      false) ||
+    (user?.permissions?.includes("warehouses.manage") ?? false)
+
+  const warehousesQuery = useQuery({
+    queryKey: ["warehouse-sites", "assignment", token] as const,
+    queryFn: () => listWarehouseSites(token),
+    enabled: !!token && canEditWarehouseAssignment,
+  })
+
+  const setWarehouseMut = useMutation({
+    mutationFn: async (warehouseId: string) => {
+      const wid = warehouseId.trim()
+      return patchShipmentAssignedWarehouse({
+        token,
+        shipmentId: merchantOrderId,
+        assignedWarehouseId: wid ? wid : null,
+      })
+    },
+    onSuccess: async () => {
+      showToast(
+        t("merchantOrders.detail.warehouseUpdated", {
+          defaultValue: "Assigned warehouse updated.",
+        }),
+        "success",
+      )
+      await qc.invalidateQueries({ queryKey: listQueryKey })
+    },
+    onError: (err: Error) => {
+      showToast(err.message || "Failed to update warehouse", "error")
+    },
+  })
 
   const currencyLocale = t("merchantOrders.detail.currencyLocale", { defaultValue: "en-EG" })
   const formatMoney = (raw: string | null | undefined): string => {
@@ -173,6 +211,10 @@ export function MerchantOrderDetailsPage() {
       : "/merchant-orders"
 
   const tableMode = isWarehouseRoute ? "warehouse" : "compact"
+
+  const currentAssignedWarehouseId = q.data?.assignedWarehouse?.id ?? ""
+  const effectiveSelectedWarehouseId =
+    selectedWarehouseId !== "" ? selectedWarehouseId : currentAssignedWarehouseId
 
   return (
     <Layout title={t("merchantOrders.detailTitle")}>
@@ -266,6 +308,57 @@ export function MerchantOrderDetailsPage() {
                         <strong>{t("merchantOrders.detail.assignedWarehouse")}:</strong>{" "}
                         {q.data.assignedWarehouse?.name ?? "—"}
                       </p>
+                      {canEditWarehouseAssignment ? (
+                        <div className="md:col-span-2">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <label className="text-sm font-medium">
+                              {t("merchantOrders.detail.changeAssignedWarehouse", {
+                                defaultValue: "Change assigned warehouse",
+                              })}
+                            </label>
+                            <div className="flex flex-1 flex-wrap items-center gap-2">
+                              <select
+                                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full max-w-[420px] rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                value={effectiveSelectedWarehouseId}
+                                onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                                disabled={warehousesQuery.isLoading || setWarehouseMut.isPending}
+                              >
+                                <option value="">
+                                  {t("merchantOrders.detail.unassignedWarehouse", {
+                                    defaultValue: "Unassigned",
+                                  })}
+                                </option>
+                                {(warehousesQuery.data?.warehouses ?? []).map((w) => (
+                                  <option key={w.id} value={w.id}>
+                                    {w.name}
+                                    {w.governorate ? ` · ${w.governorate}` : ""}
+                                  </option>
+                                ))}
+                              </select>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={
+                                  setWarehouseMut.isPending ||
+                                  (effectiveSelectedWarehouseId ?? "") ===
+                                    (currentAssignedWarehouseId ?? "")
+                                }
+                                onClick={() => setWarehouseMut.mutate(effectiveSelectedWarehouseId)}
+                              >
+                                {setWarehouseMut.isPending
+                                  ? t("common.saving", { defaultValue: "Saving..." })
+                                  : t("common.save", { defaultValue: "Save" })}
+                              </Button>
+                            </div>
+                          </div>
+                          {warehousesQuery.error ? (
+                            <p className="text-destructive mt-2 text-sm">
+                              {(warehousesQuery.error as Error).message}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
                       <p className="flex flex-wrap items-center gap-2">
                         <strong>{t("warehouse.table.batchPipelineStatus")}:</strong>{" "}
                         <BackendStatusBadge
