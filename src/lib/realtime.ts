@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { io, type Socket } from "socket.io-client"
 
@@ -24,6 +24,7 @@ type RealtimeEventPayload = {
 export function RealtimeBridge() {
   const { accessToken } = useAuth()
   const qc = useQueryClient()
+  const dashboardInvalidateTimer = useRef<number | null>(null)
 
   useEffect(() => {
     if (!accessToken) return
@@ -32,6 +33,14 @@ export function RealtimeBridge() {
       path: "/socket.io",
       transports: ["websocket", "polling"],
     })
+
+    const scheduleDashboardKpiInvalidate = () => {
+      if (dashboardInvalidateTimer.current !== null) return
+      dashboardInvalidateTimer.current = window.setTimeout(() => {
+        dashboardInvalidateTimer.current = null
+        void qc.invalidateQueries({ queryKey: ["dashboard-kpis"] })
+      }, 750)
+    }
 
     const onEvent = (data: RealtimeEventPayload) => {
       try {
@@ -47,16 +56,17 @@ export function RealtimeBridge() {
           void qc.invalidateQueries({ queryKey: ["shipment-timeline"] })
           void qc.invalidateQueries({ queryKey: ["warehouse-queue"] })
           void qc.invalidateQueries({ queryKey: ["warehouse-stats"] })
+          scheduleDashboardKpiInvalidate()
         }
         if (data.name === "kpi.updated") {
-          void qc.invalidateQueries({ queryKey: ["dashboard-kpis"] })
+          scheduleDashboardKpiInvalidate()
         }
         if (data.name === "notification.created") {
           void qc.invalidateQueries({ queryKey: ["notifications", "inbox"] })
           if (data.payload?.type === CS_SHIPMENT_CREATED) {
             void qc.invalidateQueries({ queryKey: ["cs-shipments"] })
             void qc.invalidateQueries({ queryKey: ["shipments-list"] })
-            void qc.invalidateQueries({ queryKey: ["dashboard-kpis"] })
+            scheduleDashboardKpiInvalidate()
           }
         }
       } catch {
@@ -69,6 +79,10 @@ export function RealtimeBridge() {
     return () => {
       socket.off("event", onEvent)
       socket.disconnect()
+      if (dashboardInvalidateTimer.current !== null) {
+        window.clearTimeout(dashboardInvalidateTimer.current)
+        dashboardInvalidateTimer.current = null
+      }
     }
   }, [accessToken, qc])
 

@@ -17,7 +17,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { getWarehouseSite } from "@/api/warehouse-api"
 import { useSidebar } from "@/components/layout/sidebar-context"
 import { Button } from "@/components/ui/button"
-import { isMerchantUser, useAuth } from "@/lib/auth-context"
+import { useAuth } from "@/lib/auth-context"
 import { isMainBranch } from "@/lib/warehouse-utils"
 import { isWarehouseStaffRole, isWarehouseSiteStaff } from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
@@ -185,7 +185,6 @@ export function Sidebar() {
             ].filter(({ perm }) => hasPerm(perm))
           : adminNavConfig
               .filter(({ perm }) => hasPerm(perm))
-              .filter(({ to }) => !(isMerchantUser(user) && to === "/dashboard"))
 
   return (
     <aside

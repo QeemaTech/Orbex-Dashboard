@@ -58,6 +58,12 @@ function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
 }
 
+function clampTrendDays(days: number | undefined): number {
+  const fallback = 14
+  if (!Number.isFinite(days)) return fallback
+  return Math.max(1, Math.min(60, Number(days)))
+}
+
 function formatEGPFromDecimalString(amountStr: string | undefined, locale: string) {
   const n = Number.parseFloat(String(amountStr ?? "0").replace(/,/g, "").trim())
   if (!Number.isFinite(n)) return "—"
@@ -124,7 +130,7 @@ export function DashboardPage() {
   const trendDays = insightsPeriod?.mode === "LAST_PERIOD" ? insightsPeriod.lastDays : undefined
   const createdFrom = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.startDate : undefined
   const createdTo = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.endDate : undefined
-  const effectiveTrendDays = trendDays ?? 14
+  const effectiveTrendDays = clampTrendDays(trendDays)
 
   const kpiQuery = useQuery({
     queryKey: [
@@ -145,10 +151,7 @@ export function DashboardPage() {
         createdFrom: createdFrom,
         createdTo: createdTo,
       }),
-    // If merchant cannot read INSIGHTS_PERIOD setting, still load KPIs using defaults.
-    enabled:
-      canReadMerchantOrderKpis &&
-      (insightsSettingsQuery.isSuccess || insightsSettingsQuery.isError),
+    enabled: canReadMerchantOrderKpis,
   })
   const totals = kpiQuery.data?.totals
   const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []
@@ -192,27 +195,42 @@ export function DashboardPage() {
     const rows = kpiQuery.data?.transferStatusBreakdown ?? []
     const priority = ["PENDING_CONFIRMATION", "PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
     const rank = new Map(priority.map((status, idx) => [status, idx]))
+    const statusColors = new Map<string, string>([
+      ["PENDING_CONFIRMATION", "#2563eb"],
+      ["PENDING_PICKUP", "#f97316"],
+      ["PICKED_UP", "#10b981"],
+      ["IN_WAREHOUSE", "#8b5cf6"],
+    ])
     const sortedRows = [...rows].sort((a, b) => {
       const aRank = rank.get(String(a.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
       const bRank = rank.get(String(b.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
       if (aRank !== bRank) return aRank - bRank
       return b.count - a.count
     })
-    const palette = [
-      "var(--primary)",
-      "var(--success)",
-      "var(--warning)",
-      "var(--chart-2)",
-      "var(--chart-3)",
-      "var(--chart-4)",
-      "var(--muted-foreground)",
-    ]
-    return sortedRows.map((row, i) => ({
-      status: row.transferStatus,
-      value: row.count,
-      color: palette[i % palette.length] ?? "var(--primary)",
-      label: backendMerchantOrderBatchLabel(t, row.transferStatus),
-    }))
+    const usedColors = new Set<string>(statusColors.values())
+    let unknownStatusColorIndex = 0
+    return sortedRows.map((row) => {
+      const normalizedStatus = String(row.transferStatus ?? "").trim().toUpperCase()
+      let color = statusColors.get(normalizedStatus)
+
+      // Ensure every status slice gets a unique color.
+      if (!color) {
+        do {
+          const hue = (unknownStatusColorIndex * 53) % 360
+          const lightness = 46 + (unknownStatusColorIndex % 3) * 8
+          color = `hsl(${hue} 72% ${lightness}%)`
+          unknownStatusColorIndex += 1
+        } while (usedColors.has(color))
+      }
+
+      usedColors.add(color)
+      return {
+        status: row.transferStatus,
+        value: row.count,
+        color,
+        label: backendMerchantOrderBatchLabel(t, row.transferStatus),
+      }
+    })
   }, [kpiQuery.data?.transferStatusBreakdown, t])
 
   const insightGridClass = "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-4"

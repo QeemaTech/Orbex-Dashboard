@@ -7,7 +7,14 @@ import "./i18n/index.ts"
 import "./index.css"
 import { AuthProvider } from "./lib/auth-context"
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
