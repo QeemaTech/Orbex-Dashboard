@@ -1,4 +1,4 @@
-import { ApiError, apiFetch, apiUrl } from "@/api/client"
+import { apiFetch, apiUrl } from "@/api/client"
 import { extractShipmentLocation } from "@/features/customer-service/lib/location"
 
 const useDashboardSeedData =
@@ -861,7 +861,7 @@ export async function importOrdersFromExcel(
     }),
   )
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/api/merchant-orders/import-orders`, {
+  const response = await fetch(apiUrl("/api/merchant-orders/import-orders"), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${p.token}`,
@@ -870,8 +870,22 @@ export async function importOrdersFromExcel(
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Upload failed" }))
-    throw new Error(error.message || "Upload failed")
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Upload failed" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : typeof errorBody === "object" &&
+            errorBody !== null &&
+            "message" in errorBody &&
+            typeof (errorBody as { message?: unknown }).message === "string"
+          ? (errorBody as { message: string }).message
+          : "Upload failed"
+    throw new Error(msg)
   }
 
   return response.json()
@@ -879,7 +893,7 @@ export async function importOrdersFromExcel(
 
 export async function downloadImportTemplate(token: string): Promise<void> {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/merchant-orders/import-template`,
+    apiUrl("/api/merchant-orders/import-template"),
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -888,7 +902,17 @@ export async function downloadImportTemplate(token: string): Promise<void> {
   )
 
   if (!response.ok) {
-    throw new Error("Failed to download template")
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Failed to download template" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : "Failed to download template"
+    throw new Error(msg)
   }
 
   const blob = await response.blob()
