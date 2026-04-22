@@ -22,7 +22,6 @@ import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
 import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
 import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
-import { MerchantOrderPendingImportsPage } from "@/pages/MerchantOrderPendingImportsPage"
 import { ShipmentLabelPrintPage } from "@/pages/ShipmentLabelPrintPage"
 import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
 import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
@@ -197,19 +196,6 @@ export default function App() {
                 requiredPermissions={["merchant_orders.read"]}
               >
                 <MerchantOrdersListPage />
-              </ProtectedRole>
-            </Protected>
-          }
-        />
-        <Route
-          path="/merchant-orders/pending-imports"
-          element={
-            <Protected>
-              <ProtectedRole
-                allowed={["ADMIN", "MERCHANT"]}
-                requiredPermissions={["merchant_orders.confirm"]}
-              >
-                <MerchantOrderPendingImportsPage />
               </ProtectedRole>
             </Protected>
           }

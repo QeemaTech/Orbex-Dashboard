@@ -1,4 +1,4 @@
-import { ApiError, apiFetch, apiUrl } from "@/api/client"
+import { apiFetch, apiUrl } from "@/api/client"
 import { extractShipmentLocation } from "@/features/customer-service/lib/location"
 
 const useDashboardSeedData =
@@ -853,129 +853,83 @@ export type PendingMerchantOrderImport = {
   createdByName: string | null
 }
 
-export async function importMerchantOrdersExcel(params: {
-  token: string
-  file: File
-  shipment?: MerchantOrderImportMeta
-}): Promise<MerchantOrderImportResponse> {
-  const body = new FormData()
-  body.append("file", params.file)
-  body.append("shipment", JSON.stringify(params.shipment ?? {}))
+export async function importOrdersFromExcel(
+  p: ImportOrdersParams,
+): Promise<ImportOrdersResponse> {
+  const formData = new FormData()
+  formData.append("file", p.file)
+  formData.append(
+    "shipment",
+    JSON.stringify({
+      merchantId: p.merchantId || null,
+      regionId: p.regionId,
+      notes: p.notes,
+      trackingNumber: p.trackingNumber,
+    }),
+  )
 
-  const locale = localStorage.getItem("i18nextLng") || "en"
-  const headers = new Headers({
-    Authorization: `Bearer ${params.token}`,
-    "Accept-Language": locale,
-  })
-  const res = await fetch(apiUrl("/api/merchant-orders/import-orders"), {
+  const response = await fetch(apiUrl("/api/merchant-orders/import-orders"), {
     method: "POST",
-    headers,
-    body,
+    headers: {
+      Authorization: `Bearer ${p.token}`,
+    },
+    body: formData,
   })
 
-  if (res.status === 204) {
-    return { pendingImport: { id: "" }, orderCount: 0 }
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Upload failed" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : typeof errorBody === "object" &&
+            errorBody !== null &&
+            "message" in errorBody &&
+            typeof (errorBody as { message?: unknown }).message === "string"
+          ? (errorBody as { message: string }).message
+          : "Upload failed"
+    throw new Error(msg)
   }
 
-  const text = await res.text()
-  const data = text ? (JSON.parse(text) as unknown) : null
-  if (!res.ok) {
-    let message = res.statusText || "Import failed"
-    let code: string | undefined
-    let details: unknown
-    if (typeof data === "object" && data !== null) {
-      if ("error" in data && typeof (data as { error: unknown }).error === "string") {
-        message = (data as { error: string }).error
-      } else if (
-        "message" in data &&
-        typeof (data as { message: unknown }).message === "string"
-      ) {
-        message = (data as { message: string }).message
-      }
-      if ("code" in data && typeof (data as { code: unknown }).code === "string") {
-        code = (data as { code: string }).code
-      }
-      if ("details" in data) {
-        details = (data as { details: unknown }).details
-      }
-    }
-    throw new ApiError(res.status, message, code, details)
+  return response.json()
+}
+
+export async function downloadImportTemplate(token: string): Promise<void> {
+  const response = await fetch(
+    apiUrl("/api/merchant-orders/import-template"),
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Failed to download template" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : "Failed to download template"
+    throw new Error(msg)
   }
 
-  return data as MerchantOrderImportResponse
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.setAttribute("download", "order-import-template.xlsx")
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => window.URL.revokeObjectURL(url), 100)
 }
 
-export async function listPendingMerchantOrderImports(params: {
-  token: string
-}): Promise<{ items: PendingMerchantOrderImport[] }> {
-  return apiFetch<{ items: PendingMerchantOrderImport[] }>(
-    "/api/merchant-orders/pending-imports",
-    {
-      token: params.token,
-    },
-  )
-}
-
-export async function confirmPendingMerchantOrderImport(params: {
-  token: string
-  pendingImportId: string
-}): Promise<{ shipment: { id: string }; orderCount: number }> {
-  return apiFetch<{ shipment: { id: string }; orderCount: number }>(
-    `/api/merchant-orders/pending-imports/${params.pendingImportId}/confirm`,
-    {
-      method: "POST",
-      token: params.token,
-    },
-  )
-}
-
-export async function rejectPendingMerchantOrderImport(params: {
-  token: string
-  pendingImportId: string
-  reason?: string | null
-}): Promise<{ id: string; status: string }> {
-  return apiFetch<{ id: string; status: string }>(
-    `/api/merchant-orders/pending-imports/${params.pendingImportId}/reject`,
-    {
-      method: "POST",
-      token: params.token,
-      body: JSON.stringify({ reason: params.reason ?? null }),
-    },
-  )
-}
-
-export async function downloadMerchantOrdersImportTemplate(params: {
-  token: string
-}): Promise<Blob> {
-  const locale = localStorage.getItem("i18nextLng") || "en"
-  const headers = new Headers({
-    Authorization: `Bearer ${params.token}`,
-    "Accept-Language": locale,
-    Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*",
-  })
-  const res = await fetch(apiUrl("/api/merchant-orders/import-template"), {
-    method: "GET",
-    headers,
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    let msg = res.statusText || "Template download failed"
-    try {
-      const parsed = text ? (JSON.parse(text) as unknown) : null
-      if (typeof parsed === "object" && parsed !== null) {
-        if ("error" in parsed && typeof (parsed as { error: unknown }).error === "string") {
-          msg = (parsed as { error: string }).error
-        } else if (
-          "message" in parsed &&
-          typeof (parsed as { message: unknown }).message === "string"
-        ) {
-          msg = (parsed as { message: string }).message
-        }
-      }
-    } catch {
-      // keep default message
-    }
-    throw new ApiError(res.status, msg)
-  }
-  return res.blob()
-}
