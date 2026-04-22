@@ -86,17 +86,33 @@ function formatInsightsPeriodLabel(
   }
 }
 
-export function DashboardPage() {
+export function DashboardPage(props?: { scopedWarehouseId?: string | null }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isMd = useMediaQuery("(min-width: 768px)")
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const scopedWarehouseId =
+    props?.scopedWarehouseId && props.scopedWarehouseId.trim().length > 0
+      ? props.scopedWarehouseId
+      : null
+  const isWarehouseScoped = scopedWarehouseId !== null
+  const scopedWarehouseBase = isWarehouseScoped
+    ? `/warehouses/${encodeURIComponent(scopedWarehouseId)}`
+    : null
+  const shipmentLinesPath = scopedWarehouseBase
+    ? `${scopedWarehouseBase}?tab=shipments`
+    : "/shipments"
+  const merchantOrdersPath = scopedWarehouseBase
+    ? `${scopedWarehouseBase}/merchant-orders`
+    : "/merchant-orders"
 
-  const canReadMerchantOrderKpis = !!token && hasPermission(user, "merchant_orders.read")
-  const canListUsers = !!token && hasPermission(user, "users.read")
-  const canListWarehouses = !!token && hasPermission(user, "warehouses.read")
+  const canReadMerchantOrderKpis =
+    !!token &&
+    (hasPermission(user, "merchant_orders.read") || hasPermission(user, "dashboard.view"))
+  const canListUsers = !isWarehouseScoped && !!token && hasPermission(user, "users.read")
+  const canListWarehouses = !isWarehouseScoped && !!token && hasPermission(user, "warehouses.read")
 
   const warehousesPreview = useQuery({
     queryKey: ["dashboard-warehouse-sites", token],
@@ -123,16 +139,25 @@ export function DashboardPage() {
   const effectiveTrendDays = trendDays ?? 14
 
   const kpiQuery = useQuery({
-    queryKey: ["dashboard-kpis", "home", token, effectiveTrendDays, createdFrom, createdTo],
+    queryKey: [
+      "dashboard-kpis",
+      "home",
+      token,
+      scopedWarehouseId,
+      effectiveTrendDays,
+      createdFrom,
+      createdTo,
+    ],
     queryFn: () =>
       getDashboardKpis({
         token,
+        assignedWarehouseId: scopedWarehouseId ?? undefined,
         recentTake: 8,
         trendDays: createdFrom ? undefined : effectiveTrendDays,
         createdFrom: createdFrom,
         createdTo: createdTo,
       }),
-    enabled: canReadMerchantOrderKpis && insightsSettingsQuery.isSuccess,
+    enabled: canReadMerchantOrderKpis,
   })
   const totals = kpiQuery.data?.totals
   const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []
@@ -202,6 +227,13 @@ export function DashboardPage() {
             {(kpiQuery.error as Error)?.message ? String((kpiQuery.error as Error).message) : ""}
           </p>
         ) : null}
+        {canReadMerchantOrderKpis && insightsSettingsQuery.isError ? (
+          <p className="text-muted-foreground text-sm">
+            {t("dashboard.kpiPeriodFallback", {
+              defaultValue: "Using default insights period.",
+            })}
+          </p>
+        ) : null}
         {canReadMerchantOrderKpis && kpiPending ? (
           <p className="text-muted-foreground text-sm">{t("dashboard.kpiLoading")}</p>
         ) : null}
@@ -222,7 +254,7 @@ export function DashboardPage() {
               value={kpiPending ? "—" : shipmentLinesHeadline}
               icon={Boxes}
               accent="warning"
-              to="/shipments"
+                to={shipmentLinesPath}
               hideTrend
             />
             <StatCard
@@ -230,7 +262,7 @@ export function DashboardPage() {
               value={kpiPending ? "—" : merchantOrdersHeadline}
               icon={Package}
               accent="success"
-              to="/merchant-orders"
+                to={merchantOrdersPath}
               hideTrend
             />
             {canListWarehouses ? (
@@ -430,7 +462,7 @@ export function DashboardPage() {
                 type="button"
                 variant="default"
                 className="w-full sm:w-auto"
-                onClick={() => navigate("/merchant-orders")}
+                onClick={() => navigate(merchantOrdersPath)}
               >
                 {t("dashboard.quickActions.viewShipments")}
               </Button>
@@ -438,7 +470,7 @@ export function DashboardPage() {
                 type="button"
                 variant="outline"
                 className="w-full sm:w-auto"
-                onClick={() => navigate("/shipments")}
+                onClick={() => navigate(shipmentLinesPath)}
               >
                 {t("dashboard.quickActions.viewAllOrders")}
               </Button>
@@ -474,6 +506,12 @@ export function DashboardPage() {
                       onClick={() => {
                         const batchId = merchantOrderBatchId(row)
                         if (!batchId) return
+                        if (scopedWarehouseBase) {
+                          void navigate(
+                            `${scopedWarehouseBase}/merchant-orders/${encodeURIComponent(batchId)}`,
+                          )
+                          return
+                        }
                         void navigate(`/merchant-orders/${encodeURIComponent(batchId)}`)
                       }}
                     >

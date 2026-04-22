@@ -209,7 +209,7 @@ export function getDefaultDashboardRoute(user: AuthUser | null | undefined): str
   if (!user) return "/dashboard"
   if (user.role === "CUSTOMER_SERVICE") return "/cs/shipments"
   if (isWarehouseSiteStaff(user) && user.warehouseId) {
-    return `/warehouses/${encodeURIComponent(user.warehouseId)}`
+    return `/warehouses/${encodeURIComponent(user.warehouseId)}/merchant-orders`
   }
   if (isWarehouseSiteStaff(user)) return "/warehouse"
   if (isWarehouseSiteAdmin(user)) return "/warehouse"

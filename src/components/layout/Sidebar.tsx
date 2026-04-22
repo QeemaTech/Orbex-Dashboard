@@ -19,7 +19,11 @@ import { useSidebar } from "@/components/layout/sidebar-context"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 import { isMainBranch } from "@/lib/warehouse-utils"
-import { isWarehouseStaffRole, isWarehouseSiteStaff } from "@/lib/warehouse-access"
+import {
+  isWarehouseSiteAdmin,
+  isWarehouseStaffRole,
+  isWarehouseSiteStaff,
+} from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
 
 /** Same pathname + `tab` query as sidebar link (staff hub has multiple links under one path). */
@@ -82,6 +86,10 @@ export function Sidebar() {
     if (!p) return true
     return perms.includes(p)
   }
+  const hasWarehouseAdminPermissions =
+    hasPerm("warehouses.manage") || hasPerm("warehouses.create")
+  const isWarehouseAdminUser =
+    !!user && (isWarehouseSiteAdmin(user) || hasWarehouseAdminPermissions)
 
   const staffSiteQuery = useQuery({
     queryKey: ["sidebar-warehouse-site", token, user?.warehouseId],
@@ -115,7 +123,7 @@ export function Sidebar() {
       ]
       if (isMainHubForStaff) {
         items.push({
-          to: `${base}?tab=orders`,
+          to: `${base}/merchant-orders`,
           labelKey: "nav.warehouseMerchantOrders",
           icon: Boxes,
           end: false,
@@ -152,14 +160,22 @@ export function Sidebar() {
       ? customerServiceNavConfig.filter(({ perm }) => hasPerm(perm))
       : user && isWarehouseStaffRole(user)
         ? warehouseStaffNav.filter(({ perm }) => hasPerm(perm))
-        : user?.role === "WAREHOUSE_ADMIN"
+        : isWarehouseAdminUser
           ? [
+              {
+                to: "/warehouse-dashboard",
+                labelKey: "nav.dashboard" as const,
+                icon: LayoutDashboard,
+                end: true,
+              },
               {
                 to: "/warehouses",
                 labelKey: "nav.warehouses" as const,
                 icon: Warehouse,
                 end: true,
-                perm: "warehouses.read" as const,
+                perm: hasPerm("warehouses.read")
+                  ? ("warehouses.read" as const)
+                  : ("warehouses.manage" as const),
               },
               {
                 to: "/delivery-zones",

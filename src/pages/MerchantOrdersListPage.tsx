@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Boxes } from "react-lucid"
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
 
 import {
   downloadMerchantOrdersImportTemplate,
@@ -15,7 +15,11 @@ import {
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { listMerchants } from "@/api/merchants-api"
 import { ApiError, formatApiValidationDetails } from "@/api/client"
-import { listWarehouseSites } from "@/api/warehouse-api"
+import {
+  listWarehouseOrders,
+  listWarehouseSites,
+  type WarehouseMerchantOrderRow,
+} from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
@@ -58,6 +62,7 @@ export function MerchantOrdersListPage() {
   const { t, i18n } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
+  const { warehouseId: warehouseIdParam } = useParams<{ warehouseId?: string }>()
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
@@ -74,14 +79,17 @@ export function MerchantOrdersListPage() {
   } | null>(null)
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const warehouseId = searchParams.get("warehouseId") ?? ""
+  const warehouseIdFilter = searchParams.get("warehouseId") ?? ""
+  const routeWarehouseId = warehouseIdParam?.trim() ?? ""
+  const isWarehouseScopedRoute = routeWarehouseId.length > 0
+  const warehouseId = isWarehouseScopedRoute ? routeWarehouseId : warehouseIdFilter
   const page = Number(searchParams.get("page") ?? "1") || 1
   const pageSize = Number(searchParams.get("pageSize") ?? "20") || 20
 
   const warehousesQuery = useQuery({
     queryKey: ["warehouse-sites-shipments", token],
     queryFn: () => listWarehouseSites(token),
-    enabled: !!token && user?.role === "ADMIN",
+    enabled: !!token && user?.role === "ADMIN" && !isWarehouseScopedRoute,
   })
 
   const listQueryKey = useMemo(
@@ -106,7 +114,25 @@ export function MerchantOrdersListPage() {
         assignedWarehouseId: warehouseId || undefined,
         expand: "merchant,courier",
       }),
-    enabled: !!token,
+    enabled: !!token && !isWarehouseScopedRoute,
+  })
+
+  const warehouseOrdersQuery = useQuery({
+    queryKey: [
+      "warehouse-merchant-orders-list",
+      token,
+      routeWarehouseId,
+      page,
+      pageSize,
+    ] as const,
+    queryFn: () =>
+      listWarehouseOrders({
+        token,
+        page,
+        pageSize,
+        warehouseId: routeWarehouseId,
+      }),
+    enabled: !!token && isWarehouseScopedRoute,
   })
 
   const kpiQuery = useQuery({
@@ -123,18 +149,19 @@ export function MerchantOrdersListPage() {
         recentTake: 8,
         assignedWarehouseId: warehouseId || undefined,
       }),
-    enabled: !!token,
+    enabled: !!token && !isWarehouseScopedRoute,
   })
 
   const setWarehouse = useCallback(
     (next: string) => {
+      if (isWarehouseScopedRoute) return
       const p = new URLSearchParams(searchParams)
       if (next) p.set("warehouseId", next)
       else p.delete("warehouseId")
       p.set("page", "1")
       setSearchParams(p)
     },
-    [searchParams, setSearchParams],
+    [isWarehouseScopedRoute, searchParams, setSearchParams],
   )
 
   const setPage = (n: number) => {
@@ -145,7 +172,11 @@ export function MerchantOrdersListPage() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
+    Math.ceil(
+      ((isWarehouseScopedRoute
+        ? warehouseOrdersQuery.data?.total
+        : shipmentsQuery.data?.total) ?? 0) / pageSize,
+    ),
   )
 
   const batchPipelineBreakdown = useMemo(() => {
@@ -169,6 +200,8 @@ export function MerchantOrdersListPage() {
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
+    : isWarehouseScopedRoute
+      ? `/warehouses/${encodeURIComponent(routeWarehouseId)}/merchant-orders`
     : "/merchant-orders"
 
   const onRowClick = (row: CsShipmentRow) => {
@@ -180,7 +213,7 @@ export function MerchantOrdersListPage() {
   const pendingImportsQuery = useQuery({
     queryKey: ["merchant-order-pending-imports", token],
     queryFn: () => listPendingMerchantOrderImports({ token }),
-    enabled: !!token && canViewPendingConfirmations,
+    enabled: !!token && canViewPendingConfirmations && !isWarehouseScopedRoute,
   })
 
   const pendingRows = useMemo(() => {
@@ -188,7 +221,10 @@ export function MerchantOrdersListPage() {
     return pendingImportsQuery.data?.items ?? []
   }, [canViewPendingConfirmations, page, pendingImportsQuery.data?.items])
 
-  const totalRowsForPagination = (shipmentsQuery.data?.total ?? 0) + pendingRows.length
+  const totalRowsForPagination =
+    (isWarehouseScopedRoute
+      ? (warehouseOrdersQuery.data?.total ?? 0)
+      : (shipmentsQuery.data?.total ?? 0)) + pendingRows.length
 
   const onDownloadTemplate = useCallback(async () => {
     if (!token || isDownloadingTemplate) return
@@ -316,27 +352,32 @@ export function MerchantOrdersListPage() {
         </Card>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <label className="text-muted-foreground text-sm font-medium" htmlFor="shipments-warehouse-filter">
-              {t("merchantOrdersList.filterWarehouse")}
-            </label>
-            <select
-              id="shipments-warehouse-filter"
-              className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:w-[280px]"
-              value={warehouseId}
-              onChange={(e) => setWarehouse(e.target.value)}
-              disabled={warehousesQuery.isLoading}
-            >
-              <option value="">{t("merchantOrdersList.allWarehouses")}</option>
-              {(warehousesQuery.data?.warehouses ?? []).map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                  {w.governorate ? ` · ${w.governorate}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          {canImportMerchantOrders ? (
+          {merchantContext || isWarehouseScopedRoute ? null : (
+            <div className="space-y-2">
+              <label
+                className="text-muted-foreground text-sm font-medium"
+                htmlFor="shipments-warehouse-filter"
+              >
+                {t("merchantOrdersList.filterWarehouse")}
+              </label>
+              <select
+                id="shipments-warehouse-filter"
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:w-[280px]"
+                value={warehouseId}
+                onChange={(e) => setWarehouse(e.target.value)}
+                disabled={warehousesQuery.isLoading}
+              >
+                <option value="">{t("merchantOrdersList.allWarehouses")}</option>
+                {(warehousesQuery.data?.warehouses ?? []).map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                    {w.governorate ? ` · ${w.governorate}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {canImportMerchantOrders && !isWarehouseScopedRoute ? (
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -385,25 +426,27 @@ export function MerchantOrdersListPage() {
           </p>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title={t("merchantOrdersList.kpiTotalMerchantOrders")}
-            value={totals?.totalShipments ?? 0}
-            icon={Boxes}
-            accent="primary"
-            hideTrend
-          />
-          {batchPipelineBreakdown.slice(0, 3).map((row) => (
+        {!isWarehouseScopedRoute ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              key={row.transferStatus}
-              title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
-              value={row.count}
+              title={t("merchantOrdersList.kpiTotalMerchantOrders")}
+              value={totals?.totalShipments ?? 0}
               icon={Boxes}
-              accent="success"
+              accent="primary"
               hideTrend
             />
-          ))}
-        </div>
+            {batchPipelineBreakdown.slice(0, 3).map((row) => (
+              <StatCard
+                key={row.transferStatus}
+                title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
+                value={row.count}
+                icon={Boxes}
+                accent="success"
+                hideTrend
+              />
+            ))}
+          </div>
+        ) : null}
 
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="border-border/60 border-b pb-4">
@@ -413,22 +456,31 @@ export function MerchantOrdersListPage() {
             <CardDescription>{t("merchantOrdersList.tableCardDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
-            {shipmentsQuery.error ? (
+            {isWarehouseScopedRoute && warehouseOrdersQuery.error ? (
+              <p className="text-destructive text-sm">
+                {(warehouseOrdersQuery.error as Error).message}
+              </p>
+            ) : null}
+            {!isWarehouseScopedRoute && shipmentsQuery.error ? (
               <p className="text-destructive text-sm">
                 {(shipmentsQuery.error as Error).message}
               </p>
             ) : null}
-            {pendingImportsQuery.error ? (
+            {!isWarehouseScopedRoute && pendingImportsQuery.error ? (
               <p className="text-destructive text-sm">
                 {(pendingImportsQuery.error as Error).message}
               </p>
             ) : null}
 
-            {shipmentsQuery.isLoading ? (
+            {isWarehouseScopedRoute && warehouseOrdersQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
+            ) : null}
+            {!isWarehouseScopedRoute && shipmentsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
             ) : null}
 
-            {shipmentsQuery.data ? (
+            {((isWarehouseScopedRoute && warehouseOrdersQuery.data) ||
+              (!isWarehouseScopedRoute && shipmentsQuery.data)) ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
                 <Table>
                   <TableHeader>
@@ -447,7 +499,8 @@ export function MerchantOrdersListPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingRows.map((row) => (
+                    {!isWarehouseScopedRoute &&
+                      pendingRows.map((row) => (
                       <TableRow
                         key={`pending-${row.id}`}
                         className="hover:bg-muted/50 cursor-pointer"
@@ -472,8 +525,9 @@ export function MerchantOrdersListPage() {
                           />
                         </TableCell>
                       </TableRow>
-                    ))}
-                    {shipmentsQuery.data.shipments.map((row, idx) => (
+                      ))}
+                    {!isWarehouseScopedRoute &&
+                      shipmentsQuery.data?.shipments.map((row, idx) => (
                       <TableRow
                         key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
                         className="hover:bg-muted/50 cursor-pointer"
@@ -504,7 +558,39 @@ export function MerchantOrdersListPage() {
                           />
                         </TableCell>
                       </TableRow>
-                    ))}
+                      ))}
+                    {isWarehouseScopedRoute &&
+                      warehouseOrdersQuery.data?.merchantOrders.map(
+                        (row: WarehouseMerchantOrderRow, idx) => (
+                          <TableRow
+                            key={row.merchantOrderId || row.id || `w-row-${idx}`}
+                            className="hover:bg-muted/50 cursor-pointer"
+                            onClick={() =>
+                              void navigate(
+                                `/warehouses/${encodeURIComponent(routeWarehouseId)}/merchant-orders/${encodeURIComponent(row.merchantOrderId || row.id)}`,
+                              )
+                            }
+                          >
+                            <TableCell className="font-medium">
+                              {row.merchant?.displayName ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-end tabular-nums">
+                              {row.orderCount ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-end tabular-nums">
+                              {formatEGP(row.totalShipmentValue, locale)}
+                            </TableCell>
+                            <TableCell>
+                              <MerchantBatchStatusWithWarehouse
+                                transferStatus={row.transferStatus}
+                                assignedWarehouseId={row.assignedWarehouse?.id}
+                                assignedWarehouseName={row.assignedWarehouse?.name}
+                                contextWarehouseId={routeWarehouseId || user?.warehouseId}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ),
+                      )}
                   </TableBody>
                 </Table>
               </div>
