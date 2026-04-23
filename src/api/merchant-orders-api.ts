@@ -85,6 +85,10 @@ export type CsShipmentRow = {
   orderCount?: number
   /** Sum of line values in the batch. */
   totalShipmentValue?: string
+  /** All order lines have terminal delivery outcome and failed lines are at hub. */
+  isResolved?: boolean
+  /** Every line delivered or returned to merchant. */
+  isFinished?: boolean
   createdAt: string
   updatedAt: string
   statusEvents?: CsShipmentStatusEvent[]
@@ -348,6 +352,30 @@ export async function getShipmentOrders(params: {
   return apiFetch<ShipmentOrdersResponse>(
     `/api/merchant-orders/${params.shipmentId}/orders`,
     { token: params.token },
+  )
+}
+
+export async function bulkReturnRejectedToMerchant(params: {
+  token: string
+  merchantOrderId: string
+}): Promise<{ created: string[]; skipped: string[] }> {
+  return apiFetch<{ created: string[]; skipped: string[] }>(
+    `/api/merchant-orders/${encodeURIComponent(
+      params.merchantOrderId,
+    )}/bulk-return-to-merchant`,
+    { token: params.token, method: "POST" },
+  )
+}
+
+export async function confirmShipmentReturn(params: {
+  token: string
+  shipmentLineId: string
+}): Promise<unknown> {
+  return apiFetch<unknown>(
+    `/api/shipments/${encodeURIComponent(
+      params.shipmentLineId,
+    )}/confirm-return`,
+    { token: params.token, method: "POST" },
   )
 }
 

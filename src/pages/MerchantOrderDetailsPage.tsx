@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { Link, useLocation, useParams } from "react-router-dom"
 
 import {
+  bulkReturnRejectedToMerchant,
   getShipmentById,
   getShipmentOrders,
   patchShipmentAssignedWarehouse,
@@ -14,6 +15,7 @@ import { getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-a
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -120,7 +122,43 @@ export function MerchantOrderDetailsPage() {
   }, [])
 
   const canPrintLabel = user?.permissions?.includes("shipments.label") ?? false
+  const canBulkReturnToMerchant =
+    (user?.permissions?.includes("warehouses.manage_transfer") ?? false) &&
+    !merchantContext
   const [isPrinting, setIsPrinting] = useState(false)
+
+  const bulkReturnMut = useMutation({
+    mutationFn: () =>
+      bulkReturnRejectedToMerchant({ token, merchantOrderId }),
+    onSuccess: async (data) => {
+      const c = data.created.length
+      const s = data.skipped.length
+      if (s > 0 && c > 0) {
+        showToast(
+          t("merchantOrders.detail.returnRejectedPartial", {
+            created: c,
+            skipped: s,
+          }),
+          "success",
+        )
+      } else {
+        showToast(
+          t("merchantOrders.detail.returnRejectedSuccess", { count: c }),
+          "success",
+        )
+      }
+      await qc.invalidateQueries({ queryKey: listQueryKey })
+      await qc.invalidateQueries({
+        queryKey: ["merchant-order", "shipments", merchantOrderId, token],
+      })
+    },
+    onError: (err: Error) => {
+      showToast(
+        err.message || t("merchantOrders.detail.returnRejectedError"),
+        "error",
+      )
+    },
+  })
 
   const handlePrintAllLabels = useCallback(async () => {
     const shipments = ordersSummaryQuery.data?.shipments
@@ -255,13 +293,50 @@ export function MerchantOrderDetailsPage() {
           <>
             <Card>
               <CardHeader>
-                <CardTitle className="flex flex-wrap items-center gap-2">
-                  <PackageCheck className="text-primary size-5 shrink-0" aria-hidden />
-                  {t("merchantOrders.detailTitle")}
-                </CardTitle>
-                <CardDescription>
-                  {t("merchantOrders.detail.batchSubtitle")}
-                </CardDescription>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <CardTitle className="flex flex-wrap items-center gap-2">
+                      <PackageCheck
+                        className="text-primary size-5 shrink-0"
+                        aria-hidden
+                      />
+                      {t("merchantOrders.detailTitle")}
+                    </CardTitle>
+                    <CardDescription>
+                      {t("merchantOrders.detail.batchSubtitle")}
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {q.data.isResolved ? (
+                      <Badge variant="default">
+                        {t("merchantOrders.detail.resolvedBadge")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">
+                        {t("merchantOrders.detail.notResolvedHint")}
+                      </Badge>
+                    )}
+                    {q.data.isFinished ? (
+                      <Badge variant="secondary">
+                        {t("merchantOrders.detail.finishedBadge")}
+                      </Badge>
+                    ) : null}
+                    {canBulkReturnToMerchant &&
+                    q.data.isResolved &&
+                    !q.data.isFinished ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={bulkReturnMut.isPending}
+                        onClick={() => bulkReturnMut.mutate()}
+                      >
+                        {bulkReturnMut.isPending
+                          ? t("common.saving", { defaultValue: "…" })
+                          : t("merchantOrders.detail.returnRejectedShipments")}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {isWarehouseRoute ? (

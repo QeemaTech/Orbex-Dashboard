@@ -17,6 +17,7 @@ import { listMerchants } from "@/api/merchants-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -381,6 +382,7 @@ export function MerchantOrdersListPage() {
                         {t("merchantOrdersList.colTotalValue")}
                       </TableHead>
                       <TableHead>{t("merchantOrdersList.colBatchPipelineStatus")}</TableHead>
+                      <TableHead>{t("merchantOrdersList.colResolution")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -413,6 +415,24 @@ export function MerchantOrdersListPage() {
                             }
                             contextWarehouseId={user?.warehouseId}
                           />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {row.isResolved ? (
+                              <Badge variant="default" className="text-xs">
+                                {t("merchantOrdersList.badgeResolved")}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                {t("merchantOrdersList.badgeNotResolved")}
+                              </Badge>
+                            )}
+                            {row.isFinished ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {t("merchantOrdersList.badgeFinished")}
+                              </Badge>
+                            ) : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

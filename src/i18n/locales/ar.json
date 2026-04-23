@@ -493,6 +493,7 @@
       "WH_CS_PENDING": "في المخزن — بانتظار خدمة العملاء",
       "READY_FOR_DISPATCH": "جاهز للخروج",
       "RETURNED_TO_WAREHOUSE": "عاد إلى المخزن",
+      "OUT_FOR_RETURN_TO_MERCHANT": "خارج للإرجاع للتاجر",
       "RETURN_TO_MERCHANT": "إرجاع إلى التاجر",
       "RESCHEDULED": "إعادة جدولة",
       "DAMAGED_OR_MISSING": "تالف أو مفقود",
