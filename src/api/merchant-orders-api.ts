@@ -925,4 +925,3 @@ export async function downloadImportTemplate(token: string): Promise<void> {
   document.body.removeChild(link)
   setTimeout(() => window.URL.revokeObjectURL(url), 100)
 }
-
