@@ -1,8 +1,18 @@
 import type { AuthUser } from "@/lib/auth-context"
 
 /**
+ * Platform operators (`super_admin`, `admin`) — can browse any hub without `adminWarehouse` / `warehouseId`.
+ * Matches backend hub-scope bypass (`users.write` / `settings.manage_system`); excludes `warehouse_admin`.
+ */
+export function hasPlatformWarehouseScope(user: AuthUser | null | undefined): boolean {
+  const p = user?.permissions
+  if (!p?.length) return false
+  return p.includes("users.write") || p.includes("settings.manage_system")
+}
+
+/**
  * Hub site admin: `warehouse.admin_user_id` → `adminWarehouse` on `/me` / login.
- * Only source of truth — do not use legacy `User.role` or RBAC slugs here.
+ * Use {@link hasPlatformWarehouseScope} for RBAC platform access; do not use legacy `User.role`.
  */
 export function isWarehouseAdmin(user: AuthUser | null | undefined): boolean {
   return Boolean(user?.adminWarehouse?.id)

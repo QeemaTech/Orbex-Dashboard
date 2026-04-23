@@ -42,6 +42,7 @@ const subStatuses = new Set<ShipmentSubStatus>([
   "RETURNED_TO_WAREHOUSE",
   "OUT_FOR_RETURN_TO_MERCHANT",
   "RETURN_TO_MERCHANT",
+  "RETURNED_TO_MERCHANT",
   "DAMAGED",
   "OVERDUE",
 ])
@@ -177,6 +178,7 @@ export function getPerspectiveStatusKey(
     if (subStatus === "OUT_FOR_RETURN_TO_MERCHANT")
       return "OUT_FOR_RETURN_TO_MERCHANT"
     if (subStatus === "RETURN_TO_MERCHANT") return "RETURN_TO_MERCHANT"
+    if (subStatus === "RETURNED_TO_MERCHANT") return "RETURNED_TO_MERCHANT"
     if (subStatus === "RETURNED_TO_WAREHOUSE") return "RETURNED_TO_WAREHOUSE"
     if (subStatus === "RESCHEDULED") return "RESCHEDULED"
     if (subStatus === "DELAYED") return "DELAYED"

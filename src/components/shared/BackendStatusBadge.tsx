@@ -51,7 +51,12 @@ function badgeClass(kind: Kind, raw: string): string {
       s === "PENDING"
     )
       return "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
-    if (s === "RETURNED" || s === "RETURNED_TO_WAREHOUSE" || s === "RETURNED_TO_MERCHANT")
+    if (
+      s === "RETURNED" ||
+      s === "RETURNED_TO_WAREHOUSE" ||
+      s === "RETURNED_TO_MERCHANT" ||
+      s === "OUT_FOR_RETURN_TO_MERCHANT"
+    )
       return "border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
     return "border-muted bg-muted/40 text-foreground"
   }

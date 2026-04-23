@@ -4,7 +4,11 @@ import { Navigate, useNavigate } from "react-router-dom"
 
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { useAuth } from "@/lib/auth-context"
-import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
+import {
+  hasPlatformWarehouseScope,
+  isWarehouseAdmin,
+  isWarehouseStaff,
+} from "@/lib/warehouse-access"
 
 /**
  * Legacy `/warehouse` entry: sends each role to the correct place in the
@@ -23,7 +27,7 @@ export function WarehouseRedirectPage() {
 
   useEffect(() => {
     if (!user) return
-    if (user.role === "ADMIN") {
+    if (hasPlatformWarehouseScope(user)) {
       void navigate("/warehouses", { replace: true })
       return
     }
@@ -52,7 +56,11 @@ export function WarehouseRedirectPage() {
     return <Navigate to="/login" replace />
   }
 
-  if (!isWarehouseAdmin(user) && !user.warehouseId) {
+  if (
+    !isWarehouseAdmin(user) &&
+    !user.warehouseId &&
+    !hasPlatformWarehouseScope(user)
+  ) {
     return (
       <div className="text-muted-foreground flex min-h-dvh items-center justify-center p-6 text-sm">
         No warehouse is assigned to your account.
