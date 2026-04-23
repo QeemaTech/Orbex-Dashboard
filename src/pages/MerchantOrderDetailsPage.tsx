@@ -34,7 +34,7 @@ import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labe
 import type { AuthUser } from "@/lib/auth-context"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
-import { isWarehouseSiteAdmin, isWarehouseSiteStaff } from "@/lib/warehouse-access"
+import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
 import { printerService } from "@/services/printer.service"
 import { showToast } from "@/lib/toast"
 
@@ -43,7 +43,7 @@ const INVALID_ROUTE_BATCH_ID = new Set(["", "undefined"])
 function resolvePerspective(user: AuthUser | null | undefined): DashboardPerspective {
   if (!user) return "operations"
   if (user.role === "ACCOUNTS") return "accounting"
-  if (isWarehouseSiteStaff(user) || isWarehouseSiteAdmin(user)) return "warehouse"
+  if (isWarehouseStaff(user) || isWarehouseAdmin(user)) return "warehouse"
   return "operations"
 }
 

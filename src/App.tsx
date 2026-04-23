@@ -9,12 +9,13 @@ import {
 
 import {
   getDefaultDashboardRoute,
+  isMerchantUser,
   type UserRole,
   useAuth,
 } from "@/lib/auth-context"
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
 import { CsShipmentsListPage } from "@/features/customer-service/pages/CsShipmentsListPage"
-import { DashboardPage } from "@/pages/DashboardPage"
+import { DashboardPage, WarehouseAdminDashboardPage } from "@/pages/DashboardPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
@@ -34,6 +35,7 @@ import { RolesPage } from "@/pages/RolesPage"
 import { SettingsPage } from "@/pages/SettingsPage"
 import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
 import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
+import { MerchantOrderPendingImportsPage } from "@/pages/MerchantOrderPendingImportsPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -65,6 +67,19 @@ function ProtectedRole({
     return <Navigate to={getDefaultDashboardRoute(user)} replace />
   }
   return <>{children}</>
+}
+
+/** Confirm permission, or merchant viewing own pending imports (read). */
+function AccessPendingImportsPage({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  const hasConfirm = Boolean(user.permissions?.includes("merchant_orders.confirm"))
+  const merchantCanViewOwn =
+    isMerchantUser(user) && Boolean(user.permissions?.includes("merchant_orders.read"))
+  if (hasConfirm || merchantCanViewOwn) {
+    return <>{children}</>
+  }
+  return <Navigate to={getDefaultDashboardRoute(user)} replace />
 }
 
 function RootRedirect() {
@@ -107,6 +122,14 @@ export default function App() {
           element={
             <Protected>
               <RootRedirect />
+            </Protected>
+          }
+        />
+        <Route
+          path="/dashboard/warehouse"
+          element={
+            <Protected>
+              <WarehouseAdminDashboardPage />
             </Protected>
           }
         />
@@ -154,6 +177,16 @@ export default function App() {
               >
                 <MerchantOrdersListPage />
               </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/merchant-orders/pending-confirmations"
+          element={
+            <Protected>
+              <AccessPendingImportsPage>
+                <MerchantOrderPendingImportsPage />
+              </AccessPendingImportsPage>
             </Protected>
           }
         />
@@ -221,9 +254,7 @@ export default function App() {
           path="/settings"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN"]} requiredPermissions={["users.write"]}>
-                <SettingsPage />
-              </ProtectedRole>
+              <SettingsPage />
             </Protected>
           }
         />
@@ -380,6 +411,16 @@ export default function App() {
               >
                 <MerchantOrdersListPage />
               </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/cs/merchant-orders/pending-confirmations"
+          element={
+            <Protected>
+              <AccessPendingImportsPage>
+                <MerchantOrderPendingImportsPage />
+              </AccessPendingImportsPage>
             </Protected>
           }
         />

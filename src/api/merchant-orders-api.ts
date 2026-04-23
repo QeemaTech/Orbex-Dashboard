@@ -825,36 +825,41 @@ export type ImportOrdersParams = {
   token: string
   file: File
   merchantId?: string
+  pickupDate: string
   regionId?: string | null
   notes?: string | null
   trackingNumber?: string | null
 }
 
-export type ImportOrdersResponse = {
-  id: string
-  merchantId: string
-  pickupCourierId: string | null
-  regionId: string | null
-  transferStatus: string
-  createdAt: string
-  shipments: Array<{
+/** `POST /api/merchant-orders/import-orders` returns 202 — rows queued for confirmation. */
+export type ImportOrdersQueuedResponse = {
+  pendingImport: {
     id: string
-    customerName: string
-    phonePrimary: string
-    trackingNumber: string | null
-    status: string
-  }>
+    status: "PENDING_CONFIRMATION"
+    merchantId: string
+    merchantName: string
+    merchantPhone: string
+    merchantEmail: string | null
+    merchantBusinessName: string
+    merchantPickupAddress: string | null
+    merchantPickupGovernorate: string | null
+    rowCount: number
+    pickupDate: string
+    createdAt: string
+  }
+  orderCount: number
 }
 
 export async function importOrdersFromExcel(
   p: ImportOrdersParams,
-): Promise<ImportOrdersResponse> {
+): Promise<ImportOrdersQueuedResponse> {
   const formData = new FormData()
   formData.append("file", p.file)
   formData.append(
     "shipment",
     JSON.stringify({
       merchantId: p.merchantId || null,
+      pickupDate: p.pickupDate,
       regionId: p.regionId,
       notes: p.notes,
       trackingNumber: p.trackingNumber,
@@ -924,5 +929,65 @@ export async function downloadImportTemplate(token: string): Promise<void> {
   link.click()
   document.body.removeChild(link)
   setTimeout(() => window.URL.revokeObjectURL(url), 100)
+}
+
+export type PendingMerchantOrderImportRow = {
+  id: string
+  merchantId: string
+  merchantName: string
+  merchantPhone: string
+  merchantEmail: string | null
+  merchantBusinessName: string
+  merchantPickupAddress: string | null
+  merchantPickupGovernorate: string | null
+  fileName: string
+  rowCount: number
+  pickupDate: string
+  status: "PENDING_CONFIRMATION"
+  createdAt: string
+  createdByUserId: string | null
+  createdByName: string | null
+}
+
+export type PendingMerchantOrderImportsResponse = {
+  items: PendingMerchantOrderImportRow[]
+}
+
+export async function listPendingMerchantOrderImports(params: {
+  token: string
+}): Promise<PendingMerchantOrderImportsResponse> {
+  return apiFetch<PendingMerchantOrderImportsResponse>("/api/merchant-orders/pending-imports", {
+    token: params.token,
+  })
+}
+
+export async function confirmPendingMerchantOrderImport(params: {
+  token: string
+  pendingImportId: string
+}): Promise<void> {
+  await apiFetch<unknown>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/confirm`,
+    {
+      method: "POST",
+      token: params.token,
+    },
+  )
+}
+
+export async function rejectPendingMerchantOrderImport(params: {
+  token: string
+  pendingImportId: string
+  reason?: string | null
+}): Promise<void> {
+  await apiFetch<unknown>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/reject`,
+    {
+      method: "POST",
+      token: params.token,
+      body: JSON.stringify({
+        reason: params.reason ?? null,
+      }),
+    },
+  )
 }
 

@@ -103,6 +103,7 @@
     "users.delete": { "label": "Delete users", "category": "Users" },
     "users.roles": { "label": "Assign roles to users", "category": "Users" },
     "users.write": { "label": "Create, update, and deactivate users (admin UI)", "category": "Users" },
+    "settings.manage_system": { "label": "View and update global system settings", "category": "Settings" },
     "roles.read": { "label": "Read roles", "category": "RBAC" },
     "roles.write": { "label": "Create/update/delete roles", "category": "RBAC" },
     "roles.permissions": { "label": "Edit role permissions", "category": "RBAC" },

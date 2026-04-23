@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Boxes, Upload, Download, Loader2 } from "react-lucid"
 import { useCallback, useMemo, useState, useRef } from "react"
 import { useTranslation } from "react-i18next"
@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/dialog"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
+import { showToast } from "@/lib/toast"
 
 function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
@@ -67,6 +68,7 @@ export function MerchantOrdersListPage() {
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const queryClient = useQueryClient()
 
   const [searchParams, setSearchParams] = useSearchParams()
   const warehouseId = searchParams.get("warehouseId") ?? ""
@@ -145,7 +147,7 @@ export function MerchantOrdersListPage() {
 
   const batchPipelineBreakdown = useMemo(() => {
     const rows = kpiQuery.data?.transferStatusBreakdown ?? []
-    const priority = ["PENDING_CONFIRMATION", "PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
+    const priority = ["PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
     const rank = new Map(priority.map((status, idx) => [status, idx]))
     return [...rows].sort((a, b) => {
       const aRank = rank.get(String(a.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
@@ -155,6 +157,9 @@ export function MerchantOrdersListPage() {
     })
   }, [kpiQuery.data?.transferStatusBreakdown])
   const totals = kpiQuery.data?.totals
+  const showKpiError = !!kpiQuery.error
+  const showKpiLoading = kpiQuery.isLoading
+  const showKpiEmpty = !showKpiLoading && !showKpiError && batchPipelineBreakdown.length === 0
   const merchantContext = isMerchantUser(user)
 
   const detailPrefix = location.pathname.startsWith("/cs/")
@@ -169,14 +174,16 @@ export function MerchantOrdersListPage() {
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [selectedMerchant, setSelectedMerchant] = useState<string>("")
+  const [pickupDate, setPickupDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [importError, setImportError] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const importMerchantId = merchantContext ? (user?.merchantId ?? "") : selectedMerchant
 
   const merchantsQuery = useQuery({
     queryKey: ["merchants-list", token],
     queryFn: () => listMerchants({ token, pageSize: 100 }),
-    enabled: !!token,
+    enabled: !!token && !merchantContext,
   })
 
   const importMutation = useMutation({
@@ -184,25 +191,39 @@ export function MerchantOrdersListPage() {
       importOrdersFromExcel({
         token,
         file,
-        merchantId: selectedMerchant || undefined,
+        merchantId: importMerchantId || undefined,
+        pickupDate,
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      showToast(
+        t("merchantOrdersList.importQueuedSuccess", { count: data.orderCount }),
+        "success",
+      )
       setIsImportModalOpen(false)
       setSelectedMerchant("")
+      setPickupDate(new Date().toISOString().slice(0, 10))
       setSelectedFile(null)
       setImportError("")
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-merchant-pending-imports"] })
+      void queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports"] })
       shipmentsQuery.refetch()
     },
     onError: (error: Error) => {
-      setImportError(error.message)
+      const msg = error.message || t("merchantOrdersList.importGenericError")
+      setImportError(msg)
+      showToast(msg, "error")
     },
   })
 
   const handleDownloadTemplate = async () => {
     try {
       await downloadImportTemplate(token)
-    } catch (error) {
-      setImportError("Failed to download template")
+      setImportError("")
+      showToast(t("merchantOrdersList.downloadTemplateSuccess"), "success")
+    } catch {
+      const msg = t("merchantOrdersList.downloadTemplateError")
+      setImportError(msg)
+      showToast(msg, "error")
     }
   }
 
@@ -224,6 +245,14 @@ export function MerchantOrdersListPage() {
   }
 
   const handleSubmitImport = () => {
+    if (!pickupDate) {
+      setImportError("Please select pickup date")
+      return
+    }
+    if (merchantContext && !importMerchantId) {
+      setImportError("Logged in merchant account is missing merchant id")
+      return
+    }
     if (!selectedFile) {
       setImportError("Please select a file")
       return
@@ -289,16 +318,33 @@ export function MerchantOrdersListPage() {
             accent="primary"
             hideTrend
           />
-          {batchPipelineBreakdown.slice(0, 3).map((row) => (
-            <StatCard
-              key={row.transferStatus}
-              title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
-              value={row.count}
-              icon={Boxes}
-              accent="success"
-              hideTrend
-            />
-          ))}
+          {showKpiLoading ? (
+            <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
+              {t("merchantOrdersList.kpiLoading")}
+            </div>
+          ) : null}
+          {showKpiError ? (
+            <div className="text-destructive rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
+              {t("merchantOrdersList.kpiLoadError")}
+            </div>
+          ) : null}
+          {!showKpiLoading && !showKpiError
+            ? batchPipelineBreakdown.slice(0, 3).map((row) => (
+                <StatCard
+                  key={row.transferStatus}
+                  title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
+                  value={row.count}
+                  icon={Boxes}
+                  accent="success"
+                  hideTrend
+                />
+              ))
+            : null}
+          {showKpiEmpty ? (
+            <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
+              {t("merchantOrdersList.kpiEmptyState")}
+            </div>
+          ) : null}
         </div>
 
         <Card className="border-border/80 shadow-sm">
@@ -411,24 +457,36 @@ export function MerchantOrdersListPage() {
             <DialogHeader>
               <DialogTitle>Import Orders from Excel</DialogTitle>
               <DialogDescription>
-                Select a merchant and upload an Excel file with orders.
+                {merchantContext
+                  ? t("merchantOrdersList.importModalDescriptionMerchant")
+                  : t("merchantOrdersList.importModalDescriptionAdmin")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              {!merchantContext ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Merchant</label>
+                  <select
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    value={selectedMerchant}
+                    onChange={(e) => setSelectedMerchant(e.target.value)}
+                  >
+                    <option value="">Select a merchant (optional)</option>
+                    {(merchantsQuery.data?.merchants ?? []).map((m) => (
+                      <option key={m.merchantId} value={m.merchantId}>
+                        {m.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Merchant</label>
-                <select
-                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                  value={selectedMerchant}
-                  onChange={(e) => setSelectedMerchant(e.target.value)}
-                >
-                  <option value="">Select a merchant (optional)</option>
-                  {(merchantsQuery.data?.merchants ?? []).map((m) => (
-                    <option key={m.merchantId} value={m.merchantId}>
-                      {m.displayName}
-                    </option>
-                  ))}
-                </select>
+                <label className="text-sm font-medium">Pickup date</label>
+                <Input
+                  type="date"
+                  value={pickupDate}
+                  onChange={(e) => setPickupDate(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Excel File</label>
