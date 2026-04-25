@@ -113,6 +113,13 @@ const adminNavConfig = [
     end: false,
     perm: "collections.read",
   },
+  {
+    to: "/accounts",
+    labelKey: "nav.accounts",
+    icon: Banknote,
+    end: false,
+    perm: "accounts.read",
+  },
   { to: "/warehouses", labelKey: "nav.warehouses", icon: Warehouse, end: true, perm: "warehouses.read" },
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const

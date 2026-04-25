@@ -14,6 +14,7 @@
     "merchants": "التجار",
     "users": "المستخدمون",
     "collections": "التحصيل",
+    "accounts": "الحسابات",
     "warehouses": "المخازن",
     "deliveryZones": "مناطق التوصيل",
     "settings": "الإعدادات",
@@ -1096,5 +1097,87 @@
     "processing": "جارٍ المعالجة...",
     "searching": "جارٍ البحث...",
     "select": "اختر…"
+  },
+  "accounts": {
+    "pageTitle": "الحسابات",
+    "subtitle": "متابعة التصفيات، أرصدة المناديب، ومستحقات التجار.",
+    "tabs": {
+      "delivered": "تم التسليم",
+      "inTransit": "في الطريق",
+      "postponed": "مؤجلة",
+      "rejected": "مرفوضة/مرتجعة"
+    },
+    "filters": {
+      "title": "الفلاتر",
+      "search": "بحث برقم التتبع / التاجر / العميل",
+      "merchantId": "معرّف التاجر",
+      "courierId": "معرّف المندوب",
+      "from": "من تاريخ",
+      "to": "إلى تاريخ",
+      "apply": "تطبيق",
+      "reset": "إعادة ضبط",
+      "deliveredOnly": "التصفية متاحة فقط في تبويب «تم التسليم»."
+    },
+    "table": {
+      "merchant": "التاجر",
+      "merchantPhone": "هاتف التاجر",
+      "customer": "العميل",
+      "customerPhone": "هاتف العميل",
+      "shipmentValue": "قيمة الشحنة",
+      "shippingFee": "مصاريف الشحن",
+      "paymentMethod": "طريقة الدفع",
+      "courier": "المندوب",
+      "trackingNumber": "رقم التتبع",
+      "paymentStatus": "حالة الدفع",
+      "status": "الحالة",
+      "warehouse": "المخزن",
+      "actions": "إجراءات",
+      "settle": "تصفية",
+      "settled": "تمت التصفية",
+      "view": "عرض",
+      "empty": "لا توجد شحنات مطابقة للفلاتر الحالية."
+    },
+    "pagination": {
+      "page": "صفحة {{page}} من {{total}}",
+      "prev": "السابق",
+      "next": "التالي"
+    },
+    "feedback": {
+      "settled": "تم تعليم الشحنة كمُصَفّاة.",
+      "settleFailed": "تعذّر تصفية الشحنة.",
+      "loadFailed": "تعذّر تحميل بيانات الحسابات."
+    },
+    "courierDetail": {
+      "title": "حساب المندوب",
+      "period": "الفترة",
+      "totalShipments": "إجمالي الشحنات",
+      "delivered": "تم التسليم",
+      "rejected": "مرفوضة",
+      "postponed": "مؤجلة",
+      "totalCollected": "إجمالي المُحصّل",
+      "commissionDue": "العمولة المستحقة",
+      "netDue": "صافي المستحق للمندوب",
+      "backToAccounts": "العودة للحسابات"
+    },
+    "merchantDetail": {
+      "title": "حساب التاجر",
+      "period": "الفترة",
+      "totalShipments": "إجمالي الشحنات",
+      "delivered": "تم التسليم",
+      "settled": "مُصَفّاة",
+      "totalValue": "إجمالي قيمة الشحنات",
+      "collected": "المُحصّل",
+      "commission": "العمولة",
+      "shippingFees": "مصاريف الشحن",
+      "remaining": "المتبقي للدفع",
+      "daily": "تفصيل يومي",
+      "date": "التاريخ",
+      "shipments": "الشحنات",
+      "collectedCol": "المُحصّل",
+      "commissionCol": "العمولة",
+      "net": "الصافي",
+      "exportExcel": "تصدير Excel",
+      "backToAccounts": "العودة للحسابات"
+    }
   }
 }

@@ -16,6 +16,9 @@ import {
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
 import { CsShipmentsListPage } from "@/features/customer-service/pages/CsShipmentsListPage"
 import { DashboardPage, WarehouseAdminDashboardPage } from "@/pages/DashboardPage"
+import { AccountsPage } from "@/pages/AccountsPage"
+import { CourierAccountDetailPage } from "@/pages/CourierAccountDetailPage"
+import { MerchantAccountDetailPage } from "@/pages/MerchantAccountDetailPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
@@ -289,6 +292,45 @@ export default function App() {
                 requiredPermissions={["collections.read"]}
               >
                 <CollectionsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["accounts.read"]}
+              >
+                <AccountsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/couriers/:courierId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["accounts.read"]}
+              >
+                <CourierAccountDetailPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/merchants/:merchantId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["accounts.read"]}
+              >
+                <MerchantAccountDetailPage />
               </ProtectedRole>
             </Protected>
           }

@@ -15,6 +15,7 @@
     "users": "Users",
     "roles": "Roles",
     "collections": "Collections",
+    "accounts": "Accounts",
     "warehouses": "Warehouses",
     "deliveryZones": "Delivery zones",
     "settings": "Settings",
@@ -1124,5 +1125,87 @@
     "processing": "Processing…",
     "searching": "Searching…",
     "select": "Select…"
+  },
+  "accounts": {
+    "pageTitle": "Accounts",
+    "subtitle": "Monitor settlements, courier balances, and merchant payouts.",
+    "tabs": {
+      "delivered": "Delivered",
+      "inTransit": "In transit",
+      "postponed": "Postponed",
+      "rejected": "Rejected / returned"
+    },
+    "filters": {
+      "title": "Filters",
+      "search": "Search tracking / merchant / customer",
+      "merchantId": "Merchant ID",
+      "courierId": "Courier ID",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Apply",
+      "reset": "Reset",
+      "deliveredOnly": "Settlement actions are only available on the Delivered tab."
+    },
+    "table": {
+      "merchant": "Merchant",
+      "merchantPhone": "Phone",
+      "customer": "Customer",
+      "customerPhone": "Customer phone",
+      "shipmentValue": "Shipment value",
+      "shippingFee": "Shipping fee",
+      "paymentMethod": "Payment method",
+      "courier": "Courier",
+      "trackingNumber": "Tracking #",
+      "paymentStatus": "Payment status",
+      "status": "Status",
+      "warehouse": "Warehouse",
+      "actions": "Actions",
+      "settle": "Settle",
+      "settled": "Settled",
+      "view": "View",
+      "empty": "No shipments match the current filters."
+    },
+    "pagination": {
+      "page": "Page {{page}} of {{total}}",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "feedback": {
+      "settled": "Shipment marked as settled.",
+      "settleFailed": "Could not settle shipment.",
+      "loadFailed": "Could not load accounts data."
+    },
+    "courierDetail": {
+      "title": "Courier account",
+      "period": "Period",
+      "totalShipments": "Total shipments",
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed",
+      "totalCollected": "Total collected",
+      "commissionDue": "Commission due",
+      "netDue": "Net due to courier",
+      "backToAccounts": "Back to accounts"
+    },
+    "merchantDetail": {
+      "title": "Merchant account",
+      "period": "Period",
+      "totalShipments": "Total shipments",
+      "delivered": "Delivered",
+      "settled": "Settled",
+      "totalValue": "Total shipment value",
+      "collected": "Collected",
+      "commission": "Commission",
+      "shippingFees": "Shipping fees",
+      "remaining": "Remaining payable",
+      "daily": "Daily breakdown",
+      "date": "Date",
+      "shipments": "Shipments",
+      "collectedCol": "Collected",
+      "commissionCol": "Commission",
+      "net": "Net",
+      "exportExcel": "Export Excel",
+      "backToAccounts": "Back to accounts"
+    }
   }
 }
