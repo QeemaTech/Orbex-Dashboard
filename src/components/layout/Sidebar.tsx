@@ -1,4 +1,4 @@
-import { LogOut, Settings, ShieldCheck } from "lucide-react"
+import { LogOut, Settings, ShieldCheck, Sun, Moon, Monitor } from "lucide-react"
 import {
   Banknote,
   Boxes,
@@ -16,6 +16,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom"
 
 import { getWarehouseSite } from "@/api/warehouse-api"
 import { useSidebar } from "@/components/layout/sidebar-context"
+import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { isMainBranch } from "@/lib/warehouse-utils"
@@ -126,6 +127,7 @@ const customerServiceNavConfig = [
 
 export function Sidebar() {
   const { t, i18n } = useTranslation()
+  const { theme, setTheme } = useTheme()
   const location = useLocation()
   const { open, setOpen } = useSidebar()
   const navigate = useNavigate()
@@ -250,7 +252,7 @@ export function Sidebar() {
           loading="eager"
         />
       </div>
-      <nav className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-4 sm:p-5">
+      <nav className="flex flex-1 flex-col gap-2.5 overflow-y-auto scrollbar-hide p-4 sm:p-5">
         {navConfig.map(({ to, labelKey, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -292,35 +294,71 @@ export function Sidebar() {
           {t("header.signOut")}
         </Button>
       </div>
-      <div
-        className="border-sidebar-border border-t p-4 sm:p-5"
-        role="group"
-        aria-label={t("dashboard.language.label")}
-      >
-        <p className="mb-3 text-xs font-semibold tracking-wide uppercase opacity-80">
-          {t("dashboard.language.label")}
-        </p>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={isEn ? "default" : "outline"}
-            aria-pressed={isEn}
-            className="min-w-[5.25rem] shadow-sm"
-            onClick={() => void i18n.changeLanguage("en")}
-          >
-            {t("dashboard.language.en")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={!isEn ? "default" : "outline"}
-            aria-pressed={!isEn}
-            className="min-w-[5.25rem] shadow-sm"
-            onClick={() => void i18n.changeLanguage("ar")}
-          >
-            {t("dashboard.language.ar")}
-          </Button>
+      <div className="border-sidebar-border border-t p-4 sm:p-5 flex flex-col gap-5">
+        <div role="group" aria-label={t("dashboard.language.label")}>
+          <p className="mb-3 text-xs font-semibold tracking-wide uppercase opacity-80">
+            {t("dashboard.language.label")}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={isEn ? "default" : "outline"}
+              aria-pressed={isEn}
+              className="min-w-[5.25rem] shadow-sm"
+              onClick={() => void i18n.changeLanguage("en")}
+            >
+              {t("dashboard.language.en")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={!isEn ? "default" : "outline"}
+              aria-pressed={!isEn}
+              className="min-w-[5.25rem] shadow-sm"
+              onClick={() => void i18n.changeLanguage("ar")}
+            >
+              {t("dashboard.language.ar")}
+            </Button>
+          </div>
+        </div>
+
+        <div role="group" aria-label="Theme">
+          <p className="mb-3 text-xs font-semibold tracking-wide uppercase opacity-80">
+            {isEn ? "Theme" : "المظهر"}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={theme === "light" ? "default" : "outline"}
+              onClick={() => setTheme("light")}
+              className="flex-1 shadow-sm"
+              title={isEn ? "Light Theme" : "فاتح"}
+            >
+              <Sun className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={theme === "dark" ? "default" : "outline"}
+              onClick={() => setTheme("dark")}
+              className="flex-1 shadow-sm"
+              title={isEn ? "Dark Theme" : "داكن"}
+            >
+              <Moon className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={theme === "system" ? "default" : "outline"}
+              onClick={() => setTheme("system")}
+              className="flex-1 shadow-sm"
+              title={isEn ? "System Theme" : "النظام"}
+            >
+              <Monitor className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </aside>
