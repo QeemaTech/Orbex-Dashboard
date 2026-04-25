@@ -173,6 +173,9 @@ export function AccountsPage() {
           <Button variant="outline" size="sm" asChild>
             <Link to="/accounts/balances">{t("accounts.balances.title")}</Link>
           </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/accounts/payout-requests">{t("accounts.payoutRequests.admin.title")}</Link>
+          </Button>
         </div>
 
         <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">

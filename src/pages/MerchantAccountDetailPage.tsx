@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 import { ArrowLeft, Download, ShoppingBag } from "lucide-react"
 
 import {
   getMerchantAccountSummary,
+  createMerchantPayoutRequest,
+  listMerchantPayoutRequests,
   listAccountingShipments,
   type AccountingShipmentTab,
 } from "@/api/accounting-api"
@@ -28,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
+import { showToast } from "@/lib/toast"
 
 const LEDGER_TABS: ReadonlyArray<AccountingShipmentTab> = [
   "DELIVERED",
@@ -81,16 +84,25 @@ export function MerchantAccountDetailPage() {
   const token = accessToken ?? ""
   const locale = resolveNumberLocale(i18n.language)
   const canExport = Boolean(user?.permissions?.includes("accounts.export"))
+  const canRequestPayout = Boolean(user?.permissions?.includes("accounts.request_payout"))
+  const qc = useQueryClient()
 
   const [from, setFrom] = useState<string>(startOfMonthISO())
   const [to, setTo] = useState<string>(endOfMonthISO())
   const [ledgerTab, setLedgerTab] = useState<AccountingShipmentTab>("DELIVERED")
   const [ledgerSearch, setLedgerSearch] = useState("")
   const [ledgerPage, setLedgerPage] = useState(1)
+  const [deductionPercent, setDeductionPercent] = useState<string>("10")
 
   const query = useQuery({
     queryKey: ["accounting-merchant-summary", merchantId, from, to],
     queryFn: () => getMerchantAccountSummary(token, merchantId, { from, to }),
+    enabled: !!token && !!merchantId,
+  })
+
+  const payoutHistoryQuery = useQuery({
+    queryKey: ["accounting-merchant-payout-requests", merchantId],
+    queryFn: () => listMerchantPayoutRequests({ token, merchantId, page: 1, pageSize: 50 }),
     enabled: !!token && !!merchantId,
   })
 
@@ -118,6 +130,28 @@ export function MerchantAccountDetailPage() {
     enabled: !!token && !!merchantId,
   })
 
+  const createPayoutMut = useMutation({
+    mutationFn: async () => {
+      const pct = Number(deductionPercent)
+      return createMerchantPayoutRequest({
+        token,
+        merchantId,
+        periodFrom: from,
+        periodTo: to,
+        deliveryDeductionPercent: pct,
+      })
+    },
+    onSuccess: async () => {
+      showToast(t("accounts.payoutRequests.requested"), "success")
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["accounting-merchant-payout-requests", merchantId] }),
+      ])
+    },
+    onError: (e) => {
+      showToast((e as Error).message || t("accounts.payoutRequests.requestFailed"), "error")
+    },
+  })
+
   const summary = query.data?.summary
   const daily = query.data?.daily ?? []
 
@@ -125,6 +159,21 @@ export function MerchantAccountDetailPage() {
     () => summary?.merchant.displayName ?? merchantId,
     [summary, merchantId],
   )
+
+  const payoutPreview = useMemo(() => {
+    const pct = Number(deductionPercent)
+    if (!summary || !Number.isFinite(pct)) return null
+    const gross = Number(summary.totalCollected)
+    if (!Number.isFinite(gross)) return null
+    const deduction = (gross * pct) / 100
+    const net = gross - deduction
+    return {
+      gross: gross.toFixed(2),
+      deduction: deduction.toFixed(2),
+      net: net.toFixed(2),
+      pct,
+    }
+  }, [summary, deductionPercent])
 
   function exportCsv() {
     if (!summary) return
@@ -228,6 +277,110 @@ export function MerchantAccountDetailPage() {
                 onChange={(e) => setTo(e.target.value)}
                 aria-label={t("accounts.filters.to")}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {canRequestPayout ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("accounts.payoutRequests.requestTitle")}</CardTitle>
+              <CardDescription>{t("accounts.payoutRequests.requestHint")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="grid gap-1">
+                  <label className="text-muted-foreground text-xs font-medium">
+                    {t("accounts.payoutRequests.deliveryDeductionPercent")}
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    value={deductionPercent}
+                    onChange={(e) => setDeductionPercent(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <label className="text-muted-foreground text-xs font-medium">
+                    {t("accounts.payoutRequests.gross")}
+                  </label>
+                  <p className="tabular-nums">{formatEGP(payoutPreview?.gross ?? "0", locale)}</p>
+                </div>
+                <div className="grid gap-1">
+                  <label className="text-muted-foreground text-xs font-medium">
+                    {t("accounts.payoutRequests.net")}
+                  </label>
+                  <p className="text-primary tabular-nums font-semibold">
+                    {formatEGP(payoutPreview?.net ?? "0", locale)}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => createPayoutMut.mutate()}
+                disabled={!summary || createPayoutMut.isPending || !payoutPreview}
+              >
+                {createPayoutMut.isPending
+                  ? t("common.processing")
+                  : t("accounts.payoutRequests.requestButton")}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("accounts.payoutRequests.historyTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="px-0">
+            {payoutHistoryQuery.isLoading ? (
+              <p className="text-muted-foreground px-6 text-sm">{t("common.loading")}</p>
+            ) : null}
+            {payoutHistoryQuery.isError ? (
+              <p className="text-destructive px-6 text-sm" role="alert">
+                {(payoutHistoryQuery.error as Error).message}
+              </p>
+            ) : null}
+            <div className="overflow-x-auto">
+              <Table className="min-w-[56rem]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("accounts.payoutRequests.status")}</TableHead>
+                    <TableHead>{t("accounts.payoutRequests.period")}</TableHead>
+                    <TableHead className="text-end">{t("accounts.payoutRequests.shipments")}</TableHead>
+                    <TableHead className="text-end">{t("accounts.payoutRequests.net")}</TableHead>
+                    <TableHead>{t("accounts.payoutRequests.createdAt")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(payoutHistoryQuery.data?.items ?? []).map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.status}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {r.periodFrom.slice(0, 10)} → {r.periodTo.slice(0, 10)}
+                      </TableCell>
+                      <TableCell className="text-end tabular-nums">
+                        {r.shipmentCount.toLocaleString(locale)}
+                      </TableCell>
+                      <TableCell className="text-end tabular-nums font-semibold">
+                        {formatEGP(r.netPayable, locale)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {r.createdAt.slice(0, 10)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(payoutHistoryQuery.data?.items?.length ?? 0) === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-muted-foreground text-center">
+                        {t("accounts.payoutRequests.empty")}
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>

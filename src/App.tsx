@@ -18,6 +18,7 @@ import { CsShipmentsListPage } from "@/features/customer-service/pages/CsShipmen
 import { DashboardPage, WarehouseAdminDashboardPage } from "@/pages/DashboardPage"
 import { AccountsPage } from "@/pages/AccountsPage"
 import { AccountsBalancesPage } from "@/pages/AccountsBalancesPage"
+import { AccountsPayoutRequestsPage } from "@/pages/AccountsPayoutRequestsPage"
 import { CourierAccountDetailPage } from "@/pages/CourierAccountDetailPage"
 import { MerchantAccountDetailPage } from "@/pages/MerchantAccountDetailPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
@@ -319,6 +320,19 @@ export default function App() {
                 requiredPermissions={["accounts.read"]}
               >
                 <AccountsBalancesPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/payout-requests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS"]}
+                requiredPermissions={["accounts.review_payout"]}
+              >
+                <AccountsPayoutRequestsPage />
               </ProtectedRole>
             </Protected>
           }

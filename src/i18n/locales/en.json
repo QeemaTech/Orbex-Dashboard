@@ -1238,6 +1238,40 @@
       "commission": "Commission",
       "net": "Net",
       "netDue": "Net due"
+    },
+    "payoutRequests": {
+      "requestTitle": "Request settlement",
+      "requestHint": "Create a settlement request for delivered, not-yet-settled shipments in the selected period.",
+      "deliveryDeductionPercent": "Delivery deduction (%)",
+      "gross": "Gross collected",
+      "net": "Net payable",
+      "requestButton": "Request settlement",
+      "requested": "Settlement request submitted.",
+      "requestFailed": "Could not submit settlement request.",
+      "historyTitle": "Settlement requests",
+      "status": "Status",
+      "period": "Period",
+      "shipments": "Shipments",
+      "createdAt": "Created",
+      "empty": "No settlement requests yet."
+      ,
+      "admin": {
+        "title": "Settlement requests (admin)",
+        "backToAccounts": "Back to accounts",
+        "filters": "Filters",
+        "statusAll": "All statuses",
+        "merchantId": "Merchant ID",
+        "tableTitle": "Requests",
+        "merchant": "Merchant",
+        "actions": "Actions",
+        "approve": "Approve",
+        "reject": "Reject",
+        "markPaid": "Mark paid",
+        "approved": "Request approved.",
+        "rejected": "Request rejected.",
+        "markedPaid": "Request marked as paid.",
+        "empty": "No requests."
+      }
     }
   }
 }

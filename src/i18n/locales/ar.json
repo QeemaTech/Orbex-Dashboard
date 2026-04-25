@@ -1210,6 +1210,40 @@
       "commission": "العمولة",
       "net": "الصافي",
       "netDue": "صافي المستحق"
+    },
+    "payoutRequests": {
+      "requestTitle": "طلب تصفية",
+      "requestHint": "إنشاء طلب تصفية للشحنات المسلّمة وغير المُصفّاة خلال الفترة المحددة.",
+      "deliveryDeductionPercent": "خصم التوصيل (%)",
+      "gross": "إجمالي المُحصّل",
+      "net": "صافي المستحق",
+      "requestButton": "إرسال طلب التصفية",
+      "requested": "تم إرسال طلب التصفية.",
+      "requestFailed": "تعذّر إرسال طلب التصفية.",
+      "historyTitle": "طلبات التصفية",
+      "status": "الحالة",
+      "period": "الفترة",
+      "shipments": "الشحنات",
+      "createdAt": "تاريخ الإنشاء",
+      "empty": "لا توجد طلبات تصفية بعد."
+      ,
+      "admin": {
+        "title": "طلبات التصفية (إدارة)",
+        "backToAccounts": "العودة للحسابات",
+        "filters": "الفلاتر",
+        "statusAll": "كل الحالات",
+        "merchantId": "معرّف التاجر",
+        "tableTitle": "الطلبات",
+        "merchant": "التاجر",
+        "actions": "إجراءات",
+        "approve": "موافقة",
+        "reject": "رفض",
+        "markPaid": "تم الدفع",
+        "approved": "تمت الموافقة على الطلب.",
+        "rejected": "تم رفض الطلب.",
+        "markedPaid": "تم تعليم الطلب كمدفوع.",
+        "empty": "لا توجد طلبات."
+      }
     }
   }
 }
