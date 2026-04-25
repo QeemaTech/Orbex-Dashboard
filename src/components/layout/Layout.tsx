@@ -7,7 +7,7 @@ import {
   useSidebar,
 } from "@/components/layout/sidebar-context"
 import { Sidebar } from "@/components/layout/Sidebar"
-
+import { DashboardFooter } from "@/components/layout/DashboardFooter"
 export interface LayoutProps {
   title: string
   children: ReactNode
@@ -40,6 +40,7 @@ function LayoutInner({ title, children }: LayoutProps) {
       <div className="flex min-h-dvh flex-col lg:ms-[280px]">
         <Header title={title} />
         <main className="flex-1 p-4 md:p-6 xl:p-8">{children}</main>
+        <DashboardFooter />
       </div>
     </div>
   )
