@@ -377,7 +377,10 @@
       "returnRejectedShipments": "Return rejected shipments",
       "returnRejectedSuccess": "Return tasks created for {{count}} shipment(s).",
       "returnRejectedPartial": "Created {{created}} task(s); {{skipped}} line(s) skipped (already have a task or not eligible).",
-      "returnRejectedError": "Could not create return tasks."
+      "returnRejectedError": "Could not create return tasks.",
+      "finalizeReturns": "Finalize returns",
+      "finalizeReturnsSuccess": "Finalized {{finalized}} shipment return(s); {{skipped}} already delivered.",
+      "finalizeReturnsError": "Could not finalize merchant order returns."
     },
     "viewOrders": "View shipments",
     "backToShipment": "Back to merchant order",

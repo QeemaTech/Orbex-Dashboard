@@ -350,7 +350,10 @@
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
       "timelineArrow": "→",
-      "currencyLocale": "ar-EG"
+      "currencyLocale": "ar-EG",
+      "finalizeReturns": "إنهاء المرتجعات",
+      "finalizeReturnsSuccess": "تم إنهاء {{finalized}} شحنة مرتجعة؛ {{skipped}} شحنة كانت مسلّمة بالفعل.",
+      "finalizeReturnsError": "تعذّر إنهاء مرتجعات طلب التاجر."
     },
     "viewOrders": "عرض شحنات العملاء",
     "backToShipment": "العودة لطلب التاجر",

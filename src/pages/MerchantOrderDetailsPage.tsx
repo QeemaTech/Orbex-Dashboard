@@ -6,6 +6,7 @@ import { Link, useLocation, useParams } from "react-router-dom"
 
 import {
   bulkReturnRejectedToMerchant,
+  finalizeMerchantOrderReturns,
   getShipmentById,
   getShipmentOrders,
   patchShipmentAssignedWarehouse,
@@ -125,6 +126,9 @@ export function MerchantOrderDetailsPage() {
   const canBulkReturnToMerchant =
     (user?.permissions?.includes("warehouses.manage_transfer") ?? false) &&
     !merchantContext
+  const canFinalizeReturnsPermission =
+    (user?.permissions?.includes("merchant_orders.finalize_returns") ?? false) &&
+    !merchantContext
   const [isPrinting, setIsPrinting] = useState(false)
 
   const bulkReturnMut = useMutation({
@@ -155,6 +159,29 @@ export function MerchantOrderDetailsPage() {
     onError: (err: Error) => {
       showToast(
         err.message || t("merchantOrders.detail.returnRejectedError"),
+        "error",
+      )
+    },
+  })
+
+  const finalizeReturnsMut = useMutation({
+    mutationFn: () => finalizeMerchantOrderReturns({ token, merchantOrderId }),
+    onSuccess: async (data) => {
+      showToast(
+        t("merchantOrders.detail.finalizeReturnsSuccess", {
+          finalized: data.finalizedCount,
+          skipped: data.skippedDeliveredCount,
+        }),
+        "success",
+      )
+      await qc.invalidateQueries({ queryKey: listQueryKey })
+      await qc.invalidateQueries({
+        queryKey: ["merchant-order", "shipments", merchantOrderId, token],
+      })
+    },
+    onError: (err: Error) => {
+      showToast(
+        err.message || t("merchantOrders.detail.finalizeReturnsError"),
         "error",
       )
     },
@@ -244,6 +271,13 @@ export function MerchantOrderDetailsPage() {
   }
 
   const orders = ordersSummaryQuery.data?.shipments ?? []
+  const canFinalizeReturns =
+    orders.length > 0 &&
+    orders.every(
+      (line) =>
+        line.status === "DELIVERED" ||
+        line.status === "OUT_FOR_RETURN_TO_MERCHANT",
+    )
   const primaryLineStatusEvents = orders[0]?.statusEvents ?? []
   const ordersTotalValue = sumMoney(orders.map((p) => p.shipmentValue))
   const ordersTotalShipping = sumMoney(orders.map((p) => p.shippingFee))
@@ -333,6 +367,19 @@ export function MerchantOrderDetailsPage() {
                         {bulkReturnMut.isPending
                           ? t("common.saving", { defaultValue: "…" })
                           : t("merchantOrders.detail.returnRejectedShipments")}
+                      </Button>
+                    ) : null}
+                    {canFinalizeReturnsPermission && canFinalizeReturns ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={finalizeReturnsMut.isPending}
+                        onClick={() => finalizeReturnsMut.mutate()}
+                      >
+                        {finalizeReturnsMut.isPending
+                          ? t("common.saving", { defaultValue: "…" })
+                          : t("merchantOrders.detail.finalizeReturns")}
                       </Button>
                     ) : null}
                   </div>

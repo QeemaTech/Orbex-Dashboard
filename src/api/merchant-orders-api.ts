@@ -367,6 +367,26 @@ export async function bulkReturnRejectedToMerchant(params: {
   )
 }
 
+export async function finalizeMerchantOrderReturns(params: {
+  token: string
+  merchantOrderId: string
+}): Promise<{
+  finalizedIds: string[]
+  skippedDeliveredIds: string[]
+  finalizedCount: number
+  skippedDeliveredCount: number
+}> {
+  return apiFetch<{
+    finalizedIds: string[]
+    skippedDeliveredIds: string[]
+    finalizedCount: number
+    skippedDeliveredCount: number
+  }>(
+    `/api/merchant-orders/${encodeURIComponent(params.merchantOrderId)}/finalize-returns`,
+    { token: params.token, method: "POST" },
+  )
+}
+
 export async function confirmShipmentReturn(params: {
   token: string
   shipmentLineId: string
