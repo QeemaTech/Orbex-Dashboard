@@ -1,33 +1,46 @@
 import type { AuthUser } from "@/lib/auth-context"
 
-function rbacSlugs(user: AuthUser): Set<string> {
-  return new Set([
-    ...(user.roles ?? []),
-    ...(user.rbacRoles?.map((r) => r.slug) ?? []),
-  ])
-}
-
-/** Legacy or RBAC identity as hub operator (not necessarily assigned yet). Excludes site admins. */
-export function isWarehouseStaffRole(user: AuthUser | null | undefined): boolean {
-  if (!user) return false
-  if (isWarehouseSiteAdmin(user)) return false
-  if (user.role === "WAREHOUSE") return true
-  const slugs = rbacSlugs(user)
-  return slugs.has("warehouse_staff") || slugs.has("warehouse")
-}
-
-/** Site admin: legacy role or RBAC `warehouse_admin`. */
-export function isWarehouseSiteAdmin(user: AuthUser | null | undefined): boolean {
-  if (!user) return false
-  if (user.role === "WAREHOUSE_ADMIN") return true
-  return rbacSlugs(user).has("warehouse_admin")
+/**
+ * Platform operators (`super_admin`, `admin`) — can browse any hub without `adminWarehouse` / `warehouseId`.
+ * Matches backend hub-scope bypass (`users.write` / `settings.manage_system`); excludes `warehouse_admin`.
+ */
+export function hasPlatformWarehouseScope(user: AuthUser | null | undefined): boolean {
+  const p = user?.permissions
+  if (!p?.length) return false
+  return p.includes("users.write") || p.includes("settings.manage_system")
 }
 
 /**
- * Operator scoped to a single hub via `warehouseId` (legacy `WAREHOUSE` or RBAC `warehouse_staff` / `warehouse`).
- * Excludes warehouse site admins.
+ * Hub site admin: `warehouse.admin_user_id` → `adminWarehouse` on `/me` / login.
+ * Use {@link hasPlatformWarehouseScope} for RBAC platform access; do not use legacy `User.role`.
  */
-export function isWarehouseSiteStaff(user: AuthUser | null | undefined): boolean {
+export function isWarehouseAdmin(user: AuthUser | null | undefined): boolean {
+  return Boolean(user?.adminWarehouse?.id)
+}
+
+/**
+ * Hub operator (assigned to a site, not the admin user).
+ * Requires `warehouseId` and not an admin link.
+ */
+export function isWarehouseStaff(user: AuthUser | null | undefined): boolean {
   if (!user?.warehouseId) return false
-  return isWarehouseStaffRole(user)
+  return !isWarehouseAdmin(user)
+}
+
+/** @deprecated Use `isWarehouseAdmin` (DB `adminWarehouse` only). */
+export function isWarehouseSiteAdmin(user: AuthUser | null | undefined): boolean {
+  return isWarehouseAdmin(user)
+}
+
+/** @deprecated Use `isWarehouseStaff` (assignment + not admin). */
+export function isWarehouseSiteStaff(user: AuthUser | null | undefined): boolean {
+  return isWarehouseStaff(user)
+}
+
+/**
+ * @deprecated Removed role/RBAC; use `isWarehouseStaff` for nav.
+ * Kept only if a caller still needs a name during migration — same as `isWarehouseStaff`.
+ */
+export function isWarehouseStaffRole(user: AuthUser | null | undefined): boolean {
+  return isWarehouseStaff(user)
 }

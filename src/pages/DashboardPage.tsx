@@ -1,8 +1,8 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Boxes, Package, TrendingUp, Users, Warehouse } from "react-lucid"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 import {
   CartesianGrid,
   Cell,
@@ -36,13 +36,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { getDashboardKpis, merchantOrderBatchId } from "@/api/merchant-orders-api"
-import { getSystemSetting, type InsightsPeriodConfig } from "@/api/system-settings-api"
+import {
+  getDashboardKpis,
+  listPendingMerchantOrderImports,
+  merchantOrderBatchId,
+} from "@/api/merchant-orders-api"
+import { type InsightsPeriodConfig } from "@/api/system-settings-api"
+import { getUserSetting } from "@/api/user-settings-api"
 import { listUsers } from "@/api/users-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
-import { useAuth } from "@/lib/auth-context"
+import { getDefaultDashboardRoute, isMerchantUser, useAuth } from "@/lib/auth-context"
+import { isWarehouseAdmin } from "@/lib/warehouse-access"
+import { isMainBranch } from "@/lib/warehouse-utils"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { cn } from "@/lib/utils"
+
+export type DashboardVariant = "global" | "warehouseAdmin"
+
+/**
+ * Client fallback when the user-settings response has no `value` in the success path.
+ * `GET /api/user-settings/INSIGHTS_PERIOD` resolves user row, then system setting, then
+ * `DEFAULT_INSIGHTS_PERIOD_CONFIG` on the server.
+ */
+const DASHBOARD_INSIGHTS_DEFAULT: InsightsPeriodConfig = {
+  mode: "LAST_PERIOD",
+  lastDays: 30,
+}
 
 /** Cards and charts need matching JWT permissions; re-fetch `/api/auth/me` after role changes. */
 function hasPermission(
@@ -86,20 +106,41 @@ function formatInsightsPeriodLabel(
   }
 }
 
-export function DashboardPage() {
+function useHubBasePath(warehouseList: { id: string; mainBranchId: string | null }[]) {
+  return useMemo(() => {
+    const w = warehouseList[0]
+    if (!w) return { hubBase: "", isMain: false, merchantOrdersPath: "", hubShipmentsTabPath: "" }
+    const enc = encodeURIComponent(w.id)
+    const base = `/warehouses/${enc}`
+    const main = isMainBranch(w)
+    return {
+      hubBase: base,
+      isMain: main,
+      merchantOrdersPath: main ? `${base}?tab=orders` : base,
+      hubShipmentsTabPath: `${base}?tab=shipments`,
+    }
+  }, [warehouseList])
+}
+
+function DashboardContent({ variant }: { variant: DashboardVariant }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isMd = useMediaQuery("(min-width: 768px)")
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const isWhAdmin = variant === "warehouseAdmin"
 
-  const canReadMerchantOrderKpis = !!token && hasPermission(user, "merchant_orders.read")
-  const canListUsers = !!token && hasPermission(user, "users.read")
+  /** Aligned with `GET /api/merchant-orders/dashboard/kpis` (`merchant_orders.read` or `dashboard.view`). */
+  const canReadMerchantOrderKpis =
+    !!token &&
+    (hasPermission(user, "merchant_orders.read") ||
+      hasPermission(user, "dashboard.view"))
+  const canListUsers = !!token && hasPermission(user, "users.read") && !isWhAdmin
   const canListWarehouses = !!token && hasPermission(user, "warehouses.read")
 
   const warehousesPreview = useQuery({
-    queryKey: ["dashboard-warehouse-sites", token],
+    queryKey: ["dashboard-warehouse-sites", token, variant],
     queryFn: () => listWarehouseSites(token),
     enabled: canListWarehouses,
   })
@@ -111,36 +152,57 @@ export function DashboardPage() {
   })
 
   const insightsSettingsQuery = useQuery({
-    queryKey: ["system-settings", "INSIGHTS_PERIOD", token],
-    queryFn: () => getSystemSetting<InsightsPeriodConfig>(token, "INSIGHTS_PERIOD"),
+    queryKey: ["user-settings", "INSIGHTS_PERIOD", token],
+    queryFn: () => getUserSetting<InsightsPeriodConfig>(token, "INSIGHTS_PERIOD"),
     enabled: !!token,
   })
 
-  const insightsPeriod = insightsSettingsQuery.data?.value
-  const trendDays = insightsPeriod?.mode === "LAST_PERIOD" ? insightsPeriod.lastDays : undefined
-  const createdFrom = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.startDate : undefined
-  const createdTo = insightsPeriod?.mode === "CUSTOM_RANGE" ? insightsPeriod.endDate : undefined
-  const effectiveTrendDays = trendDays ?? 14
+  const effectiveInsights = useMemo((): InsightsPeriodConfig => {
+    if (insightsSettingsQuery.isSuccess && insightsSettingsQuery.data?.value != null) {
+      return insightsSettingsQuery.data.value
+    }
+    return DASHBOARD_INSIGHTS_DEFAULT
+  }, [insightsSettingsQuery.isSuccess, insightsSettingsQuery.data])
+
+  const trendDays =
+    effectiveInsights.mode === "LAST_PERIOD" ? effectiveInsights.lastDays : undefined
+  const createdFrom =
+    effectiveInsights.mode === "CUSTOM_RANGE" ? effectiveInsights.startDate : undefined
+  const createdTo =
+    effectiveInsights.mode === "CUSTOM_RANGE" ? effectiveInsights.endDate : undefined
+  const effectiveTrendDays = trendDays ?? 30
 
   const kpiQuery = useQuery({
-    queryKey: ["dashboard-kpis", "home", token, effectiveTrendDays, createdFrom, createdTo],
+    queryKey: [
+      "dashboard-kpis",
+      variant,
+      "home",
+      token,
+      effectiveTrendDays,
+      createdFrom,
+      createdTo,
+    ],
     queryFn: () =>
       getDashboardKpis({
         token,
         recentTake: 8,
-        trendDays: createdFrom ? undefined : effectiveTrendDays,
+        trendDays: createdFrom && createdTo ? undefined : effectiveTrendDays,
         createdFrom: createdFrom,
         createdTo: createdTo,
       }),
-    enabled: canReadMerchantOrderKpis && insightsSettingsQuery.isSuccess,
+    enabled: canReadMerchantOrderKpis,
   })
   const totals = kpiQuery.data?.totals
-  const warehouseList = Array.isArray(warehousesPreview.data?.warehouses) ? warehousesPreview.data.warehouses : []
+  const warehouseList = Array.isArray(warehousesPreview.data?.warehouses)
+    ? warehousesPreview.data.warehouses
+    : []
   const warehouseCount = warehouseList.length
   const warehouseTotalAllTime =
     totals?.totalWarehouses !== undefined ? totals.totalWarehouses : warehouseCount
 
-  const kpiPending = kpiQuery.isPending
+  const { merchantOrdersPath, hubShipmentsTabPath } = useHubBasePath(warehouseList)
+
+  const kpiPending = canReadMerchantOrderKpis && kpiQuery.isLoading
   const userHeadline =
     totals?.totalUsers !== undefined
       ? totals.totalUsers
@@ -149,6 +211,14 @@ export function DashboardPage() {
     totals?.totalShipmentLines ?? totals?.totalOrders ?? 0
   const merchantOrdersHeadline =
     totals?.totalMerchantOrders ?? totals?.totalShipments ?? 0
+
+  const statShipmentsTo = isWhAdmin
+    ? merchantOrdersPath || "/warehouses"
+    : "/merchant-orders"
+  const statLinesTo = isWhAdmin ? hubShipmentsTabPath || "/shipments" : "/shipments"
+  const statWarehousesTo = isWhAdmin && warehouseList[0]
+    ? `/warehouses/${encodeURIComponent(warehouseList[0].id)}`
+    : "/warehouses"
 
   const lineData = useMemo(() => {
     const orders = kpiQuery.data?.ordersOverTime ?? []
@@ -191,7 +261,42 @@ export function DashboardPage() {
     }))
   }, [kpiQuery.data?.transferStatusBreakdown, t])
 
-  const insightGridClass = "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-4"
+  const onQuickViewMerchantOrders = () => {
+    if (isWhAdmin) {
+      void navigate(merchantOrdersPath || "/warehouses")
+      return
+    }
+    void navigate("/merchant-orders")
+  }
+
+  const onQuickViewShipments = () => {
+    if (isWhAdmin) {
+      void navigate(hubShipmentsTabPath || "/shipments")
+      return
+    }
+    void navigate("/shipments")
+  }
+
+  const showMerchantQuickTabs =
+    !isWhAdmin &&
+    isMerchantUser(user) &&
+    hasPermission(user, "merchant_orders.read")
+
+  const [quickActionsTab, setQuickActionsTab] = useState<"shortcuts" | "pending">("shortcuts")
+
+  const pendingImportsPreviewQuery = useQuery({
+    queryKey: ["dashboard-merchant-pending-imports", token],
+    queryFn: () => listPendingMerchantOrderImports({ token }),
+    enabled: Boolean(token && showMerchantQuickTabs && quickActionsTab === "pending"),
+  })
+
+  const insightGridClass =
+    isWhAdmin
+      ? "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-3"
+      : "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-4"
+
+  const warehouseViewAllTo =
+    isWhAdmin && warehouseList[0] ? `/warehouses/${encodeURIComponent(warehouseList[0].id)}` : "/warehouses"
 
   return (
     <Layout title={t("nav.dashboard")}>
@@ -222,7 +327,7 @@ export function DashboardPage() {
               value={kpiPending ? "—" : shipmentLinesHeadline}
               icon={Boxes}
               accent="warning"
-              to="/shipments"
+              to={statLinesTo}
               hideTrend
             />
             <StatCard
@@ -230,16 +335,16 @@ export function DashboardPage() {
               value={kpiPending ? "—" : merchantOrdersHeadline}
               icon={Package}
               accent="success"
-              to="/merchant-orders"
+              to={statShipmentsTo}
               hideTrend
             />
-            {canListWarehouses ? (
+            {canListWarehouses && !isWhAdmin ? (
               <StatCard
                 title={t("dashboard.adminStats.warehouses")}
                 value={kpiPending ? "—" : warehouseTotalAllTime}
                 icon={Warehouse}
                 accent="destructive"
-                to="/warehouses"
+                to={statWarehousesTo}
                 hideTrend
               />
             ) : null}
@@ -257,7 +362,7 @@ export function DashboardPage() {
                 <CardDescription>{t("dashboard.warehouses.description")}</CardDescription>
               </div>
               <Button variant="outline" size="sm" className="shrink-0 self-start" asChild>
-                <Link to="/warehouses">{t("dashboard.warehouses.viewAll")}</Link>
+                <Link to={warehouseViewAllTo}>{t("dashboard.warehouses.viewAll")}</Link>
               </Button>
             </CardHeader>
             <CardContent>
@@ -416,34 +521,140 @@ export function DashboardPage() {
         ) : null}
 
         <div className="gradient-accent dashboard-animate-in rounded-2xl border border-border/80 p-5 shadow-[var(--shadow-soft)]">
-          <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-foreground text-lg font-semibold">
-                {t("dashboard.quickActions.title")}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                {t("dashboard.quickActions.description")}
-              </p>
+          {showMerchantQuickTabs ? (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setQuickActionsTab("shortcuts")}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    quickActionsTab === "shortcuts"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  {t("dashboard.quickActions.tabShortcuts")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickActionsTab("pending")}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    quickActionsTab === "pending"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  {t("dashboard.quickActions.tabPending")}
+                </button>
+              </div>
+              {quickActionsTab === "shortcuts" ? (
+                <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-foreground text-lg font-semibold">
+                      {t("dashboard.quickActions.title")}
+                    </h2>
+                    <p className="text-muted-foreground text-sm">
+                      {t("dashboard.quickActions.description")}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <Button
+                      type="button"
+                      variant="default"
+                      className="w-full sm:w-auto"
+                      onClick={onQuickViewMerchantOrders}
+                    >
+                      {t("dashboard.quickActions.viewShipments")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={onQuickViewShipments}
+                    >
+                      {t("dashboard.quickActions.viewAllOrders")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <h2 className="text-foreground text-lg font-semibold">
+                      {t("dashboard.quickActions.pendingTitle")}
+                    </h2>
+                    <p className="text-muted-foreground text-sm">
+                      {t("dashboard.quickActions.pendingDescription")}
+                    </p>
+                  </div>
+                  {pendingImportsPreviewQuery.isLoading ? (
+                    <p className="text-muted-foreground text-sm">{t("dashboard.kpiLoading")}</p>
+                  ) : null}
+                  {pendingImportsPreviewQuery.error ? (
+                    <p className="text-destructive text-sm" role="alert">
+                      {(pendingImportsPreviewQuery.error as Error).message}
+                    </p>
+                  ) : null}
+                  {!pendingImportsPreviewQuery.isLoading &&
+                  !pendingImportsPreviewQuery.error &&
+                  (pendingImportsPreviewQuery.data?.items.length ?? 0) === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      {t("dashboard.quickActions.pendingEmpty")}
+                    </p>
+                  ) : null}
+                  <ul className="space-y-2">
+                    {(pendingImportsPreviewQuery.data?.items ?? []).slice(0, 5).map((row) => (
+                      <li
+                        key={row.id}
+                        className="border-border/80 flex flex-col gap-0.5 rounded-lg border bg-background/40 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <span className="font-medium break-all">{row.fileName}</span>
+                        <span className="text-muted-foreground shrink-0 tabular-nums">
+                          {t("dashboard.quickActions.pendingRows", { count: row.rowCount })} ·{" "}
+                          {new Date(row.createdAt).toLocaleString(locale)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+                    <Link to="/merchant-orders/pending-confirmations">
+                      {t("dashboard.quickActions.pendingViewAll")}
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Button
-                type="button"
-                variant="default"
-                className="w-full sm:w-auto"
-                onClick={() => navigate("/merchant-orders")}
-              >
-                {t("dashboard.quickActions.viewShipments")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => navigate("/shipments")}
-              >
-                {t("dashboard.quickActions.viewAllOrders")}
-              </Button>
+          ) : (
+            <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-foreground text-lg font-semibold">
+                  {t("dashboard.quickActions.title")}
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  {t("dashboard.quickActions.description")}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full sm:w-auto"
+                  onClick={onQuickViewMerchantOrders}
+                >
+                  {t("dashboard.quickActions.viewShipments")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={onQuickViewShipments}
+                >
+                  {t("dashboard.quickActions.viewAllOrders")}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {canReadMerchantOrderKpis ? (
@@ -509,4 +720,22 @@ export function DashboardPage() {
       </div>
     </Layout>
   )
+}
+
+/** Global home dashboard: warehouse site admins are sent to the scoped warehouse dashboard. */
+export function DashboardPage() {
+  const { user } = useAuth()
+  if (isWarehouseAdmin(user)) {
+    return <Navigate to="/dashboard/warehouse" replace />
+  }
+  return <DashboardContent variant="global" />
+}
+
+/** Hub-scoped insights; only for warehouse site admins. */
+export function WarehouseAdminDashboardPage() {
+  const { user } = useAuth()
+  if (!isWarehouseAdmin(user)) {
+    return <Navigate to={getDefaultDashboardRoute(user)} replace />
+  }
+  return <DashboardContent variant="warehouseAdmin" />
 }

@@ -102,6 +102,12 @@ const STATUS_CONFIG: Record<
     color: "text-purple-600",
     bgColor: "bg-purple-100",
   },
+  OUT_FOR_RETURN_TO_MERCHANT: {
+    icon: Truck,
+    labelKey: "shipments.timeline.outForReturnToMerchant",
+    color: "text-violet-600",
+    bgColor: "bg-violet-100",
+  },
   RETURNED_TO_MERCHANT: {
     icon: RotateCcw,
     labelKey: "shipments.timeline.returnedToMerchant",
