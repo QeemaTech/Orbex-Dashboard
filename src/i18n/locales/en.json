@@ -1051,6 +1051,7 @@
       "latitude": "Latitude",
       "longitude": "Longitude",
       "radiusLabel": "Radius: {{m}} m",
+      "courierCommissionFee": "Courier commission per delivery (EGP)",
       "couriers": "Couriers",
       "courierInOtherZone": "Currently assigned to: {{zone}}",
       "courierWillMoveOnSave": "Will move to this zone on save (removed from the previous zone).",

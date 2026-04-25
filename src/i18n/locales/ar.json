@@ -1023,6 +1023,7 @@
       "latitude": "خط العرض",
       "longitude": "خط الطول",
       "radiusLabel": "نصف القطر: {{m}} م",
+      "courierCommissionFee": "عمولة المندوب لكل توصيل (جنيه)",
       "couriers": "المناديب",
       "courierInOtherZone": "معيّن حالياً في: {{zone}}",
       "courierWillMoveOnSave": "سيُنقل إلى هذه المنطقة عند الحفظ (يُزال من المنطقة السابقة).",

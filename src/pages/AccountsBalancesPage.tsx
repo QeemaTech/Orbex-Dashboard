@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
-import { Building2, Truck } from "lucide-react"
+import { Building2 } from "lucide-react"
 
 import {
   listCourierBalances,
@@ -24,8 +24,6 @@ import {
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
 import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
-
-type BalanceTab = "MERCHANTS" | "COURIERS"
 
 const PAGE_SIZE = 25
 
@@ -70,14 +68,21 @@ export function AccountsBalancesPage() {
     return undefined
   }, [user])
 
-  const [tab, setTab] = useState<BalanceTab>("MERCHANTS")
   const [search, setSearch] = useState("")
   const [from, setFrom] = useState(startOfMonthISO())
   const [to, setTo] = useState(endOfMonthISO())
-  const [page, setPage] = useState(1)
+  const [merchantPage, setMerchantPage] = useState(1)
+  const [courierPage, setCourierPage] = useState(1)
 
   const merchantQuery = useQuery({
-    queryKey: ["accounting-merchant-balances", scopedWarehouseId, search, from, to, page],
+    queryKey: [
+      "accounting-merchant-balances",
+      scopedWarehouseId,
+      search,
+      from,
+      to,
+      merchantPage,
+    ],
     queryFn: () =>
       listMerchantBalances({
         token,
@@ -85,14 +90,21 @@ export function AccountsBalancesPage() {
         search: search || undefined,
         from,
         to,
-        page,
+        page: merchantPage,
         pageSize: PAGE_SIZE,
       }),
-    enabled: tab === "MERCHANTS" && !!token,
+    enabled: !!token,
   })
 
   const courierQuery = useQuery({
-    queryKey: ["accounting-courier-balances", scopedWarehouseId, search, from, to, page],
+    queryKey: [
+      "accounting-courier-balances",
+      scopedWarehouseId,
+      search,
+      from,
+      to,
+      courierPage,
+    ],
     queryFn: () =>
       listCourierBalances({
         token,
@@ -100,44 +112,24 @@ export function AccountsBalancesPage() {
         search: search || undefined,
         from,
         to,
-        page,
+        page: courierPage,
         pageSize: PAGE_SIZE,
       }),
-    enabled: tab === "COURIERS" && !!token,
+    enabled: !!token,
   })
 
-  const active = tab === "MERCHANTS" ? merchantQuery : courierQuery
-  const total = active.data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-
-  function goToTab(next: BalanceTab) {
-    setTab(next)
-    setPage(1)
-  }
+  const merchantTotal = merchantQuery.data?.total ?? 0
+  const merchantTotalPages = Math.max(1, Math.ceil(merchantTotal / PAGE_SIZE))
+  const courierTotal = courierQuery.data?.total ?? 0
+  const courierTotalPages = Math.max(1, Math.ceil(courierTotal / PAGE_SIZE))
 
   return (
     <Layout title={t("accounts.balances.title")}>
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant={tab === "MERCHANTS" ? "default" : "outline"}
-              size="sm"
-              onClick={() => goToTab("MERCHANTS")}
-            >
-              <Building2 className="me-1 size-4" aria-hidden />
-              {t("accounts.balances.tabs.merchants")}
-            </Button>
-            <Button
-              type="button"
-              variant={tab === "COURIERS" ? "default" : "outline"}
-              size="sm"
-              onClick={() => goToTab("COURIERS")}
-            >
-              <Truck className="me-1 size-4" aria-hidden />
-              {t("accounts.balances.tabs.couriers")}
-            </Button>
+          <div className="flex items-center gap-2">
+            <Building2 className="text-primary size-5" aria-hidden />
+            <h1 className="text-xl font-semibold">{t("accounts.balances.title")}</h1>
           </div>
           <Button variant="outline" size="sm" asChild>
             <Link to="/accounts">{t("accounts.balances.backToShipments")}</Link>
@@ -153,7 +145,8 @@ export function AccountsBalancesPage() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
-                setPage(1)
+                setMerchantPage(1)
+                setCourierPage(1)
               }}
               placeholder={t("accounts.balances.searchPlaceholder")}
             />
@@ -162,7 +155,8 @@ export function AccountsBalancesPage() {
               value={from}
               onChange={(e) => {
                 setFrom(e.target.value)
-                setPage(1)
+                setMerchantPage(1)
+                setCourierPage(1)
               }}
               aria-label={t("accounts.filters.from")}
             />
@@ -171,46 +165,40 @@ export function AccountsBalancesPage() {
               value={to}
               onChange={(e) => {
                 setTo(e.target.value)
-                setPage(1)
+                setMerchantPage(1)
+                setCourierPage(1)
               }}
               aria-label={t("accounts.filters.to")}
             />
           </CardContent>
         </Card>
 
-        {active.isLoading ? (
+        {merchantQuery.isLoading || courierQuery.isLoading ? (
           <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
         ) : null}
-        {active.isError ? (
+        {merchantQuery.isError || courierQuery.isError ? (
           <p className="text-destructive text-sm" role="alert">
-            {(active.error as Error).message}
+            {((merchantQuery.error ?? courierQuery.error) as Error).message}
           </p>
         ) : null}
 
-        {tab === "MERCHANTS" ? (
-          <MerchantBalancesTable
-            rows={(merchantQuery.data?.items ?? []) as MerchantBalanceRow[]}
-            locale={locale}
-          />
-        ) : (
-          <CourierBalancesTable
-            rows={(courierQuery.data?.items ?? []) as CourierBalanceRow[]}
-            locale={locale}
-          />
-        )}
+        <MerchantBalancesTable
+          rows={(merchantQuery.data?.items ?? []) as MerchantBalanceRow[]}
+          locale={locale}
+        />
 
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm">
-            {t("accounts.pagination.page")} {page} / {totalPages} · {total}{" "}
-            {t("accounts.pagination.total")}
+            {t("accounts.pagination.page")} {merchantPage} / {merchantTotalPages} ·{" "}
+            {merchantTotal} {t("accounts.pagination.total")}
           </p>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={merchantPage <= 1}
+              onClick={() => setMerchantPage((p) => Math.max(1, p - 1))}
             >
               {t("accounts.pagination.prev")}
             </Button>
@@ -218,8 +206,44 @@ export function AccountsBalancesPage() {
               type="button"
               variant="outline"
               size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={merchantPage >= merchantTotalPages}
+              onClick={() =>
+                setMerchantPage((p) => Math.min(merchantTotalPages, p + 1))
+              }
+            >
+              {t("accounts.pagination.next")}
+            </Button>
+          </div>
+        </div>
+
+        <CourierBalancesTable
+          rows={(courierQuery.data?.items ?? []) as CourierBalanceRow[]}
+          locale={locale}
+        />
+
+        <div className="flex items-center justify-between">
+          <p className="text-muted-foreground text-sm">
+            {t("accounts.pagination.page")} {courierPage} / {courierTotalPages} ·{" "}
+            {courierTotal} {t("accounts.pagination.total")}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={courierPage <= 1}
+              onClick={() => setCourierPage((p) => Math.max(1, p - 1))}
+            >
+              {t("accounts.pagination.prev")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={courierPage >= courierTotalPages}
+              onClick={() =>
+                setCourierPage((p) => Math.min(courierTotalPages, p + 1))
+              }
             >
               {t("accounts.pagination.next")}
             </Button>
