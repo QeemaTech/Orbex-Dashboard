@@ -24,6 +24,7 @@ export type AccountingShipmentRow = {
   shipmentValue: string
   shippingFee: string
   commissionFee: string
+  courierCommissionFee: string
   paymentMethod: string
   paymentStatus: string
   status: string

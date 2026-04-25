@@ -274,7 +274,7 @@ export function CourierAccountDetailPage() {
                 <TableBody>
                   {(ledgerQuery.data?.items ?? []).map((row) => {
                     const value = Number(row.shipmentValue)
-                    const comm = Number(row.commissionFee ?? "0")
+                    const comm = Number(row.courierCommissionFee ?? "0")
                     const netDue = value - comm
                     return (
                       <TableRow key={row.id}>
@@ -292,7 +292,7 @@ export function CourierAccountDetailPage() {
                           {formatEGP(row.shipmentValue, locale)}
                         </TableCell>
                         <TableCell className="text-end tabular-nums">
-                          {formatEGP(row.commissionFee, locale)}
+                          {formatEGP(row.courierCommissionFee, locale)}
                         </TableCell>
                         <TableCell className="text-end tabular-nums font-semibold">
                           {formatEGP(netDue.toFixed(2), locale)}
