@@ -1140,7 +1140,8 @@
     "pagination": {
       "page": "صفحة {{page}} من {{total}}",
       "prev": "السابق",
-      "next": "التالي"
+      "next": "التالي",
+      "total": "إجمالي"
     },
     "feedback": {
       "settled": "تم تعليم الشحنة كمُصَفّاة.",
@@ -1178,6 +1179,36 @@
       "net": "الصافي",
       "exportExcel": "تصدير Excel",
       "backToAccounts": "العودة للحسابات"
+    },
+    "balances": {
+      "title": "الأرصدة",
+      "tabs": {
+        "merchants": "التجار",
+        "couriers": "المناديب"
+      },
+      "backToShipments": "العودة للشحنات",
+      "filters": "الفلاتر",
+      "searchPlaceholder": "بحث بالاسم / الهاتف",
+      "merchantsTitle": "أرصدة التجار",
+      "couriersTitle": "أرصدة المناديب",
+      "columns": {
+        "phone": "الهاتف",
+        "totalShipmentValue": "إجمالي قيمة الشحنات",
+        "totalShippingFees": "إجمالي مصاريف الشحن",
+        "totalCollected": "إجمالي المُحصّل",
+        "totalCommission": "إجمالي العمولة",
+        "remaining": "المتبقي للدفع",
+        "netDue": "صافي المستحق"
+      }
+    },
+    "ledger": {
+      "title": "سجل الحساب",
+      "hint": "تفاصيل الشحنات خلال الفترة المحددة.",
+      "courierHint": "عمولة المندوب تُحسب على كل شحنة تم تسليمها.",
+      "search": "بحث برقم التتبع / التاجر / العميل",
+      "commission": "العمولة",
+      "net": "الصافي",
+      "netDue": "صافي المستحق"
     }
   }
 }

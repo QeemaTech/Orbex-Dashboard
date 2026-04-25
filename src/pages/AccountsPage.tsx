@@ -162,14 +162,17 @@ export function AccountsPage() {
   return (
     <Layout title={t("accounts.pageTitle")}>
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <Banknote className="text-primary size-6" aria-hidden />
-            <h1 className="text-2xl font-semibold">{t("accounts.pageTitle")}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <Banknote className="text-primary size-6" aria-hidden />
+              <h1 className="text-2xl font-semibold">{t("accounts.pageTitle")}</h1>
+            </div>
+            <p className="text-muted-foreground text-sm">{t("accounts.subtitle")}</p>
           </div>
-          <p className="text-muted-foreground text-sm">
-            {t("accounts.subtitle")}
-          </p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/accounts/balances">{t("accounts.balances.title")}</Link>
+          </Button>
         </div>
 
         <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">

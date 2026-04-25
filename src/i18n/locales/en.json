@@ -1168,7 +1168,8 @@
     "pagination": {
       "page": "Page {{page}} of {{total}}",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "total": "total"
     },
     "feedback": {
       "settled": "Shipment marked as settled.",
@@ -1206,6 +1207,36 @@
       "net": "Net",
       "exportExcel": "Export Excel",
       "backToAccounts": "Back to accounts"
+    },
+    "balances": {
+      "title": "Balances",
+      "tabs": {
+        "merchants": "Merchants",
+        "couriers": "Couriers"
+      },
+      "backToShipments": "Back to shipments",
+      "filters": "Filters",
+      "searchPlaceholder": "Search name / phone",
+      "merchantsTitle": "Merchant balances",
+      "couriersTitle": "Courier balances",
+      "columns": {
+        "phone": "Phone",
+        "totalShipmentValue": "Total shipment value",
+        "totalShippingFees": "Total shipping fees",
+        "totalCollected": "Total collected",
+        "totalCommission": "Total commission",
+        "remaining": "Remaining payable",
+        "netDue": "Net due"
+      }
+    },
+    "ledger": {
+      "title": "Account ledger",
+      "hint": "Detailed shipment rows for the selected period.",
+      "courierHint": "Courier commission is applied per delivered shipment.",
+      "search": "Search tracking / merchant / customer",
+      "commission": "Commission",
+      "net": "Net",
+      "netDue": "Net due"
     }
   }
 }

@@ -17,6 +17,7 @@ import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage
 import { CsShipmentsListPage } from "@/features/customer-service/pages/CsShipmentsListPage"
 import { DashboardPage, WarehouseAdminDashboardPage } from "@/pages/DashboardPage"
 import { AccountsPage } from "@/pages/AccountsPage"
+import { AccountsBalancesPage } from "@/pages/AccountsBalancesPage"
 import { CourierAccountDetailPage } from "@/pages/CourierAccountDetailPage"
 import { MerchantAccountDetailPage } from "@/pages/MerchantAccountDetailPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
@@ -305,6 +306,19 @@ export default function App() {
                 requiredPermissions={["accounts.read"]}
               >
                 <AccountsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/balances"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["accounts.read"]}
+              >
+                <AccountsBalancesPage />
               </ProtectedRole>
             </Protected>
           }

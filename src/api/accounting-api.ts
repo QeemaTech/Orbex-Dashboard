@@ -121,6 +121,91 @@ export type CourierAccountSummary = {
   netDue: string
 }
 
+export type MerchantBalanceRow = {
+  merchant: {
+    id: string
+    displayName: string
+    businessName: string
+    phone: string
+  }
+  periodFrom: string
+  periodTo: string
+  shipmentCount: number
+  deliveredShipments: number
+  settledShipments: number
+  totalShipmentValue: string
+  totalCollected: string
+  totalCommission: string
+  totalShippingFees: string
+  remaining: string
+}
+
+export type CourierBalanceRow = {
+  courier: {
+    id: string
+    fullName: string | null
+    contactPhone: string | null
+  }
+  periodFrom: string
+  periodTo: string
+  shipmentCount: number
+  deliveredShipments: number
+  rejectedShipments: number
+  postponedShipments: number
+  totalCollected: string
+  totalCommissionDue: string
+  netDue: string
+}
+
+export type AccountingBalancesListResponse<T> = {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export type AccountingBalancesListParams = {
+  token: string
+  warehouseId?: string
+  from?: string
+  to?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
+export function listMerchantBalances(
+  params: AccountingBalancesListParams,
+): Promise<AccountingBalancesListResponse<MerchantBalanceRow>> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "warehouseId", params.warehouseId)
+  appendIfDefined(q, "from", params.from)
+  appendIfDefined(q, "to", params.to)
+  appendIfDefined(q, "search", params.search)
+  appendIfDefined(q, "page", params.page)
+  appendIfDefined(q, "pageSize", params.pageSize)
+  return apiFetch<AccountingBalancesListResponse<MerchantBalanceRow>>(
+    `/api/accounting/merchants/balances?${q.toString()}`,
+    { token: params.token },
+  )
+}
+
+export function listCourierBalances(
+  params: AccountingBalancesListParams,
+): Promise<AccountingBalancesListResponse<CourierBalanceRow>> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "warehouseId", params.warehouseId)
+  appendIfDefined(q, "from", params.from)
+  appendIfDefined(q, "to", params.to)
+  appendIfDefined(q, "search", params.search)
+  appendIfDefined(q, "page", params.page)
+  appendIfDefined(q, "pageSize", params.pageSize)
+  return apiFetch<AccountingBalancesListResponse<CourierBalanceRow>>(
+    `/api/accounting/couriers/balances?${q.toString()}`,
+    { token: params.token },
+  )
+}
+
 export function getCourierAccountSummary(
   token: string,
   courierId: string,
