@@ -257,18 +257,23 @@ export function Sidebar() {
             to={to}
             end={end}
             onClick={() => setOpen(false)}
-            className={({ isActive }) =>
-              cn(
+            className={({ isActive }) => {
+              let finalIsActive = isActive
+              if (user && (isWarehouseStaff(user) || isWarehouseAdmin(user))) {
+                finalIsActive = isWarehouseStaffNavItemActive(location, to)
+              } else if (to === "/merchant-orders" && location.pathname.startsWith("/merchant-orders/pending-confirmations")) {
+                finalIsActive = false
+              } else if (to === "/cs/merchant-orders" && location.pathname.startsWith("/cs/merchant-orders/pending-confirmations")) {
+                finalIsActive = false
+              }
+
+              return cn(
                 "nav-item group flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-3 text-[0.95rem] font-medium transition-all duration-200",
-                user && (isWarehouseStaff(user) || isWarehouseAdmin(user))
-                  ? isWarehouseStaffNavItemActive(location, to)
-                    ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
-                    : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
-                  : isActive
-                    ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
-                    : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
+                finalIsActive
+                  ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
+                  : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
               )
-            }
+            }}
           >
             <Icon className="size-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden />
             {t(labelKey)}
