@@ -14,6 +14,7 @@ export type InsightsPeriodCustomRange = {
 export type InsightsPeriodConfig = InsightsPeriodLastPeriod | InsightsPeriodCustomRange
 export const VISA_COMMISSION_RATE_KEY = "visa_commission_rate"
 export const DEFAULT_COMMISSION_FEE_KEY = "default_commission_fee"
+export const CUSTOMER_SERVICE_FEE_RATE_KEY = "customer_service_fee_rate"
 
 export async function getSystemSetting<T>(token: string, key: string): Promise<{ key: string; value: T }> {
   return apiFetch<{ key: string; value: T }>(

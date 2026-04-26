@@ -93,6 +93,23 @@ function RootRedirect() {
   return <Navigate to={getDefaultDashboardRoute(user)} replace />
 }
 
+function MerchantSelfAccountRedirect() {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (!user.merchantId) return <Navigate to={getDefaultDashboardRoute(user)} replace />
+  return <Navigate to={`/accounts/merchants/${encodeURIComponent(user.merchantId)}`} replace />
+}
+
+function MerchantSelfAccountOnly({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const { merchantId = "" } = useParams()
+  if (!user) return <Navigate to="/login" replace />
+  if (!user.merchantId || user.merchantId !== merchantId) {
+    return <Navigate to={getDefaultDashboardRoute(user)} replace />
+  }
+  return <>{children}</>
+}
+
 function RedirectWarehouseMerchantOrderShipmentsToDetail() {
   const { warehouseId = "", merchantOrderId = "" } = useParams()
   return (
@@ -338,6 +355,14 @@ export default function App() {
           }
         />
         <Route
+          path="/accounts/me"
+          element={
+            <Protected>
+              <MerchantSelfAccountRedirect />
+            </Protected>
+          }
+        />
+        <Route
           path="/accounts/couriers/:courierId"
           element={
             <Protected>
@@ -355,10 +380,12 @@ export default function App() {
           element={
             <Protected>
               <ProtectedRole
-                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
-                requiredPermissions={["accounts.read"]}
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN", "MERCHANT"]}
+                requiredPermissions={["accounts.request_payout"]}
               >
-                <MerchantAccountDetailPage />
+                <MerchantSelfAccountOnly>
+                  <MerchantAccountDetailPage />
+                </MerchantSelfAccountOnly>
               </ProtectedRole>
             </Protected>
           }

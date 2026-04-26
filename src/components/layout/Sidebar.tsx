@@ -132,6 +132,13 @@ const customerServiceNavConfig = [
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const
 
+const merchantNavConfig = [
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
+  { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
+  { to: "/accounts/me", labelKey: "nav.accounts", icon: Banknote, end: false, perm: "accounts.request_payout" },
+  { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
+] as const
+
 export function Sidebar() {
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
@@ -160,6 +167,10 @@ export function Sidebar() {
 
   const navConfig = useMemo(() => {
     const check = (p?: string) => (p ? perms.includes(p) : true)
+    // Merchants may have legacy/null `role` but still have `merchantId`.
+    if (user && isMerchantUser(user)) {
+      return merchantNavConfig.filter((item) => check(item.perm))
+    }
     if (user?.role === "CUSTOMER_SERVICE") {
       return customerServiceNavConfig.filter((item) => {
         if (item.to === "/cs/merchant-orders/pending-confirmations") {

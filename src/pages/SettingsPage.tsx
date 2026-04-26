@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
+  CUSTOMER_SERVICE_FEE_RATE_KEY,
   DEFAULT_COMMISSION_FEE_KEY,
   getSystemSetting,
   putSystemSetting,
@@ -61,6 +62,7 @@ export function SettingsPage() {
   const [rangeTo, setRangeTo] = useState("")
   const [defaultCommissionFee, setDefaultCommissionFee] = useState("0")
   const [visaCommissionPercent, setVisaCommissionPercent] = useState("2.5")
+  const [serviceFeePercent, setServiceFeePercent] = useState("0")
 
   const userInsightsQuery = useQuery({
     queryKey: ["user-settings", "INSIGHTS_PERIOD", token],
@@ -75,6 +77,11 @@ export function SettingsPage() {
   const visaCommissionQuery = useQuery({
     queryKey: ["system-settings", VISA_COMMISSION_RATE_KEY, token],
     queryFn: () => getSystemSetting<number>(token, VISA_COMMISSION_RATE_KEY),
+    enabled: !!token && canManageSystem,
+  })
+  const serviceFeeQuery = useQuery({
+    queryKey: ["system-settings", CUSTOMER_SERVICE_FEE_RATE_KEY, token],
+    queryFn: () => getSystemSetting<number>(token, CUSTOMER_SERVICE_FEE_RATE_KEY),
     enabled: !!token && canManageSystem,
   })
 
@@ -100,6 +107,12 @@ export function SettingsPage() {
       setVisaCommissionPercent(String(rate * 100))
     }
   }, [visaCommissionQuery.data?.value])
+  useEffect(() => {
+    const rate = Number(serviceFeeQuery.data?.value)
+    if (Number.isFinite(rate) && rate >= 0) {
+      setServiceFeePercent(String(rate * 100))
+    }
+  }, [serviceFeeQuery.data?.value])
 
   const saveUserInsightsMutation = useMutation({
     mutationFn: async () => {
@@ -147,10 +160,16 @@ export function SettingsPage() {
       if (!Number.isFinite(visaPercent) || visaPercent < 0 || visaPercent > 100) {
         throw new Error(t("settings.financial.invalidVisaCommissionPercent"))
       }
+      const servicePercent = Number.parseFloat(serviceFeePercent)
+      if (!Number.isFinite(servicePercent) || servicePercent < 0 || servicePercent > 100) {
+        throw new Error(t("settings.financial.invalidServiceFeePercent"))
+      }
       const visaRate = visaPercent / 100
+      const serviceRate = servicePercent / 100
       await Promise.all([
         putSystemSetting(token, DEFAULT_COMMISSION_FEE_KEY, commission),
         putSystemSetting(token, VISA_COMMISSION_RATE_KEY, visaRate),
+        putSystemSetting(token, CUSTOMER_SERVICE_FEE_RATE_KEY, serviceRate),
       ])
     },
     onSuccess: () => {
@@ -160,6 +179,9 @@ export function SettingsPage() {
       })
       void queryClient.invalidateQueries({
         queryKey: ["system-settings", VISA_COMMISSION_RATE_KEY, token],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["system-settings", CUSTOMER_SERVICE_FEE_RATE_KEY, token],
       })
     },
     onError: (e: Error) => {
@@ -260,13 +282,17 @@ export function SettingsPage() {
               <CardDescription>{t("settings.financial.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {defaultCommissionQuery.isLoading || visaCommissionQuery.isLoading ? (
+              {defaultCommissionQuery.isLoading ||
+              visaCommissionQuery.isLoading ||
+              serviceFeeQuery.isLoading ? (
                 <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
               ) : null}
-              {defaultCommissionQuery.error || visaCommissionQuery.error ? (
+              {defaultCommissionQuery.error || visaCommissionQuery.error || serviceFeeQuery.error ? (
                 <p className="text-destructive text-sm">
                   {(
-                    (defaultCommissionQuery.error ?? visaCommissionQuery.error) as Error
+                    (defaultCommissionQuery.error ??
+                      visaCommissionQuery.error ??
+                      serviceFeeQuery.error) as Error
                   ).message}
                 </p>
               ) : null}
@@ -274,6 +300,9 @@ export function SettingsPage() {
                 <label className="text-sm font-medium" htmlFor="default-commission-fee">
                   {t("settings.financial.defaultCommissionFee")}
                 </label>
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.financial.defaultCommissionFeeHelp")}
+                </p>
                 <Input
                   id="default-commission-fee"
                   type="number"
@@ -288,6 +317,9 @@ export function SettingsPage() {
                 <label className="text-sm font-medium" htmlFor="visa-commission-percent">
                   {t("settings.financial.visaCommissionPercent")}
                 </label>
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.financial.visaCommissionPercentHelp")}
+                </p>
                 <Input
                   id="visa-commission-percent"
                   type="number"
@@ -297,6 +329,24 @@ export function SettingsPage() {
                   className="max-w-xs"
                   value={visaCommissionPercent}
                   onChange={(e) => setVisaCommissionPercent(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium" htmlFor="service-fee-percent">
+                  {t("settings.financial.serviceFeePercent")}
+                </label>
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.financial.serviceFeePercentHelp")}
+                </p>
+                <Input
+                  id="service-fee-percent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  className="max-w-xs"
+                  value={serviceFeePercent}
+                  onChange={(e) => setServiceFeePercent(e.target.value)}
                 />
               </div>
               <Button

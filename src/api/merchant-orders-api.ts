@@ -250,6 +250,7 @@ export type ShipmentOrderRow = {
   shipmentValue: string
   shippingFee: string
   commissionFee: string
+  serviceFee?: string
   paymentMethod: string
   visaCommissionRate: string | null
   notes: string | null
@@ -335,6 +336,12 @@ export type ShipmentOrderRow = {
       fullName: string | null
       contactPhone: string | null
     } | null
+    createdAt: string
+  }>
+  paymentProofs?: Array<{
+    id: string
+    paymentMethod: string
+    imageUrl: string
     createdAt: string
   }>
 }
