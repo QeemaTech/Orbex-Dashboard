@@ -14,7 +14,9 @@ export type ShipmentSubStatus =
   | "DELAYED"
   | "RESCHEDULED"
   | "RETURNED_TO_WAREHOUSE"
+  | "OUT_FOR_RETURN_TO_MERCHANT"
   | "RETURN_TO_MERCHANT"
+  | "RETURNED_TO_MERCHANT"
   | "DAMAGED"
   | "OVERDUE"
 

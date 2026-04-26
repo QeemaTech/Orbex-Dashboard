@@ -7,7 +7,7 @@ import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   openWhatsAppForOrder,
   openWhatsAppTrackingMessage,

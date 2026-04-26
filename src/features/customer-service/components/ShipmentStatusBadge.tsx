@@ -37,6 +37,8 @@ function statusColorClass(status: string): string {
       return "border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
     case "RETURN_TO_MERCHANT":
       return "border-violet-300 bg-violet-100 text-violet-800 dark:border-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+    case "RETURNED_TO_MERCHANT":
+      return "border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
     case "RESCHEDULED":
       return "border-cyan-300 bg-cyan-100 text-cyan-800 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300"
     case "DAMAGED_OR_MISSING":

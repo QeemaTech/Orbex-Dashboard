@@ -12,3 +12,386 @@ export function getAccountingDashboard(
   })
 }
 
+export type AccountingShipmentTab =
+  | "IN_TRANSIT"
+  | "POSTPONED"
+  | "DELIVERED"
+  | "REJECTED"
+
+export type AccountingShipmentRow = {
+  id: string
+  trackingNumber: string | null
+  shipmentValue: string
+  shippingFee: string
+  commissionFee: string
+  courierCommissionFee: string
+  paymentMethod: string
+  paymentStatus: string
+  status: string
+  createdAt: string
+  postponedAt: string | null
+  currentWarehouseId: string | null
+  currentWarehouseName: string | null
+  merchant: {
+    id: string
+    displayName: string
+    businessName: string
+    phone: string
+  }
+  courier: {
+    id: string
+    fullName: string | null
+    contactPhone: string | null
+  } | null
+  customer: {
+    customerName: string
+    phonePrimary: string
+  }
+}
+
+export type AccountingShipmentListResponse = {
+  items: AccountingShipmentRow[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export type AccountingShipmentListParams = {
+  token: string
+  tab: AccountingShipmentTab
+  courierId?: string
+  merchantId?: string
+  warehouseId?: string
+  from?: string
+  to?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
+function appendIfDefined(q: URLSearchParams, key: string, value: string | number | undefined): void {
+  if (value === undefined || value === null) return
+  const s = String(value).trim()
+  if (s.length === 0) return
+  q.set(key, s)
+}
+
+export function listAccountingShipments(
+  params: AccountingShipmentListParams,
+): Promise<AccountingShipmentListResponse> {
+  const q = new URLSearchParams()
+  q.set("tab", params.tab)
+  appendIfDefined(q, "courierId", params.courierId)
+  appendIfDefined(q, "merchantId", params.merchantId)
+  appendIfDefined(q, "warehouseId", params.warehouseId)
+  appendIfDefined(q, "from", params.from)
+  appendIfDefined(q, "to", params.to)
+  appendIfDefined(q, "search", params.search)
+  appendIfDefined(q, "page", params.page)
+  appendIfDefined(q, "pageSize", params.pageSize)
+  return apiFetch<AccountingShipmentListResponse>(
+    `/api/accounting/shipments?${q.toString()}`,
+    { token: params.token },
+  )
+}
+
+export function settleAccountingShipment(
+  token: string,
+  shipmentId: string,
+): Promise<AccountingShipmentRow> {
+  return apiFetch<AccountingShipmentRow>(
+    `/api/accounting/shipments/${encodeURIComponent(shipmentId)}/settle`,
+    { token, method: "POST" },
+  )
+}
+
+export type CourierAccountSummary = {
+  courier: {
+    id: string
+    fullName: string | null
+    contactPhone: string | null
+  }
+  periodFrom: string
+  periodTo: string
+  totalShipments: number
+  deliveredShipments: number
+  rejectedShipments: number
+  postponedShipments: number
+  totalCollected: string
+  totalCommissionDue: string
+  netDue: string
+}
+
+export type MerchantBalanceRow = {
+  merchant: {
+    id: string
+    displayName: string
+    businessName: string
+    phone: string
+  }
+  periodFrom: string
+  periodTo: string
+  shipmentCount: number
+  deliveredShipments: number
+  settledShipments: number
+  totalShipmentValue: string
+  totalCollected: string
+  totalCommission: string
+  totalShippingFees: string
+  remaining: string
+}
+
+export type CourierBalanceRow = {
+  courier: {
+    id: string
+    fullName: string | null
+    contactPhone: string | null
+  }
+  periodFrom: string
+  periodTo: string
+  shipmentCount: number
+  deliveredShipments: number
+  rejectedShipments: number
+  postponedShipments: number
+  totalCollected: string
+  totalCommissionDue: string
+  netDue: string
+}
+
+export type AccountingBalancesListResponse<T> = {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export type AccountingBalancesListParams = {
+  token: string
+  warehouseId?: string
+  from?: string
+  to?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
+export function listMerchantBalances(
+  params: AccountingBalancesListParams,
+): Promise<AccountingBalancesListResponse<MerchantBalanceRow>> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "warehouseId", params.warehouseId)
+  appendIfDefined(q, "from", params.from)
+  appendIfDefined(q, "to", params.to)
+  appendIfDefined(q, "search", params.search)
+  appendIfDefined(q, "page", params.page)
+  appendIfDefined(q, "pageSize", params.pageSize)
+  return apiFetch<AccountingBalancesListResponse<MerchantBalanceRow>>(
+    `/api/accounting/merchants/balances?${q.toString()}`,
+    { token: params.token },
+  )
+}
+
+export function listCourierBalances(
+  params: AccountingBalancesListParams,
+): Promise<AccountingBalancesListResponse<CourierBalanceRow>> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "warehouseId", params.warehouseId)
+  appendIfDefined(q, "from", params.from)
+  appendIfDefined(q, "to", params.to)
+  appendIfDefined(q, "search", params.search)
+  appendIfDefined(q, "page", params.page)
+  appendIfDefined(q, "pageSize", params.pageSize)
+  return apiFetch<AccountingBalancesListResponse<CourierBalanceRow>>(
+    `/api/accounting/couriers/balances?${q.toString()}`,
+    { token: params.token },
+  )
+}
+
+export function getCourierAccountSummary(
+  token: string,
+  courierId: string,
+  params?: { from?: string; to?: string },
+): Promise<CourierAccountSummary> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "from", params?.from)
+  appendIfDefined(q, "to", params?.to)
+  const qs = q.toString() ? `?${q.toString()}` : ""
+  return apiFetch<CourierAccountSummary>(
+    `/api/accounting/couriers/${encodeURIComponent(courierId)}/summary${qs}`,
+    { token },
+  )
+}
+
+export type MerchantAccountSummary = {
+  summary: {
+    merchant: {
+      id: string
+      displayName: string
+      businessName: string
+      phone: string
+    }
+    periodFrom: string
+    periodTo: string
+    monthlyShipments: number
+    deliveredShipments: number
+    settledShipments: number
+    totalShipmentValue: string
+    totalCollected: string
+    totalCommission: string
+    totalShippingFees: string
+    remaining: string
+  }
+  daily: Array<{
+    date: string
+    shipmentCount: number
+    delivered: number
+    collected: string
+    commission: string
+    net: string
+  }>
+}
+
+export function getMerchantAccountSummary(
+  token: string,
+  merchantId: string,
+  params?: { from?: string; to?: string },
+): Promise<MerchantAccountSummary> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "from", params?.from)
+  appendIfDefined(q, "to", params?.to)
+  const qs = q.toString() ? `?${q.toString()}` : ""
+  return apiFetch<MerchantAccountSummary>(
+    `/api/accounting/merchants/${encodeURIComponent(merchantId)}/summary${qs}`,
+    { token },
+  )
+}
+
+export type MerchantPayoutRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "PAID"
+
+export type MerchantPayoutRequestRow = {
+  id: string
+  merchant: {
+    id: string
+    displayName: string
+    businessName: string
+    phone: string
+  }
+  status: MerchantPayoutRequestStatus
+  periodFrom: string
+  periodTo: string
+  deliveryDeductionPercent: string
+  grossDeliveredValue: string
+  deductionAmount: string
+  netPayable: string
+  shipmentCount: number
+  rejectionReason: string | null
+  createdAt: string
+  approvedAt: string | null
+  rejectedAt: string | null
+  paidAt: string | null
+}
+
+export type PayoutRequestListResponse = {
+  items: MerchantPayoutRequestRow[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export function createMerchantPayoutRequest(params: {
+  token: string
+  merchantId: string
+  periodFrom: string
+  periodTo: string
+  deliveryDeductionPercent: number
+}): Promise<MerchantPayoutRequestRow> {
+  return apiFetch<MerchantPayoutRequestRow>(
+    `/api/accounting/merchants/${encodeURIComponent(params.merchantId)}/payout-requests`,
+    {
+      token: params.token,
+      method: "POST",
+      body: JSON.stringify({
+        periodFrom: params.periodFrom,
+        periodTo: params.periodTo,
+        deliveryDeductionPercent: params.deliveryDeductionPercent,
+      }),
+    },
+  )
+}
+
+export function listMerchantPayoutRequests(params: {
+  token: string
+  merchantId: string
+  page?: number
+  pageSize?: number
+}): Promise<PayoutRequestListResponse> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "page", params.page)
+  appendIfDefined(q, "pageSize", params.pageSize)
+  const qs = q.toString() ? `?${q.toString()}` : ""
+  return apiFetch<PayoutRequestListResponse>(
+    `/api/accounting/merchants/${encodeURIComponent(params.merchantId)}/payout-requests${qs}`,
+    { token: params.token },
+  )
+}
+
+export function listAllPayoutRequests(params: {
+  token: string
+  merchantId?: string
+  status?: MerchantPayoutRequestStatus
+  from?: string
+  to?: string
+  page?: number
+  pageSize?: number
+}): Promise<PayoutRequestListResponse> {
+  const q = new URLSearchParams()
+  appendIfDefined(q, "merchantId", params.merchantId)
+  appendIfDefined(q, "status", params.status)
+  appendIfDefined(q, "from", params.from)
+  appendIfDefined(q, "to", params.to)
+  appendIfDefined(q, "page", params.page)
+  appendIfDefined(q, "pageSize", params.pageSize)
+  return apiFetch<PayoutRequestListResponse>(`/api/accounting/payout-requests?${q.toString()}`, {
+    token: params.token,
+  })
+}
+
+export function approvePayoutRequest(params: {
+  token: string
+  requestId: string
+}): Promise<MerchantPayoutRequestRow> {
+  return apiFetch<MerchantPayoutRequestRow>(
+    `/api/accounting/payout-requests/${encodeURIComponent(params.requestId)}/approve`,
+    { token: params.token, method: "POST" },
+  )
+}
+
+export function rejectPayoutRequest(params: {
+  token: string
+  requestId: string
+  reason?: string
+}): Promise<MerchantPayoutRequestRow> {
+  return apiFetch<MerchantPayoutRequestRow>(
+    `/api/accounting/payout-requests/${encodeURIComponent(params.requestId)}/reject`,
+    {
+      token: params.token,
+      method: "POST",
+      body: JSON.stringify({ reason: params.reason }),
+    },
+  )
+}
+
+export function markPayoutRequestPaid(params: {
+  token: string
+  requestId: string
+  paymentRef?: string
+}): Promise<MerchantPayoutRequestRow> {
+  return apiFetch<MerchantPayoutRequestRow>(
+    `/api/accounting/payout-requests/${encodeURIComponent(params.requestId)}/mark-paid`,
+    {
+      token: params.token,
+      method: "POST",
+      body: JSON.stringify({ paymentRef: params.paymentRef }),
+    },
+  )
+}

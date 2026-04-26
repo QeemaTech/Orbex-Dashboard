@@ -5,9 +5,9 @@ import { Navigate, useNavigate } from "react-router-dom"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { useAuth } from "@/lib/auth-context"
 import {
-  isWarehouseSiteAdmin,
-  isWarehouseSiteStaff,
-  isWarehouseStaffRole,
+  hasPlatformWarehouseScope,
+  isWarehouseAdmin,
+  isWarehouseStaff,
 } from "@/lib/warehouse-access"
 
 /**
@@ -22,16 +22,16 @@ export function WarehouseRedirectPage() {
   const sitesQuery = useQuery({
     queryKey: ["warehouse-sites", token],
     queryFn: () => listWarehouseSites(token),
-    enabled: !!token && !!user && isWarehouseSiteAdmin(user),
+    enabled: !!token && !!user && isWarehouseAdmin(user),
   })
 
   useEffect(() => {
     if (!user) return
-    if (user.role === "ADMIN") {
+    if (hasPlatformWarehouseScope(user)) {
       void navigate("/warehouses", { replace: true })
       return
     }
-    if (isWarehouseSiteStaff(user) && user.warehouseId) {
+    if (isWarehouseStaff(user) && user.warehouseId) {
       void navigate(`/warehouses/${encodeURIComponent(user.warehouseId)}`, {
         replace: true,
       })
@@ -39,7 +39,7 @@ export function WarehouseRedirectPage() {
   }, [user, navigate])
 
   useEffect(() => {
-    if (!user || !isWarehouseSiteAdmin(user)) return
+    if (!user || !isWarehouseAdmin(user)) return
     if (!sitesQuery.isSuccess) return
     const warehouses = sitesQuery.data?.warehouses ?? []
     if (warehouses.length > 1) {
@@ -56,7 +56,11 @@ export function WarehouseRedirectPage() {
     return <Navigate to="/login" replace />
   }
 
-  if (isWarehouseStaffRole(user) && !user.warehouseId) {
+  if (
+    !isWarehouseAdmin(user) &&
+    !user.warehouseId &&
+    !hasPlatformWarehouseScope(user)
+  ) {
     return (
       <div className="text-muted-foreground flex min-h-dvh items-center justify-center p-6 text-sm">
         No warehouse is assigned to your account.
@@ -64,7 +68,7 @@ export function WarehouseRedirectPage() {
     )
   }
 
-  if (isWarehouseSiteAdmin(user) && sitesQuery.error) {
+  if (isWarehouseAdmin(user) && sitesQuery.error) {
     return (
       <div className="text-destructive flex min-h-dvh items-center justify-center p-6 text-sm">
         {(sitesQuery.error as Error).message}
@@ -73,7 +77,7 @@ export function WarehouseRedirectPage() {
   }
 
   if (
-    isWarehouseSiteAdmin(user) &&
+    isWarehouseAdmin(user) &&
     sitesQuery.isSuccess &&
     (sitesQuery.data?.warehouses?.length ?? 0) === 0
   ) {

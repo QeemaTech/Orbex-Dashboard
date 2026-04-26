@@ -9,6 +9,7 @@ import {
   type InsightsPeriodConfig,
   VISA_COMMISSION_RATE_KEY,
 } from "@/api/system-settings-api"
+import { getUserSetting, putUserSetting } from "@/api/user-settings-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -49,8 +50,9 @@ function dateInputToUtcEndIso(ymd: string): string {
 
 export function SettingsPage() {
   const { t } = useTranslation()
-  const { accessToken } = useAuth()
+  const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const canManageSystem = (user?.permissions ?? []).includes("settings.manage_system")
   const queryClient = useQueryClient()
 
   const [mode, setMode] = useState<"LAST_PERIOD" | "CUSTOM_RANGE">("LAST_PERIOD")
@@ -60,25 +62,24 @@ export function SettingsPage() {
   const [defaultCommissionFee, setDefaultCommissionFee] = useState("0")
   const [visaCommissionPercent, setVisaCommissionPercent] = useState("2.5")
 
-  const insightsQuery = useQuery({
-    queryKey: ["system-settings", "INSIGHTS_PERIOD", token],
-    queryFn: () =>
-      getSystemSetting<InsightsPeriodConfig>(token, "INSIGHTS_PERIOD"),
+  const userInsightsQuery = useQuery({
+    queryKey: ["user-settings", "INSIGHTS_PERIOD", token],
+    queryFn: () => getUserSetting<InsightsPeriodConfig>(token, "INSIGHTS_PERIOD"),
     enabled: !!token,
   })
   const defaultCommissionQuery = useQuery({
     queryKey: ["system-settings", DEFAULT_COMMISSION_FEE_KEY, token],
     queryFn: () => getSystemSetting<number>(token, DEFAULT_COMMISSION_FEE_KEY),
-    enabled: !!token,
+    enabled: !!token && canManageSystem,
   })
   const visaCommissionQuery = useQuery({
     queryKey: ["system-settings", VISA_COMMISSION_RATE_KEY, token],
     queryFn: () => getSystemSetting<number>(token, VISA_COMMISSION_RATE_KEY),
-    enabled: !!token,
+    enabled: !!token && canManageSystem,
   })
 
   useEffect(() => {
-    const v = insightsQuery.data?.value
+    const v = userInsightsQuery.data?.value
     if (!v) return
     if (v.mode === "LAST_PERIOD") {
       setMode("LAST_PERIOD")
@@ -88,7 +89,7 @@ export function SettingsPage() {
       setRangeFrom(isoToDateInputValue(v.startDate))
       setRangeTo(isoToDateInputValue(v.endDate))
     }
-  }, [insightsQuery.data])
+  }, [userInsightsQuery.data])
   useEffect(() => {
     const n = Number(defaultCommissionQuery.data?.value)
     if (Number.isFinite(n) && n >= 0) setDefaultCommissionFee(String(n))
@@ -100,7 +101,7 @@ export function SettingsPage() {
     }
   }, [visaCommissionQuery.data?.value])
 
-  const saveMutation = useMutation({
+  const saveUserInsightsMutation = useMutation({
     mutationFn: async () => {
       let value: InsightsPeriodConfig
       if (mode === "LAST_PERIOD") {
@@ -122,12 +123,12 @@ export function SettingsPage() {
           endDate: dateInputToUtcEndIso(rangeTo.trim()),
         }
       }
-      return putSystemSetting(token, "INSIGHTS_PERIOD", value)
+      return putUserSetting(token, "INSIGHTS_PERIOD", value)
     },
     onSuccess: () => {
       showToast(t("settings.insightsPeriod.saved"), "success")
       void queryClient.invalidateQueries({
-        queryKey: ["system-settings", "INSIGHTS_PERIOD", token],
+        queryKey: ["user-settings", "INSIGHTS_PERIOD", token],
       })
       void queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token], exact: false })
       void queryClient.invalidateQueries({ queryKey: ["dashboard-kpis", token], exact: false })
@@ -175,12 +176,12 @@ export function SettingsPage() {
             <CardDescription>{t("settings.insightsPeriod.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {insightsQuery.isLoading ? (
+            {userInsightsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
             ) : null}
-            {insightsQuery.error ? (
+            {userInsightsQuery.error ? (
               <p className="text-destructive text-sm">
-                {(insightsQuery.error as Error).message}
+                {(userInsightsQuery.error as Error).message}
               </p>
             ) : null}
 
@@ -245,67 +246,69 @@ export function SettingsPage() {
 
             <Button
               type="button"
-              disabled={!token || saveMutation.isPending}
-              onClick={() => saveMutation.mutate()}
+              disabled={!token || saveUserInsightsMutation.isPending}
+              onClick={() => saveUserInsightsMutation.mutate()}
             >
-              {saveMutation.isPending ? t("common.saving") : t("common.save")}
+              {saveUserInsightsMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("settings.financial.title")}</CardTitle>
-            <CardDescription>{t("settings.financial.description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {defaultCommissionQuery.isLoading || visaCommissionQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
-            ) : null}
-            {defaultCommissionQuery.error || visaCommissionQuery.error ? (
-              <p className="text-destructive text-sm">
-                {(
-                  (defaultCommissionQuery.error ?? visaCommissionQuery.error) as Error
-                ).message}
-              </p>
-            ) : null}
-            <div className="grid gap-2">
-              <label className="text-sm font-medium" htmlFor="default-commission-fee">
-                {t("settings.financial.defaultCommissionFee")}
-              </label>
-              <Input
-                id="default-commission-fee"
-                type="number"
-                min={0}
-                step="0.01"
-                className="max-w-xs"
-                value={defaultCommissionFee}
-                onChange={(e) => setDefaultCommissionFee(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium" htmlFor="visa-commission-percent">
-                {t("settings.financial.visaCommissionPercent")}
-              </label>
-              <Input
-                id="visa-commission-percent"
-                type="number"
-                min={0}
-                max={100}
-                step="0.1"
-                className="max-w-xs"
-                value={visaCommissionPercent}
-                onChange={(e) => setVisaCommissionPercent(e.target.value)}
-              />
-            </div>
-            <Button
-              type="button"
-              disabled={!token || saveFinancialMutation.isPending}
-              onClick={() => saveFinancialMutation.mutate()}
-            >
-              {saveFinancialMutation.isPending ? t("common.saving") : t("common.save")}
-            </Button>
-          </CardContent>
-        </Card>
+        {canManageSystem ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("settings.financial.title")}</CardTitle>
+              <CardDescription>{t("settings.financial.description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {defaultCommissionQuery.isLoading || visaCommissionQuery.isLoading ? (
+                <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+              ) : null}
+              {defaultCommissionQuery.error || visaCommissionQuery.error ? (
+                <p className="text-destructive text-sm">
+                  {(
+                    (defaultCommissionQuery.error ?? visaCommissionQuery.error) as Error
+                  ).message}
+                </p>
+              ) : null}
+              <div className="grid gap-2">
+                <label className="text-sm font-medium" htmlFor="default-commission-fee">
+                  {t("settings.financial.defaultCommissionFee")}
+                </label>
+                <Input
+                  id="default-commission-fee"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className="max-w-xs"
+                  value={defaultCommissionFee}
+                  onChange={(e) => setDefaultCommissionFee(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium" htmlFor="visa-commission-percent">
+                  {t("settings.financial.visaCommissionPercent")}
+                </label>
+                <Input
+                  id="visa-commission-percent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  className="max-w-xs"
+                  value={visaCommissionPercent}
+                  onChange={(e) => setVisaCommissionPercent(e.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                disabled={!token || saveFinancialMutation.isPending}
+                onClick={() => saveFinancialMutation.mutate()}
+              >
+                {saveFinancialMutation.isPending ? t("common.saving") : t("common.save")}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </Layout>
   )

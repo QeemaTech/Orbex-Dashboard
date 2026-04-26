@@ -74,9 +74,9 @@ import {
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
 import {
-  isWarehouseSiteAdmin,
-  isWarehouseSiteStaff,
-  isWarehouseStaffRole,
+  hasPlatformWarehouseScope,
+  isWarehouseAdmin,
+  isWarehouseStaff,
 } from "@/lib/warehouse-access"
 import { showToast } from "@/lib/toast"
 import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
@@ -276,9 +276,12 @@ export function WarehouseDetailPage() {
   }, [searchParams])
 
   const canSeeWarehouseDirectory =
-    user?.role === "ADMIN" || isWarehouseSiteAdmin(user)
+    hasPlatformWarehouseScope(user) || isWarehouseAdmin(user)
   const accessDenied =
-    !!user && isWarehouseStaffRole(user) && !user.warehouseId
+    !!user &&
+    !isWarehouseAdmin(user) &&
+    !user.warehouseId &&
+    !hasPlatformWarehouseScope(user)
 
   const queueQueryKey = useMemo(
     () =>
@@ -659,7 +662,7 @@ export function WarehouseDetailPage() {
 
   if (
     user &&
-    isWarehouseSiteStaff(user) &&
+    isWarehouseStaff(user) &&
     user.warehouseId &&
     warehouseId &&
     user.warehouseId !== warehouseId

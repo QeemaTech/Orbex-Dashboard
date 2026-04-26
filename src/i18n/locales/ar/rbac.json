@@ -103,6 +103,7 @@
     "users.delete": { "label": "حذف المستخدمين", "category": "المستخدمون" },
     "users.roles": { "label": "تعيين الأدوار للمستخدمين", "category": "المستخدمون" },
     "users.write": { "label": "إنشاء وتعديل وتعطيل المستخدمين (واجهة الإدارة)", "category": "المستخدمون" },
+    "settings.manage_system": { "label": "عرض وتعديل إعدادات النظام العامة", "category": "الإعدادات" },
     "roles.read": { "label": "عرض الأدوار", "category": "إدارة الصلاحيات" },
     "roles.write": { "label": "إنشاء وتعديل وحذف الأدوار", "category": "إدارة الصلاحيات" },
     "roles.permissions": { "label": "تعديل صلاحيات الأدوار", "category": "إدارة الصلاحيات" },

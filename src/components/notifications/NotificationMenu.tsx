@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Bell } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useLocation, useNavigate } from "react-router-dom"
 
 import {
   listNotifications,
@@ -16,14 +17,52 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { type AuthUser, useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 
 const NOTIF_QK = ["notifications", "inbox"] as const
+
+type NotificationPayload = {
+  shipmentId?: unknown
+  merchantOrderId?: unknown
+  trackingNumber?: unknown
+  actionHint?: unknown
+}
 
 function payloadActionHint(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null
   const h = (payload as { actionHint?: unknown }).actionHint
   return typeof h === "string" && h.trim() ? h.trim() : null
+}
+
+function payloadString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null
+}
+
+function resolveNotificationHref(
+  payload: unknown,
+  pathname: string,
+  user: AuthUser | null,
+): string | null {
+  if (!payload || typeof payload !== "object") return null
+
+  const data = payload as NotificationPayload
+  const shipmentId = payloadString(data.shipmentId)
+  const merchantOrderId = payloadString(data.merchantOrderId)
+  const inCustomerService =
+    pathname.startsWith("/cs") || user?.role === "CUSTOMER_SERVICE"
+
+  if (shipmentId) {
+    return inCustomerService
+      ? `/cs/shipments/${encodeURIComponent(shipmentId)}`
+      : `/shipments/${encodeURIComponent(shipmentId)}`
+  }
+  if (merchantOrderId) {
+    return inCustomerService
+      ? `/cs/merchant-orders/${encodeURIComponent(merchantOrderId)}`
+      : `/merchant-orders/${encodeURIComponent(merchantOrderId)}`
+  }
+  return null
 }
 
 export interface NotificationMenuProps {
@@ -33,6 +72,9 @@ export interface NotificationMenuProps {
 export function NotificationMenu({ token }: NotificationMenuProps) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
 
   const q = useQuery({
     queryKey: [...NOTIF_QK, token],
@@ -105,6 +147,7 @@ export function NotificationMenu({ token }: NotificationMenuProps) {
         ) : null}
         {q.data?.notifications.map((n) => {
           const hint = payloadActionHint(n.payloadJson)
+          const href = resolveNotificationHref(n.payloadJson, location.pathname, user)
           return (
             <DropdownMenuItem
               key={n.id}
@@ -114,6 +157,7 @@ export function NotificationMenu({ token }: NotificationMenuProps) {
               )}
               onClick={() => {
                 if (!n.readAt) markOne.mutate(n.id)
+                if (href) void navigate(href)
               }}
             >
               <span className="font-medium">{n.title}</span>

@@ -5,10 +5,6 @@ import { useNavigate } from "react-router-dom"
 import { useSidebar } from "@/components/layout/sidebar-context"
 import { NotificationMenu } from "@/components/notifications/NotificationMenu"
 import { useAuth } from "@/lib/auth-context"
-
-function userMayOpenSettings(permissions: string[] | undefined): boolean {
-  return (permissions ?? []).includes("users.write")
-}
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -99,7 +95,7 @@ export function Header({ title }: HeaderProps) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>{t("header.profile")}</DropdownMenuItem>
-              {userMayOpenSettings(user?.permissions) ? (
+              {user ? (
                 <DropdownMenuItem onClick={() => void navigate("/settings")}>
                   {t("header.settings")}
                 </DropdownMenuItem>
