@@ -1087,12 +1087,20 @@
       "serviceFeePercentHelp": "تُضاف على ما يدفعه العميل وقت إنشاء الشحنة. المعادلة: رسوم_الخدمة = (قيمة_الشحنة + مصاريف_الشحن) × النسبة. إجمالي_العميل = قيمة_الشحنة + مصاريف_الشحن + رسوم_الخدمة.",
       "invalidServiceFeePercent": "أدخل نسبة رسوم خدمة بين 0 و 100.",
       "shippingFeeMode": "طريقة تحديد مصاريف الشحن",
-      "shippingFeeModeHelp": "تحدد كيف يتم ضبط مصاريف الشحن للشحنات الجديدة/المستوردة. في وضع (قيمة ثابتة) أو (نسبة) يتم حساب المصاريف تلقائياً ويتم قفل الإدخال. (سيتم إعادة حساب الشحنات غير المُسلّمة عند تغيير الإعداد).",
+      "shippingFeeModeHelp": "تحدد كيف يتم ضبط مصاريف الشحن للشحنات الجديدة/المستوردة. في الأوضاع التلقائية (قيمة ثابتة/نسبة/زيادة/حسب المنطقة) يتم حساب المصاريف تلقائياً ويتم قفل الإدخال. (سيتم إعادة حساب الشحنات غير المُسلّمة عند تغيير الإعداد).",
       "shippingFeeModeManual": "يدوي",
       "shippingFeeModeFixed": "قيمة ثابتة",
       "shippingFeeModePercentOfValue": "نسبة من قيمة الشحنة",
+      "shippingFeeModeMarkupFixed": "زيادة (قيمة ثابتة)",
+      "shippingFeeModeMarkupPercent": "زيادة (نسبة %)",
+      "shippingFeeModeByRegion": "حسب المنطقة",
       "shippingFeeFixedAmount": "قيمة مصاريف الشحن الثابتة (جنيه)",
-      "shippingFeePercentOfValue": "نسبة مصاريف الشحن من قيمة الشحنة (%)"
+      "shippingFeePercentOfValue": "نسبة مصاريف الشحن من قيمة الشحنة (%)",
+      "shippingFeeMarkupFixedAmount": "قيمة الزيادة على مصاريف الشحن (جنيه)",
+      "shippingFeeMarkupPercent": "نسبة الزيادة على مصاريف الشحن (%)",
+      "shippingFeeFallbackAmount": "قيمة افتراضية لمصاريف الشحن (جنيه)",
+      "shippingFeeRegionTable": "مصاريف الشحن حسب المنطقة",
+      "shippingFeeRegionTableHelp": "حدد قيمة ثابتة لمصاريف الشحن لكل منطقة. تُستخدم عند اختيار (حسب المنطقة)."
     },
     "insightsPeriod": {
       "title": "فترة الرؤى",

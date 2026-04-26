@@ -11,6 +11,7 @@ import {
   type InsightsPeriodConfig,
   VISA_COMMISSION_RATE_KEY,
 } from "@/api/system-settings-api"
+import { listRegionsCatalog } from "@/api/delivery-zones-api"
 import { getUserSetting, putUserSetting } from "@/api/user-settings-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
@@ -64,11 +65,20 @@ export function SettingsPage() {
   const [defaultCommissionFee, setDefaultCommissionFee] = useState("0")
   const [visaCommissionPercent, setVisaCommissionPercent] = useState("2.5")
   const [serviceFeePercent, setServiceFeePercent] = useState("0")
-  const [shippingMode, setShippingMode] = useState<"MANUAL" | "FIXED" | "PERCENT_OF_VALUE">(
-    "MANUAL",
-  )
+  const [shippingMode, setShippingMode] = useState<
+    | "MANUAL"
+    | "FIXED"
+    | "PERCENT_OF_VALUE"
+    | "MARKUP_FIXED"
+    | "MARKUP_PERCENT"
+    | "BY_REGION"
+  >("MANUAL")
   const [shippingFixedAmount, setShippingFixedAmount] = useState("0")
   const [shippingPercentOfValue, setShippingPercentOfValue] = useState("0")
+  const [shippingMarkupFixed, setShippingMarkupFixed] = useState("0")
+  const [shippingMarkupPercent, setShippingMarkupPercent] = useState("0")
+  const [shippingFallbackAmount, setShippingFallbackAmount] = useState("0")
+  const [shippingRegionAmounts, setShippingRegionAmounts] = useState<Record<string, string>>({})
 
   const userInsightsQuery = useQuery({
     queryKey: ["user-settings", "INSIGHTS_PERIOD", token],
@@ -93,7 +103,20 @@ export function SettingsPage() {
   const shippingFeeConfigQuery = useQuery({
     queryKey: ["system-settings", SHIPPING_FEE_CONFIG_KEY, token],
     queryFn: () =>
-      getSystemSetting<{ mode: string; amount?: number; rate?: number }>(token, SHIPPING_FEE_CONFIG_KEY),
+      getSystemSetting<{
+        mode: string
+        amount?: number
+        rate?: number
+        addAmount?: number
+        addRate?: number
+        fallbackAmount?: number
+        regionAmounts?: Record<string, number>
+      }>(token, SHIPPING_FEE_CONFIG_KEY),
+    enabled: !!token && canManageSystem,
+  })
+  const regionsQuery = useQuery({
+    queryKey: ["regions-catalog", "settings", token],
+    queryFn: () => listRegionsCatalog(token),
     enabled: !!token && canManageSystem,
   })
 
@@ -133,7 +156,13 @@ export function SettingsPage() {
         ? "FIXED"
         : cfg.mode === "PERCENT_OF_VALUE"
           ? "PERCENT_OF_VALUE"
-          : "MANUAL"
+          : cfg.mode === "MARKUP_FIXED"
+            ? "MARKUP_FIXED"
+            : cfg.mode === "MARKUP_PERCENT"
+              ? "MARKUP_PERCENT"
+              : cfg.mode === "BY_REGION"
+                ? "BY_REGION"
+                : "MANUAL"
     setShippingMode(mode)
     if (mode === "FIXED") {
       const a = Number(cfg.amount)
@@ -144,6 +173,24 @@ export function SettingsPage() {
       setShippingPercentOfValue(
         Number.isFinite(r) && r >= 0 ? String(r * 100) : "0",
       )
+    }
+    if (mode === "MARKUP_FIXED") {
+      const a = Number(cfg.addAmount)
+      setShippingMarkupFixed(Number.isFinite(a) ? String(a) : "0")
+    }
+    if (mode === "MARKUP_PERCENT") {
+      const r = Number(cfg.addRate)
+      setShippingMarkupPercent(Number.isFinite(r) ? String(r * 100) : "0")
+    }
+    if (mode === "BY_REGION") {
+      const f = Number(cfg.fallbackAmount)
+      setShippingFallbackAmount(Number.isFinite(f) && f >= 0 ? String(f) : "0")
+      const m = cfg.regionAmounts ?? {}
+      const next: Record<string, string> = {}
+      for (const [k, v] of Object.entries(m)) {
+        next[k] = String(v)
+      }
+      setShippingRegionAmounts(next)
     }
   }, [shippingFeeConfigQuery.data?.value])
 
@@ -197,6 +244,12 @@ export function SettingsPage() {
       if (!Number.isFinite(servicePercent) || servicePercent < 0 || servicePercent > 100) {
         throw new Error(t("settings.financial.invalidServiceFeePercent"))
       }
+      const shippingFixed = Number.parseFloat(shippingFixedAmount)
+      const shippingPercentValue = Number.parseFloat(shippingPercentOfValue)
+      const shippingMarkupFixedNum = Number.parseFloat(shippingMarkupFixed)
+      const shippingMarkupPercentNum = Number.parseFloat(shippingMarkupPercent)
+      const shippingFallbackNum = Number.parseFloat(shippingFallbackAmount)
+
       const visaRate = visaPercent / 100
       const serviceRate = servicePercent / 100
       await Promise.all([
@@ -207,10 +260,41 @@ export function SettingsPage() {
           token,
           SHIPPING_FEE_CONFIG_KEY,
           shippingMode === "FIXED"
-            ? { mode: "FIXED", amount: Number.parseFloat(shippingFixedAmount) || 0 }
+            ? { mode: "FIXED", amount: Number.isFinite(shippingFixed) && shippingFixed >= 0 ? shippingFixed : 0 }
             : shippingMode === "PERCENT_OF_VALUE"
-              ? { mode: "PERCENT_OF_VALUE", rate: (Number.parseFloat(shippingPercentOfValue) || 0) / 100 }
-              : { mode: "MANUAL" },
+              ? {
+                  mode: "PERCENT_OF_VALUE",
+                  rate:
+                    Number.isFinite(shippingPercentValue) && shippingPercentValue >= 0
+                      ? shippingPercentValue / 100
+                      : 0,
+                }
+              : shippingMode === "MARKUP_FIXED"
+                ? {
+                    mode: "MARKUP_FIXED",
+                    addAmount: Number.isFinite(shippingMarkupFixedNum) ? shippingMarkupFixedNum : 0,
+                  }
+                : shippingMode === "MARKUP_PERCENT"
+                  ? {
+                      mode: "MARKUP_PERCENT",
+                      addRate:
+                        Number.isFinite(shippingMarkupPercentNum) ? shippingMarkupPercentNum / 100 : 0,
+                    }
+                  : shippingMode === "BY_REGION"
+                    ? {
+                        mode: "BY_REGION",
+                        fallbackAmount:
+                          Number.isFinite(shippingFallbackNum) && shippingFallbackNum >= 0
+                            ? shippingFallbackNum
+                            : 0,
+                        regionAmounts: Object.fromEntries(
+                          Object.entries(shippingRegionAmounts).map(([id, v]) => [
+                            id,
+                            Number.parseFloat(v) || 0,
+                          ]),
+                        ),
+                      }
+                    : { mode: "MANUAL" },
         ),
       ])
     },
@@ -416,6 +500,12 @@ export function SettingsPage() {
                         ? "FIXED"
                         : e.target.value === "PERCENT_OF_VALUE"
                           ? "PERCENT_OF_VALUE"
+                          : e.target.value === "MARKUP_FIXED"
+                            ? "MARKUP_FIXED"
+                            : e.target.value === "MARKUP_PERCENT"
+                              ? "MARKUP_PERCENT"
+                              : e.target.value === "BY_REGION"
+                                ? "BY_REGION"
                           : "MANUAL",
                     )
                   }
@@ -423,6 +513,9 @@ export function SettingsPage() {
                   <option value="MANUAL">{t("settings.financial.shippingFeeModeManual")}</option>
                   <option value="FIXED">{t("settings.financial.shippingFeeModeFixed")}</option>
                   <option value="PERCENT_OF_VALUE">{t("settings.financial.shippingFeeModePercentOfValue")}</option>
+                  <option value="MARKUP_FIXED">{t("settings.financial.shippingFeeModeMarkupFixed")}</option>
+                  <option value="MARKUP_PERCENT">{t("settings.financial.shippingFeeModeMarkupPercent")}</option>
+                  <option value="BY_REGION">{t("settings.financial.shippingFeeModeByRegion")}</option>
                 </select>
               </div>
               {shippingMode === "FIXED" ? (
@@ -456,6 +549,84 @@ export function SettingsPage() {
                     value={shippingPercentOfValue}
                     onChange={(e) => setShippingPercentOfValue(e.target.value)}
                   />
+                </div>
+              ) : null}
+              {shippingMode === "MARKUP_FIXED" ? (
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="shipping-markup-fixed">
+                    {t("settings.financial.shippingFeeMarkupFixedAmount")}
+                  </label>
+                  <Input
+                    id="shipping-markup-fixed"
+                    type="number"
+                    step="0.01"
+                    className="max-w-xs"
+                    value={shippingMarkupFixed}
+                    onChange={(e) => setShippingMarkupFixed(e.target.value)}
+                  />
+                </div>
+              ) : null}
+              {shippingMode === "MARKUP_PERCENT" ? (
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="shipping-markup-percent">
+                    {t("settings.financial.shippingFeeMarkupPercent")}
+                  </label>
+                  <Input
+                    id="shipping-markup-percent"
+                    type="number"
+                    min={-100}
+                    max={1000}
+                    step="0.1"
+                    className="max-w-xs"
+                    value={shippingMarkupPercent}
+                    onChange={(e) => setShippingMarkupPercent(e.target.value)}
+                  />
+                </div>
+              ) : null}
+              {shippingMode === "BY_REGION" ? (
+                <div className="space-y-3 rounded-md border p-3">
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium" htmlFor="shipping-fallback">
+                      {t("settings.financial.shippingFeeFallbackAmount")}
+                    </label>
+                    <Input
+                      id="shipping-fallback"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="max-w-xs"
+                      value={shippingFallbackAmount}
+                      onChange={(e) => setShippingFallbackAmount(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <p className="text-sm font-medium">
+                      {t("settings.financial.shippingFeeRegionTable")}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {t("settings.financial.shippingFeeRegionTableHelp")}
+                    </p>
+                    <div className="grid gap-2">
+                      {(regionsQuery.data?.regions ?? []).map((r) => (
+                        <div key={r.id} className="flex items-center gap-2">
+                          <span className="text-sm w-40 truncate">{r.name}</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="max-w-xs"
+                            value={shippingRegionAmounts[r.id] ?? ""}
+                            onChange={(e) =>
+                              setShippingRegionAmounts((prev) => ({
+                                ...prev,
+                                [r.id]: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : null}
               <Button
