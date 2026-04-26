@@ -74,7 +74,7 @@ export function WarehouseMerchantOrdersListPage() {
 
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
-    queryFn: () => getWarehouseCouriers({ token }),
+    queryFn: () => getWarehouseCouriers({ token, warehouseId }),
     enabled: !!token && returnsOnly && !accessDenied && isMainHub,
   })
 

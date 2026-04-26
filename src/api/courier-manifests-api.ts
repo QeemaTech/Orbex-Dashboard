@@ -83,39 +83,6 @@ export function getCourierManifest(params: {
   })
 }
 
-export function autoAssignCourierManifests(params: {
-  token: string
-  warehouseId: string
-  manifestDate: string
-  defaultCourierCapacity: number
-  courierCapacities?: Record<string, number>
-}): Promise<{
-  manifestDate: string
-  warehouseId: string
-  assignedCount: number
-  skippedCount: number
-  assignments: Array<{ shipmentId: string; courierId: string; deliveryZoneId: string }>
-  skipped: Array<{ shipmentId: string; reason: string }>
-}> {
-  return apiFetch<{
-    manifestDate: string
-    warehouseId: string
-    assignedCount: number
-    skippedCount: number
-    assignments: Array<{ shipmentId: string; courierId: string; deliveryZoneId: string }>
-    skipped: Array<{ shipmentId: string; reason: string }>
-  }>(`/api/courier-manifests/auto-assign`, {
-    method: "POST",
-    token: params.token,
-    body: JSON.stringify({
-      warehouseId: params.warehouseId,
-      manifestDate: params.manifestDate,
-      defaultCourierCapacity: params.defaultCourierCapacity,
-      ...(params.courierCapacities ? { courierCapacities: params.courierCapacities } : {}),
-    }),
-  })
-}
-
 export function lockCourierManifest(params: {
   token: string
   manifestId: string

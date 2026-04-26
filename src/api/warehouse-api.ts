@@ -426,10 +426,12 @@ export { scanPayloadFromInput }
 
 export function getWarehouseCouriers(params: {
   token: string
+  warehouseId?: string
   regionId?: string
   deliveryZoneId?: string
 }): Promise<{ couriers: WarehouseCourierRow[] }> {
   const query = qs({
+    warehouseId: params.warehouseId,
     regionId: params.regionId,
     deliveryZoneId: params.deliveryZoneId,
   })

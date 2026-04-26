@@ -67,13 +67,15 @@ export function WarehouseShipmentOrdersTable({
     enabled: !!token && !!shipmentId && mode === "warehouse",
   })
 
+  const hubContextWarehouseId = warehouseIdProp?.trim() || user?.warehouseId || undefined
   const regionKey = shipmentDetailQuery.data?.regionId ?? "none"
 
   const couriersQuery = useQuery({
-    queryKey: ["warehouse-couriers-orders", token, regionKey],
+    queryKey: ["warehouse-couriers-orders", token, hubContextWarehouseId ?? "", regionKey],
     queryFn: () =>
       getWarehouseCouriers({
         token,
+        warehouseId: hubContextWarehouseId,
         regionId: regionKey === "none" ? undefined : regionKey,
       }),
     enabled: !!token && mode === "warehouse",
@@ -151,9 +153,6 @@ export function WarehouseShipmentOrdersTable({
   const stopAssignClick = (e: MouseEvent<HTMLTableCellElement>) => {
     e.stopPropagation()
   }
-
-  const hubContextWarehouseId =
-    warehouseIdProp?.trim() || user?.warehouseId || undefined
 
   const handleTaskAssigned = async () => {
     await Promise.all([
