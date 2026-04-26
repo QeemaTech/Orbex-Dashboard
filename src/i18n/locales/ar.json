@@ -4,9 +4,11 @@
     "shipments": "الشحنات",
     "merchantOrders": "طلبات التجار",
     "merchantOrderConfirmations": "تأكيدات الطلبات",
+    "allCourierManifests": "كل البيانات",
     "myWarehouse": "مخزني",
     "warehouseMerchantOrders": "طلبات التجار بالمخزن",
     "warehouseStandaloneShipments": "شحنات المخزن",
+    "warehouseManifests": "بيانات المندوبين",
     "orders": "الشحنات",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
@@ -14,6 +16,7 @@
     "merchants": "التجار",
     "users": "المستخدمون",
     "collections": "التحصيل",
+    "accounts": "الحسابات",
     "warehouses": "المخازن",
     "deliveryZones": "مناطق التوصيل",
     "settings": "الإعدادات",
@@ -43,6 +46,27 @@
     "stepDeliveredHint": "تم تسليم الشحنة بنجاح.",
     "stepDeliveredFailedHint": "لم يكتمل التسليم.",
     "postponedNotice": "تم تأجيل هذه الشحنة. سيتواصل معك فريقنا أو المندوب لتحديد موعد المحاولة التالية."
+  },
+  "manifestsGlobal": {
+    "pageTitle": "كل بيانات المندوبين",
+    "subtitle": "عرض شامل للبيانات عبر كل المخازن للمستخدمين المخولين.",
+    "tableTitle": "البيانات",
+    "allWarehouses": "كل المخازن",
+    "courierIdPlaceholder": "تصفية بمعرف المندوب",
+    "zoneIdPlaceholder": "تصفية بمعرف منطقة التوصيل",
+    "pagination": "الإجمالي {{total}} · صفحة {{page}}",
+    "openWarehouse": "فتح بيانات المخزن",
+    "columns": {
+      "date": "تاريخ البيان",
+      "warehouse": "المخزن",
+      "courier": "المندوب",
+      "zone": "المنطقة",
+      "shipmentCount": "الشحنات",
+      "totalCod": "الدفع عند الاستلام",
+      "lockedAt": "وقت القفل",
+      "dispatchedAt": "وقت الإرسال",
+      "actions": "الإجراءات"
+    }
   },
   "deliveryProof": {
     "title": "تأكيد التسليم",
@@ -83,6 +107,8 @@
       "notes": "ملاحظات",
       "commission": "العمولة",
       "shippingFee": "مصاريف الشحن",
+      "serviceFee": "رسوم الخدمة",
+      "customerTotal": "إجمالي العميل",
       "courierPhone": "رقم موبايل المندوب",
       "createdAt": "تاريخ الإنشاء",
       "updatedAt": "آخر تحديث",
@@ -90,6 +116,18 @@
       "sendTrackingMessage": "إرسال رسالة التتبع",
       "warehouseHint": "أدوات المخزن لهذه الدفعة متاحة في صفحة طلب التاجر.",
       "currencyLocale": "ar-EG"
+    },
+    "paymentProof": {
+      "title": "إثبات الدفع",
+      "hint": "شحنات إنستا باي/المحفظة الإلكترونية تتطلب رفع صورة لإثبات الدفع قبل تسليم الشحنة.",
+      "upload": "رفع الإثبات",
+      "uploading": "جارٍ الرفع…",
+      "latest": "آخر إثبات",
+      "missing": "لم يتم رفع إثبات دفع بعد.",
+      "fileRequired": "من فضلك اختر صورة أولاً.",
+      "uploadSuccess": "تم رفع إثبات الدفع بنجاح.",
+      "uploadFailed": "فشل رفع الإثبات.",
+      "imageAlt": "إثبات الدفع"
     },
     "timeline": {
       "heading": "الجدول الزمني للشحنة",
@@ -434,6 +472,33 @@
       "callCourier": "اتصال بالمندوب",
       "track": "خريطة"
     },
+    "csLineConfirm": {
+      "title": "تأكيد الخط — موقع تسليم العميل",
+      "close": "إغلاق",
+      "description": "تأكيد سطر الشحنة في المركز وحفظ إحداثيات تسليم العميل لـ {{customerName}}. هذا ليس تأكيد استلام من التاجر ولا مسار سكان المخزن.",
+      "addressLabel": "عنوان التسليم (تحديث اختياري)",
+      "addressPlaceholder": "الشارع، المنطقة، معالم",
+      "locationTextLabel": "ملاحظات الموقع",
+      "locationTextPlaceholder": "وصف أو إلصاق إحداثيات (مثال 30.04، 31.23)",
+      "locationLinkLabel": "رابط الخرائط",
+      "locationLinkPlaceholder": "https://www.google.com/maps?q=30.0444,31.2357",
+      "coordsHint": "يجب توفير الإحداثيات عبر رابط الخرائط أو الملاحظات أو الإحداثيات المحفوظة مسبقًا للعميل.",
+      "cancel": "إلغاء",
+      "submit": "تأكيد وحفظ الموقع",
+      "submitting": "جاري التأكيد…",
+      "success": "تم تأكيد الخط؛ تم حفظ موقع العميل.",
+      "errors": {
+        "needCoords": "أدخل رابط خرائط يحتوي على إحداثيات، أو إحداثيات في الملاحظات، أو تأكد من حفظ GPS مسبقًا.",
+        "failed": "تعذر التأكيد. حاول مرة أخرى."
+      }
+    },
+    "customerPinMap": {
+      "title": "موقع تسليم العميل",
+      "close": "إغلاق",
+      "noCoords": "لا توجد إحداثيات.",
+      "openExternal": "فتح في خرائط Google",
+      "openPreview": "معاينة موقع العميل على الخريطة"
+    },
     "addLocation": {
       "title": "إضافة موقع العميل",
       "close": "إغلاق",
@@ -564,14 +629,6 @@
       "adminUser": "مشرف المخزن",
       "selectAdmin": "اختر مستخدمًا مشرفًا (اختياري)",
       "isActive": "نشط"
-    },
-    "feedback": {
-      "created": "تم إنشاء المخزن بنجاح.",
-      "createFailed": "فشل في إنشاء المخزن.",
-      "updated": "تم تحديث المخزن بنجاح.",
-      "updateFailed": "فشل في تحديث المخزن.",
-      "deleted": "تم حذف المخزن بنجاح.",
-      "deleteFailed": "فشل في حذف المخزن."
     },
     "staff": {
       "title": "إدارة الموظفين",
@@ -749,7 +806,33 @@
       "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}",
       "tabOrders": "طلبات",
-      "tabShipments": "الشحنات"
+      "tabShipments": "الشحنات",
+      "tabManifests": "البيانات"
+    },
+    "manifests": {
+      "title": "بيانات التوصيل",
+      "description": "إدارة بيانات التسليم حسب المنطقة والمندوب ثم القفل والإرسال.",
+      "searchShipmentPlaceholder": "ابحث بالشحنة أو العميل أو التاجر",
+      "autoAssignTitle": "تعيين الشحنات تلقائيًا",
+      "autoAssign": "تعيين تلقائي",
+      "autoAssignSuccess": "تم تعيين {{assigned}} شحنة وتخطي {{skipped}}.",
+      "lockSuccess": "تم قفل البيان.",
+      "dispatchSuccess": "تم إرسال البيان.",
+      "courierDistribution": "توزيع الشحنات لكل مندوب",
+      "shipments": "الشحنات",
+      "zone": "المنطقة",
+      "courier": "المندوب",
+      "load": "الحمل",
+      "allZones": "كل المناطق",
+      "allCouriers": "كل المناديب",
+      "csConfirmed": "تأكيد خدمة العملاء",
+      "assignedCourier": "المندوب المعين",
+      "confirmLocation": "تأكيد الموقع",
+      "locked": "وقت القفل",
+      "dispatched": "وقت الإرسال",
+      "actions": "الإجراءات",
+      "lock": "قفل",
+      "dispatch": "إرسال"
     },
     "table": {
       "batchId": "معرف الدفعة",
@@ -785,6 +868,12 @@
       "otherLocationLabel": "في المخزن (موقع آخر)"
     },
     "feedback": {
+      "created": "تم إنشاء المخزن بنجاح.",
+      "createFailed": "فشل في إنشاء المخزن.",
+      "updated": "تم تحديث المخزن بنجاح.",
+      "updateFailed": "فشل في تحديث المخزن.",
+      "deleted": "تم حذف المخزن بنجاح.",
+      "deleteFailed": "فشل في حذف المخزن.",
       "scanInSuccess": "تم تسجيل دخول الشحنة إلى المخزن.",
       "scanInAlreadyScanned": "تم مسح الشحنة من قبل في هذا المخزن.",
       "scanOutSuccess": "تم تسجيل خروج الطرد للتسليم.",
@@ -1025,6 +1114,7 @@
       "latitude": "خط العرض",
       "longitude": "خط الطول",
       "radiusLabel": "نصف القطر: {{m}} م",
+      "courierCommissionFee": "عمولة المندوب لكل توصيل (جنيه)",
       "couriers": "المناديب",
       "courierInOtherZone": "معيّن حالياً في: {{zone}}",
       "courierWillMoveOnSave": "سيُنقل إلى هذه المنطقة عند الحفظ (يُزال من المنطقة السابقة).",
@@ -1063,11 +1153,31 @@
       "title": "الإعدادات المالية الافتراضية للاستيراد",
       "description": "تُستخدم عند استيراد طلبات التجار من Excel. لم يعد يتم قراءة العمولة أو عمولة الفيزا من ملف الرفع.",
       "defaultCommissionFee": "العمولة الافتراضية",
+      "defaultCommissionFeeHelp": "تُخصم من مستحق التاجر لكل شحنة. المعادلة: صافي_التاجر = قيمة_الشحنة − عمولة_التاجر. (هذا يحدد العمولة الافتراضية للشحنات الجديدة/المستوردة عند عدم إرسالها).",
       "visaCommissionPercent": "عمولة الفيزا (%)",
+      "visaCommissionPercentHelp": "تُطبق فقط عند طريقة الدفع VISA. تُخزن كنسبة (0–1). المعادلة: رسوم_الفيزا = قيمة_الشحنة × نسبة_الفيزا. (للتحصيل/التسويات والتقارير).",
       "saved": "تم حفظ الإعدادات المالية.",
       "saveFailed": "تعذر حفظ الإعدادات المالية.",
       "invalidCommissionFee": "أدخل قيمة عمولة صحيحة (غير سالبة).",
-      "invalidVisaCommissionPercent": "أدخل نسبة عمولة فيزا بين 0 و 100."
+      "invalidVisaCommissionPercent": "أدخل نسبة عمولة فيزا بين 0 و 100.",
+      "serviceFeePercent": "رسوم خدمة العميل (%)",
+      "serviceFeePercentHelp": "تُضاف على ما يدفعه العميل وقت إنشاء الشحنة. المعادلة: رسوم_الخدمة = (قيمة_الشحنة + مصاريف_الشحن) × النسبة. إجمالي_العميل = قيمة_الشحنة + مصاريف_الشحن + رسوم_الخدمة.",
+      "invalidServiceFeePercent": "أدخل نسبة رسوم خدمة بين 0 و 100.",
+      "shippingFeeMode": "طريقة تحديد مصاريف الشحن",
+      "shippingFeeModeHelp": "تحدد كيف يتم ضبط مصاريف الشحن للشحنات الجديدة/المستوردة. في الأوضاع التلقائية (قيمة ثابتة/نسبة/زيادة/حسب المنطقة) يتم حساب المصاريف تلقائياً ويتم قفل الإدخال. (سيتم إعادة حساب الشحنات غير المُسلّمة عند تغيير الإعداد).",
+      "shippingFeeModeManual": "يدوي",
+      "shippingFeeModeFixed": "قيمة ثابتة",
+      "shippingFeeModePercentOfValue": "نسبة من قيمة الشحنة",
+      "shippingFeeModeMarkupFixed": "زيادة (قيمة ثابتة)",
+      "shippingFeeModeMarkupPercent": "زيادة (نسبة %)",
+      "shippingFeeModeByRegion": "حسب المنطقة",
+      "shippingFeeFixedAmount": "قيمة مصاريف الشحن الثابتة (جنيه)",
+      "shippingFeePercentOfValue": "نسبة مصاريف الشحن من قيمة الشحنة (%)",
+      "shippingFeeMarkupFixedAmount": "قيمة الزيادة على مصاريف الشحن (جنيه)",
+      "shippingFeeMarkupPercent": "نسبة الزيادة على مصاريف الشحن (%)",
+      "shippingFeeFallbackAmount": "قيمة افتراضية لمصاريف الشحن (جنيه)",
+      "shippingFeeRegionTable": "مصاريف الشحن حسب المنطقة",
+      "shippingFeeRegionTableHelp": "حدد قيمة ثابتة لمصاريف الشحن لكل منطقة. تُستخدم عند اختيار (حسب المنطقة)."
     },
     "insightsPeriod": {
       "title": "فترة الرؤى",
@@ -1099,5 +1209,152 @@
     "processing": "جارٍ المعالجة...",
     "searching": "جارٍ البحث...",
     "select": "اختر…"
+  },
+  "accounts": {
+    "pageTitle": "الحسابات",
+    "subtitle": "متابعة التصفيات، أرصدة المناديب، ومستحقات التجار.",
+    "tabs": {
+      "delivered": "تم التسليم",
+      "inTransit": "في الطريق",
+      "postponed": "مؤجلة",
+      "rejected": "مرفوضة/مرتجعة"
+    },
+    "filters": {
+      "title": "الفلاتر",
+      "search": "بحث برقم التتبع / التاجر / العميل",
+      "merchantId": "معرّف التاجر",
+      "courierId": "معرّف المندوب",
+      "from": "من تاريخ",
+      "to": "إلى تاريخ",
+      "apply": "تطبيق",
+      "reset": "إعادة ضبط",
+      "deliveredOnly": "التصفية متاحة فقط في تبويب «تم التسليم»."
+    },
+    "table": {
+      "merchant": "التاجر",
+      "merchantPhone": "هاتف التاجر",
+      "customer": "العميل",
+      "customerPhone": "هاتف العميل",
+      "shipmentValue": "قيمة الشحنة",
+      "shippingFee": "مصاريف الشحن",
+      "paymentMethod": "طريقة الدفع",
+      "courier": "المندوب",
+      "trackingNumber": "رقم التتبع",
+      "paymentStatus": "حالة الدفع",
+      "status": "الحالة",
+      "warehouse": "المخزن",
+      "actions": "إجراءات",
+      "settle": "تصفية",
+      "settled": "تمت التصفية",
+      "view": "عرض",
+      "empty": "لا توجد شحنات مطابقة للفلاتر الحالية."
+    },
+    "pagination": {
+      "page": "صفحة {{page}} من {{total}}",
+      "prev": "السابق",
+      "next": "التالي",
+      "total": "إجمالي"
+    },
+    "feedback": {
+      "settled": "تم تعليم الشحنة كمُصَفّاة.",
+      "settleFailed": "تعذّر تصفية الشحنة.",
+      "loadFailed": "تعذّر تحميل بيانات الحسابات."
+    },
+    "courierDetail": {
+      "title": "حساب المندوب",
+      "period": "الفترة",
+      "totalShipments": "إجمالي الشحنات",
+      "delivered": "تم التسليم",
+      "rejected": "مرفوضة",
+      "postponed": "مؤجلة",
+      "totalCollected": "إجمالي المُحصّل",
+      "commissionDue": "العمولة المستحقة",
+      "netDue": "صافي المستحق للمندوب",
+      "backToAccounts": "العودة للحسابات"
+    },
+    "merchantDetail": {
+      "title": "حساب التاجر",
+      "period": "الفترة",
+      "totalShipments": "إجمالي الشحنات",
+      "delivered": "تم التسليم",
+      "settled": "مُصَفّاة",
+      "totalValue": "إجمالي قيمة الشحنات",
+      "collected": "المُحصّل",
+      "commission": "العمولة",
+      "shippingFees": "مصاريف الشحن",
+      "remaining": "المتبقي للدفع",
+      "daily": "تفصيل يومي",
+      "date": "التاريخ",
+      "shipments": "الشحنات",
+      "collectedCol": "المُحصّل",
+      "commissionCol": "العمولة",
+      "net": "الصافي",
+      "exportExcel": "تصدير Excel",
+      "backToAccounts": "العودة للحسابات"
+    },
+    "balances": {
+      "title": "الأرصدة",
+      "tabs": {
+        "merchants": "التجار",
+        "couriers": "المناديب"
+      },
+      "backToShipments": "العودة للشحنات",
+      "filters": "الفلاتر",
+      "searchPlaceholder": "بحث بالاسم / الهاتف",
+      "merchantsTitle": "أرصدة التجار",
+      "couriersTitle": "أرصدة المناديب",
+      "columns": {
+        "phone": "الهاتف",
+        "totalShipmentValue": "إجمالي قيمة الشحنات",
+        "totalShippingFees": "إجمالي مصاريف الشحن",
+        "totalCollected": "إجمالي المُحصّل",
+        "totalCommission": "إجمالي العمولة",
+        "remaining": "المتبقي للدفع",
+        "netDue": "صافي المستحق"
+      }
+    },
+    "ledger": {
+      "title": "سجل الحساب",
+      "hint": "تفاصيل الشحنات خلال الفترة المحددة.",
+      "courierHint": "عمولة المندوب تُحسب على كل شحنة تم تسليمها.",
+      "search": "بحث برقم التتبع / التاجر / العميل",
+      "commission": "العمولة",
+      "net": "الصافي",
+      "netDue": "صافي المستحق"
+    },
+    "payoutRequests": {
+      "requestTitle": "طلب تصفية",
+      "requestHint": "إنشاء طلب تصفية للشحنات المسلّمة وغير المُصفّاة خلال الفترة المحددة.",
+      "deliveryDeductionPercent": "خصم التوصيل (%)",
+      "gross": "إجمالي المُحصّل",
+      "net": "صافي المستحق",
+      "requestButton": "إرسال طلب التصفية",
+      "requested": "تم إرسال طلب التصفية.",
+      "requestFailed": "تعذّر إرسال طلب التصفية.",
+      "historyTitle": "طلبات التصفية",
+      "status": "الحالة",
+      "period": "الفترة",
+      "shipments": "الشحنات",
+      "createdAt": "تاريخ الإنشاء",
+      "empty": "لا توجد طلبات تصفية بعد."
+      ,
+      "admin": {
+        "title": "طلبات التصفية (إدارة)",
+        "backToAccounts": "العودة للحسابات",
+        "filters": "الفلاتر",
+        "statusAll": "كل الحالات",
+        "merchantId": "معرّف التاجر",
+        "tableTitle": "الطلبات",
+        "merchant": "التاجر",
+        "actions": "إجراءات",
+        "approve": "موافقة",
+        "reject": "رفض",
+        "markPaid": "تم الدفع",
+        "approved": "تمت الموافقة على الطلب.",
+        "rejected": "تم رفض الطلب.",
+        "markedPaid": "تم تعليم الطلب كمدفوع.",
+        "empty": "لا توجد طلبات."
+      }
+    }
   }
 }

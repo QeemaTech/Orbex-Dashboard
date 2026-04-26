@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
 import {
   LocateFixed,
   MapPin,
@@ -9,11 +9,7 @@ import {
 } from "react-lucid"
 import { useTranslation } from "react-i18next"
 
-import {
-  confirmShipmentCs,
-  merchantOrderBatchId,
-  type CsShipmentRow,
-} from "@/api/merchant-orders-api"
+import { merchantOrderBatchId, type CsShipmentRow } from "@/api/merchant-orders-api"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,9 +20,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { canConfirmCsForShipmentLine } from "@/features/customer-service/lib/cs-confirm-eligibility"
 import {
+  csLineConfirmDialogDefaultsFromCsRow,
+  hasCsConfirmedCustomerLocationPin,
+  resolveCustomerLatLng,
+} from "@/features/customer-service/lib/cs-line-customer-location"
+import {
   openWhatsApp,
   openWhatsAppTrackingMessage,
 } from "@/features/customer-service/lib/whatsapp"
+import { CsConfirmedCustomerLocationMapButton } from "@/features/shipments/components/CsConfirmedCustomerLocationMapButton"
+import { ShipmentCsConfirmLocationDialog } from "@/features/shipments/components/ShipmentCsConfirmLocationDialog"
 
 export type CsShipmentRowActionsLayout = "compact" | "inline"
 
@@ -56,13 +59,7 @@ export function CsShipmentRowActions({
   layout = "compact",
 }: CsShipmentRowActionsProps) {
   const { t } = useTranslation()
-  const qc = useQueryClient()
-
-  const confirmMut = useMutation({
-    mutationFn: () =>
-      confirmShipmentCs(token, batchId, row.primaryOrderId ?? row.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: listQueryKey }),
-  })
+  const [csLineConfirmOpen, setCsLineConfirmOpen] = useState(false)
 
   const telCustomer = `tel:${row.phonePrimary}`
   const hasPhone = !!row.phonePrimary?.trim()
@@ -84,6 +81,9 @@ export function CsShipmentRowActions({
       ? t("cs.actions.sendTrackingMessageNoTrackingHint")
       : undefined
 
+  const showCustomerPinMap = hasCsConfirmedCustomerLocationPin(row)
+  const customerPinCoords = resolveCustomerLatLng(row)
+
   const handleLocationAction = () => {
     if (hasLocationLink) {
       window.open(row.locationLink!.trim(), "_blank", "noopener,noreferrer")
@@ -92,190 +92,217 @@ export function CsShipmentRowActions({
     onOpenAddLocation(row)
   }
 
-  const confirmButton = showConfirm ? (
-    <Button
-      type="button"
-      size="sm"
-      variant="default"
-      className="bg-chart-2 text-white hover:bg-chart-2/90"
-      disabled={!batchId || confirmMut.isPending}
-      onClick={() => confirmMut.mutate()}
-    >
-      {t("cs.actions.confirm")}
-    </Button>
-  ) : null
+  const confirmButton =
+    showConfirm && batchId ? (
+      <Button
+        type="button"
+        size="sm"
+        variant="default"
+        className="bg-chart-2 text-white hover:bg-chart-2/90"
+        onClick={() => setCsLineConfirmOpen(true)}
+      >
+        {t("cs.actions.confirm")}
+      </Button>
+    ) : null
+
+  const customerMapPin =
+    showCustomerPinMap && customerPinCoords ? (
+      <CsConfirmedCustomerLocationMapButton
+        latitude={customerPinCoords.lat}
+        longitude={customerPinCoords.lng}
+        stopPropagation
+      />
+    ) : null
 
   const stopRowClick = (e: MouseEvent<HTMLDivElement>) => e.stopPropagation()
 
+  const confirmDialog = batchId ? (
+    <ShipmentCsConfirmLocationDialog
+      open={csLineConfirmOpen}
+      onOpenChange={setCsLineConfirmOpen}
+      token={token}
+      extraInvalidateQueryKeys={[listQueryKey]}
+      {...csLineConfirmDialogDefaultsFromCsRow(row)}
+    />
+  ) : null
+
   if (layout === "inline") {
     return (
-      <div
-        className="flex flex-wrap items-center justify-center gap-3"
-        onClick={stopRowClick}
-      >
-        {confirmButton}
-        {allowCustomerUi && showWhatsApp ? (
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            title={t("cs.actions.whatsappTooltip")}
-            disabled={!hasPhone}
-            className="size-9 rounded-full bg-[#25D366] text-white shadow-sm hover:bg-[#22c55e]"
-            onClick={() => openWhatsApp(row)}
-          >
-            <WhatsAppLogoIcon className="size-5 text-white" />
-          </Button>
-        ) : null}
-        {allowCustomerUi ? (
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            title={sendTrackingTitle}
-            disabled={sendTrackingDisabled}
-            className="size-9 shrink-0"
-            aria-label={t("cs.actions.sendTrackingMessage")}
-            onClick={() => {
-              if (!sendTrackingDisabled) void openWhatsAppTrackingMessage(row, token)
-            }}
-          >
-            <MessageSquareText className="size-4" aria-hidden />
-          </Button>
-        ) : null}
-        {allowCustomerUi && showAddLocation ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-            onClick={handleLocationAction}
-          >
-            <LocateFixed className="me-1 size-4" aria-hidden />
-            {t("cs.actions.addLocation")}
-          </Button>
-        ) : null}
-        {allowCustomerUi ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-            asChild
-          >
-            <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
-          </Button>
-        ) : null}
-        {row.courier?.contactPhone ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100 dark:border-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-300"
-            asChild
-          >
-            <a href={`tel:${row.courier.contactPhone}`}>
-              <PhoneCall className="me-1 size-4" aria-hidden />
-              {t("cs.actions.callCourier")}
-            </a>
-          </Button>
-        ) : null}
-        {row.courier?.id ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300"
-            onClick={() => onOpenMap(row.courier!.id)}
-          >
-            <MapPin className="me-1 size-4" aria-hidden />
-            {t("cs.actions.track")}
-          </Button>
-        ) : null}
-      </div>
+      <>
+        <div
+          className="flex flex-wrap items-center justify-center gap-3"
+          onClick={stopRowClick}
+        >
+          {confirmButton}
+          {customerMapPin}
+          {allowCustomerUi && showWhatsApp ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              title={t("cs.actions.whatsappTooltip")}
+              disabled={!hasPhone}
+              className="size-9 rounded-full bg-[#25D366] text-white shadow-sm hover:bg-[#22c55e]"
+              onClick={() => openWhatsApp(row)}
+            >
+              <WhatsAppLogoIcon className="size-5 text-white" />
+            </Button>
+          ) : null}
+          {allowCustomerUi ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              title={sendTrackingTitle}
+              disabled={sendTrackingDisabled}
+              className="size-9 shrink-0"
+              aria-label={t("cs.actions.sendTrackingMessage")}
+              onClick={() => {
+                if (!sendTrackingDisabled) void openWhatsAppTrackingMessage(row, token)
+              }}
+            >
+              <MessageSquareText className="size-4" aria-hidden />
+            </Button>
+          ) : null}
+          {allowCustomerUi && showAddLocation ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+              onClick={handleLocationAction}
+            >
+              <LocateFixed className="me-1 size-4" aria-hidden />
+              {t("cs.actions.addLocation")}
+            </Button>
+          ) : null}
+          {allowCustomerUi ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+              asChild
+            >
+              <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
+            </Button>
+          ) : null}
+          {row.courier?.contactPhone ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100 dark:border-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-300"
+              asChild
+            >
+              <a href={`tel:${row.courier.contactPhone}`}>
+                <PhoneCall className="me-1 size-4" aria-hidden />
+                {t("cs.actions.callCourier")}
+              </a>
+            </Button>
+          ) : null}
+          {row.courier?.id ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300"
+              onClick={() => onOpenMap(row.courier!.id)}
+            >
+              <MapPin className="me-1 size-4" aria-hidden />
+              {t("cs.actions.track")}
+            </Button>
+          ) : null}
+        </div>
+        {confirmDialog}
+      </>
     )
   }
 
   return (
-    <div
-      className="flex flex-wrap items-center justify-end gap-2"
-      onClick={stopRowClick}
-    >
-      {confirmButton}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            aria-label={t("cs.actions.menuAriaLabel")}
-            aria-haspopup="menu"
-          >
-            <MoreVertical className="size-4 shrink-0" aria-hidden />
-            <span>{t("cs.actions.menu")}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[10rem]">
-          {allowCustomerUi && showWhatsApp ? (
-            <DropdownMenuItem
-              disabled={!hasPhone}
-              title={
-                !hasPhone ? t("cs.actions.whatsappDisabledHint") : undefined
-              }
-              onClick={() => {
-                if (hasPhone) openWhatsApp(row)
-              }}
+    <>
+      <div
+        className="flex flex-wrap items-center justify-end gap-2"
+        onClick={stopRowClick}
+      >
+        {confirmButton}
+        {customerMapPin}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              aria-label={t("cs.actions.menuAriaLabel")}
+              aria-haspopup="menu"
             >
-              <WhatsAppLogoIcon className="size-4 shrink-0 text-[#25D366]" />
-              {t("cs.actions.whatsappMenu")}
-            </DropdownMenuItem>
-          ) : null}
-          {allowCustomerUi ? (
-            <DropdownMenuItem
-              disabled={sendTrackingDisabled}
-              title={sendTrackingTitle}
-            onClick={() => {
-              if (!sendTrackingDisabled) void openWhatsAppTrackingMessage(row, token)
-            }}
-            >
-              <MessageSquareText className="size-4 shrink-0" aria-hidden />
-              {t("cs.actions.sendTrackingMessage")}
-            </DropdownMenuItem>
-          ) : null}
-          {allowCustomerUi && showAddLocation ? (
-            <DropdownMenuItem onClick={handleLocationAction}>
-              <LocateFixed className="size-4" aria-hidden />
-              {t("cs.actions.addLocation")}
-            </DropdownMenuItem>
-          ) : null}
-          {allowCustomerUi ? (
-            <DropdownMenuItem asChild>
-              <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
-            </DropdownMenuItem>
-          ) : null}
-          {allowCustomerUi && hasCourierMenuItems ? (
-            <DropdownMenuSeparator />
-          ) : null}
-          {row.courier?.contactPhone ? (
-            <DropdownMenuItem asChild>
-              <a href={`tel:${row.courier.contactPhone}`}>
-                <PhoneCall className="size-4" aria-hidden />
-                {t("cs.actions.callCourier")}
-              </a>
-            </DropdownMenuItem>
-          ) : null}
-          {row.courier?.id ? (
-            <DropdownMenuItem
-              onClick={() => onOpenMap(row.courier!.id)}
-            >
-              <MapPin className="size-4" aria-hidden />
-              {t("cs.actions.track")}
-            </DropdownMenuItem>
-          ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+              <MoreVertical className="size-4 shrink-0" aria-hidden />
+              <span>{t("cs.actions.menu")}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[10rem]">
+            {allowCustomerUi && showWhatsApp ? (
+              <DropdownMenuItem
+                disabled={!hasPhone}
+                title={
+                  !hasPhone ? t("cs.actions.whatsappDisabledHint") : undefined
+                }
+                onClick={() => {
+                  if (hasPhone) openWhatsApp(row)
+                }}
+              >
+                <WhatsAppLogoIcon className="size-4 shrink-0 text-[#25D366]" />
+                {t("cs.actions.whatsappMenu")}
+              </DropdownMenuItem>
+            ) : null}
+            {allowCustomerUi ? (
+              <DropdownMenuItem
+                disabled={sendTrackingDisabled}
+                title={sendTrackingTitle}
+                onClick={() => {
+                  if (!sendTrackingDisabled) void openWhatsAppTrackingMessage(row, token)
+                }}
+              >
+                <MessageSquareText className="size-4 shrink-0" aria-hidden />
+                {t("cs.actions.sendTrackingMessage")}
+              </DropdownMenuItem>
+            ) : null}
+            {allowCustomerUi && showAddLocation ? (
+              <DropdownMenuItem onClick={handleLocationAction}>
+                <LocateFixed className="size-4" aria-hidden />
+                {t("cs.actions.addLocation")}
+              </DropdownMenuItem>
+            ) : null}
+            {allowCustomerUi ? (
+              <DropdownMenuItem asChild>
+                <a href={telCustomer}>{t("cs.actions.callCustomer")}</a>
+              </DropdownMenuItem>
+            ) : null}
+            {allowCustomerUi && hasCourierMenuItems ? (
+              <DropdownMenuSeparator />
+            ) : null}
+            {row.courier?.contactPhone ? (
+              <DropdownMenuItem asChild>
+                <a href={`tel:${row.courier.contactPhone}`}>
+                  <PhoneCall className="size-4" aria-hidden />
+                  {t("cs.actions.callCourier")}
+                </a>
+              </DropdownMenuItem>
+            ) : null}
+            {row.courier?.id ? (
+              <DropdownMenuItem
+                onClick={() => onOpenMap(row.courier!.id)}
+              >
+                <MapPin className="size-4" aria-hidden />
+                {t("cs.actions.track")}
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {confirmDialog}
+    </>
   )
 }
 

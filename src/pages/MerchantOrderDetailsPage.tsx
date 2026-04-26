@@ -10,7 +10,6 @@ import {
   getShipmentById,
   getShipmentOrders,
   patchShipmentAssignedWarehouse,
-  type CsShipmentRow,
 } from "@/api/merchant-orders-api"
 import { getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
@@ -25,9 +24,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { CsAddLocationDialog } from "@/features/customer-service/components/CsAddLocationDialog"
-import { CsCourierMapDialog } from "@/features/customer-service/components/CsCourierMapDialog"
-import { CsShipmentRowActions } from "@/features/customer-service/components/CsShipmentRowActions"
 import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
@@ -93,10 +89,6 @@ export function MerchantOrderDetailsPage() {
       ? warehouseId.trim()
       : user?.warehouseId ?? undefined
 
-  const [mapOpen, setMapOpen] = useState(false)
-  const [mapCourierId, setMapCourierId] = useState<string | null>(null)
-  const [locationOpen, setLocationOpen] = useState(false)
-  const [locationRow, setLocationRow] = useState<CsShipmentRow | null>(null)
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("")
 
   const listQueryKey = useMemo(
@@ -116,11 +108,6 @@ export function MerchantOrderDetailsPage() {
     queryFn: () => getShipmentOrders({ token, shipmentId: merchantOrderId }),
     enabled: !!token && hasValidBatchId,
   })
-
-  const openMap = useCallback((courierId: string) => {
-    setMapCourierId(courierId)
-    setMapOpen(true)
-  }, [])
 
   const canPrintLabel = user?.permissions?.includes("shipments.label") ?? false
   const canBulkReturnToMerchant =
@@ -218,11 +205,6 @@ export function MerchantOrderDetailsPage() {
       setIsPrinting(false)
     }
   }, [t, token, ordersSummaryQuery.data, isPrinting])
-
-  const openAddLocation = useCallback((row: CsShipmentRow) => {
-    setLocationRow(row)
-    setLocationOpen(true)
-  }, [])
 
   const canEditWarehouseAssignment =
     (user?.permissions?.includes("merchant_orders.update") ??
@@ -561,15 +543,9 @@ export function MerchantOrderDetailsPage() {
                 )}
 
                 <div className="flex flex-wrap justify-center gap-3 border-border/60 border-t pt-4">
-                  <CsShipmentRowActions
-                    row={q.data}
-                    token={token}
-                    listQueryKey={[...listQueryKey]}
-                    onOpenMap={openMap}
-                    onOpenAddLocation={openAddLocation}
-                    showCustomerContact={!isMultiOrderBatch}
-                    layout="inline"
-                  />
+                  <p className="text-muted-foreground text-sm">
+                    {t("merchantOrders.detail.batchOrdersHint")}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -658,19 +634,6 @@ export function MerchantOrderDetailsPage() {
         ) : null}
       </div>
 
-      <CsCourierMapDialog
-        open={mapOpen}
-        onOpenChange={setMapOpen}
-        courierId={mapCourierId}
-        token={token}
-      />
-      <CsAddLocationDialog
-        open={locationOpen}
-        onOpenChange={setLocationOpen}
-        row={locationRow}
-        token={token}
-        listQueryKey={[...listQueryKey]}
-      />
     </Layout>
   )
 }

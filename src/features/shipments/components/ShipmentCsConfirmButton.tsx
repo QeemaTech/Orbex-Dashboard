@@ -1,17 +1,17 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import type { TFunction } from "i18next"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import {
-  confirmShipmentCs,
-  merchantOrderBatchId,
-  type ShipmentOrderRow,
-} from "@/api/merchant-orders-api"
-import { ApiError } from "@/api/client"
+import { merchantOrderBatchId, type ShipmentOrderRow } from "@/api/merchant-orders-api"
 import { Button } from "@/components/ui/button"
 import { canConfirmCsForShipmentLine } from "@/features/customer-service/lib/cs-confirm-eligibility"
+import {
+  csLineConfirmDialogDefaultsFromShipmentOrder,
+  hasCsConfirmedCustomerLocationPin,
+  resolveCustomerLatLng,
+} from "@/features/customer-service/lib/cs-line-customer-location"
 import { useAuth } from "@/lib/auth-context"
-import { showToast } from "@/lib/toast"
+import { CsConfirmedCustomerLocationMapButton } from "@/features/shipments/components/CsConfirmedCustomerLocationMapButton"
+import { ShipmentCsConfirmLocationDialog } from "@/features/shipments/components/ShipmentCsConfirmLocationDialog"
 
 const MERCHANT_ORDERS_UPDATE = "merchant_orders.update"
 
@@ -22,12 +22,6 @@ type Props = {
   extraInvalidateQueryKeys?: unknown[][]
 }
 
-function confirmErrorMessage(err: unknown, t: TFunction): string {
-  if (err instanceof ApiError && err.message) return err.message
-  if (err instanceof Error) return err.message
-  return t("shipments.detail.confirmCsError", { defaultValue: "Could not confirm." })
-}
-
 export function ShipmentCsConfirmButton({
   line,
   accessToken,
@@ -35,44 +29,61 @@ export function ShipmentCsConfirmButton({
 }: Props) {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const qc = useQueryClient()
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const canPermission = Boolean(user?.permissions?.includes(MERCHANT_ORDERS_UPDATE))
+  const hasUpdatePermission = Boolean(user?.permissions?.includes(MERCHANT_ORDERS_UPDATE))
+  const isAdminLike =
+    user?.role === "ADMIN" ||
+    (user?.roles ?? []).includes("ADMIN") ||
+    (user?.roles ?? []).includes("super_admin") ||
+    (user?.rbacRoles ?? []).some((r) => r.slug === "admin" || r.slug === "super_admin")
+  const canConfirmAction = hasUpdatePermission || isAdminLike
   const eligible = canConfirmCsForShipmentLine(line)
   const batchId = merchantOrderBatchId(line)
   const token = accessToken?.trim() ?? ""
+  const coords = resolveCustomerLatLng(line)
+  const showMapPin = hasCsConfirmedCustomerLocationPin(line)
 
-  const mut = useMutation({
-    mutationFn: () =>
-      confirmShipmentCs(token, batchId, line.id),
-    onSuccess: () => {
-      showToast(
-        t("shipments.detail.confirmCsSuccess", { defaultValue: "Line confirmed for delivery planning." }),
-        "success",
-      )
-      void qc.invalidateQueries({ queryKey: ["shipment", "detail", line.id, token] })
-      void qc.invalidateQueries({ queryKey: ["shipment", "detail"] })
-      for (const queryKey of extraInvalidateQueryKeys ?? []) {
-        void qc.invalidateQueries({ queryKey })
-      }
-    },
-    onError: (err: unknown) => {
-      showToast(confirmErrorMessage(err, t), "error")
-    },
-  })
-
-  if (!canPermission || !eligible || !token || !batchId) return null
+  const canOpenConfirmDialog = canConfirmAction && Boolean(token) && Boolean(batchId)
+  const showConfirmButton = canOpenConfirmDialog
+  const confirmDisabled = !eligible
 
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="default"
-      className="bg-chart-2 text-white hover:bg-chart-2/90"
-      disabled={mut.isPending}
-      onClick={() => mut.mutate()}
-    >
-      {t("cs.actions.confirm")}
-    </Button>
+    <>
+      {showConfirmButton ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="default"
+          className="bg-chart-2 text-white hover:bg-chart-2/90"
+          disabled={confirmDisabled}
+          title={
+            confirmDisabled
+              ? t("cs.csLineConfirm.alreadyConfirmedHint", {
+                  defaultValue: "Location was already confirmed for this shipment.",
+                })
+              : undefined
+          }
+          onClick={() => setConfirmOpen(true)}
+        >
+          {t("cs.actions.confirm")}
+        </Button>
+      ) : null}
+      {showMapPin && coords ? (
+        <CsConfirmedCustomerLocationMapButton
+          latitude={coords.lat}
+          longitude={coords.lng}
+        />
+      ) : null}
+      {canOpenConfirmDialog ? (
+        <ShipmentCsConfirmLocationDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          token={token}
+          extraInvalidateQueryKeys={extraInvalidateQueryKeys}
+          {...csLineConfirmDialogDefaultsFromShipmentOrder(line)}
+        />
+      ) : null}
+    </>
   )
 }

@@ -43,6 +43,8 @@ export type CsShipmentRow = {
   transferStatus?: string
   /** Line CS outbound confirmation timestamp when present on list/detail APIs. */
   csConfirmedAt?: string | null
+  /** User who confirmed the line at hub with customer location (CS flow only). */
+  csConfirmedByUserId?: string | null
   customerName: string
   phonePrimary: string
   phoneSecondary: string | null
@@ -250,6 +252,7 @@ export type ShipmentOrderRow = {
   shipmentValue: string
   shippingFee: string
   commissionFee: string
+  serviceFee?: string
   paymentMethod: string
   visaCommissionRate: string | null
   notes: string | null
@@ -258,6 +261,7 @@ export type ShipmentOrderRow = {
   weightGrams?: number
   itemsCount?: number
   deliveryCourierId: string | null
+  resolvedDeliveryZoneId?: string | null
   deliveryCourier?: {
     id: string
     fullName: string | null
@@ -271,6 +275,7 @@ export type ShipmentOrderRow = {
     contactPhone: string | null
   } | null
   csConfirmedAt: string | null
+  csConfirmedByUserId?: string | null
   scannedOutAt: string | null
   receivedByCustomer: boolean | null
   paymentCollected: boolean | null
@@ -335,6 +340,12 @@ export type ShipmentOrderRow = {
       fullName: string | null
       contactPhone: string | null
     } | null
+    createdAt: string
+  }>
+  paymentProofs?: Array<{
+    id: string
+    paymentMethod: string
+    imageUrl: string
     createdAt: string
   }>
 }
@@ -813,19 +824,30 @@ export async function listShipmentTimeline(
   })
 }
 
-export async function confirmShipmentCs(
-  token: string,
-  shipmentId: string,
-  shipmentLineId: string,
-): Promise<void> {
-  await apiFetch<unknown>(`/api/merchant-orders/${shipmentId}/status`, {
-    method: "PATCH",
-    token,
-    body: JSON.stringify({
-      orderId: shipmentLineId,
-      toShipmentStatus: "IN_WAREHOUSE",
-    }),
-  })
+/**
+ * CS hub: confirm **delivery line** with customer GPS (batch must already be IN_WAREHOUSE).
+ * Not merchant pickup or warehouse scan-in — use only for the CS outbound confirmation step.
+ */
+export async function confirmShipmentCustomerLocation(p: {
+  token: string
+  merchantOrderId: string
+  lineId: string
+  customerLat: number | string
+  customerLng: number | string
+  addressText?: string
+}): Promise<unknown> {
+  return apiFetch<unknown>(
+    `/api/merchant-orders/${p.merchantOrderId}/lines/${p.lineId}/confirm-customer-location`,
+    {
+      method: "POST",
+      token: p.token,
+      body: JSON.stringify({
+        customerLat: p.customerLat,
+        customerLng: p.customerLng,
+        ...(p.addressText !== undefined ? { addressText: p.addressText } : {}),
+      }),
+    },
+  )
 }
 
 export type PatchShipmentFieldsParams = {

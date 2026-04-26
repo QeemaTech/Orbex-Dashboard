@@ -6,7 +6,7 @@ import App from "./App.tsx"
 import "./i18n/index.ts"
 import "./index.css"
 import { AuthProvider } from "./lib/auth-context"
-
+import { ThemeProvider } from "./components/theme-provider"
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -19,9 +19,11 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <ThemeProvider defaultTheme="system" storageKey="orbex-theme">
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

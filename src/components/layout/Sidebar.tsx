@@ -1,4 +1,4 @@
-import { LogOut, Settings, ShieldCheck } from "lucide-react"
+import { LogOut, Settings, ShieldCheck, Sun, Moon, Monitor } from "lucide-react"
 import {
   Banknote,
   Boxes,
@@ -16,6 +16,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom"
 
 import { getWarehouseSite } from "@/api/warehouse-api"
 import { useSidebar } from "@/components/layout/sidebar-context"
+import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { isMainBranch } from "@/lib/warehouse-utils"
@@ -43,6 +44,7 @@ type HubNavItem = {
     | "nav.myWarehouse"
     | "nav.warehouseMerchantOrders"
     | "nav.warehouseStandaloneShipments"
+    | "nav.warehouseManifests"
   icon: typeof Warehouse
   end: boolean
   perm?: string
@@ -79,6 +81,17 @@ function buildHubWarehouseNavItems(
       end: false,
       perm: "warehouses.read",
     },
+    ...(isMainHub
+      ? [
+          {
+            to: `${base}?tab=manifests`,
+            labelKey: "nav.warehouseManifests",
+            icon: Truck,
+            end: false,
+            perm: "warehouses.read",
+          } satisfies HubNavItem,
+        ]
+      : []),
     {
       to: "/settings",
       labelKey: "nav.settings",
@@ -96,6 +109,7 @@ const adminNavConfig = [
   { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
   { to: "/merchant-orders/pending-confirmations", labelKey: "nav.merchantOrderConfirmations", icon: Boxes, end: false, perm: "merchant_orders.confirm" },
+  { to: "/courier-manifests", labelKey: "nav.allCourierManifests", icon: Truck, end: false, perm: "courier_manifests.read_all" },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
   {
     to: "/delivery-zones",
@@ -112,6 +126,13 @@ const adminNavConfig = [
     end: false,
     perm: "collections.read",
   },
+  {
+    to: "/accounts",
+    labelKey: "nav.accounts",
+    icon: Banknote,
+    end: false,
+    perm: "accounts.read",
+  },
   { to: "/warehouses", labelKey: "nav.warehouses", icon: Warehouse, end: true, perm: "warehouses.read" },
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const
@@ -124,8 +145,16 @@ const customerServiceNavConfig = [
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const
 
+const merchantNavConfig = [
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
+  { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
+  { to: "/accounts/me", labelKey: "nav.accounts", icon: Banknote, end: false, perm: "accounts.request_payout" },
+  { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
+] as const
+
 export function Sidebar() {
   const { t, i18n } = useTranslation()
+  const { theme, setTheme } = useTheme()
   const location = useLocation()
   const { open, setOpen } = useSidebar()
   const navigate = useNavigate()
@@ -151,6 +180,10 @@ export function Sidebar() {
 
   const navConfig = useMemo(() => {
     const check = (p?: string) => (p ? perms.includes(p) : true)
+    // Merchants may have legacy/null `role` but still have `merchantId`.
+    if (user && isMerchantUser(user)) {
+      return merchantNavConfig.filter((item) => check(item.perm))
+    }
     if (user?.role === "CUSTOMER_SERVICE") {
       return customerServiceNavConfig.filter((item) => {
         if (item.to === "/cs/merchant-orders/pending-confirmations") {
@@ -250,25 +283,30 @@ export function Sidebar() {
           loading="eager"
         />
       </div>
-      <nav className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-4 sm:p-5">
+      <nav className="flex flex-1 flex-col gap-2.5 overflow-y-auto scrollbar-hide p-4 sm:p-5">
         {navConfig.map(({ to, labelKey, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             onClick={() => setOpen(false)}
-            className={({ isActive }) =>
-              cn(
+            className={({ isActive }) => {
+              let finalIsActive = isActive
+              if (user && (isWarehouseStaff(user) || isWarehouseAdmin(user))) {
+                finalIsActive = isWarehouseStaffNavItemActive(location, to)
+              } else if (to === "/merchant-orders" && location.pathname.startsWith("/merchant-orders/pending-confirmations")) {
+                finalIsActive = false
+              } else if (to === "/cs/merchant-orders" && location.pathname.startsWith("/cs/merchant-orders/pending-confirmations")) {
+                finalIsActive = false
+              }
+
+              return cn(
                 "nav-item group flex min-h-12 items-center gap-3 rounded-xl px-3.5 py-3 text-[0.95rem] font-medium transition-all duration-200",
-                user && (isWarehouseStaff(user) || isWarehouseAdmin(user))
-                  ? isWarehouseStaffNavItemActive(location, to)
-                    ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
-                    : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
-                  : isActive
-                    ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
-                    : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
+                finalIsActive
+                  ? "nav-item-active ps-7 text-sidebar-primary font-semibold"
+                  : "text-muted-foreground hover:text-sidebar-accent-foreground hover:-translate-y-px"
               )
-            }
+            }}
           >
             <Icon className="size-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden />
             {t(labelKey)}
@@ -287,35 +325,71 @@ export function Sidebar() {
           {t("header.signOut")}
         </Button>
       </div>
-      <div
-        className="border-sidebar-border border-t p-4 sm:p-5"
-        role="group"
-        aria-label={t("dashboard.language.label")}
-      >
-        <p className="mb-3 text-xs font-semibold tracking-wide uppercase opacity-80">
-          {t("dashboard.language.label")}
-        </p>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={isEn ? "default" : "outline"}
-            aria-pressed={isEn}
-            className="min-w-[5.25rem] shadow-sm"
-            onClick={() => void i18n.changeLanguage("en")}
-          >
-            {t("dashboard.language.en")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={!isEn ? "default" : "outline"}
-            aria-pressed={!isEn}
-            className="min-w-[5.25rem] shadow-sm"
-            onClick={() => void i18n.changeLanguage("ar")}
-          >
-            {t("dashboard.language.ar")}
-          </Button>
+      <div className="border-sidebar-border border-t p-4 sm:p-5 flex flex-col gap-5">
+        <div role="group" aria-label={t("dashboard.language.label")}>
+          <p className="mb-3 text-xs font-semibold tracking-wide uppercase opacity-80">
+            {t("dashboard.language.label")}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={isEn ? "default" : "outline"}
+              aria-pressed={isEn}
+              className="min-w-[5.25rem] shadow-sm"
+              onClick={() => void i18n.changeLanguage("en")}
+            >
+              {t("dashboard.language.en")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={!isEn ? "default" : "outline"}
+              aria-pressed={!isEn}
+              className="min-w-[5.25rem] shadow-sm"
+              onClick={() => void i18n.changeLanguage("ar")}
+            >
+              {t("dashboard.language.ar")}
+            </Button>
+          </div>
+        </div>
+
+        <div role="group" aria-label="Theme">
+          <p className="mb-3 text-xs font-semibold tracking-wide uppercase opacity-80">
+            {isEn ? "Theme" : "المظهر"}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={theme === "light" ? "default" : "outline"}
+              onClick={() => setTheme("light")}
+              className="flex-1 shadow-sm"
+              title={isEn ? "Light Theme" : "فاتح"}
+            >
+              <Sun className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={theme === "dark" ? "default" : "outline"}
+              onClick={() => setTheme("dark")}
+              className="flex-1 shadow-sm"
+              title={isEn ? "Dark Theme" : "داكن"}
+            >
+              <Moon className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={theme === "system" ? "default" : "outline"}
+              onClick={() => setTheme("system")}
+              className="flex-1 shadow-sm"
+              title={isEn ? "System Theme" : "النظام"}
+            >
+              <Monitor className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </aside>

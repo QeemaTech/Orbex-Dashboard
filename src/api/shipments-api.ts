@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchText } from "@/api/client"
+import { apiFetch, apiFetchText, apiUrl } from "@/api/client"
 import type { ListShipmentsParams, ShipmentOrderRow } from "@/api/merchant-orders-api"
 
 /** `GET /api/shipments/:id/label` — thermal label payload. */
@@ -89,6 +89,59 @@ export async function getShipmentById(p: {
     `/api/shipments/${encodeURIComponent(p.shipmentId)}`,
     { token: p.token },
   )
+}
+
+export async function uploadShipmentPaymentProof(p: {
+  token: string
+  shipmentId: string
+  paymentMethod: "INSTAPAY" | "E_WALLET"
+  file: File
+}): Promise<{
+  id: string
+  shipmentId: string
+  paymentMethod: string
+  imageUrl: string
+  createdAt: string
+}> {
+  const formData = new FormData()
+  formData.append("file", p.file)
+  formData.append("paymentMethod", p.paymentMethod)
+
+  const response = await fetch(
+    apiUrl(`/api/shipments/${encodeURIComponent(p.shipmentId)}/payment-proof`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${p.token}`,
+      },
+      body: formData,
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({ error: "Upload failed" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : typeof errorBody === "object" &&
+            errorBody !== null &&
+            "message" in errorBody &&
+            typeof (errorBody as { message?: unknown }).message === "string"
+          ? (errorBody as { message: string }).message
+          : "Upload failed"
+    throw new Error(msg)
+  }
+
+  return (await response.json()) as {
+    id: string
+    shipmentId: string
+    paymentMethod: string
+    imageUrl: string
+    createdAt: string
+  }
 }
 
 /** Pending-label queue row: label JSON plus shipment id for raw print + mark-printed. */

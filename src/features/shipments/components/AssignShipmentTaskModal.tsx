@@ -40,11 +40,17 @@ export function AssignShipmentTaskModal({
   }, [open, shipment])
 
   const couriersQuery = useQuery({
-    queryKey: ["warehouse-couriers-assign-task", token, shipment?.regionId ?? ""],
+    queryKey: [
+      "warehouse-couriers-assign-task",
+      token,
+      shipment?.regionId ?? "",
+      shipment?.resolvedDeliveryZoneId ?? "",
+    ],
     queryFn: () =>
       getWarehouseCouriers({
         token,
         regionId: shipment?.regionId ?? undefined,
+        deliveryZoneId: shipment?.resolvedDeliveryZoneId ?? undefined,
       }),
     enabled: open && !!token && !!shipment,
   })
@@ -61,9 +67,16 @@ export function AssignShipmentTaskModal({
     shipment?.assignedWarehouseId ??
     null
 
+  const couriers = couriersQuery.data?.couriers ?? []
+  const sites = sitesQuery.data?.warehouses ?? []
+  const hasResolvedDeliveryZone = !!shipment?.resolvedDeliveryZoneId
+  const zoneCouriers = couriers.filter((c) => c.servesShipmentRegion)
+
   const canSubmit = useMemo(() => {
     if (!shipment) return false
-    if (taskType === "DELIVERY") return !!courierId.trim()
+    if (taskType === "DELIVERY") {
+      return hasResolvedDeliveryZone && zoneCouriers.length > 0 && !!courierId.trim()
+    }
     if (taskType === "TRANSFER") {
       return (
         !!toWarehouseId.trim() &&
@@ -72,7 +85,15 @@ export function AssignShipmentTaskModal({
       )
     }
     return true
-  }, [shipment, taskType, courierId, toWarehouseId, planningWarehouseId])
+  }, [
+    shipment,
+    taskType,
+    courierId,
+    toWarehouseId,
+    planningWarehouseId,
+    hasResolvedDeliveryZone,
+    zoneCouriers.length,
+  ])
 
   const createTaskMutation = useMutation({
     mutationFn: async () => {
@@ -118,9 +139,6 @@ export function AssignShipmentTaskModal({
   })
 
   if (!open || !shipment) return null
-
-  const couriers = couriersQuery.data?.couriers ?? []
-  const sites = sitesQuery.data?.warehouses ?? []
 
   return (
     <div
@@ -204,13 +222,33 @@ export function AssignShipmentTaskModal({
               disabled={createTaskMutation.isPending || couriersQuery.isLoading}
             >
               <option value="">{t("shipments.planTask.pickCourier")}</option>
-              {couriers.map((c) => (
+              {couriers
+                .filter((c) => taskType !== "DELIVERY" || c.servesShipmentRegion)
+                .map((c) => (
                 <option key={c.id} value={c.id}>
                   {[c.fullName?.trim(), c.contactPhone].filter(Boolean).join(" · ") || c.id}
                 </option>
-              ))}
+                ))}
             </select>
           </div>
+          {taskType === "DELIVERY" && !hasResolvedDeliveryZone ? (
+            <p className="text-muted-foreground text-xs">
+              {t("shipments.planTask.zoneMissing", {
+                defaultValue:
+                  "Customer coordinates are not mapped to an active delivery zone yet.",
+              })}
+            </p>
+          ) : null}
+          {taskType === "DELIVERY" &&
+          hasResolvedDeliveryZone &&
+          !couriersQuery.isLoading &&
+          zoneCouriers.length === 0 ? (
+            <p className="text-muted-foreground text-xs">
+              {t("shipments.planTask.noZoneCouriers", {
+                defaultValue: "No couriers are linked to this shipment delivery zone.",
+              })}
+            </p>
+          ) : null}
 
           {createTaskMutation.isError ? (
             <p className="text-destructive text-xs">

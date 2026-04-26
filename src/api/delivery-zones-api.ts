@@ -19,6 +19,7 @@ export type DeliveryZoneRow = {
   longitude: string
   radiusMeters: number
   governorate: string
+  courierCommissionFee?: string
   areaZone: string | null
   regionId: string | null
   region: RegionCatalogRow | null
@@ -95,6 +96,7 @@ export type CreateDeliveryZoneBody = {
   longitude: number
   radiusMeters: number
   governorate: string
+  courierCommissionFee?: number
   areaZone?: string | null
   regionId?: string | null
   courierIds: string[]
@@ -118,6 +120,7 @@ export type PatchDeliveryZoneBody = {
   longitude?: number
   radiusMeters?: number
   governorate?: string
+  courierCommissionFee?: number
   areaZone?: string | null
   regionId?: string | null
   courierIds?: string[]

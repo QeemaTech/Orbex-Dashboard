@@ -16,6 +16,11 @@ import {
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
 import { CsShipmentsListPage } from "@/features/customer-service/pages/CsShipmentsListPage"
 import { DashboardPage, WarehouseAdminDashboardPage } from "@/pages/DashboardPage"
+import { AccountsPage } from "@/pages/AccountsPage"
+import { AccountsBalancesPage } from "@/pages/AccountsBalancesPage"
+import { AccountsPayoutRequestsPage } from "@/pages/AccountsPayoutRequestsPage"
+import { CourierAccountDetailPage } from "@/pages/CourierAccountDetailPage"
+import { MerchantAccountDetailPage } from "@/pages/MerchantAccountDetailPage"
 import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
@@ -36,6 +41,7 @@ import { SettingsPage } from "@/pages/SettingsPage"
 import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
 import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 import { MerchantOrderPendingImportsPage } from "@/pages/MerchantOrderPendingImportsPage"
+import { AllCourierManifestsPage } from "@/pages/AllCourierManifestsPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -86,6 +92,23 @@ function RootRedirect() {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
   return <Navigate to={getDefaultDashboardRoute(user)} replace />
+}
+
+function MerchantSelfAccountRedirect() {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (!user.merchantId) return <Navigate to={getDefaultDashboardRoute(user)} replace />
+  return <Navigate to={`/accounts/merchants/${encodeURIComponent(user.merchantId)}`} replace />
+}
+
+function MerchantSelfAccountOnly({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const { merchantId = "" } = useParams()
+  if (!user) return <Navigate to="/login" replace />
+  if (!user.merchantId || user.merchantId !== merchantId) {
+    return <Navigate to={getDefaultDashboardRoute(user)} replace />
+  }
+  return <>{children}</>
 }
 
 function RedirectWarehouseMerchantOrderShipmentsToDetail() {
@@ -281,6 +304,19 @@ export default function App() {
           }
         />
         <Route
+          path="/courier-manifests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={[]}
+                requiredPermissions={["courier_manifests.read_all"]}
+              >
+                <AllCourierManifestsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/collections"
           element={
             <Protected>
@@ -289,6 +325,81 @@ export default function App() {
                 requiredPermissions={["collections.read"]}
               >
                 <CollectionsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["accounts.read"]}
+              >
+                <AccountsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/balances"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["accounts.read"]}
+              >
+                <AccountsBalancesPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/payout-requests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS"]}
+                requiredPermissions={["accounts.review_payout"]}
+              >
+                <AccountsPayoutRequestsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/me"
+          element={
+            <Protected>
+              <MerchantSelfAccountRedirect />
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/couriers/:courierId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["accounts.read"]}
+              >
+                <CourierAccountDetailPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/accounts/merchants/:merchantId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "ACCOUNTS", "WAREHOUSE_ADMIN", "MERCHANT"]}
+                requiredPermissions={["accounts.request_payout"]}
+              >
+                <MerchantSelfAccountOnly>
+                  <MerchantAccountDetailPage />
+                </MerchantSelfAccountOnly>
               </ProtectedRole>
             </Protected>
           }

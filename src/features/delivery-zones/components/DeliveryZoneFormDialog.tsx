@@ -109,6 +109,7 @@ export function DeliveryZoneFormDialog({
   const [latitude, setLatitude] = useState(DEFAULT_CENTER.lat)
   const [longitude, setLongitude] = useState(DEFAULT_CENTER.lng)
   const [radiusMeters, setRadiusMeters] = useState(1500)
+  const [courierCommissionFee, setCourierCommissionFee] = useState("0")
   const [courierIds, setCourierIds] = useState<Set<string>>(() => new Set())
   const [isActive, setIsActive] = useState(true)
   const [deliveryWarehouseIds, setDeliveryWarehouseIds] = useState<string[]>([])
@@ -189,6 +190,7 @@ export function DeliveryZoneFormDialog({
       setLatitude(Number.parseFloat(initial.latitude) || DEFAULT_CENTER.lat)
       setLongitude(Number.parseFloat(initial.longitude) || DEFAULT_CENTER.lng)
       setRadiusMeters(initial.radiusMeters)
+      setCourierCommissionFee((initial.courierCommissionFee ?? "0").toString())
       setCourierIds(new Set(initial.courierIds))
       setIsActive(initial.isActive)
       setDeliveryWarehouseIds([])
@@ -204,6 +206,7 @@ export function DeliveryZoneFormDialog({
       setLatitude(DEFAULT_CENTER.lat)
       setLongitude(DEFAULT_CENTER.lng)
       setRadiusMeters(1500)
+      setCourierCommissionFee("0")
       setCourierIds(new Set())
       setIsActive(true)
       setDeliveryWarehouseIds([])
@@ -406,6 +409,7 @@ export function DeliveryZoneFormDialog({
       longitude,
       radiusMeters,
       governorate: governorateForApi,
+      courierCommissionFee: Number(courierCommissionFee || "0"),
       areaZone,
       regionId: regionId || null,
       courierIds: [...courierIds],
@@ -689,6 +693,21 @@ export function DeliveryZoneFormDialog({
                 }
                 disabled={!canWrite || busy}
                 className="max-w-[8rem]"
+              />
+            </div>
+
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs">
+                {t("deliveryZones.form.courierCommissionFee")}
+              </label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={courierCommissionFee}
+                onChange={(e) => setCourierCommissionFee(e.target.value)}
+                disabled={!canWrite || busy}
+                className="max-w-[10rem]"
               />
             </div>
           </div>
