@@ -1113,7 +1113,14 @@
       "invalidVisaCommissionPercent": "Enter a visa commission percentage between 0 and 100.",
       "serviceFeePercent": "Customer service fee (%)",
       "serviceFeePercentHelp": "Added to what the customer pays at creation time. Formula: serviceFee = (shipmentValue + shippingFee) × rate. CustomerTotal = shipmentValue + shippingFee + serviceFee.",
-      "invalidServiceFeePercent": "Enter a service fee percentage between 0 and 100."
+      "invalidServiceFeePercent": "Enter a service fee percentage between 0 and 100.",
+      "shippingFeeMode": "Shipping fee mode",
+      "shippingFeeModeHelp": "Controls how shippingFee is set on new shipments/imports. In Fixed/Percent modes, shippingFee is auto-set and the input is locked. (Not-delivered shipments are recalculated when you change this.)",
+      "shippingFeeModeManual": "Manual",
+      "shippingFeeModeFixed": "Fixed amount",
+      "shippingFeeModePercentOfValue": "Percent of shipment value",
+      "shippingFeeFixedAmount": "Fixed shipping fee amount (EGP)",
+      "shippingFeePercentOfValue": "Shipping fee percent of shipment value (%)"
     },
     "insightsPeriod": {
       "title": "Insights period",

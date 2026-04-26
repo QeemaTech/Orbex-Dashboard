@@ -6,6 +6,7 @@ import {
   CUSTOMER_SERVICE_FEE_RATE_KEY,
   DEFAULT_COMMISSION_FEE_KEY,
   getSystemSetting,
+  SHIPPING_FEE_CONFIG_KEY,
   putSystemSetting,
   type InsightsPeriodConfig,
   VISA_COMMISSION_RATE_KEY,
@@ -63,6 +64,11 @@ export function SettingsPage() {
   const [defaultCommissionFee, setDefaultCommissionFee] = useState("0")
   const [visaCommissionPercent, setVisaCommissionPercent] = useState("2.5")
   const [serviceFeePercent, setServiceFeePercent] = useState("0")
+  const [shippingMode, setShippingMode] = useState<"MANUAL" | "FIXED" | "PERCENT_OF_VALUE">(
+    "MANUAL",
+  )
+  const [shippingFixedAmount, setShippingFixedAmount] = useState("0")
+  const [shippingPercentOfValue, setShippingPercentOfValue] = useState("0")
 
   const userInsightsQuery = useQuery({
     queryKey: ["user-settings", "INSIGHTS_PERIOD", token],
@@ -82,6 +88,12 @@ export function SettingsPage() {
   const serviceFeeQuery = useQuery({
     queryKey: ["system-settings", CUSTOMER_SERVICE_FEE_RATE_KEY, token],
     queryFn: () => getSystemSetting<number>(token, CUSTOMER_SERVICE_FEE_RATE_KEY),
+    enabled: !!token && canManageSystem,
+  })
+  const shippingFeeConfigQuery = useQuery({
+    queryKey: ["system-settings", SHIPPING_FEE_CONFIG_KEY, token],
+    queryFn: () =>
+      getSystemSetting<{ mode: string; amount?: number; rate?: number }>(token, SHIPPING_FEE_CONFIG_KEY),
     enabled: !!token && canManageSystem,
   })
 
@@ -113,6 +125,27 @@ export function SettingsPage() {
       setServiceFeePercent(String(rate * 100))
     }
   }, [serviceFeeQuery.data?.value])
+  useEffect(() => {
+    const cfg = shippingFeeConfigQuery.data?.value
+    if (!cfg) return
+    const mode =
+      cfg.mode === "FIXED"
+        ? "FIXED"
+        : cfg.mode === "PERCENT_OF_VALUE"
+          ? "PERCENT_OF_VALUE"
+          : "MANUAL"
+    setShippingMode(mode)
+    if (mode === "FIXED") {
+      const a = Number(cfg.amount)
+      setShippingFixedAmount(Number.isFinite(a) && a >= 0 ? String(a) : "0")
+    }
+    if (mode === "PERCENT_OF_VALUE") {
+      const r = Number(cfg.rate)
+      setShippingPercentOfValue(
+        Number.isFinite(r) && r >= 0 ? String(r * 100) : "0",
+      )
+    }
+  }, [shippingFeeConfigQuery.data?.value])
 
   const saveUserInsightsMutation = useMutation({
     mutationFn: async () => {
@@ -170,6 +203,15 @@ export function SettingsPage() {
         putSystemSetting(token, DEFAULT_COMMISSION_FEE_KEY, commission),
         putSystemSetting(token, VISA_COMMISSION_RATE_KEY, visaRate),
         putSystemSetting(token, CUSTOMER_SERVICE_FEE_RATE_KEY, serviceRate),
+        putSystemSetting(
+          token,
+          SHIPPING_FEE_CONFIG_KEY,
+          shippingMode === "FIXED"
+            ? { mode: "FIXED", amount: Number.parseFloat(shippingFixedAmount) || 0 }
+            : shippingMode === "PERCENT_OF_VALUE"
+              ? { mode: "PERCENT_OF_VALUE", rate: (Number.parseFloat(shippingPercentOfValue) || 0) / 100 }
+              : { mode: "MANUAL" },
+        ),
       ])
     },
     onSuccess: () => {
@@ -182,6 +224,9 @@ export function SettingsPage() {
       })
       void queryClient.invalidateQueries({
         queryKey: ["system-settings", CUSTOMER_SERVICE_FEE_RATE_KEY, token],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["system-settings", SHIPPING_FEE_CONFIG_KEY, token],
       })
     },
     onError: (e: Error) => {
@@ -284,15 +329,20 @@ export function SettingsPage() {
             <CardContent className="space-y-4">
               {defaultCommissionQuery.isLoading ||
               visaCommissionQuery.isLoading ||
-              serviceFeeQuery.isLoading ? (
+              serviceFeeQuery.isLoading ||
+              shippingFeeConfigQuery.isLoading ? (
                 <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
               ) : null}
-              {defaultCommissionQuery.error || visaCommissionQuery.error || serviceFeeQuery.error ? (
+              {defaultCommissionQuery.error ||
+              visaCommissionQuery.error ||
+              serviceFeeQuery.error ||
+              shippingFeeConfigQuery.error ? (
                 <p className="text-destructive text-sm">
                   {(
                     (defaultCommissionQuery.error ??
                       visaCommissionQuery.error ??
-                      serviceFeeQuery.error) as Error
+                      serviceFeeQuery.error ??
+                      shippingFeeConfigQuery.error) as Error
                   ).message}
                 </p>
               ) : null}
@@ -349,6 +399,65 @@ export function SettingsPage() {
                   onChange={(e) => setServiceFeePercent(e.target.value)}
                 />
               </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium" htmlFor="shipping-mode">
+                  {t("settings.financial.shippingFeeMode")}
+                </label>
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.financial.shippingFeeModeHelp")}
+                </p>
+                <select
+                  id="shipping-mode"
+                  className="border-input bg-background w-full max-w-md rounded-md border px-3 py-2 text-sm"
+                  value={shippingMode}
+                  onChange={(e) =>
+                    setShippingMode(
+                      e.target.value === "FIXED"
+                        ? "FIXED"
+                        : e.target.value === "PERCENT_OF_VALUE"
+                          ? "PERCENT_OF_VALUE"
+                          : "MANUAL",
+                    )
+                  }
+                >
+                  <option value="MANUAL">{t("settings.financial.shippingFeeModeManual")}</option>
+                  <option value="FIXED">{t("settings.financial.shippingFeeModeFixed")}</option>
+                  <option value="PERCENT_OF_VALUE">{t("settings.financial.shippingFeeModePercentOfValue")}</option>
+                </select>
+              </div>
+              {shippingMode === "FIXED" ? (
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="shipping-fixed-amount">
+                    {t("settings.financial.shippingFeeFixedAmount")}
+                  </label>
+                  <Input
+                    id="shipping-fixed-amount"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className="max-w-xs"
+                    value={shippingFixedAmount}
+                    onChange={(e) => setShippingFixedAmount(e.target.value)}
+                  />
+                </div>
+              ) : null}
+              {shippingMode === "PERCENT_OF_VALUE" ? (
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="shipping-percent-of-value">
+                    {t("settings.financial.shippingFeePercentOfValue")}
+                  </label>
+                  <Input
+                    id="shipping-percent-of-value"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    className="max-w-xs"
+                    value={shippingPercentOfValue}
+                    onChange={(e) => setShippingPercentOfValue(e.target.value)}
+                  />
+                </div>
+              ) : null}
               <Button
                 type="button"
                 disabled={!token || saveFinancialMutation.isPending}
