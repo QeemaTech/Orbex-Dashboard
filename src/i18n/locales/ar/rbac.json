@@ -127,6 +127,7 @@
     "merchant_orders.create": { "label": "إنشاء طلبات التجار", "category": "طلبات التجار" },
     "merchant_orders.confirm": { "label": "تأكيد طلبات التجار المعلقة", "category": "طلبات التجار" },
     "merchant_orders.update": { "label": "تحديث طلبات التجار", "category": "طلبات التجار" },
+    "merchant_orders.finalize_returns": { "label": "إنهاء مرتجعات طلبات التجار", "category": "طلبات التجار" },
     "merchant_orders.assign_courier": { "label": "تعيين مندوب", "category": "طلبات التجار" },
     "merchants.read": { "label": "عرض التجار", "category": "التجار" },
     "merchants.update": { "label": "تعديل التجار", "category": "التجار" },

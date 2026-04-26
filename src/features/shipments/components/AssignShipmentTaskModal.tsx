@@ -39,16 +39,24 @@ export function AssignShipmentTaskModal({
     setToWarehouseId("")
   }, [open, shipment])
 
+  const planningWarehouseId =
+    shipment?.currentWarehouseId ??
+    shipment?.currentWarehouse?.id ??
+    shipment?.assignedWarehouseId ??
+    null
+
   const couriersQuery = useQuery({
     queryKey: [
       "warehouse-couriers-assign-task",
       token,
+      planningWarehouseId ?? "",
       shipment?.regionId ?? "",
       shipment?.resolvedDeliveryZoneId ?? "",
     ],
     queryFn: () =>
       getWarehouseCouriers({
         token,
+        warehouseId: planningWarehouseId ?? undefined,
         regionId: shipment?.regionId ?? undefined,
         deliveryZoneId: shipment?.resolvedDeliveryZoneId ?? undefined,
       }),
@@ -60,12 +68,6 @@ export function AssignShipmentTaskModal({
     queryFn: () => listWarehouseSites(token),
     enabled: open && !!token && !!shipment,
   })
-
-  const planningWarehouseId =
-    shipment?.currentWarehouseId ??
-    shipment?.currentWarehouse?.id ??
-    shipment?.assignedWarehouseId ??
-    null
 
   const couriers = couriersQuery.data?.couriers ?? []
   const sites = sitesQuery.data?.warehouses ?? []

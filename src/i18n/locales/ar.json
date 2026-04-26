@@ -68,6 +68,36 @@
       "actions": "الإجراءات"
     }
   },
+  "manifestDetail": {
+    "pageTitle": "تفاصيل البيان",
+    "pageTitleWithId": "البيان {{id}}",
+    "viewDetails": "عرض التفاصيل",
+    "backToWarehouse": "العودة إلى بيانات المخزن",
+    "backToGlobal": "العودة إلى كل البيانات",
+    "warehouseMismatch": "هذا البيان لا ينتمي إلى المخزن المحدد.",
+    "summaryTitle": "ملخص البيان",
+    "summaryDescription": "بيانات البيان اليومية وحالة التنفيذ.",
+    "shipmentsTitle": "شحنات البيان",
+    "shipmentsDescription": "سطور الشحنات المدرجة في هذا البيان.",
+    "fields": {
+      "manifestDate": "تاريخ البيان",
+      "warehouse": "المخزن",
+      "governorate": "المحافظة",
+      "courier": "المندوب",
+      "zone": "منطقة التوصيل",
+      "shipmentCount": "عدد الشحنات",
+      "totalCod": "إجمالي الدفع عند الاستلام",
+      "lockedAt": "وقت القفل",
+      "dispatchedAt": "وقت الإرسال"
+    },
+    "shipmentColumns": {
+      "value": "قيمة الشحنة",
+      "shippingFee": "مصاريف الشحن",
+      "paymentMethod": "طريقة الدفع",
+      "status": "الحالة",
+      "csConfirmedAt": "تأكيد خدمة العملاء"
+    }
+  },
   "deliveryProof": {
     "title": "تأكيد التسليم",
     "redirecting": "جاري فتح صفحة التأكيد الآمنة…",
@@ -388,7 +418,10 @@
       "timelineEmpty": "لا توجد أحداث بعد.",
       "timelineStart": "البداية",
       "timelineArrow": "→",
-      "currencyLocale": "ar-EG"
+      "currencyLocale": "ar-EG",
+      "finalizeReturns": "إنهاء المرتجعات",
+      "finalizeReturnsSuccess": "تم إنهاء {{finalized}} شحنة مرتجعة؛ {{skipped}} شحنة كانت مسلّمة بالفعل.",
+      "finalizeReturnsError": "تعذّر إنهاء مرتجعات طلب التاجر."
     },
     "viewOrders": "عرض شحنات العملاء",
     "backToShipment": "العودة لطلب التاجر",
