@@ -18,6 +18,22 @@ import {
 } from "react-router-dom"
 
 import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
+import {
+  autoAssignCourierManifests,
+  dispatchCourierManifest,
+  listCourierManifests,
+  lockCourierManifest,
+  type CourierManifestRow,
+} from "@/api/courier-manifests-api"
+import {
   getWarehouseCouriers,
   getWarehouseSite,
   getWarehouseStats,
@@ -34,6 +50,7 @@ import {
   type WarehouseOrdersResponse,
   type WarehouseStandaloneShipmentRow,
 } from "@/api/warehouse-api"
+import { getShipmentById } from "@/api/merchant-orders-api"
 import {
   WarehouseScanner,
   type WarehouseScanMode,
@@ -80,6 +97,11 @@ import {
 } from "@/lib/warehouse-access"
 import { showToast } from "@/lib/toast"
 import { backendShipmentTransferLabel } from "@/features/warehouse/backend-labels"
+import { ShipmentCsConfirmLocationDialog } from "@/features/shipments/components/ShipmentCsConfirmLocationDialog"
+import {
+  aggregateCourierLoadByZone,
+  aggregateShipmentDistributionByCourier,
+} from "@/features/warehouse/manifests/manifest-aggregations"
 
 /** `MerchantOrder.transferStatus` (batch pipeline); empty = all batches in hub scope. */
 const warehouseTransferStatusFilters = [
@@ -266,11 +288,28 @@ export function WarehouseDetailPage() {
   const [lookupTrackingInput, setLookupTrackingInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
   const [trackingResult, setTrackingResult] = useState<string>("")
-  const [activeTab, setActiveTab] = useState<"orders" | "shipments">("orders")
+  const [activeTab, setActiveTab] = useState<"orders" | "shipments" | "manifests">("orders")
+  const [manifestDate, setManifestDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [manifestCourierId, setManifestCourierId] = useState("")
+  const [manifestZoneId, setManifestZoneId] = useState("")
+  const [defaultCourierCapacity, setDefaultCourierCapacity] = useState(20)
+  const [confirmingShipmentId, setConfirmingShipmentId] = useState<string | null>(null)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [confirmDialogData, setConfirmDialogData] = useState<{
+    merchantOrderId: string
+    lineId: string
+    customerName: string
+    addressText: string
+    locationText: string
+    locationLink: string
+    customerLat: string | null
+    customerLng: string | null
+  } | null>(null)
 
   useEffect(() => {
     const tab = searchParams.get("tab")
     if (tab === "shipments") setActiveTab("shipments")
+    else if (tab === "manifests") setActiveTab("manifests")
     else if (tab === "orders") setActiveTab("orders")
     else setActiveTab("orders")
   }, [searchParams])
@@ -324,11 +363,12 @@ export function WarehouseDetailPage() {
 
   /** Merchant-order queue + batch insight cards (main hub, orders tab only). */
   const merchantOrdersView = isMainHub && activeTab === "orders"
+  const manifestsView = isMainHub && activeTab === "manifests"
   /** Standalone shipment list + shipment insight cards. */
   const shipmentsView =
     hub != null && ((isMainHub && activeTab === "shipments") || !isMainHub)
   /** Site info, zones, sub-branches — not shown on main hub while on Shipments tab. */
-  const showHubSnapshot = hub != null && (!isMainHub || merchantOrdersView)
+  const showHubSnapshot = hub != null && (!isMainHub || merchantOrdersView || manifestsView)
 
   useEffect(() => {
     if (hub != null && hub.mainBranchId != null) {
@@ -423,7 +463,11 @@ export function WarehouseDetailPage() {
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
     queryFn: () => getWarehouseCouriers({ token }),
-    enabled: !!token && returnsOnly && !accessDenied && isMainHub && activeTab === "orders",
+    enabled:
+      !!token &&
+      !accessDenied &&
+      isMainHub &&
+      (activeTab === "manifests" || (returnsOnly && activeTab === "orders")),
   })
 
   const standaloneQueryKey = useMemo(
@@ -434,8 +478,9 @@ export function WarehouseDetailPage() {
         warehouseId,
         page,
         search,
+        manifestsView ? manifestZoneId : "",
       ] as const,
-    [token, warehouseId, page, search],
+    [token, warehouseId, page, search, manifestsView, manifestZoneId],
   )
 
   const standaloneQuery = useQuery({
@@ -446,6 +491,8 @@ export function WarehouseDetailPage() {
         page,
         pageSize: 20,
         search: search || undefined,
+        resolvedDeliveryZoneId:
+          manifestsView && manifestZoneId.trim() ? manifestZoneId.trim() : undefined,
         warehouseId,
       }),
     enabled:
@@ -453,7 +500,7 @@ export function WarehouseDetailPage() {
       !!warehouseId &&
       !accessDenied &&
       hub != null &&
-      ((isMainHub && activeTab === "shipments") ||
+      ((isMainHub && (activeTab === "shipments" || activeTab === "manifests")) ||
         (hub.mainBranchId !== null)),
     refetchInterval: 10000,
   })
@@ -464,6 +511,113 @@ export function WarehouseDetailPage() {
   )
 
   const shipmentHubTotal = standaloneQuery.data?.total ?? 0
+
+  const canManageTransfer =
+    user?.permissions?.includes("warehouses.manage_transfer") ?? false
+
+  const manifestsQuery = useQuery({
+    queryKey: [
+      "courier-manifests",
+      token,
+      warehouseId,
+      manifestDate,
+      manifestCourierId,
+    ],
+    queryFn: () =>
+      listCourierManifests({
+        token,
+        warehouseId,
+        fromDate: manifestDate,
+        toDate: manifestDate,
+        courierId: manifestCourierId || undefined,
+        page: 1,
+        pageSize: 200,
+      }),
+    enabled: !!token && !!warehouseId && manifestsView,
+    refetchInterval: 10000,
+  })
+
+  const courierLoadByZone = useMemo(
+    () => aggregateCourierLoadByZone(manifestsQuery.data?.manifests ?? []),
+    [manifestsQuery.data?.manifests],
+  )
+  const shipmentDistributionByCourier = useMemo(
+    () => aggregateShipmentDistributionByCourier(manifestsQuery.data?.manifests ?? []),
+    [manifestsQuery.data?.manifests],
+  )
+
+  const autoAssignMutation = useMutation({
+    mutationFn: () =>
+      autoAssignCourierManifests({
+        token,
+        warehouseId,
+        manifestDate,
+        defaultCourierCapacity,
+      }),
+    onSuccess: async (data) => {
+      showToast(
+        t("warehouse.manifests.autoAssignSuccess", {
+          assigned: data.assignedCount,
+          skipped: data.skippedCount,
+        }),
+        "success",
+      )
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["courier-manifests"] }),
+        queryClient.invalidateQueries({ queryKey: ["warehouse-standalone-shipments"] }),
+      ])
+    },
+    onError: (error) => showToast((error as Error).message, "error"),
+  })
+
+  const lockManifestMutation = useMutation({
+    mutationFn: (manifestId: string) => lockCourierManifest({ token, manifestId }),
+    onSuccess: async () => {
+      showToast(t("warehouse.manifests.lockSuccess"), "success")
+      await queryClient.invalidateQueries({ queryKey: ["courier-manifests"] })
+    },
+    onError: (error) => showToast((error as Error).message, "error"),
+  })
+
+  const dispatchManifestMutation = useMutation({
+    mutationFn: (manifestId: string) => dispatchCourierManifest({ token, manifestId }),
+    onSuccess: async () => {
+      showToast(t("warehouse.manifests.dispatchSuccess"), "success")
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["courier-manifests"] }),
+        queryClient.invalidateQueries({ queryKey: ["warehouse-standalone-shipments"] }),
+      ])
+    },
+    onError: (error) => showToast((error as Error).message, "error"),
+  })
+
+  const openConfirmLocation = useCallback(
+    async (row: WarehouseStandaloneShipmentRow) => {
+      setConfirmingShipmentId(row.id)
+      try {
+        const detail = await getShipmentById({
+          token,
+          shipmentId: row.id,
+        })
+        setConfirmDialogData({
+          merchantOrderId: detail.merchantOrderId ?? row.merchantOrderId,
+          lineId: detail.id,
+          customerName: detail.customerName ?? row.customerName,
+          addressText: detail.addressText ?? "",
+          locationText: detail.locationText ?? "",
+          locationLink: detail.locationLink ?? "",
+          customerLat: detail.customerLat ?? null,
+          customerLng: detail.customerLng ?? null,
+        })
+        setConfirmDialogOpen(true)
+      } catch (error) {
+        showToast((error as Error).message, "error")
+      } finally {
+        setConfirmingShipmentId(null)
+      }
+    },
+    [token],
+  )
 
   const refreshData = useCallback(async () => {
     await Promise.all([
@@ -1091,11 +1245,15 @@ export function WarehouseDetailPage() {
                 <CardTitle>
                   {isMainHub && activeTab === "orders"
                     ? t("warehouse.queue.titleTransfers")
+                    : isMainHub && activeTab === "manifests"
+                      ? t("warehouse.manifests.title")
                     : t("warehouse.queue.titleShipments")}
                 </CardTitle>
                 <CardDescription>
                   {isMainHub && activeTab === "orders"
                     ? t("warehouse.queue.descriptionTransfers")
+                    : isMainHub && activeTab === "manifests"
+                      ? t("warehouse.manifests.description")
                     : t("warehouse.queue.descriptionShipments")}
                 </CardDescription>
               </div>
@@ -1137,6 +1295,25 @@ export function WarehouseDetailPage() {
                   >
                     {t("warehouse.queue.tabShipments")}
                   </button>
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      activeTab === "manifests"
+                        ? "bg-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => {
+                      setActiveTab("manifests")
+                      setPage(1)
+                      setSearchParams((prev) => {
+                        const p = new URLSearchParams(prev)
+                        p.set("tab", "manifests")
+                        return p
+                      })
+                    }}
+                  >
+                    {t("warehouse.queue.tabManifests")}
+                  </button>
                 </div>
               ) : null}
             </div>
@@ -1155,7 +1332,11 @@ export function WarehouseDetailPage() {
                   setSearch(e.target.value)
                   setPage(1)
                 }}
-                placeholder={t("warehouse.queue.searchPlaceholder")}
+                placeholder={
+                  manifestsView
+                    ? t("warehouse.manifests.searchShipmentPlaceholder")
+                    : t("warehouse.queue.searchPlaceholder")
+                }
               />
               {isMainHub && activeTab === "orders" ? (
                 <>
@@ -1188,6 +1369,44 @@ export function WarehouseDetailPage() {
                     {t("warehouse.queue.returnsOnly")}
                   </label>
                 </>
+              ) : manifestsView ? (
+                <div className="grid gap-3 md:grid-cols-3">
+                  <Input
+                    type="date"
+                    value={manifestDate}
+                    onChange={(e) => {
+                      setManifestDate(e.target.value)
+                      setPage(1)
+                    }}
+                  />
+                  <select
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
+                    value={manifestZoneId}
+                    onChange={(e) => {
+                      setManifestZoneId(e.target.value)
+                      setPage(1)
+                    }}
+                  >
+                    <option value="">{t("warehouse.manifests.allZones")}</option>
+                    {(zoneLinksQuery.data?.deliveryZones ?? []).map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.name?.trim() || z.id}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
+                    value={manifestCourierId}
+                    onChange={(e) => setManifestCourierId(e.target.value)}
+                  >
+                    <option value="">{t("warehouse.manifests.allCouriers")}</option>
+                    {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
+                      <option key={c.id} value={c.id}>
+                        {c.fullName?.trim() || t("warehouse.queue.unnamedCourier")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               ) : null}
             </div>
 
@@ -1220,6 +1439,162 @@ export function WarehouseDetailPage() {
               <p className="text-destructive text-sm">
                 {(siteDetailQuery.error as Error).message}
               </p>
+            ) : manifestsView ? (
+              <div className="space-y-4">
+                <div className="grid gap-3 lg:grid-cols-3">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">{t("warehouse.manifests.autoAssignTitle")}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={defaultCourierCapacity}
+                        onChange={(e) => setDefaultCourierCapacity(Math.max(1, Number(e.target.value || 1)))}
+                      />
+                      <Button
+                        type="button"
+                        disabled={!canManageTransfer || autoAssignMutation.isPending}
+                        onClick={() => autoAssignMutation.mutate()}
+                      >
+                        {autoAssignMutation.isPending
+                          ? t("common.processing")
+                          : t("warehouse.manifests.autoAssign")}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-sm">{t("warehouse.manifests.courierDistribution")}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={shipmentDistributionByCourier}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="courierName" interval={0} angle={-15} textAnchor="end" height={55} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Bar dataKey="shipmentCount" fill="#60a5fa" name={t("warehouse.manifests.shipments")} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+                  <div className="overflow-x-auto rounded-lg border">
+                    <Table className="min-w-[52rem]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("warehouse.table.trackingNumber")}</TableHead>
+                          <TableHead>{t("warehouse.table.customer")}</TableHead>
+                          <TableHead>{t("warehouse.table.merchant")}</TableHead>
+                          <TableHead>{t("warehouse.manifests.zone")}</TableHead>
+                          <TableHead>{t("warehouse.manifests.csConfirmed")}</TableHead>
+                          <TableHead>{t("warehouse.manifests.assignedCourier")}</TableHead>
+                          <TableHead>{t("warehouse.manifests.actions")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(standaloneQuery.data?.shipments ?? []).map((row: WarehouseStandaloneShipmentRow) => (
+                          <TableRow key={row.id}>
+                            <TableCell>{row.trackingNumber ?? getNotApplicable()}</TableCell>
+                            <TableCell>{row.customerName}</TableCell>
+                            <TableCell>{row.merchantName}</TableCell>
+                            <TableCell>{row.deliveryZoneName ?? row.resolvedDeliveryZoneId ?? getNotApplicable()}</TableCell>
+                            <TableCell>{row.csConfirmedAt ? formatDateTime(row.csConfirmedAt, locale) : getNotApplicable()}</TableCell>
+                            <TableCell>{row.deliveryCourierName ?? getNotApplicable()}</TableCell>
+                            <TableCell>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={confirmingShipmentId === row.id || !row.merchantOrderId}
+                                onClick={() => void openConfirmLocation(row)}
+                              >
+                                {t("warehouse.manifests.confirmLocation")}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="overflow-x-auto rounded-lg border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("warehouse.manifests.courier")}</TableHead>
+                            <TableHead>{t("warehouse.manifests.zone")}</TableHead>
+                            <TableHead>{t("warehouse.manifests.load")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {courierLoadByZone.map((row) => (
+                            <TableRow key={row.key}>
+                              <TableCell>{row.courierName}</TableCell>
+                              <TableCell>{row.zoneName}</TableCell>
+                              <TableCell>{row.shipmentCount}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="overflow-x-auto rounded-lg border">
+                      <Table className="min-w-[40rem]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("warehouse.manifests.courier")}</TableHead>
+                            <TableHead>{t("warehouse.manifests.zone")}</TableHead>
+                            <TableHead>{t("warehouse.manifests.shipments")}</TableHead>
+                            <TableHead>{t("warehouse.manifests.locked")}</TableHead>
+                            <TableHead>{t("warehouse.manifests.dispatched")}</TableHead>
+                            <TableHead>{t("warehouse.manifests.actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(manifestsQuery.data?.manifests ?? []).map((row: CourierManifestRow) => (
+                            <TableRow key={row.id}>
+                              <TableCell>{row.courier.fullName?.trim() || row.courier.id}</TableCell>
+                              <TableCell>{row.deliveryZone.name?.trim() || row.deliveryZone.id}</TableCell>
+                              <TableCell>{row.shipmentCount}</TableCell>
+                              <TableCell>{row.lockedAt ? formatDateTime(row.lockedAt, locale) : getNotApplicable()}</TableCell>
+                              <TableCell>{row.dispatchedAt ? formatDateTime(row.dispatchedAt, locale) : getNotApplicable()}</TableCell>
+                              <TableCell className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={!canManageTransfer || !!row.lockedAt || lockManifestMutation.isPending}
+                                  onClick={() => lockManifestMutation.mutate(row.id)}
+                                >
+                                  {t("warehouse.manifests.lock")}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={
+                                    !canManageTransfer ||
+                                    !row.lockedAt ||
+                                    !!row.dispatchedAt ||
+                                    dispatchManifestMutation.isPending
+                                  }
+                                  onClick={() => dispatchManifestMutation.mutate(row.id)}
+                                >
+                                  {t("warehouse.manifests.dispatch")}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : isMainHub && activeTab === "orders" ? (
               <>
                 {queueQuery.isLoading ? (
@@ -1408,6 +1783,26 @@ export function WarehouseDetailPage() {
           </CardContent>
         </Card>
       </div>
+      <ShipmentCsConfirmLocationDialog
+        open={confirmDialogOpen && confirmDialogData != null}
+        onOpenChange={(open) => {
+          setConfirmDialogOpen(open)
+          if (!open) setConfirmDialogData(null)
+        }}
+        token={token}
+        merchantOrderId={confirmDialogData?.merchantOrderId ?? ""}
+        lineId={confirmDialogData?.lineId ?? ""}
+        customerName={confirmDialogData?.customerName ?? ""}
+        initialAddressText={confirmDialogData?.addressText ?? ""}
+        initialLocationText={confirmDialogData?.locationText ?? ""}
+        initialLocationLink={confirmDialogData?.locationLink ?? ""}
+        initialLat={confirmDialogData?.customerLat ?? null}
+        initialLng={confirmDialogData?.customerLng ?? null}
+        extraInvalidateQueryKeys={[
+          ["warehouse-standalone-shipments", token, warehouseId],
+          ["courier-manifests", token, warehouseId],
+        ]}
+      />
     </Layout>
   )
 }

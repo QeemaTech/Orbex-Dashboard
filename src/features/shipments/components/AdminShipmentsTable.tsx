@@ -98,7 +98,6 @@ export function AdminShipmentsTable({ rows, listQueryKey }: Props) {
                 : undefined
           const telCustomer = `tel:${row.customer.phonePrimary}`
           const courierPhone = row.deliveryCourier?.contactPhone?.trim()
-
           return (
             <TableRow
               key={row.id}

@@ -12,7 +12,12 @@ import {
   openWhatsAppForOrder,
   openWhatsAppTrackingMessage,
 } from "@/features/customer-service/lib/whatsapp"
+import {
+  hasCsConfirmedCustomerLocationPin,
+  resolveCustomerLatLng,
+} from "@/features/customer-service/lib/cs-line-customer-location"
 import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
+import { CsConfirmedCustomerLocationMapButton } from "@/features/shipments/components/CsConfirmedCustomerLocationMapButton"
 import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
 import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
 import { ShipmentTasksCard } from "@/features/shipments/components/ShipmentTasksCard"
@@ -87,6 +92,9 @@ export function ShipmentDetailView({
   const courierPhone = shipment.deliveryCourier?.contactPhone?.trim()
   const hasTracking = !!shipment.trackingNumber?.trim()
   const sendTrackingDisabled = !hasPhone || !hasTracking || !accessToken
+  const customerPinCoords = resolveCustomerLatLng(shipment)
+  const showCustomerPinMap = hasCsConfirmedCustomerLocationPin(shipment)
+
   const sendTrackingTitle = !hasPhone
     ? t("cs.actions.whatsappDisabledHint")
     : !hasTracking
@@ -143,9 +151,17 @@ export function ShipmentDetailView({
         <div className="bg-border h-px w-full" />
         <CardContent className="space-y-6 pt-6">
           <section className="mx-auto w-full max-w-4xl space-y-3">
-            <h3 className="text-foreground text-base font-semibold sm:text-lg">
-              {t("shipments.detail.sectionCustomer")}
-            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-foreground text-base font-semibold sm:text-lg">
+                {t("shipments.detail.sectionCustomer")}
+              </h3>
+              {showCustomerPinMap && customerPinCoords ? (
+                <CsConfirmedCustomerLocationMapButton
+                  latitude={customerPinCoords.lat}
+                  longitude={customerPinCoords.lng}
+                />
+              ) : null}
+            </div>
             <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
               <DetailRow label={t("adminOrders.colCustomer")} value={shipment.customer.customerName} />
               <DetailRow

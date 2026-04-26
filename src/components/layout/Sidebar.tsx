@@ -44,6 +44,7 @@ type HubNavItem = {
     | "nav.myWarehouse"
     | "nav.warehouseMerchantOrders"
     | "nav.warehouseStandaloneShipments"
+    | "nav.warehouseManifests"
   icon: typeof Warehouse
   end: boolean
   perm?: string
@@ -80,6 +81,17 @@ function buildHubWarehouseNavItems(
       end: false,
       perm: "warehouses.read",
     },
+    ...(isMainHub
+      ? [
+          {
+            to: `${base}?tab=manifests`,
+            labelKey: "nav.warehouseManifests",
+            icon: Truck,
+            end: false,
+            perm: "warehouses.read",
+          } satisfies HubNavItem,
+        ]
+      : []),
     {
       to: "/settings",
       labelKey: "nav.settings",
@@ -97,6 +109,7 @@ const adminNavConfig = [
   { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
   { to: "/merchant-orders/pending-confirmations", labelKey: "nav.merchantOrderConfirmations", icon: Boxes, end: false, perm: "merchant_orders.confirm" },
+  { to: "/courier-manifests", labelKey: "nav.allCourierManifests", icon: Truck, end: false, perm: "courier_manifests.read_all" },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
   {
     to: "/delivery-zones",

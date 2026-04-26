@@ -4,9 +4,11 @@
     "shipments": "الشحنات",
     "merchantOrders": "طلبات التجار",
     "merchantOrderConfirmations": "تأكيدات الطلبات",
+    "allCourierManifests": "كل البيانات",
     "myWarehouse": "مخزني",
     "warehouseMerchantOrders": "طلبات التجار بالمخزن",
     "warehouseStandaloneShipments": "شحنات المخزن",
+    "warehouseManifests": "بيانات المندوبين",
     "orders": "الشحنات",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
@@ -44,6 +46,27 @@
     "stepDeliveredHint": "تم تسليم الشحنة بنجاح.",
     "stepDeliveredFailedHint": "لم يكتمل التسليم.",
     "postponedNotice": "تم تأجيل هذه الشحنة. سيتواصل معك فريقنا أو المندوب لتحديد موعد المحاولة التالية."
+  },
+  "manifestsGlobal": {
+    "pageTitle": "كل بيانات المندوبين",
+    "subtitle": "عرض شامل للبيانات عبر كل المخازن للمستخدمين المخولين.",
+    "tableTitle": "البيانات",
+    "allWarehouses": "كل المخازن",
+    "courierIdPlaceholder": "تصفية بمعرف المندوب",
+    "zoneIdPlaceholder": "تصفية بمعرف منطقة التوصيل",
+    "pagination": "الإجمالي {{total}} · صفحة {{page}}",
+    "openWarehouse": "فتح بيانات المخزن",
+    "columns": {
+      "date": "تاريخ البيان",
+      "warehouse": "المخزن",
+      "courier": "المندوب",
+      "zone": "المنطقة",
+      "shipmentCount": "الشحنات",
+      "totalCod": "الدفع عند الاستلام",
+      "lockedAt": "وقت القفل",
+      "dispatchedAt": "وقت الإرسال",
+      "actions": "الإجراءات"
+    }
   },
   "deliveryProof": {
     "title": "تأكيد التسليم",
@@ -432,6 +455,33 @@
       "callCourier": "اتصال بالمندوب",
       "track": "خريطة"
     },
+    "csLineConfirm": {
+      "title": "تأكيد الخط — موقع تسليم العميل",
+      "close": "إغلاق",
+      "description": "تأكيد سطر الشحنة في المركز وحفظ إحداثيات تسليم العميل لـ {{customerName}}. هذا ليس تأكيد استلام من التاجر ولا مسار سكان المخزن.",
+      "addressLabel": "عنوان التسليم (تحديث اختياري)",
+      "addressPlaceholder": "الشارع، المنطقة، معالم",
+      "locationTextLabel": "ملاحظات الموقع",
+      "locationTextPlaceholder": "وصف أو إلصاق إحداثيات (مثال 30.04، 31.23)",
+      "locationLinkLabel": "رابط الخرائط",
+      "locationLinkPlaceholder": "https://www.google.com/maps?q=30.0444,31.2357",
+      "coordsHint": "يجب توفير الإحداثيات عبر رابط الخرائط أو الملاحظات أو الإحداثيات المحفوظة مسبقًا للعميل.",
+      "cancel": "إلغاء",
+      "submit": "تأكيد وحفظ الموقع",
+      "submitting": "جاري التأكيد…",
+      "success": "تم تأكيد الخط؛ تم حفظ موقع العميل.",
+      "errors": {
+        "needCoords": "أدخل رابط خرائط يحتوي على إحداثيات، أو إحداثيات في الملاحظات، أو تأكد من حفظ GPS مسبقًا.",
+        "failed": "تعذر التأكيد. حاول مرة أخرى."
+      }
+    },
+    "customerPinMap": {
+      "title": "موقع تسليم العميل",
+      "close": "إغلاق",
+      "noCoords": "لا توجد إحداثيات.",
+      "openExternal": "فتح في خرائط Google",
+      "openPreview": "معاينة موقع العميل على الخريطة"
+    },
     "addLocation": {
       "title": "إضافة موقع العميل",
       "close": "إغلاق",
@@ -562,14 +612,6 @@
       "adminUser": "مشرف المخزن",
       "selectAdmin": "اختر مستخدمًا مشرفًا (اختياري)",
       "isActive": "نشط"
-    },
-    "feedback": {
-      "created": "تم إنشاء المخزن بنجاح.",
-      "createFailed": "فشل في إنشاء المخزن.",
-      "updated": "تم تحديث المخزن بنجاح.",
-      "updateFailed": "فشل في تحديث المخزن.",
-      "deleted": "تم حذف المخزن بنجاح.",
-      "deleteFailed": "فشل في حذف المخزن."
     },
     "staff": {
       "title": "إدارة الموظفين",
@@ -747,7 +789,33 @@
       "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}",
       "tabOrders": "طلبات",
-      "tabShipments": "الشحنات"
+      "tabShipments": "الشحنات",
+      "tabManifests": "البيانات"
+    },
+    "manifests": {
+      "title": "بيانات التوصيل",
+      "description": "إدارة بيانات التسليم حسب المنطقة والمندوب ثم القفل والإرسال.",
+      "searchShipmentPlaceholder": "ابحث بالشحنة أو العميل أو التاجر",
+      "autoAssignTitle": "تعيين الشحنات تلقائيًا",
+      "autoAssign": "تعيين تلقائي",
+      "autoAssignSuccess": "تم تعيين {{assigned}} شحنة وتخطي {{skipped}}.",
+      "lockSuccess": "تم قفل البيان.",
+      "dispatchSuccess": "تم إرسال البيان.",
+      "courierDistribution": "توزيع الشحنات لكل مندوب",
+      "shipments": "الشحنات",
+      "zone": "المنطقة",
+      "courier": "المندوب",
+      "load": "الحمل",
+      "allZones": "كل المناطق",
+      "allCouriers": "كل المناديب",
+      "csConfirmed": "تأكيد خدمة العملاء",
+      "assignedCourier": "المندوب المعين",
+      "confirmLocation": "تأكيد الموقع",
+      "locked": "وقت القفل",
+      "dispatched": "وقت الإرسال",
+      "actions": "الإجراءات",
+      "lock": "قفل",
+      "dispatch": "إرسال"
     },
     "table": {
       "batchId": "معرف الدفعة",
@@ -783,6 +851,12 @@
       "otherLocationLabel": "في المخزن (موقع آخر)"
     },
     "feedback": {
+      "created": "تم إنشاء المخزن بنجاح.",
+      "createFailed": "فشل في إنشاء المخزن.",
+      "updated": "تم تحديث المخزن بنجاح.",
+      "updateFailed": "فشل في تحديث المخزن.",
+      "deleted": "تم حذف المخزن بنجاح.",
+      "deleteFailed": "فشل في حذف المخزن.",
       "scanInSuccess": "تم تسجيل دخول الشحنة إلى المخزن.",
       "scanInAlreadyScanned": "تم مسح الشحنة من قبل في هذا المخزن.",
       "scanOutSuccess": "تم تسجيل خروج الطرد للتسليم.",

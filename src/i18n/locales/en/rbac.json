@@ -137,6 +137,7 @@
     "warehouses.scan_in": { "label": "Scan into warehouse", "category": "Warehouses" },
     "warehouses.scan_out": { "label": "Scan out of warehouse", "category": "Warehouses" },
     "warehouses.manage_transfer": { "label": "Manage warehouse transfers", "category": "Warehouses" },
+    "courier_manifests.read_all": { "label": "View courier manifests across all warehouses", "category": "Warehouses" },
     "warehouses.staff.manage": { "label": "Assign warehouse staff to sites", "category": "Warehouses" },
     "accounting.settlement_close": { "label": "Close settlements", "category": "Accounting" },
     "collections.read": { "label": "View collections", "category": "Accounting" },

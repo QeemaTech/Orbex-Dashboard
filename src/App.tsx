@@ -41,6 +41,7 @@ import { SettingsPage } from "@/pages/SettingsPage"
 import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
 import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 import { MerchantOrderPendingImportsPage } from "@/pages/MerchantOrderPendingImportsPage"
+import { AllCourierManifestsPage } from "@/pages/AllCourierManifestsPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -281,6 +282,19 @@ export default function App() {
                 requiredPermissions={["roles.read"]}
               >
                 <RolesPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/courier-manifests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={[]}
+                requiredPermissions={["courier_manifests.read_all"]}
+              >
+                <AllCourierManifestsPage />
               </ProtectedRole>
             </Protected>
           }

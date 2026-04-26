@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { parseCoordinatesFromLocationInput } from "@/features/customer-service/lib/location"
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
 
@@ -68,7 +67,7 @@ export function CsShipmentTable({
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
       return { lat, lng }
     }
-    return parseCoordinatesFromLocationInput(row.locationLink)
+    return null
   }
 
   return (

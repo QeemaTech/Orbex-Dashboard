@@ -4,9 +4,11 @@
     "shipments": "Shipments",
     "merchantOrders": "Merchant orders",
     "merchantOrderConfirmations": "Order confirmations",
+    "allCourierManifests": "All manifests",
     "myWarehouse": "My warehouse",
     "warehouseMerchantOrders": "Warehouse merchant orders",
     "warehouseStandaloneShipments": "Warehouse shipments",
+    "warehouseManifests": "Warehouse manifests",
     "orders": "Shipments",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
@@ -44,6 +46,27 @@
     "stepDeliveredHint": "Handed over successfully.",
     "stepDeliveredFailedHint": "Delivery could not be completed.",
     "postponedNotice": "This shipment was postponed. Our team or courier will contact you to arrange the next attempt."
+  },
+  "manifestsGlobal": {
+    "pageTitle": "All courier manifests",
+    "subtitle": "Cross-warehouse manifest view for privileged users.",
+    "tableTitle": "Manifests",
+    "allWarehouses": "All warehouses",
+    "courierIdPlaceholder": "Filter by courier id",
+    "zoneIdPlaceholder": "Filter by delivery zone id",
+    "pagination": "Total {{total}} · page {{page}}",
+    "openWarehouse": "Open warehouse manifests",
+    "columns": {
+      "date": "Manifest date",
+      "warehouse": "Warehouse",
+      "courier": "Courier",
+      "zone": "Zone",
+      "shipmentCount": "Shipments",
+      "totalCod": "COD",
+      "lockedAt": "Locked at",
+      "dispatchedAt": "Dispatched at",
+      "actions": "Actions"
+    }
   },
   "deliveryProof": {
     "title": "Delivery confirmation",
@@ -459,6 +482,33 @@
       "callCourier": "Call courier",
       "track": "Map"
     },
+    "csLineConfirm": {
+      "title": "Confirm line — customer delivery location",
+      "close": "Close",
+      "description": "Confirm this shipment line at the hub and save the customer delivery GPS for {{customerName}}. This is not merchant pickup or batch intake.",
+      "addressLabel": "Delivery address (optional update)",
+      "addressPlaceholder": "Street, area, landmarks",
+      "locationTextLabel": "Location notes",
+      "locationTextPlaceholder": "Description or paste coordinates (e.g. 30.04, 31.23)",
+      "locationLinkLabel": "Maps link",
+      "locationLinkPlaceholder": "https://www.google.com/maps?q=30.0444,31.2357",
+      "coordsHint": "You must provide coordinates via the maps link, notes, or existing saved GPS on the customer.",
+      "cancel": "Cancel",
+      "submit": "Confirm and save location",
+      "submitting": "Confirming…",
+      "success": "Line confirmed; customer location saved.",
+      "errors": {
+        "needCoords": "Enter a maps link with coordinates, coordinates in the notes, or ensure GPS is already saved.",
+        "failed": "Could not confirm. Try again."
+      }
+    },
+    "customerPinMap": {
+      "title": "Customer delivery location",
+      "close": "Close",
+      "noCoords": "No coordinates on file.",
+      "openExternal": "Open in Google Maps",
+      "openPreview": "Preview customer location on map"
+    },
     "addLocation": {
       "title": "Add customer location",
       "close": "Close",
@@ -636,14 +686,6 @@
       "selectAdmin": "Select admin user (optional)",
       "isActive": "Active"
     },
-    "feedback": {
-      "created": "Warehouse created successfully.",
-      "createFailed": "Failed to create warehouse.",
-      "updated": "Warehouse updated successfully.",
-      "updateFailed": "Failed to update warehouse.",
-      "deleted": "Warehouse deleted successfully.",
-      "deleteFailed": "Failed to delete warehouse."
-    },
     "staff": {
       "title": "Manage Staff",
       "add": "Add Staff",
@@ -774,7 +816,33 @@
       "assignLegHint": "First mile = merchant to hub (before scan-in). Last mile = delivery from hub.",
       "pagination": "Total {{total}} · page {{page}}",
       "tabOrders": "Orders",
-      "tabShipments": "Shipments"
+      "tabShipments": "Shipments",
+      "tabManifests": "Manifests"
+    },
+    "manifests": {
+      "title": "Courier manifests",
+      "description": "Manage manifests by zone and courier, then lock and dispatch.",
+      "searchShipmentPlaceholder": "Search shipments by tracking/customer/merchant",
+      "autoAssignTitle": "Auto assign shipments",
+      "autoAssign": "Auto assign",
+      "autoAssignSuccess": "Assigned {{assigned}} shipments, skipped {{skipped}}.",
+      "lockSuccess": "Manifest locked.",
+      "dispatchSuccess": "Manifest dispatched.",
+      "courierDistribution": "Shipment distribution per courier",
+      "shipments": "Shipments",
+      "zone": "Zone",
+      "courier": "Courier",
+      "load": "Load",
+      "allZones": "All zones",
+      "allCouriers": "All couriers",
+      "csConfirmed": "CS confirmed",
+      "assignedCourier": "Assigned courier",
+      "confirmLocation": "Confirm location",
+      "locked": "Locked at",
+      "dispatched": "Dispatched at",
+      "actions": "Actions",
+      "lock": "Lock",
+      "dispatch": "Dispatch"
     },
     "table": {
       "batchId": "Batch ID",
@@ -811,6 +879,12 @@
       "otherLocationLabel": "In Warehouse (Other Location)"
     },
     "feedback": {
+      "created": "Warehouse created successfully.",
+      "createFailed": "Failed to create warehouse.",
+      "updated": "Warehouse updated successfully.",
+      "updateFailed": "Failed to update warehouse.",
+      "deleted": "Warehouse deleted successfully.",
+      "deleteFailed": "Failed to delete warehouse.",
       "scanInSuccess": "Shipment scanned into the warehouse.",
       "scanInAlreadyScanned": "Already scanned into this warehouse.",
       "scanOutSuccess": "Parcel scanned out for delivery.",
