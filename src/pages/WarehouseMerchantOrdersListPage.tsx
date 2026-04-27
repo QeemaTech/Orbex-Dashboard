@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
@@ -87,7 +87,7 @@ export function WarehouseMerchantOrdersListPage() {
   }
 
   if (user && isWarehouseStaff(user) && user.warehouseId && user.warehouseId !== warehouseId) {
-    return <Navigate to={`/warehouses/${encodeURIComponent(user.warehouseId)}/merchant-orders`} replace />
+    return <Navigate to={`/warehouses/${encodeURIComponent(user.warehouseId)}/orders`} replace />
   }
 
   if (accessDenied) {

@@ -31,6 +31,9 @@ import { ShipmentLabelPrintPage } from "@/pages/ShipmentLabelPrintPage"
 import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
 import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
+import { WarehouseMerchantOrdersListPage } from "@/pages/WarehouseMerchantOrdersListPage"
+import { WarehouseShipmentsListPage } from "@/pages/WarehouseShipmentsListPage"
+import { WarehouseManifestsPreviewPage } from "@/pages/WarehouseManifestsPreviewPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { DeliveryZonesPage } from "@/pages/DeliveryZonesPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
@@ -453,6 +456,45 @@ export default function App() {
                 requiredPermissions={["warehouses.read"]}
               >
                 <WarehouseDetailPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/orders"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseMerchantOrdersListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/shipments"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseShipmentsListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseManifestsPreviewPage />
               </ProtectedRole>
             </Protected>
           }

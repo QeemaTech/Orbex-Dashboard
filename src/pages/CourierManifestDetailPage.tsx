@@ -105,7 +105,7 @@ export function CourierManifestDetailPage() {
           <Link
             to={
               warehouseId
-                ? `/warehouses/${encodeURIComponent(warehouseId)}?tab=manifests`
+                ? `/warehouses/${encodeURIComponent(warehouseId)}/manifests`
                 : "/courier-manifests"
             }
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
