@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import { listCourierManifests } from "@/api/courier-manifests-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
@@ -22,6 +22,7 @@ function formatDateTime(dateIso: string, locale: string): string {
 export function AllCourierManifestsPage() {
   const { t, i18n } = useTranslation()
   const { accessToken } = useAuth()
+  const nav = useNavigate()
   const token = accessToken ?? ""
   const locale = i18n.language.startsWith("ar") ? "ar-EG" : "en-EG"
 
@@ -165,7 +166,13 @@ export function AllCourierManifestsPage() {
                 </TableHeader>
                 <TableBody>
                   {(manifestsQuery.data?.manifests ?? []).map((row) => (
-                    <TableRow key={row.id}>
+                    <TableRow
+                      key={row.id}
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() =>
+                        nav(`/courier-manifests/${encodeURIComponent(row.id)}`)
+                      }
+                    >
                       <TableCell>{row.manifestDate}</TableCell>
                       <TableCell>{row.warehouse.name}</TableCell>
                       <TableCell>{row.courier.fullName?.trim() || row.courier.id}</TableCell>
@@ -180,13 +187,21 @@ export function AllCourierManifestsPage() {
                           ? formatDateTime(row.dispatchedAt, locale)
                           : t("warehouse.notApplicable")}
                       </TableCell>
-                      <TableCell>
-                        <Link
-                          to={`/warehouses/${encodeURIComponent(row.warehouseId)}?tab=manifests`}
-                          className="text-primary hover:underline text-sm"
-                        >
-                          {t("manifestsGlobal.openWarehouse")}
-                        </Link>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-1">
+                          <Link
+                            to={`/courier-manifests/${encodeURIComponent(row.id)}`}
+                            className="text-primary hover:underline text-sm"
+                          >
+                            {t("manifestDetail.viewDetails")}
+                          </Link>
+                          <Link
+                            to={`/warehouses/${encodeURIComponent(row.warehouseId)}/manifests`}
+                            className="text-primary hover:underline text-sm"
+                          >
+                            {t("manifestsGlobal.openWarehouse")}
+                          </Link>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

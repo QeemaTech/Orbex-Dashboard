@@ -4,8 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
-import { confirmShipmentCustomerLocation } from "@/api/merchant-orders-api"
 import { ApiError } from "@/api/client"
+import { confirmShipmentCustomerLocation } from "@/api/shipments-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,7 +18,6 @@ export type ShipmentCsConfirmLocationDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   token: string
-  merchantOrderId: string
   lineId: string
   customerName: string
   initialAddressText: string
@@ -37,7 +36,6 @@ export function ShipmentCsConfirmLocationDialog({
   open,
   onOpenChange,
   token,
-  merchantOrderId,
   lineId,
   customerName,
   initialAddressText,
@@ -96,7 +94,6 @@ export function ShipmentCsConfirmLocationDialog({
       const addr = addressText.trim()
       return confirmShipmentCustomerLocation({
         token,
-        merchantOrderId,
         lineId,
         customerLat: coords.lat,
         customerLng: coords.lng,

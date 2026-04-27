@@ -39,16 +39,24 @@ export function AssignShipmentTaskModal({
     setToWarehouseId("")
   }, [open, shipment])
 
+  const planningWarehouseId =
+    shipment?.currentWarehouseId ??
+    shipment?.currentWarehouse?.id ??
+    shipment?.assignedWarehouseId ??
+    null
+
   const couriersQuery = useQuery({
     queryKey: [
       "warehouse-couriers-assign-task",
       token,
+      planningWarehouseId ?? "",
       shipment?.regionId ?? "",
       shipment?.resolvedDeliveryZoneId ?? "",
     ],
     queryFn: () =>
       getWarehouseCouriers({
         token,
+        warehouseId: planningWarehouseId ?? undefined,
         regionId: shipment?.regionId ?? undefined,
         deliveryZoneId: shipment?.resolvedDeliveryZoneId ?? undefined,
       }),
@@ -61,12 +69,6 @@ export function AssignShipmentTaskModal({
     enabled: open && !!token && !!shipment,
   })
 
-  const planningWarehouseId =
-    shipment?.currentWarehouseId ??
-    shipment?.currentWarehouse?.id ??
-    shipment?.assignedWarehouseId ??
-    null
-
   const couriers = couriersQuery.data?.couriers ?? []
   const sites = sitesQuery.data?.warehouses ?? []
   const hasResolvedDeliveryZone = !!shipment?.resolvedDeliveryZoneId
@@ -75,7 +77,7 @@ export function AssignShipmentTaskModal({
   const canSubmit = useMemo(() => {
     if (!shipment) return false
     if (taskType === "DELIVERY") {
-      return hasResolvedDeliveryZone && zoneCouriers.length > 0 && !!courierId.trim()
+      return !!courierId.trim()
     }
     if (taskType === "TRANSFER") {
       return (
@@ -236,6 +238,14 @@ export function AssignShipmentTaskModal({
               {t("shipments.planTask.zoneMissing", {
                 defaultValue:
                   "Customer coordinates are not mapped to an active delivery zone yet.",
+              })}
+            </p>
+          ) : null}
+          {taskType === "DELIVERY" ? (
+            <p className="text-muted-foreground text-xs">
+              {t("shipments.planTask.zoneSuggestionOnly", {
+                defaultValue:
+                  "Courier list is a zone-based suggestion from warehouse and shipment location.",
               })}
             </p>
           ) : null}

@@ -78,18 +78,26 @@ export function PlanShipmentWarehouseTask({
   // const csConfirmed = Boolean(shipment.csConfirmedAt)
 
   const couriersQuery = useQuery({
-    queryKey: ["warehouse-couriers-plan-task", token, shipment.regionId ?? ""],
+    queryKey: [
+      "warehouse-couriers-plan-task",
+      token,
+      hubIdForPlan ?? "",
+      shipment.regionId ?? "",
+      shipment.resolvedDeliveryZoneId ?? "",
+    ],
     queryFn: () =>
       getWarehouseCouriers({
         token,
+        warehouseId: hubIdForPlan ?? undefined,
         regionId: shipment.regionId ?? undefined,
+        deliveryZoneId: shipment.resolvedDeliveryZoneId ?? undefined,
       }),
     enabled: !!token && canPlan,
   })
 
   const sitesQuery = useQuery({
     queryKey: ["warehouse-sites-plan-task", token],
-    queryFn: () => listWarehouseSites(token),
+    queryFn: () => listWarehouseSites(token, { forTransferTask: true }),
     enabled: !!token && canPlan,
   })
 
@@ -187,7 +195,11 @@ export function PlanShipmentWarehouseTask({
   }
 
   const couriers = couriersQuery.data?.couriers ?? []
+  const couriersForTask = taskType === "DELIVERY"
+    ? couriers.filter((c) => c.servesShipmentRegion)
+    : couriers
   const sites = sitesQuery.data?.warehouses ?? []
+  const destinationSites = sites.filter((w) => w.id !== hubIdForPlan)
   const currentWarehouseName =
     sites.find((w) => w.id === hubIdForPlan)?.name ?? hubIdForPlan ?? null
 
@@ -246,7 +258,7 @@ export function PlanShipmentWarehouseTask({
               onChange={(e) => setToWarehouseId(e.target.value)}
             >
               <option value="">{t("shipments.planTask.pickWarehouse")}</option>
-              {sites.map((w) => (
+              {destinationSites.map((w) => (
                 <option key={w.id} value={w.id}>
                   {[w.name, w.governorate].filter(Boolean).join(" · ")}
                 </option>
@@ -277,7 +289,7 @@ export function PlanShipmentWarehouseTask({
               onChange={(e) => setCourierId(e.target.value)}
             >
               <option value="">{t("shipments.planTask.pickCourier")}</option>
-              {couriers.map((c) => (
+              {couriersForTask.map((c) => (
                 <option key={c.id} value={c.id}>
                   {[c.fullName?.trim(), c.contactPhone].filter(Boolean).join(" · ") || c.id}
                 </option>

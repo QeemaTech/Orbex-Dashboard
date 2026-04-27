@@ -68,6 +68,36 @@
       "actions": "Actions"
     }
   },
+  "manifestDetail": {
+    "pageTitle": "Manifest details",
+    "pageTitleWithId": "Manifest {{id}}",
+    "viewDetails": "View details",
+    "backToWarehouse": "Back to warehouse manifests",
+    "backToGlobal": "Back to all manifests",
+    "warehouseMismatch": "This manifest does not belong to the selected warehouse.",
+    "summaryTitle": "Manifest summary",
+    "summaryDescription": "Daily courier manifest metadata and execution state.",
+    "shipmentsTitle": "Manifest shipments",
+    "shipmentsDescription": "Shipment lines included in this courier manifest.",
+    "fields": {
+      "manifestDate": "Manifest date",
+      "warehouse": "Warehouse",
+      "governorate": "Governorate",
+      "courier": "Courier",
+      "zone": "Delivery zone",
+      "shipmentCount": "Shipments",
+      "totalCod": "Total COD",
+      "lockedAt": "Locked at",
+      "dispatchedAt": "Dispatched at"
+    },
+    "shipmentColumns": {
+      "value": "Shipment value",
+      "shippingFee": "Shipping fee",
+      "paymentMethod": "Payment method",
+      "status": "Status",
+      "csConfirmedAt": "CS confirmed at"
+    }
+  },
   "deliveryProof": {
     "title": "Delivery confirmation",
     "redirecting": "Opening secure confirmation…",
@@ -415,7 +445,10 @@
       "returnRejectedShipments": "Return rejected shipments",
       "returnRejectedSuccess": "Return tasks created for {{count}} shipment(s).",
       "returnRejectedPartial": "Created {{created}} task(s); {{skipped}} line(s) skipped (already have a task or not eligible).",
-      "returnRejectedError": "Could not create return tasks."
+      "returnRejectedError": "Could not create return tasks.",
+      "finalizeReturns": "Finalize returns",
+      "finalizeReturnsSuccess": "Finalized {{finalized}} shipment return(s); {{skipped}} already delivered.",
+      "finalizeReturnsError": "Could not finalize merchant order returns."
     },
     "viewOrders": "View shipments",
     "backToShipment": "Back to merchant order",

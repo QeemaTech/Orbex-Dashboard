@@ -31,6 +31,9 @@ import { ShipmentLabelPrintPage } from "@/pages/ShipmentLabelPrintPage"
 import { ShipmentLineDetailsPage } from "@/pages/ShipmentLineDetailsPage"
 import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
+import { WarehouseMerchantOrdersListPage } from "@/pages/WarehouseMerchantOrdersListPage"
+import { WarehouseShipmentsListPage } from "@/pages/WarehouseShipmentsListPage"
+import { WarehouseManifestsPreviewPage } from "@/pages/WarehouseManifestsPreviewPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { DeliveryZonesPage } from "@/pages/DeliveryZonesPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
@@ -42,6 +45,7 @@ import { PublicShipmentTrackingPage } from "@/pages/PublicShipmentTrackingPage"
 import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 import { MerchantOrderPendingImportsPage } from "@/pages/MerchantOrderPendingImportsPage"
 import { AllCourierManifestsPage } from "@/pages/AllCourierManifestsPage"
+import { CourierManifestDetailPage } from "@/pages/CourierManifestDetailPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -317,6 +321,19 @@ export default function App() {
           }
         />
         <Route
+          path="/courier-manifests/:manifestId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={[]}
+                requiredPermissions={["courier_manifests.read_all"]}
+              >
+                <CourierManifestDetailPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/collections"
           element={
             <Protected>
@@ -439,6 +456,58 @@ export default function App() {
                 requiredPermissions={["warehouses.read"]}
               >
                 <WarehouseDetailPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/orders"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseMerchantOrdersListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/shipments"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseShipmentsListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseManifestsPreviewPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests/:manifestId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <CourierManifestDetailPage />
               </ProtectedRole>
             </Protected>
           }
