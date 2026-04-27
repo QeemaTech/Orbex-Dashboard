@@ -9,9 +9,12 @@ import {
   finalizeMerchantOrderReturns,
   getShipmentById,
   getShipmentOrders,
-  patchShipmentAssignedWarehouse,
 } from "@/api/merchant-orders-api"
-import { getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-api"
+import {
+  getShipmentLabelRaw,
+  markShipmentLabelPrinted,
+  patchShipmentAssignedWarehouse,
+} from "@/api/shipments-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
@@ -220,9 +223,10 @@ export function MerchantOrderDetailsPage() {
   const setWarehouseMut = useMutation({
     mutationFn: async (warehouseId: string) => {
       const wid = warehouseId.trim()
+      const targetShipmentId = ordersSummaryQuery.data?.shipments?.[0]?.id ?? merchantOrderId
       return patchShipmentAssignedWarehouse({
         token,
-        shipmentId: merchantOrderId,
+        shipmentId: targetShipmentId,
         assignedWarehouseId: wid ? wid : null,
       })
     },

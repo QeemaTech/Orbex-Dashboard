@@ -1642,7 +1642,6 @@ export function WarehouseDetailPage() {
           if (!open) setConfirmDialogData(null)
         }}
         token={token}
-        merchantOrderId={confirmDialogData?.merchantOrderId ?? ""}
         lineId={confirmDialogData?.lineId ?? ""}
         customerName={confirmDialogData?.customerName ?? ""}
         initialAddressText={confirmDialogData?.addressText ?? ""}

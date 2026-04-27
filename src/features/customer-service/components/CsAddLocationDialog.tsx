@@ -5,10 +5,10 @@ import { useTranslation } from "react-i18next"
 
 import {
   merchantOrderBatchId,
-  patchShipmentFields,
   type CsShipmentRow,
   type ShipmentListResponse,
 } from "@/api/merchant-orders-api"
+import { patchShipmentFields } from "@/api/shipments-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -85,7 +85,7 @@ export function CsAddLocationDialog({
       })
       return patchShipmentFields({
         token,
-        shipmentId: merchantOrderBatchId(row),
+        shipmentId: row.id,
         notes: nextNotes,
         ...(coords ? { customerLat: String(coords.lat) } : {}),
         ...(coords ? { customerLng: String(coords.lng) } : {}),

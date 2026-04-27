@@ -837,7 +837,7 @@ export async function confirmShipmentCustomerLocation(p: {
   addressText?: string
 }): Promise<unknown> {
   return apiFetch<unknown>(
-    `/api/merchant-orders/${p.merchantOrderId}/lines/${p.lineId}/confirm-customer-location`,
+    `/api/shipments/${encodeURIComponent(p.lineId)}/confirm-customer-location`,
     {
       method: "POST",
       token: p.token,
@@ -862,7 +862,7 @@ export type PatchShipmentFieldsParams = {
 export async function patchShipmentFields(
   p: PatchShipmentFieldsParams,
 ): Promise<CsShipmentRow> {
-  return apiFetch<CsShipmentRow>(`/api/merchant-orders/${p.shipmentId}`, {
+  return apiFetch<CsShipmentRow>(`/api/shipments/${encodeURIComponent(p.shipmentId)}`, {
     method: "PATCH",
     token: p.token,
     body: JSON.stringify({
@@ -880,7 +880,7 @@ export async function patchShipmentAssignedWarehouse(params: {
   assignedWarehouseId: string | null
 }): Promise<CsShipmentRow> {
   return apiFetch<CsShipmentRow>(
-    `/api/merchant-orders/${encodeURIComponent(params.shipmentId)}/warehouse`,
+    `/api/shipments/${encodeURIComponent(params.shipmentId)}/warehouse`,
     {
       method: "PATCH",
       token: params.token,
