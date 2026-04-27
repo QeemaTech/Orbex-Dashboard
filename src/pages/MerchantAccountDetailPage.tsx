@@ -190,6 +190,7 @@ export function MerchantAccountDetailPage() {
       `# ${t("accounts.merchantDetail.period")}: ${from} -> ${to}`,
       `# ${t("accounts.merchantDetail.collected")}: ${summary.totalCollected}`,
       `# ${t("accounts.merchantDetail.commission")}: ${summary.totalCommission}`,
+      `# ${t("accounts.merchantDetail.packagingFees", "Packaging fees")}: ${summary.totalPackagingFees}`,
       `# ${t("accounts.merchantDetail.remaining")}: ${summary.remaining}`,
     ].join("\n")
 
@@ -423,6 +424,10 @@ export function MerchantAccountDetailPage() {
             <SummaryStat
               label={t("accounts.merchantDetail.shippingFees")}
               value={formatEGP(summary.totalShippingFees, locale)}
+            />
+            <SummaryStat
+              label={t("accounts.merchantDetail.packagingFees", "Packaging fees")}
+              value={formatEGP(summary.totalPackagingFees, locale)}
             />
             <SummaryStat
               label={t("accounts.merchantDetail.remaining")}

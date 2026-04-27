@@ -281,6 +281,9 @@ function MerchantBalancesTable({
                   {t("accounts.balances.columns.totalShippingFees")}
                 </TableHead>
                 <TableHead className="text-end">
+                  {t("accounts.balances.columns.totalPackagingFees", "Packaging fees")}
+                </TableHead>
+                <TableHead className="text-end">
                   {t("accounts.balances.columns.totalCollected")}
                 </TableHead>
                 <TableHead className="text-end">
@@ -310,6 +313,9 @@ function MerchantBalancesTable({
                     {formatEGP(r.totalShippingFees, locale)}
                   </TableCell>
                   <TableCell className="text-end tabular-nums">
+                    {formatEGP(r.totalPackagingFees, locale)}
+                  </TableCell>
+                  <TableCell className="text-end tabular-nums">
                     {formatEGP(r.totalCollected, locale)}
                   </TableCell>
                   <TableCell className="text-end tabular-nums">
@@ -322,7 +328,7 @@ function MerchantBalancesTable({
               ))}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-muted-foreground text-center">
+                  <TableCell colSpan={8} className="text-muted-foreground text-center">
                     {t("accounts.table.empty")}
                   </TableCell>
                 </TableRow>
