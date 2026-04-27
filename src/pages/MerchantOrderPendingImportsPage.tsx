@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
   confirmPendingMerchantOrderImport,
+  downloadPendingMerchantOrderImportFile,
+  getPendingMerchantOrderImportPreview,
   listPendingMerchantOrderImports,
   rejectPendingMerchantOrderImport,
 } from "@/api/merchant-orders-api"
@@ -15,6 +18,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 
 export function MerchantOrderPendingImportsPage() {
@@ -24,6 +42,7 @@ export function MerchantOrderPendingImportsPage() {
   const merchantId = user?.merchantId ?? null
   const isMerchant = isMerchantUser(user)
   const queryClient = useQueryClient()
+  const [previewImportId, setPreviewImportId] = useState<string | null>(null)
 
   const pendingQuery = useQuery({
     queryKey: ["merchant-order-pending-imports", token],
@@ -55,6 +74,19 @@ export function MerchantOrderPendingImportsPage() {
   const visibleItems = (pendingQuery.data?.items ?? []).filter((row) =>
     isMerchant ? !!merchantId && row.merchantId === merchantId : true,
   )
+  const selectedImport = useMemo(
+    () => visibleItems.find((row) => row.id === previewImportId) ?? null,
+    [previewImportId, visibleItems],
+  )
+  const previewQuery = useQuery({
+    queryKey: ["merchant-order-pending-import-preview", token, previewImportId],
+    queryFn: () =>
+      getPendingMerchantOrderImportPreview({
+        token,
+        pendingImportId: previewImportId!,
+      }),
+    enabled: !!token && !!previewImportId,
+  })
 
   return (
     <Layout title={t("merchantOrdersList.pendingPageTitle", { defaultValue: "Pending confirmations" })}>
@@ -118,8 +150,26 @@ export function MerchantOrderPendingImportsPage() {
                   </p>
                   <p className="text-muted-foreground">{row.fileName}</p>
                 </div>
-                {canConfirm ? (
-                  <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setPreviewImportId(row.id)}>
+                    {t("common.preview", { defaultValue: "Preview" })}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      downloadPendingMerchantOrderImportFile({
+                        token,
+                        pendingImportId: row.id,
+                        fileName: row.fileName,
+                      })
+                    }
+                  >
+                    {t("merchantOrdersList.downloadOriginal", { defaultValue: "Download original file" })}
+                  </Button>
+                  {canConfirm ? (
+                    <>
                     <Button
                       type="button"
                       size="sm"
@@ -137,13 +187,62 @@ export function MerchantOrderPendingImportsPage() {
                     >
                       {t("merchantOrdersList.rejectPending", { defaultValue: "Reject" })}
                     </Button>
-                  </div>
-                ) : null}
+                    </>
+                  ) : null}
+                </div>
               </div>
             ))}
           </CardContent>
         </Card>
       </div>
+      <Dialog open={previewImportId !== null} onOpenChange={(open) => !open && setPreviewImportId(null)}>
+        <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {t("merchantOrdersList.pendingPreviewTitle", { defaultValue: "Excel preview" })}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedImport?.fileName ?? previewQuery.data?.fileName ?? ""}
+            </DialogDescription>
+          </DialogHeader>
+          {previewQuery.isLoading ? <p className="text-sm text-muted-foreground">{t("merchantOrdersList.loading")}</p> : null}
+          {previewQuery.error ? (
+            <p className="text-sm text-destructive">{(previewQuery.error as Error).message}</p>
+          ) : null}
+          {!previewQuery.isLoading && !previewQuery.error ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {(previewQuery.data?.rowCount ?? 0).toLocaleString()}{" "}
+                {t("merchantOrdersList.colOrderCount", { defaultValue: "orders" })}
+              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("merchantOrdersList.colCustomer", { defaultValue: "Customer" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.colPhone", { defaultValue: "Phone" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.colAddress", { defaultValue: "Address" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.colShipmentValue", { defaultValue: "Shipment value" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.colShippingFee", { defaultValue: "Shipping fee" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.colPaymentMethod", { defaultValue: "Payment method" })}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(previewQuery.data?.rows ?? []).map((item, idx) => (
+                    <TableRow key={`${idx}-${item.phonePrimary}`}>
+                      <TableCell className="truncate">{item.customerName}</TableCell>
+                      <TableCell className="truncate">{item.phonePrimary}</TableCell>
+                      <TableCell className="truncate">{item.addressText}</TableCell>
+                      <TableCell>{item.shipmentValue}</TableCell>
+                      <TableCell>{item.shippingFee}</TableCell>
+                      <TableCell>{item.paymentMethod}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </Layout>
   )
 }

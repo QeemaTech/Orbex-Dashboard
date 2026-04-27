@@ -1023,12 +1023,88 @@ export type PendingMerchantOrderImportsResponse = {
   items: PendingMerchantOrderImportRow[]
 }
 
+export type PendingMerchantOrderImportPreviewRow = {
+  customerName: string
+  phonePrimary: string
+  phoneSecondary?: string | null
+  addressText: string
+  allowOpenValue?: boolean
+  weightGrams: number
+  itemsCount: number
+  shipmentValue: string
+  shippingFee: string
+  paymentMethod: string
+  notes?: string | null
+  productType?: string | null
+  description?: string | null
+}
+
+export type PendingMerchantOrderImportPreviewResponse = {
+  pendingImportId: string
+  fileName: string
+  rowCount: number
+  pickupDate: string
+  rows: PendingMerchantOrderImportPreviewRow[]
+}
+
 export async function listPendingMerchantOrderImports(params: {
   token: string
 }): Promise<PendingMerchantOrderImportsResponse> {
   return apiFetch<PendingMerchantOrderImportsResponse>("/api/merchant-orders/pending-imports", {
     token: params.token,
   })
+}
+
+export async function getPendingMerchantOrderImportPreview(params: {
+  token: string
+  pendingImportId: string
+}): Promise<PendingMerchantOrderImportPreviewResponse> {
+  return apiFetch<PendingMerchantOrderImportPreviewResponse>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/preview`,
+    { token: params.token },
+  )
+}
+
+export async function downloadPendingMerchantOrderImportFile(params: {
+  token: string
+  pendingImportId: string
+  fileName?: string
+}): Promise<void> {
+  const response = await fetch(
+    apiUrl(
+      `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/file`,
+    ),
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${params.token}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Failed to download import file" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : "Failed to download import file"
+    throw new Error(msg)
+  }
+
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.setAttribute("download", params.fileName || "pending-import.xlsx")
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => window.URL.revokeObjectURL(url), 100)
 }
 
 export async function confirmPendingMerchantOrderImport(params: {

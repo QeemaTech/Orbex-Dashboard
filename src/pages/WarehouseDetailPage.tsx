@@ -507,6 +507,14 @@ export function WarehouseDetailPage() {
 
   const canManageTransfer =
     user?.permissions?.includes("warehouses.manage_transfer") ?? false
+  const canScanIn =
+    user?.permissions?.includes("warehouses.scan_in") === true ||
+    canManageTransfer ||
+    user?.permissions?.includes("warehouses.manage") === true
+  const canScanOut =
+    user?.permissions?.includes("warehouses.scan_out") === true ||
+    canManageTransfer ||
+    user?.permissions?.includes("warehouses.manage") === true
 
   const manifestsQuery = useQuery({
     queryKey: [
@@ -1124,7 +1132,9 @@ export function WarehouseDetailPage() {
               <WarehouseScanner
                 warehouseId={warehouseId}
                 onScan={handleWarehouseScan}
-                disabled={!token || accessDenied}
+                allowScanIn={canScanIn}
+                allowScanOut={canScanOut}
+                disabled={!token || accessDenied || (!canScanIn && !canScanOut)}
               />
             </div>
 

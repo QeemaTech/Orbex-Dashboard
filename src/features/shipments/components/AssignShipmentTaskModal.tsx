@@ -77,7 +77,7 @@ export function AssignShipmentTaskModal({
   const canSubmit = useMemo(() => {
     if (!shipment) return false
     if (taskType === "DELIVERY") {
-      return hasResolvedDeliveryZone && zoneCouriers.length > 0 && !!courierId.trim()
+      return !!courierId.trim()
     }
     if (taskType === "TRANSFER") {
       return (
@@ -238,6 +238,14 @@ export function AssignShipmentTaskModal({
               {t("shipments.planTask.zoneMissing", {
                 defaultValue:
                   "Customer coordinates are not mapped to an active delivery zone yet.",
+              })}
+            </p>
+          ) : null}
+          {taskType === "DELIVERY" ? (
+            <p className="text-muted-foreground text-xs">
+              {t("shipments.planTask.zoneSuggestionOnly", {
+                defaultValue:
+                  "Courier list is a zone-based suggestion from warehouse and shipment location.",
               })}
             </p>
           ) : null}

@@ -134,6 +134,13 @@ const customerServiceNavConfig = [
 const merchantNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
+  {
+    to: "/merchant-orders/pending-confirmations",
+    labelKey: "nav.merchantOrderConfirmations",
+    icon: Boxes,
+    end: false,
+    perm: "merchant_orders.read",
+  },
   { to: "/accounts/me", labelKey: "nav.accounts", icon: Banknote, end: false, perm: "accounts.request_payout" },
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const
