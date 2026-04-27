@@ -130,6 +130,7 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
   const isWhAdmin = variant === "warehouseAdmin"
+  const isMerchant = isMerchantUser(user)
 
   /** Aligned with `GET /api/merchant-orders/dashboard/kpis` (`merchant_orders.read` or `dashboard.view`). */
   const canReadMerchantOrderKpis =
@@ -331,7 +332,7 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
               hideTrend
             />
             <StatCard
-              title={t("dashboard.adminStats.shipments")}
+              title={isMerchant ? t("dashboard.myOrders.statsTotalShipments") : t("dashboard.adminStats.shipments")}
               value={kpiPending ? "—" : merchantOrdersHeadline}
               icon={Package}
               accent="success"
@@ -406,10 +407,12 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2.5 text-lg">
                 <TrendingUp className="size-6 shrink-0 text-primary" aria-hidden />
-                {t("dashboard.chart.lineTitle")}
+                {isMerchant ? t("dashboard.myOrders.chartLineTitle") : t("dashboard.chart.lineTitle")}
               </CardTitle>
               <CardDescription>
-                {t("dashboard.chart.lineDescriptionPeriod")}
+                {isMerchant
+                  ? t("dashboard.myOrders.chartLineDescriptionPeriod")
+                  : t("dashboard.chart.lineDescriptionPeriod")}
                 {insightsPeriodLabel ? (
                   <span className="text-muted-foreground mt-1 block text-xs">
                     {insightsPeriodLabel}
@@ -467,7 +470,11 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                     <Line
                       type="monotone"
                       dataKey="merchantOrders"
-                      name={t("dashboard.chart.merchantOrdersSeries")}
+                      name={
+                        isMerchant
+                          ? t("dashboard.myOrders.chartMerchantOrdersSeries")
+                          : t("dashboard.chart.merchantOrdersSeries")
+                      }
                       stroke="var(--chart-2)"
                       strokeWidth={2}
                       dot={{ fill: "var(--chart-2)", r: 3 }}
@@ -483,7 +490,9 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
             <CardHeader>
               <CardTitle className="text-lg">{t("dashboard.chart.merchantOrderBatchPieTitle")}</CardTitle>
               <CardDescription>
-                {t("dashboard.chart.merchantOrderBatchPieDescription")}
+                {isMerchant
+                  ? t("dashboard.myOrders.chartMerchantOrderBatchPieDescription")
+                  : t("dashboard.chart.merchantOrderBatchPieDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3 sm:px-5">
@@ -556,7 +565,9 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                       {t("dashboard.quickActions.title")}
                     </h2>
                     <p className="text-muted-foreground text-sm">
-                      {t("dashboard.quickActions.description")}
+                      {isMerchant
+                        ? t("dashboard.myOrders.quickActionsDescription")
+                        : t("dashboard.quickActions.description")}
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -566,7 +577,9 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                       className="w-full sm:w-auto"
                       onClick={onQuickViewMerchantOrders}
                     >
-                      {t("dashboard.quickActions.viewShipments")}
+                      {isMerchant
+                        ? t("dashboard.myOrders.quickActionsViewShipments")
+                        : t("dashboard.quickActions.viewShipments")}
                     </Button>
                     <Button
                       type="button"
@@ -632,7 +645,9 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                   {t("dashboard.quickActions.title")}
                 </h2>
                 <p className="text-muted-foreground text-sm">
-                  {t("dashboard.quickActions.description")}
+                  {isMerchant
+                    ? t("dashboard.myOrders.quickActionsDescription")
+                    : t("dashboard.quickActions.description")}
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -642,7 +657,9 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                   className="w-full sm:w-auto"
                   onClick={onQuickViewMerchantOrders}
                 >
-                  {t("dashboard.quickActions.viewShipments")}
+                  {isMerchant
+                    ? t("dashboard.myOrders.quickActionsViewShipments")
+                    : t("dashboard.quickActions.viewShipments")}
                 </Button>
                 <Button
                   type="button"
@@ -660,8 +677,14 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
         {canReadMerchantOrderKpis ? (
         <Card className="dashboard-card dashboard-animate-in overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">{t("dashboard.recent.shipmentsTitle")}</CardTitle>
-            <CardDescription>{t("dashboard.recent.shipmentsDescription")}</CardDescription>
+            <CardTitle className="text-lg">
+              {isMerchant ? t("dashboard.myOrders.recentShipmentsTitle") : t("dashboard.recent.shipmentsTitle")}
+            </CardTitle>
+            <CardDescription>
+              {isMerchant
+                ? t("dashboard.myOrders.recentShipmentsDescription")
+                : t("dashboard.recent.shipmentsDescription")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="px-0 pt-0">
             <div className="overflow-x-auto px-2 pb-2 [-webkit-overflow-scrolling:touch] sm:px-4">

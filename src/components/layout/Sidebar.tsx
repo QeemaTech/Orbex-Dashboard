@@ -155,6 +155,7 @@ export function Sidebar() {
   const isEn = i18n.language.startsWith("en")
   const perms = user?.permissions ?? []
   const token = accessToken ?? ""
+  const isMerchant = isMerchantUser(user)
 
   const hubId = useMemo(() => {
     if (!user) return null
@@ -174,7 +175,7 @@ export function Sidebar() {
   const navConfig = useMemo(() => {
     const check = (p?: string) => (p ? perms.includes(p) : true)
     // Merchants may have legacy/null `role` but still have `merchantId`.
-    if (user && isMerchantUser(user)) {
+    if (user && isMerchant) {
       return merchantNavConfig.filter((item) => check(item.perm))
     }
     if (user?.role === "CUSTOMER_SERVICE") {
@@ -249,7 +250,7 @@ export function Sidebar() {
       }
       return check(item.perm)
     })
-  }, [user, isMainHub, perms])
+  }, [user, isMainHub, perms, isMerchant])
 
   function onSignOut() {
     setOpen(false)
@@ -300,7 +301,7 @@ export function Sidebar() {
             }}
           >
             <Icon className="size-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden />
-            {t(labelKey)}
+            {labelKey === "nav.merchantOrders" && isMerchant ? t("nav.myOrders") : t(labelKey)}
           </NavLink>
         ))}
       </nav>

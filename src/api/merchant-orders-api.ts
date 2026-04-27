@@ -1047,6 +1047,24 @@ export type PendingMerchantOrderImportPreviewResponse = {
   rows: PendingMerchantOrderImportPreviewRow[]
 }
 
+export type PendingMerchantOrderImportVersionRow = {
+  id: string
+  versionNumber: number
+  changeType: "INITIAL_UPLOAD" | "PICKUP_DATE_UPDATED" | "FILE_REPLACED"
+  fileName: string
+  filePath: string | null
+  fileMimeType: string | null
+  fileSize: number | null
+  pickupDate: string
+  changedByUserId: string | null
+  changedByName: string | null
+  createdAt: string
+}
+
+export type PendingMerchantOrderImportVersionsResponse = {
+  items: PendingMerchantOrderImportVersionRow[]
+}
+
 export async function listPendingMerchantOrderImports(params: {
   token: string
 }): Promise<PendingMerchantOrderImportsResponse> {
@@ -1101,6 +1119,104 @@ export async function downloadPendingMerchantOrderImportFile(params: {
   const link = document.createElement("a")
   link.href = url
   link.setAttribute("download", params.fileName || "pending-import.xlsx")
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => window.URL.revokeObjectURL(url), 100)
+}
+
+export async function updatePendingMerchantOrderPickupDate(params: {
+  token: string
+  pendingImportId: string
+  pickupDate: string
+}): Promise<{ success: true; pickupDate: string }> {
+  return apiFetch<{ success: true; pickupDate: string }>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/pickup-date`,
+    {
+      method: "PATCH",
+      token: params.token,
+      body: JSON.stringify({ pickupDate: params.pickupDate }),
+    },
+  )
+}
+
+export async function updatePendingMerchantOrderImportFile(params: {
+  token: string
+  pendingImportId: string
+  file: File
+}): Promise<{ success: true; rowCount: number }> {
+  const form = new FormData()
+  form.append("file", params.file)
+  const response = await fetch(
+    apiUrl(`/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/file`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.token}`,
+      },
+      body: form,
+    },
+  )
+  const text = await response.text()
+  const data = text ? (JSON.parse(text) as unknown) : null
+  if (!response.ok) {
+    const msg =
+      data && typeof data === "object" && "error" in data && typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : "Failed to update import file"
+    throw new Error(msg)
+  }
+  return data as { success: true; rowCount: number }
+}
+
+export async function listPendingMerchantOrderImportVersions(params: {
+  token: string
+  pendingImportId: string
+}): Promise<PendingMerchantOrderImportVersionsResponse> {
+  return apiFetch<PendingMerchantOrderImportVersionsResponse>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/versions`,
+    {
+      token: params.token,
+    },
+  )
+}
+
+export async function downloadPendingMerchantOrderImportVersionFile(params: {
+  token: string
+  pendingImportId: string
+  versionId: string
+  fileName?: string
+}): Promise<void> {
+  const response = await fetch(
+    apiUrl(
+      `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/versions/${encodeURIComponent(params.versionId)}/file`,
+    ),
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${params.token}`,
+      },
+    },
+  )
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Failed to download version file" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : "Failed to download version file"
+    throw new Error(msg)
+  }
+
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.setAttribute("download", params.fileName || "pending-import-version.xlsx")
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)

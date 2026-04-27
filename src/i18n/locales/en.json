@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "shipments": "Shipments",
     "merchantOrders": "Merchant orders",
+    "myOrders": "My orders",
     "merchantOrderConfirmations": "Order confirmations",
     "allCourierManifests": "All manifests",
     "myWarehouse": "My warehouse",
@@ -120,7 +121,7 @@
     "loading": "Loading shipments…",
     "empty": "No shipments in this merchant order.",
     "subtitle": "Each row is one customer shipment with its own recipient.",
-    "warehouseSubtitle": "Each row is a customer shipment line from the batch, with delivery and payment states as stored in Orbex.",
+    "warehouseSubtitle": "Each row is a customer shipment from the batch, with delivery and payment states as stored in Orbex.",
     "columns": {
       "deliveryStatus": "Delivery",
       "paymentStatus": "Payment"
@@ -194,8 +195,8 @@
     },
     "planTask": {
       "title": "Plan warehouse task",
-      "description": "Creates a planned task for this shipment line at your hub. Scan-out executes this task (delivery, transfer, or return to merchant).",
-      "fieldPlanningWarehouse": "Your hub for this plan (must match the line’s warehouse)",
+      "description": "Creates a planned task for this shipment at your hub. Scan-out executes this task (delivery, transfer, or return to merchant).",
+      "fieldPlanningWarehouse": "Your hub for this plan (must match the shipment warehouse)",
       "fieldType": "Task type",
       "typeDelivery": "Delivery (last mile)",
       "typeTransfer": "Transfer to another hub",
@@ -207,20 +208,20 @@
       "pickCourier": "Select a courier…",
       "pickWarehouse": "Select a warehouse…",
       "submit": "Create planned task",
-      "footerHint": "Batch and line must be in the warehouse. Delivery requires outbound customer service confirmation on this line.",
+      "footerHint": "Batch and shipment must be in the warehouse. Delivery requires outbound customer service confirmation on this shipment.",
       "success": "Planned task created ({{type}}). You can scan out with the tracking number.",
       "hintBatchNotInWarehouse": "The merchant order batch is not in a warehouse yet (transfer must be IN_WAREHOUSE).",
-      "hintLineNotInWarehouse": "This shipment line is not IN_WAREHOUSE.",
-      "hintReturnWrongStatus": "Return-to-merchant planning is only available when this line is POSTPONED or REJECTED (and the batch is in the warehouse).",
-      "hintCsRequired": "Outbound customer service must confirm this line before planning a delivery task.",
+      "hintLineNotInWarehouse": "This shipment is not IN_WAREHOUSE.",
+      "hintReturnWrongStatus": "Return-to-merchant planning is only available when this shipment is POSTPONED or REJECTED (and the batch is in the warehouse).",
+      "hintCsRequired": "Outbound customer service must confirm this shipment before planning a delivery task.",
       "errors": {
         "NO_ACTIVE_TASK": "No active task (use after a failed scan only if shown).",
         "INVALID_TRACKING": "Invalid shipment reference.",
-        "WRONG_WAREHOUSE": "This line is not at your warehouse.",
+        "WRONG_WAREHOUSE": "This shipment is not at your warehouse.",
         "INVALID_TRANSITION": "This task is not allowed for the current status.",
-        "CS_DELIVERY_NOT_ALLOWED": "Customer service must confirm the line for delivery planning.",
+        "CS_DELIVERY_NOT_ALLOWED": "Customer service must confirm the shipment for delivery planning.",
         "DELIVERY_POSTPONE_LIMIT": "Too many postponements to plan another delivery.",
-        "ACTIVE_TASK_EXISTS": "An active planned or in-progress task already exists for this line. Complete or cancel it before creating another.",
+        "ACTIVE_TASK_EXISTS": "An active planned or in-progress task already exists for this shipment. Complete or cancel it before creating another.",
         "generic": "Could not create the planned task."
       }
     },
@@ -234,7 +235,7 @@
   },
   "shipmentsList": {
     "pageTitle": "Shipments",
-    "description": "Customer shipment lines (packages) from the API. Open a row for full shipment details, status, and actions; use the menu to open the merchant order or all shipments in the merchant order.",
+    "description": "Customer shipments (packages) from the API. Open a row for full shipment details, status, and actions; use the menu to open the merchant order or all shipments in the merchant order.",
     "tableCardTitle": "All shipments",
     "tableCardDescription": "Results respect your role and permissions from the API.",
     "loading": "Loading shipments…",
@@ -245,7 +246,7 @@
     "pageTitle": "Merchant orders",
     "description": "Merchant order batches — one row per merchant batch. Use the warehouse filter to see hub-specific activity.",
     "tableCardTitle": "All merchant orders",
-    "tableCardDescription": "Merchant-order-level data only; open a row for customer shipments and line details.",
+    "tableCardDescription": "Merchant-order-level data only; open a row for customer shipments and shipment details.",
     "loading": "Loading merchant orders…",
     "filterWarehouse": "Warehouse",
     "allWarehouses": "All warehouses",
@@ -278,7 +279,28 @@
     "pendingDescription": "Uploaded Excel batches wait here until a user with confirmation permission approves them.",
     "pendingEmpty": "No pending imports.",
     "confirmPending": "Confirm",
-    "rejectPending": "Reject"
+    "rejectPending": "Reject",
+    "versionHistory": "Version history",
+    "version": "Version",
+    "changeType": "Change type",
+    "changeTypeValues": {
+      "INITIAL_UPLOAD": "Initial upload",
+      "PICKUP_DATE_UPDATED": "Pickup date updated",
+      "FILE_REPLACED": "Excel file replaced"
+    },
+    "fileName": "File",
+    "changedBy": "Changed by",
+    "actions": "Actions",
+    "fileUnavailable": "File unavailable",
+    "updatePickupDate": "Update pickup date",
+    "updateExcelSheet": "Update Excel sheet",
+    "myOrders": {
+      "pageTitle": "My orders",
+      "description": "My order batches — one row per batch. Use the warehouse filter to see hub-specific activity.",
+      "tableCardTitle": "All my orders",
+      "loading": "Loading my orders…",
+      "kpiTotalMerchantOrders": "My orders"
+    }
   },
   "adminOrders": {
     "colCustomer": "Customer",
@@ -350,11 +372,11 @@
       "warehouses": "Warehouses"
     },
     "chart": {
-      "lineTitle": "Shipment lines & merchant orders",
+      "lineTitle": "Shipments & merchant orders",
       "lineDescription": "New customer shipments per day (last 14 days)",
-      "lineDescriptionPeriod": "Daily shipment lines and new merchant orders for the configured insights period.",
+      "lineDescriptionPeriod": "Daily shipments and new merchant orders for the configured insights period.",
       "lineSeriesName": "Shipments",
-      "shipmentLinesSeries": "Shipment lines",
+      "shipmentLinesSeries": "Shipments",
       "merchantOrdersSeries": "Merchant orders",
       "merchantOrderBatchPieTitle": "Merchant order batch status",
       "merchantOrderBatchPieDescription": "Merchant orders by batch pipeline status",
@@ -395,6 +417,17 @@
       "shipmentsTitle": "Recent merchant orders",
       "shipmentsDescription": "Latest merchant orders across your network"
     },
+    "myOrders": {
+      "statsTotalShipments": "My orders",
+      "chartLineTitle": "Shipments & my orders",
+      "chartLineDescriptionPeriod": "Daily shipments and new orders for the configured insights period.",
+      "chartMerchantOrdersSeries": "My orders",
+      "chartMerchantOrderBatchPieDescription": "My orders by batch pipeline status",
+      "quickActionsDescription": "Jump to my orders or customer shipments",
+      "quickActionsViewShipments": "View my orders",
+      "recentShipmentsTitle": "My recent orders",
+      "recentShipmentsDescription": "Latest orders across your network"
+    },
     "warehouses": {
       "title": "Warehouse hubs",
       "description": "Open a site for full details, admin contact, and staff count.",
@@ -429,12 +462,12 @@
       "shippingFee": "Shipping fee",
       "assignedWarehouse": "Warehouse",
       "customerOrdersTitle": "Customer shipments",
-      "customerOrdersDescription": "Shipment lines (packages) under this merchant order. Assignment and delivery updates are per shipment.",
+      "customerOrdersDescription": "Shipments (packages) under this merchant order. Assignment and delivery updates are per shipment.",
       "timelineTitle": "Timeline",
       "batchTimelineTitle": "Batch pipeline (transfer status)",
-      "batchTimelineHint": "Shows batch transfer milestones only. For delivery, postpones, and hub movements, see shipment line tracking below.",
-      "lineTimelineTitle": "Shipment line tracking",
-      "lineTimelineSubtitle": "Full audit for the first shipment line in this batch (tracking, postpones, transfers). Open a shipment for other lines.",
+      "batchTimelineHint": "Shows batch transfer milestones only. For delivery, postpones, and hub movements, see shipment tracking below.",
+      "lineTimelineTitle": "Shipment tracking",
+      "lineTimelineSubtitle": "Full audit for the first shipment in this batch (tracking, postpones, transfers). Open a shipment for others.",
       "timelineEmpty": "No timeline events yet.",
       "timelineStart": "START",
       "timelineArrow": "→",
@@ -444,7 +477,7 @@
       "finishedBadge": "Finished",
       "returnRejectedShipments": "Return rejected shipments",
       "returnRejectedSuccess": "Return tasks created for {{count}} shipment(s).",
-      "returnRejectedPartial": "Created {{created}} task(s); {{skipped}} line(s) skipped (already have a task or not eligible).",
+      "returnRejectedPartial": "Created {{created}} task(s); {{skipped}} shipment(s) skipped (already have a task or not eligible).",
       "returnRejectedError": "Could not create return tasks.",
       "finalizeReturns": "Finalize returns",
       "finalizeReturnsSuccess": "Finalized {{finalized}} shipment return(s); {{skipped}} already delivered.",
@@ -454,7 +487,7 @@
     "backToShipment": "Back to merchant order",
     "ordersTitle": "Customer shipments",
     "ordersSubtitle": "Each row is one customer shipment with its own recipient.",
-    "ordersWarehouseSubtitle": "Each row is a customer shipment line from the batch, with delivery and payment states as stored in Orbex.",
+    "ordersWarehouseSubtitle": "Each row is a customer shipment from the batch, with delivery and payment states as stored in Orbex.",
     "ordersEmpty": "No shipments in this merchant order.",
     "orders": {
       "deliveryStatus": "Delivery",
@@ -530,9 +563,9 @@
       "track": "Map"
     },
     "csLineConfirm": {
-      "title": "Confirm line — customer delivery location",
+      "title": "Confirm shipment — customer delivery location",
       "close": "Close",
-      "description": "Confirm this shipment line at the hub and save the customer delivery GPS for {{customerName}}. This is not merchant pickup or batch intake.",
+      "description": "Confirm this shipment at the hub and save the customer delivery GPS for {{customerName}}. This is not merchant pickup or batch intake.",
       "addressLabel": "Delivery address (optional update)",
       "addressPlaceholder": "Street, area, landmarks",
       "locationTextLabel": "Location notes",
@@ -543,7 +576,7 @@
       "cancel": "Cancel",
       "submit": "Confirm and save location",
       "submitting": "Confirming…",
-      "success": "Line confirmed; customer location saved.",
+      "success": "Shipment confirmed; customer location saved.",
       "errors": {
         "needCoords": "Enter a maps link with coordinates, coordinates in the notes, or ensure GPS is already saved.",
         "failed": "Could not confirm. Try again."

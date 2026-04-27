@@ -162,6 +162,21 @@ export function MerchantOrdersListPage() {
   const showKpiLoading = kpiQuery.isLoading
   const showKpiEmpty = !showKpiLoading && !showKpiError && batchPipelineBreakdown.length === 0
   const merchantContext = isMerchantUser(user)
+  const merchantOrdersTitleKey = merchantContext
+    ? "merchantOrdersList.myOrders.pageTitle"
+    : "merchantOrdersList.pageTitle"
+  const merchantOrdersDescriptionKey = merchantContext
+    ? "merchantOrdersList.myOrders.description"
+    : "merchantOrdersList.description"
+  const merchantOrdersTableTitleKey = merchantContext
+    ? "merchantOrdersList.myOrders.tableCardTitle"
+    : "merchantOrdersList.tableCardTitle"
+  const merchantOrdersLoadingKey = merchantContext
+    ? "merchantOrdersList.myOrders.loading"
+    : "merchantOrdersList.loading"
+  const merchantOrdersKpiTitleKey = merchantContext
+    ? "merchantOrdersList.myOrders.kpiTotalMerchantOrders"
+    : "merchantOrdersList.kpiTotalMerchantOrders"
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
@@ -264,7 +279,7 @@ export function MerchantOrdersListPage() {
   const totalRowsForPagination = shipmentsQuery.data?.total ?? 0
 
   return (
-    <Layout title={t("merchantOrdersList.pageTitle")}>
+    <Layout title={t(merchantOrdersTitleKey)}>
       <div className="space-y-6">
         <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
           <CardHeader className="flex flex-row items-center gap-3 pb-2">
@@ -272,8 +287,8 @@ export function MerchantOrdersListPage() {
               <Boxes className="size-5" aria-hidden />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-lg">{t("merchantOrdersList.pageTitle")}</CardTitle>
-              <CardDescription>{t("merchantOrdersList.description")}</CardDescription>
+              <CardTitle className="text-lg">{t(merchantOrdersTitleKey)}</CardTitle>
+              <CardDescription>{t(merchantOrdersDescriptionKey)}</CardDescription>
             </div>
           </CardHeader>
         </Card>
@@ -313,7 +328,7 @@ export function MerchantOrdersListPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title={t("merchantOrdersList.kpiTotalMerchantOrders")}
+            title={t(merchantOrdersKpiTitleKey)}
             value={totals?.totalShipments ?? 0}
             icon={Boxes}
             accent="primary"
@@ -351,7 +366,7 @@ export function MerchantOrdersListPage() {
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="border-border/60 border-b pb-4">
             <CardTitle className="text-base font-semibold">
-              {t("merchantOrdersList.tableCardTitle")}
+              {t(merchantOrdersTableTitleKey)}
             </CardTitle>
             <CardDescription>{t("merchantOrdersList.tableCardDescription")}</CardDescription>
           </CardHeader>
@@ -363,7 +378,7 @@ export function MerchantOrdersListPage() {
             ) : null}
 
             {shipmentsQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
+              <p className="text-muted-foreground text-sm">{t(merchantOrdersLoadingKey)}</p>
             ) : null}
 
             {shipmentsQuery.data ? (

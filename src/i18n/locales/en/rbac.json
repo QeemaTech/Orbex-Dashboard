@@ -126,6 +126,8 @@
     "merchant_orders.read": { "label": "View merchant orders", "category": "Merchant Orders" },
     "merchant_orders.create": { "label": "Create merchant orders", "category": "Merchant Orders" },
     "merchant_orders.confirm": { "label": "Confirm pending merchant orders", "category": "Merchant Orders" },
+    "merchant_orders.update_pickup_date": { "label": "Update pending import pickup date", "category": "Merchant Orders" },
+    "merchant_orders.update_import_file": { "label": "Update pending import Excel file", "category": "Merchant Orders" },
     "merchant_orders.update": { "label": "Update merchant orders", "category": "Merchant Orders" },
     "merchant_orders.finalize_returns": { "label": "Finalize merchant order returns", "category": "Merchant Orders" },
     "merchant_orders.assign_courier": { "label": "Assign courier", "category": "Merchant Orders" },
