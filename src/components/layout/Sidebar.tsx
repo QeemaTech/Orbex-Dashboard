@@ -23,20 +23,6 @@ import { isMainBranch } from "@/lib/warehouse-utils"
 import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
 
-/** Same pathname + `tab` query as sidebar link (staff hub has multiple links under one path). */
-function isWarehouseStaffNavItemActive(
-  location: { pathname: string; search: string },
-  to: string,
-): boolean {
-  const q = to.indexOf("?")
-  const path = q >= 0 ? to.slice(0, q) : to
-  const wantTab = q >= 0 ? new URLSearchParams(to.slice(q + 1)).get("tab") : null
-  if (location.pathname !== path) return false
-  const haveTab = new URLSearchParams(location.search).get("tab")
-  if (wantTab === null) return !haveTab || haveTab === ""
-  return haveTab === wantTab
-}
-
 type HubNavItem = {
   to: string
   labelKey:
@@ -66,7 +52,7 @@ function buildHubWarehouseNavItems(
   ]
   if (isMainHub) {
     items.push({
-      to: `${base}?tab=orders`,
+      to: `${base}/orders`,
       labelKey: "nav.warehouseMerchantOrders",
       icon: Boxes,
       end: false,
@@ -75,7 +61,7 @@ function buildHubWarehouseNavItems(
   }
   items.push(
     {
-      to: `${base}?tab=shipments`,
+      to: `${base}/shipments`,
       labelKey: "nav.warehouseStandaloneShipments",
       icon: Package,
       end: false,
@@ -84,7 +70,7 @@ function buildHubWarehouseNavItems(
     ...(isMainHub
       ? [
           {
-            to: `${base}?tab=manifests`,
+            to: `${base}/manifests`,
             labelKey: "nav.warehouseManifests",
             icon: Truck,
             end: false,
@@ -148,6 +134,13 @@ const customerServiceNavConfig = [
 const merchantNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
+  {
+    to: "/merchant-orders/pending-confirmations",
+    labelKey: "nav.merchantOrderConfirmations",
+    icon: Boxes,
+    end: false,
+    perm: "merchant_orders.read",
+  },
   { to: "/accounts/me", labelKey: "nav.accounts", icon: Banknote, end: false, perm: "accounts.request_payout" },
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const
@@ -292,9 +285,7 @@ export function Sidebar() {
             onClick={() => setOpen(false)}
             className={({ isActive }) => {
               let finalIsActive = isActive
-              if (user && (isWarehouseStaff(user) || isWarehouseAdmin(user))) {
-                finalIsActive = isWarehouseStaffNavItemActive(location, to)
-              } else if (to === "/merchant-orders" && location.pathname.startsWith("/merchant-orders/pending-confirmations")) {
+              if (to === "/merchant-orders" && location.pathname.startsWith("/merchant-orders/pending-confirmations")) {
                 finalIsActive = false
               } else if (to === "/cs/merchant-orders" && location.pathname.startsWith("/cs/merchant-orders/pending-confirmations")) {
                 finalIsActive = false

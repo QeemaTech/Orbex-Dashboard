@@ -196,7 +196,7 @@ export function AllCourierManifestsPage() {
                             {t("manifestDetail.viewDetails")}
                           </Link>
                           <Link
-                            to={`/warehouses/${encodeURIComponent(row.warehouseId)}?tab=manifests`}
+                            to={`/warehouses/${encodeURIComponent(row.warehouseId)}/manifests`}
                             className="text-primary hover:underline text-sm"
                           >
                             {t("manifestsGlobal.openWarehouse")}

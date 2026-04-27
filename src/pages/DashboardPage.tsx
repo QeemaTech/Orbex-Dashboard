@@ -109,15 +109,15 @@ function formatInsightsPeriodLabel(
 function useHubBasePath(warehouseList: { id: string; mainBranchId: string | null }[]) {
   return useMemo(() => {
     const w = warehouseList[0]
-    if (!w) return { hubBase: "", isMain: false, merchantOrdersPath: "", hubShipmentsTabPath: "" }
+    if (!w) return { hubBase: "", isMain: false, merchantOrdersPath: "", hubShipmentsPath: "" }
     const enc = encodeURIComponent(w.id)
     const base = `/warehouses/${enc}`
     const main = isMainBranch(w)
     return {
       hubBase: base,
       isMain: main,
-      merchantOrdersPath: main ? `${base}?tab=orders` : base,
-      hubShipmentsTabPath: `${base}?tab=shipments`,
+      merchantOrdersPath: `${base}/orders`,
+      hubShipmentsPath: `${base}/shipments`,
     }
   }, [warehouseList])
 }
@@ -200,7 +200,7 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
   const warehouseTotalAllTime =
     totals?.totalWarehouses !== undefined ? totals.totalWarehouses : warehouseCount
 
-  const { merchantOrdersPath, hubShipmentsTabPath } = useHubBasePath(warehouseList)
+  const { merchantOrdersPath, hubShipmentsPath } = useHubBasePath(warehouseList)
 
   const kpiPending = canReadMerchantOrderKpis && kpiQuery.isLoading
   const userHeadline =
@@ -215,7 +215,7 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
   const statShipmentsTo = isWhAdmin
     ? merchantOrdersPath || "/warehouses"
     : "/merchant-orders"
-  const statLinesTo = isWhAdmin ? hubShipmentsTabPath || "/shipments" : "/shipments"
+  const statLinesTo = isWhAdmin ? hubShipmentsPath || "/shipments" : "/shipments"
   const statWarehousesTo = isWhAdmin && warehouseList[0]
     ? `/warehouses/${encodeURIComponent(warehouseList[0].id)}`
     : "/warehouses"
@@ -271,7 +271,7 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
 
   const onQuickViewShipments = () => {
     if (isWhAdmin) {
-      void navigate(hubShipmentsTabPath || "/shipments")
+      void navigate(hubShipmentsPath || "/shipments")
       return
     }
     void navigate("/shipments")

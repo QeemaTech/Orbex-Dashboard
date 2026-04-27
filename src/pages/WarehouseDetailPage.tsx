@@ -14,7 +14,6 @@ import {
   Navigate,
   useNavigate,
   useParams,
-  useSearchParams,
 } from "react-router-dom"
 
 import {
@@ -270,7 +269,6 @@ function countShipmentStatusesOnPage(
 export function WarehouseDetailPage() {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const { warehouseId = "" } = useParams<{ warehouseId: string }>()
   const { accessToken, user } = useAuth()
   const queryClient = useQueryClient()
@@ -286,7 +284,7 @@ export function WarehouseDetailPage() {
   const [lookupTrackingInput, setLookupTrackingInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
   const [trackingResult, setTrackingResult] = useState<string>("")
-  const [activeTab, setActiveTab] = useState<"orders" | "shipments" | "manifests">("orders")
+  const [activeTab, setActiveTab] = useState<"orders" | "shipments">("orders")
   const [manifestDate, setManifestDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [manifestCourierId, setManifestCourierId] = useState("")
   const [manifestZoneId, setManifestZoneId] = useState("")
@@ -303,12 +301,8 @@ export function WarehouseDetailPage() {
   } | null>(null)
 
   useEffect(() => {
-    const tab = searchParams.get("tab")
-    if (tab === "shipments") setActiveTab("shipments")
-    else if (tab === "manifests") setActiveTab("manifests")
-    else if (tab === "orders") setActiveTab("orders")
-    else setActiveTab("orders")
-  }, [searchParams])
+    setActiveTab("orders")
+  }, [])
 
   const canSeeWarehouseDirectory =
     hasPlatformWarehouseScope(user) || isWarehouseAdmin(user)
@@ -359,7 +353,7 @@ export function WarehouseDetailPage() {
 
   /** Merchant-order queue + batch insight cards (main hub, orders tab only). */
   const merchantOrdersView = isMainHub && activeTab === "orders"
-  const manifestsView = isMainHub && activeTab === "manifests"
+  const manifestsView = false
   /** Standalone shipment list + shipment insight cards. */
   const shipmentsView =
     hub != null && ((isMainHub && activeTab === "shipments") || !isMainHub)
@@ -465,7 +459,8 @@ export function WarehouseDetailPage() {
       !!token &&
       !accessDenied &&
       isMainHub &&
-      (activeTab === "manifests" || (returnsOnly && activeTab === "orders")),
+      returnsOnly &&
+      activeTab === "orders",
   })
 
   const standaloneQueryKey = useMemo(
@@ -512,6 +507,14 @@ export function WarehouseDetailPage() {
 
   const canManageTransfer =
     user?.permissions?.includes("warehouses.manage_transfer") ?? false
+  const canScanIn =
+    user?.permissions?.includes("warehouses.scan_in") === true ||
+    canManageTransfer ||
+    user?.permissions?.includes("warehouses.manage") === true
+  const canScanOut =
+    user?.permissions?.includes("warehouses.scan_out") === true ||
+    canManageTransfer ||
+    user?.permissions?.includes("warehouses.manage") === true
 
   const manifestsQuery = useQuery({
     queryKey: [
@@ -1129,7 +1132,9 @@ export function WarehouseDetailPage() {
               <WarehouseScanner
                 warehouseId={warehouseId}
                 onScan={handleWarehouseScan}
-                disabled={!token || accessDenied}
+                allowScanIn={canScanIn}
+                allowScanOut={canScanOut}
+                disabled={!token || accessDenied || (!canScanIn && !canScanOut)}
               />
             </div>
 
@@ -1193,15 +1198,11 @@ export function WarehouseDetailPage() {
                 <CardTitle>
                   {isMainHub && activeTab === "orders"
                     ? t("warehouse.queue.titleTransfers")
-                    : isMainHub && activeTab === "manifests"
-                      ? t("warehouse.manifests.title")
                     : t("warehouse.queue.titleShipments")}
                 </CardTitle>
                 <CardDescription>
                   {isMainHub && activeTab === "orders"
                     ? t("warehouse.queue.descriptionTransfers")
-                    : isMainHub && activeTab === "manifests"
-                      ? t("warehouse.manifests.description")
                     : t("warehouse.queue.descriptionShipments")}
                 </CardDescription>
               </div>
@@ -1214,14 +1215,7 @@ export function WarehouseDetailPage() {
                         ? "bg-background shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
-                    onClick={() => {
-                      setActiveTab("orders")
-                      setSearchParams((prev) => {
-                        const p = new URLSearchParams(prev)
-                        p.set("tab", "orders")
-                        return p
-                      })
-                    }}
+                    onClick={() => setActiveTab("orders")}
                   >
                     {t("warehouse.queue.tabOrders")}
                   </button>
@@ -1232,35 +1226,9 @@ export function WarehouseDetailPage() {
                         ? "bg-background shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
-                    onClick={() => {
-                      setActiveTab("shipments")
-                      setSearchParams((prev) => {
-                        const p = new URLSearchParams(prev)
-                        p.set("tab", "shipments")
-                        return p
-                      })
-                    }}
+                    onClick={() => setActiveTab("shipments")}
                   >
                     {t("warehouse.queue.tabShipments")}
-                  </button>
-                  <button
-                    type="button"
-                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
-                      activeTab === "manifests"
-                        ? "bg-background shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => {
-                      setActiveTab("manifests")
-                      setPage(1)
-                      setSearchParams((prev) => {
-                        const p = new URLSearchParams(prev)
-                        p.set("tab", "manifests")
-                        return p
-                      })
-                    }}
-                  >
-                    {t("warehouse.queue.tabManifests")}
                   </button>
                 </div>
               ) : null}
@@ -1684,7 +1652,6 @@ export function WarehouseDetailPage() {
           if (!open) setConfirmDialogData(null)
         }}
         token={token}
-        merchantOrderId={confirmDialogData?.merchantOrderId ?? ""}
         lineId={confirmDialogData?.lineId ?? ""}
         customerName={confirmDialogData?.customerName ?? ""}
         initialAddressText={confirmDialogData?.addressText ?? ""}

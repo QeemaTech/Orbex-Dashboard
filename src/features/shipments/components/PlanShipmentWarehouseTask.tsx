@@ -97,7 +97,7 @@ export function PlanShipmentWarehouseTask({
 
   const sitesQuery = useQuery({
     queryKey: ["warehouse-sites-plan-task", token],
-    queryFn: () => listWarehouseSites(token),
+    queryFn: () => listWarehouseSites(token, { forTransferTask: true }),
     enabled: !!token && canPlan,
   })
 
@@ -199,6 +199,7 @@ export function PlanShipmentWarehouseTask({
     ? couriers.filter((c) => c.servesShipmentRegion)
     : couriers
   const sites = sitesQuery.data?.warehouses ?? []
+  const destinationSites = sites.filter((w) => w.id !== hubIdForPlan)
   const currentWarehouseName =
     sites.find((w) => w.id === hubIdForPlan)?.name ?? hubIdForPlan ?? null
 
@@ -257,7 +258,7 @@ export function PlanShipmentWarehouseTask({
               onChange={(e) => setToWarehouseId(e.target.value)}
             >
               <option value="">{t("shipments.planTask.pickWarehouse")}</option>
-              {sites.map((w) => (
+              {destinationSites.map((w) => (
                 <option key={w.id} value={w.id}>
                   {[w.name, w.governorate].filter(Boolean).join(" · ")}
                 </option>

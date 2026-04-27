@@ -497,10 +497,14 @@ export function getWarehouseTracking(params: {
   })
 }
 
-export function listWarehouseSites(token: string): Promise<{
+export function listWarehouseSites(
+  token: string,
+  options?: { forTransferTask?: boolean },
+): Promise<{
   warehouses: WarehouseSiteRow[]
 }> {
-  return apiFetch("/api/warehouse/sites", { token })
+  const query = options?.forTransferTask ? "?forTransferTask=true" : ""
+  return apiFetch(`/api/warehouse/sites${query}`, { token })
 }
 
 export function getWarehouseSite(

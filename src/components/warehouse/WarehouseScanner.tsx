@@ -11,6 +11,8 @@ type WarehouseScannerProps = {
   warehouseId: string
   /** Called with trimmed tracking number; should throw ApiError on failure. */
   onScan: (mode: WarehouseScanMode, trackingNumber: string) => Promise<unknown>
+  allowScanIn?: boolean
+  allowScanOut?: boolean
   disabled?: boolean
 }
 
@@ -55,6 +57,8 @@ function messageForApiError(err: unknown, t: (k: string) => string): string {
 export function WarehouseScanner({
   warehouseId,
   onScan,
+  allowScanIn = true,
+  allowScanOut = true,
   disabled,
 }: WarehouseScannerProps) {
   const { t } = useTranslation()
@@ -68,9 +72,28 @@ export function WarehouseScanner({
     inputRef.current?.focus()
   }, [])
 
+  useEffect(() => {
+    if (mode === "in" && !allowScanIn && allowScanOut) {
+      setMode("out")
+      return
+    }
+    if (mode === "out" && !allowScanOut && allowScanIn) {
+      setMode("in")
+    }
+  }, [allowScanIn, allowScanOut, mode])
+
   const handleScan = useCallback(async () => {
     const raw = value.trim()
-    if (!raw || pending || disabled || !warehouseId.trim()) return
+    if (
+      !raw ||
+      pending ||
+      disabled ||
+      !warehouseId.trim() ||
+      (mode === "in" && !allowScanIn) ||
+      (mode === "out" && !allowScanOut)
+    ) {
+      return
+    }
     setPending(true)
     setLastError(null)
     try {
@@ -86,7 +109,7 @@ export function WarehouseScanner({
     } finally {
       setPending(false)
     }
-  }, [value, pending, disabled, warehouseId, mode, onScan, t])
+  }, [value, pending, disabled, warehouseId, mode, allowScanIn, allowScanOut, onScan, t])
 
   return (
     <div className="space-y-3">
@@ -99,10 +122,10 @@ export function WarehouseScanner({
           className="h-9 rounded-md border border-input bg-background px-2 text-sm"
           value={mode}
           onChange={(e) => setMode(e.target.value as WarehouseScanMode)}
-          disabled={disabled || pending || !warehouseId.trim()}
+          disabled={disabled || pending || !warehouseId.trim() || (!allowScanIn && !allowScanOut)}
         >
-          <option value="out">{t("warehouse.scanner.modeOut")}</option>
-          <option value="in">{t("warehouse.scanner.modeIn")}</option>
+          <option value="out" disabled={!allowScanOut}>{t("warehouse.scanner.modeOut")}</option>
+          <option value="in" disabled={!allowScanIn}>{t("warehouse.scanner.modeIn")}</option>
         </select>
         <input
           ref={inputRef}
@@ -111,7 +134,14 @@ export function WarehouseScanner({
           spellCheck={false}
           placeholder={t("warehouse.scanner.placeholder")}
           value={value}
-          disabled={disabled || pending || !warehouseId.trim()}
+          disabled={
+            disabled ||
+            pending ||
+            !warehouseId.trim() ||
+            (!allowScanIn && !allowScanOut) ||
+            (mode === "in" && !allowScanIn) ||
+            (mode === "out" && !allowScanOut)
+          }
           aria-busy={pending}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
