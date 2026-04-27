@@ -4,10 +4,13 @@ import { useTranslation } from "react-i18next"
 
 import {
   confirmPendingMerchantOrderImport,
-  downloadPendingMerchantOrderImportFile,
+  downloadPendingMerchantOrderImportVersionFile,
   getPendingMerchantOrderImportPreview,
   listPendingMerchantOrderImports,
+  listPendingMerchantOrderImportVersions,
   rejectPendingMerchantOrderImport,
+  updatePendingMerchantOrderImportFile,
+  updatePendingMerchantOrderPickupDate,
 } from "@/api/merchant-orders-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
@@ -43,6 +46,11 @@ export function MerchantOrderPendingImportsPage() {
   const isMerchant = isMerchantUser(user)
   const queryClient = useQueryClient()
   const [previewImportId, setPreviewImportId] = useState<string | null>(null)
+  const [versionsImportId, setVersionsImportId] = useState<string | null>(null)
+  const [pickupImportId, setPickupImportId] = useState<string | null>(null)
+  const [pickupDateDraft, setPickupDateDraft] = useState("")
+  const [fileImportId, setFileImportId] = useState<string | null>(null)
+  const [replacementFile, setReplacementFile] = useState<File | null>(null)
 
   const pendingQuery = useQuery({
     queryKey: ["merchant-order-pending-imports", token],
@@ -68,9 +76,44 @@ export function MerchantOrderPendingImportsPage() {
       await queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports", token] })
     },
   })
+  const updatePickupDateMutation = useMutation({
+    mutationFn: (params: { pendingImportId: string; pickupDate: string }) =>
+      updatePendingMerchantOrderPickupDate({
+        token,
+        pendingImportId: params.pendingImportId,
+        pickupDate: params.pickupDate,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports", token] }),
+        queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-import-versions", token, versionsImportId] }),
+      ])
+      setPickupImportId(null)
+      setPickupDateDraft("")
+    },
+  })
+  const updateFileMutation = useMutation({
+    mutationFn: (params: { pendingImportId: string; file: File }) =>
+      updatePendingMerchantOrderImportFile({
+        token,
+        pendingImportId: params.pendingImportId,
+        file: params.file,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports", token] }),
+        queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-import-preview", token, previewImportId] }),
+        queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-import-versions", token, versionsImportId] }),
+      ])
+      setFileImportId(null)
+      setReplacementFile(null)
+    },
+  })
 
   const isMutating = confirmMutation.isPending || rejectMutation.isPending
   const canConfirm = Boolean(user?.permissions?.includes("merchant_orders.confirm"))
+  const canUpdatePickupDate = Boolean(user?.permissions?.includes("merchant_orders.update_pickup_date"))
+  const canUpdateImportFile = Boolean(user?.permissions?.includes("merchant_orders.update_import_file"))
   const visibleItems = (pendingQuery.data?.items ?? []).filter((row) =>
     isMerchant ? !!merchantId && row.merchantId === merchantId : true,
   )
@@ -87,6 +130,17 @@ export function MerchantOrderPendingImportsPage() {
       }),
     enabled: !!token && !!previewImportId,
   })
+  const versionsQuery = useQuery({
+    queryKey: ["merchant-order-pending-import-versions", token, versionsImportId],
+    queryFn: () =>
+      listPendingMerchantOrderImportVersions({
+        token,
+        pendingImportId: versionsImportId!,
+      }),
+    enabled: !!token && !!versionsImportId,
+  })
+  const changeTypeLabel = (value: "INITIAL_UPLOAD" | "PICKUP_DATE_UPDATED" | "FILE_REPLACED") =>
+    t(`merchantOrdersList.changeTypeValues.${value}`, { defaultValue: value })
 
   return (
     <Layout title={t("merchantOrdersList.pendingPageTitle", { defaultValue: "Pending confirmations" })}>
@@ -154,20 +208,27 @@ export function MerchantOrderPendingImportsPage() {
                   <Button type="button" size="sm" variant="outline" onClick={() => setPreviewImportId(row.id)}>
                     {t("common.preview", { defaultValue: "Preview" })}
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      downloadPendingMerchantOrderImportFile({
-                        token,
-                        pendingImportId: row.id,
-                        fileName: row.fileName,
-                      })
-                    }
-                  >
-                    {t("merchantOrdersList.downloadOriginal", { defaultValue: "Download original file" })}
+                  <Button type="button" size="sm" variant="outline" onClick={() => setVersionsImportId(row.id)}>
+                    {t("merchantOrdersList.versionHistory", { defaultValue: "Version history" })}
                   </Button>
+                  {canUpdatePickupDate ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setPickupImportId(row.id)
+                        setPickupDateDraft(new Date(row.pickupDate).toISOString().slice(0, 10))
+                      }}
+                    >
+                      {t("merchantOrdersList.updatePickupDate", { defaultValue: "Update pickup date" })}
+                    </Button>
+                  ) : null}
+                  {canUpdateImportFile ? (
+                    <Button type="button" size="sm" variant="outline" onClick={() => setFileImportId(row.id)}>
+                      {t("merchantOrdersList.updateExcelSheet", { defaultValue: "Update Excel sheet" })}
+                    </Button>
+                  ) : null}
                   {canConfirm ? (
                     <>
                     <Button
@@ -241,6 +302,125 @@ export function MerchantOrderPendingImportsPage() {
               </Table>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={versionsImportId !== null} onOpenChange={(open) => !open && setVersionsImportId(null)}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {t("merchantOrdersList.versionHistory", { defaultValue: "Version history" })}
+            </DialogTitle>
+          </DialogHeader>
+          {versionsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">{t("merchantOrdersList.loading")}</p>
+          ) : null}
+          {versionsQuery.error ? (
+            <p className="text-sm text-destructive">{(versionsQuery.error as Error).message}</p>
+          ) : null}
+          {!versionsQuery.isLoading && !versionsQuery.error ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("merchantOrdersList.version", { defaultValue: "Version" })}</TableHead>
+                  <TableHead>{t("merchantOrdersList.changeType", { defaultValue: "Change type" })}</TableHead>
+                  <TableHead>{t("merchantOrdersList.pickupDate", { defaultValue: "Pickup date" })}</TableHead>
+                  <TableHead>{t("merchantOrdersList.fileName", { defaultValue: "File" })}</TableHead>
+                  <TableHead>{t("merchantOrdersList.changedBy", { defaultValue: "Changed by" })}</TableHead>
+                  <TableHead>{t("merchantOrdersList.actions", { defaultValue: "Actions" })}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(versionsQuery.data?.items ?? []).map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.versionNumber}</TableCell>
+                    <TableCell>{changeTypeLabel(item.changeType)}</TableCell>
+                    <TableCell>{new Date(item.pickupDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{item.fileName}</TableCell>
+                    <TableCell>{item.changedByName || "—"}</TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={!item.filePath}
+                        onClick={() =>
+                          versionsImportId
+                            ? downloadPendingMerchantOrderImportVersionFile({
+                                token,
+                                pendingImportId: versionsImportId,
+                                versionId: item.id,
+                                fileName: item.fileName,
+                              })
+                            : undefined
+                        }
+                      >
+                        {item.filePath
+                          ? t("merchantOrdersList.downloadOriginal", { defaultValue: "Download original file" })
+                          : t("merchantOrdersList.fileUnavailable", { defaultValue: "File unavailable" })}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={pickupImportId !== null} onOpenChange={(open) => !open && setPickupImportId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("merchantOrdersList.updatePickupDate", { defaultValue: "Update pickup date" })}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              type="date"
+              value={pickupDateDraft}
+              onChange={(e) => setPickupDateDraft(e.target.value)}
+              className="w-full rounded-md border px-3 py-2 text-sm"
+            />
+            <Button
+              type="button"
+              disabled={!pickupDateDraft || updatePickupDateMutation.isPending}
+              onClick={() =>
+                pickupImportId &&
+                updatePickupDateMutation.mutate({
+                  pendingImportId: pickupImportId,
+                  pickupDate: new Date(`${pickupDateDraft}T00:00:00`).toISOString(),
+                })
+              }
+            >
+              {t("common.save", { defaultValue: "Save" })}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={fileImportId !== null} onOpenChange={(open) => !open && setFileImportId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("merchantOrdersList.updateExcelSheet", { defaultValue: "Update Excel sheet" })}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={(e) => setReplacementFile(e.target.files?.[0] ?? null)}
+              className="w-full text-sm"
+            />
+            <Button
+              type="button"
+              disabled={!replacementFile || updateFileMutation.isPending}
+              onClick={() =>
+                fileImportId && replacementFile
+                  ? updateFileMutation.mutate({
+                      pendingImportId: fileImportId,
+                      file: replacementFile,
+                    })
+                  : undefined
+              }
+            >
+              {t("merchantOrdersList.updateExcelSheet", { defaultValue: "Update Excel sheet" })}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>

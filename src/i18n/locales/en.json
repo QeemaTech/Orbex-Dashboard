@@ -280,6 +280,20 @@
     "pendingEmpty": "No pending imports.",
     "confirmPending": "Confirm",
     "rejectPending": "Reject",
+    "versionHistory": "Version history",
+    "version": "Version",
+    "changeType": "Change type",
+    "changeTypeValues": {
+      "INITIAL_UPLOAD": "Initial upload",
+      "PICKUP_DATE_UPDATED": "Pickup date updated",
+      "FILE_REPLACED": "Excel file replaced"
+    },
+    "fileName": "File",
+    "changedBy": "Changed by",
+    "actions": "Actions",
+    "fileUnavailable": "File unavailable",
+    "updatePickupDate": "Update pickup date",
+    "updateExcelSheet": "Update Excel sheet",
     "myOrders": {
       "pageTitle": "My orders",
       "description": "My order batches — one row per batch. Use the warehouse filter to see hub-specific activity.",

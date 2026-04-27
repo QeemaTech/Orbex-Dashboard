@@ -262,6 +262,20 @@
     "pendingEmpty": "لا توجد ملفات معلقة.",
     "confirmPending": "تأكيد",
     "rejectPending": "رفض",
+    "versionHistory": "سجل الإصدارات",
+    "version": "الإصدار",
+    "changeType": "نوع التغيير",
+    "changeTypeValues": {
+      "INITIAL_UPLOAD": "الرفع الأول",
+      "PICKUP_DATE_UPDATED": "تم تحديث تاريخ الاستلام",
+      "FILE_REPLACED": "تم استبدال ملف Excel"
+    },
+    "fileName": "الملف",
+    "changedBy": "تم التعديل بواسطة",
+    "actions": "الإجراءات",
+    "fileUnavailable": "الملف غير متوفر",
+    "updatePickupDate": "تحديث تاريخ الاستلام",
+    "updateExcelSheet": "تحديث ملف Excel",
     "myOrders": {
       "pageTitle": "طلباتي",
       "description": "دفعات طلباتي — صف واحد لكل دفعة. صفِّ حسب المخزن لعرض نشاط المحور.",
