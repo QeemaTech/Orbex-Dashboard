@@ -20,7 +20,6 @@ import {
   hasCsConfirmedCustomerLocationPin,
   resolveCustomerLatLng,
 } from "@/features/customer-service/lib/cs-line-customer-location"
-import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
 import { CsConfirmedCustomerLocationMapButton } from "@/features/shipments/components/CsConfirmedCustomerLocationMapButton"
 import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
 import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
@@ -445,11 +444,6 @@ export function ShipmentDetailView({
           </section>
         </CardContent>
       </Card>
-
-      <PlanShipmentWarehouseTask
-        shipment={shipment}
-        contextWarehouseId={planTaskContextWarehouseId}
-      />
     </div>
   )
 }

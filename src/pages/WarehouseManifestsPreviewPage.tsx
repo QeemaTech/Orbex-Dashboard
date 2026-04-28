@@ -13,6 +13,7 @@ import {
 } from "recharts"
 
 import {
+  closeCourierManifest,
   dispatchCourierManifest,
   listCourierManifests,
   lockCourierManifest,
@@ -41,6 +42,10 @@ function formatDateTime(dateIso: string, locale: string): string {
   }).format(new Date(dateIso))
 }
 
+function manifestStatusLabel(status: CourierManifestRow["status"], t: (k: string) => string): string {
+  return t(`warehouse.manifests.status.${status}`)
+}
+
 export function WarehouseManifestsPreviewPage() {
   const { t, i18n } = useTranslation()
   const nav = useNavigate()
@@ -53,6 +58,7 @@ export function WarehouseManifestsPreviewPage() {
   const [manifestDate, setManifestDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [manifestCourierId, setManifestCourierId] = useState("")
   const [manifestZoneId, setManifestZoneId] = useState("")
+  const [dispatchConfirmManifest, setDispatchConfirmManifest] = useState<CourierManifestRow | null>(null)
 
   const canSeeWarehouseDirectory = hasPlatformWarehouseScope(user) || isWarehouseAdmin(user)
   const accessDenied =
@@ -132,6 +138,15 @@ export function WarehouseManifestsPreviewPage() {
     onError: (error) => showToast((error as Error).message, "error"),
   })
 
+  const closeManifestMutation = useMutation({
+    mutationFn: (manifestId: string) => closeCourierManifest({ token, manifestId }),
+    onSuccess: async () => {
+      showToast(t("warehouse.manifests.closeSuccess"), "success")
+      await queryClient.invalidateQueries({ queryKey: ["courier-manifests"] })
+    },
+    onError: (error) => showToast((error as Error).message, "error"),
+  })
+
   if (!warehouseId) {
     return (
       <Layout title={t("warehouse.detail.invalidTitle")}>
@@ -170,8 +185,17 @@ export function WarehouseManifestsPreviewPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("warehouse.manifests.title")}</CardTitle>
-            <CardDescription>{t("warehouse.manifests.description")}</CardDescription>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle>{t("warehouse.manifests.title")}</CardTitle>
+                <CardDescription>{t("warehouse.manifests.description")}</CardDescription>
+              </div>
+              <Button type="button" asChild>
+                <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/create`}>
+                  {t("warehouse.manifests.create.cta")}
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             <Input
@@ -269,13 +293,18 @@ export function WarehouseManifestsPreviewPage() {
                       <TableHead>{t("warehouse.manifests.courier")}</TableHead>
                       <TableHead>{t("warehouse.manifests.zone")}</TableHead>
                       <TableHead>{t("warehouse.manifests.shipments")}</TableHead>
+                      <TableHead>{t("warehouse.manifests.statusLabel")}</TableHead>
                       <TableHead>{t("warehouse.manifests.locked")}</TableHead>
                       <TableHead>{t("warehouse.manifests.dispatched")}</TableHead>
                       <TableHead>{t("warehouse.manifests.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(manifestsQuery.data?.manifests ?? []).map((row: CourierManifestRow) => (
+                    {(manifestsQuery.data?.manifests ?? []).map((row: CourierManifestRow) => {
+                      const hasMissingCsConfirmation = row.shipments.some(
+                        (shipment) => !shipment.csConfirmedAt,
+                      )
+                      return (
                       <TableRow
                         key={row.id}
                         className="hover:bg-muted/50 cursor-pointer"
@@ -286,6 +315,7 @@ export function WarehouseManifestsPreviewPage() {
                         <TableCell>{row.courier.fullName?.trim() || row.courier.id}</TableCell>
                         <TableCell>{row.deliveryZone.name?.trim() || row.deliveryZone.id}</TableCell>
                         <TableCell>{row.shipmentCount}</TableCell>
+                        <TableCell>{manifestStatusLabel(row.status, t)}</TableCell>
                         <TableCell>
                           {row.lockedAt ? formatDateTime(row.lockedAt, locale) : getNotApplicable()}
                         </TableCell>
@@ -302,7 +332,11 @@ export function WarehouseManifestsPreviewPage() {
                             type="button"
                             size="sm"
                             variant="outline"
-                            disabled={!canManageTransfer || !!row.lockedAt || lockManifestMutation.isPending}
+                            disabled={
+                              !canManageTransfer ||
+                              row.status !== "DRAFT" ||
+                              lockManifestMutation.isPending
+                            }
                             onClick={() => lockManifestMutation.mutate(row.id)}
                           >
                             {t("warehouse.manifests.lock")}
@@ -312,23 +346,81 @@ export function WarehouseManifestsPreviewPage() {
                             size="sm"
                             disabled={
                               !canManageTransfer ||
-                              !row.lockedAt ||
-                              !!row.dispatchedAt ||
+                              row.status !== "LOCKED" ||
+                              hasMissingCsConfirmation ||
                               dispatchManifestMutation.isPending
                             }
-                            onClick={() => dispatchManifestMutation.mutate(row.id)}
+                            title={
+                              hasMissingCsConfirmation
+                                ? t("warehouse.manifests.csConfirmed", {
+                                    defaultValue:
+                                      "All manifest shipments must be CS confirmed before dispatch.",
+                                  })
+                                : undefined
+                            }
+                            onClick={() => setDispatchConfirmManifest(row)}
                           >
                             {t("warehouse.manifests.dispatch")}
                           </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            disabled={
+                              !canManageTransfer ||
+                              row.status !== "DISPATCHED" ||
+                              closeManifestMutation.isPending
+                            }
+                            onClick={() => closeManifestMutation.mutate(row.id)}
+                          >
+                            {t("warehouse.manifests.close")}
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
             </CardContent>
           </Card>
         </div>
+        {dispatchConfirmManifest ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-card w-full max-w-md rounded-lg border p-4 shadow-lg">
+              <h3 className="text-base font-semibold">{t("warehouse.manifests.dispatchConfirm.title")}</h3>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {t("warehouse.manifests.dispatchConfirm.body", {
+                  manifestId: dispatchConfirmManifest.id,
+                  courier:
+                    dispatchConfirmManifest.courier.fullName?.trim() ||
+                    dispatchConfirmManifest.courier.id,
+                  shipmentCount: String(dispatchConfirmManifest.shipmentCount),
+                })}
+              </p>
+              <div className="mt-4 flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDispatchConfirmManifest(null)}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={dispatchManifestMutation.isPending}
+                  onClick={() => {
+                    const manifestId = dispatchConfirmManifest.id
+                    setDispatchConfirmManifest(null)
+                    dispatchManifestMutation.mutate(manifestId)
+                  }}
+                >
+                  {t("warehouse.manifests.dispatchConfirm.confirm")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </Layout>
   )

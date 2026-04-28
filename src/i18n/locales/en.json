@@ -14,6 +14,7 @@
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
     "couriers": "Couriers",
+    "pickupCouriers": "Pickup couriers",
     "merchants": "Merchants",
     "users": "Users",
     "roles": "Roles",
@@ -27,6 +28,35 @@
     "settings": "Settings",
     "customerService": "Customer service",
     "csDashboard": "CS dashboard"
+  },
+  "pickupCouriers": {
+    "title": "Pickup couriers",
+    "search": "Search pickup couriers",
+    "create": "Create pickup courier",
+    "edit": "Edit",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "active": "Active",
+    "inactive": "Inactive",
+    "save": "Save",
+    "close": "Close",
+    "nationalId": "National ID",
+    "vehicleType": "Vehicle type",
+    "vehiclePlate": "Vehicle plate number",
+    "notes": "Notes",
+    "columns": {
+      "name": "Full name",
+      "phone": "Phone",
+      "warehouse": "Warehouse",
+      "vehicle": "Vehicle",
+      "active": "Status",
+      "actions": "Actions"
+    },
+    "feedback": {
+      "created": "Pickup courier created",
+      "updated": "Pickup courier updated",
+      "failed": "Could not save pickup courier"
+    }
   },
   "tracking": {
     "brandTitle": "Orbex tracking",
@@ -63,7 +93,7 @@
     "columns": {
       "date": "Manifest date",
       "warehouse": "Warehouse",
-      "courier": "Courier",
+      "courier": "Delivery courier",
       "zone": "Zone",
       "shipmentCount": "Shipments",
       "totalCod": "COD",
@@ -85,9 +115,10 @@
     "shipmentsDescription": "Shipment lines included in this courier manifest.",
     "fields": {
       "manifestDate": "Manifest date",
+        "status": "Status",
       "warehouse": "Warehouse",
       "governorate": "Governorate",
-      "courier": "Courier",
+      "courier": "Delivery courier",
       "zone": "Delivery zone",
       "shipmentCount": "Shipments",
       "totalCod": "Total COD",
@@ -212,6 +243,7 @@
       "pickWarehouse": "Select a warehouse…",
       "submit": "Create planned task",
       "footerHint": "Batch and shipment must be in the warehouse. Delivery requires outbound customer service confirmation on this shipment.",
+      "manifestOnlyDelivery": "Delivery planning is manifest-only. Use Create Manifest for delivery dispatching.",
       "success": "Planned task created ({{type}}). You can scan out with the tracking number.",
       "hintBatchNotInWarehouse": "The merchant order batch is not in a warehouse yet (transfer must be IN_WAREHOUSE).",
       "hintLineNotInWarehouse": "This shipment is not IN_WAREHOUSE.",
@@ -636,8 +668,9 @@
       "address": "Address",
       "openLocationLink": "Open location link",
       "customerLocation": "Customer GPS",
-      "courier": "Courier",
+      "courier": "Delivery courier",
       "status": "Status",
+      "zoneResolutionStatus": "Zone resolution",
       "actions": "Actions"
     },
     "actions": {
@@ -669,6 +702,9 @@
       "locationTextPlaceholder": "Description or paste coordinates (e.g. 30.04, 31.23)",
       "locationLinkLabel": "Maps link",
       "locationLinkPlaceholder": "https://www.google.com/maps?q=30.0444,31.2357",
+      "locationPreviewLabel": "Location preview",
+      "locationPreviewEmpty": "No valid coordinates detected yet.",
+      "previewMap": "Preview map",
       "coordsHint": "You must provide coordinates via the maps link, notes, or existing saved GPS on the customer.",
       "cancel": "Cancel",
       "submit": "Confirm and save location",
@@ -974,7 +1010,7 @@
       "descriptionExtended": "Live batches for your hub from the warehouse UI. Click a row to see all customer shipments in the batch.",
       "descriptionMerchantOrderBatches": "Each row is one merchant order batch inbound to this hub. Open it for batch detail and customer shipments.",
       "titleTransfers": "Merchant order transfers",
-      "descriptionTransfers": "Each row is one batch linked to this hub. Open it for batch detail, customer shipments, and courier assignment.",
+      "descriptionTransfers": "Each row is one batch linked to this hub. Open it for pickup, transfer, and return operational flow.",
       "titleShipments": "Shipments",
       "descriptionShipments": "Shipment lines at this hub. Open a row for line detail and tracking.",
       "openBatchSummary": "Batch summary",
@@ -983,7 +1019,9 @@
       "allStatuses": "All statuses",
       "returnsOnly": "Returns only",
       "filterReturnsByCourier": "Courier (returns)",
+      "filterReturnsByPickupCourier": "Pickup courier (returns)",
       "allCouriers": "All couriers",
+      "allPickupCouriers": "All pickup couriers",
       "unnamedCourier": "Unnamed courier",
       "pickCourier": "Pick a courier…",
       "courierIdPlaceholder": "Courier ID",
@@ -992,13 +1030,23 @@
       "assignLegPickup": "First mile",
       "assignLegHint": "First mile = merchant to hub (before scan-in). Last mile = delivery from hub.",
       "pagination": "Total {{total}} · page {{page}}",
-      "tabOrders": "Orders",
-      "tabShipments": "Shipments",
+      "tabOrders": "Pickup / Transfer / Return",
+      "tabShipments": "Delivery (Manifest)",
       "tabManifests": "Manifests"
     },
     "manifests": {
       "title": "Courier manifests",
       "description": "Manage manifests by zone and courier, then lock and dispatch.",
+      "create": {
+        "cta": "Create Manifest",
+        "title": "Create courier manifest",
+        "description": "Eligible shipments are filtered by CS confirmation and resolved delivery zone, then grouped by zone.",
+        "submit": "Create",
+        "pickCourier": "Select delivery courier…",
+        "preview": "Tracking preview",
+        "empty": "No eligible shipments found for manifest creation.",
+        "success": "Manifest created successfully."
+      },
       "searchShipmentPlaceholder": "Search shipments by tracking/customer/merchant",
       "autoAssignTitle": "Auto assign shipments",
       "autoAssign": "Auto assign",
@@ -1008,16 +1056,30 @@
       "courierDistribution": "Shipment distribution per courier",
       "shipments": "Shipments",
       "zone": "Zone",
-      "courier": "Courier",
+      "courier": "Delivery courier",
       "load": "Load",
       "allZones": "All zones",
-      "allCouriers": "All couriers",
+      "allCouriers": "All delivery couriers",
       "csConfirmed": "CS confirmed",
       "assignedCourier": "Assigned courier",
       "confirmLocation": "Confirm location",
       "locked": "Locked at",
       "dispatched": "Dispatched at",
       "actions": "Actions",
+      "statusLabel": "Status",
+      "close": "Close",
+      "closeSuccess": "Manifest closed.",
+      "status": {
+        "DRAFT": "Draft",
+        "LOCKED": "Locked",
+        "DISPATCHED": "Dispatched",
+        "CLOSED": "Closed"
+      },
+      "dispatchConfirm": {
+        "title": "Confirm dispatch",
+        "body": "Dispatch manifest {{manifestId}} to courier {{courier}} with {{shipmentCount}} shipments?",
+        "confirm": "Confirm dispatch"
+      },
       "lock": "Lock",
       "dispatch": "Dispatch"
     },
@@ -1116,6 +1178,11 @@
       "READY_FOR_SETTLEMENT": "Ready for settlement",
       "SETTLED": "Settled",
       "ON_HOLD": "On hold"
+    },
+    "zoneResolutionStatus": {
+      "PENDING": "Pending",
+      "RESOLVED": "Resolved",
+      "FAILED": "Failed"
     },
     "merchantOrderBatchStatus": {
       "PENDING_PICKUP": "Pending pickup",

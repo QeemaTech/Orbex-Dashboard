@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/auth-context"
 import { CsConfirmedCustomerLocationMapButton } from "@/features/shipments/components/CsConfirmedCustomerLocationMapButton"
 import { ShipmentCsConfirmLocationDialog } from "@/features/shipments/components/ShipmentCsConfirmLocationDialog"
 
-const MERCHANT_ORDERS_UPDATE = "merchant_orders.update"
+const SHIPMENTS_UPDATE = "shipments.update"
 
 type Props = {
   line: ShipmentOrderRow
@@ -31,13 +31,7 @@ export function ShipmentCsConfirmButton({
   const { user } = useAuth()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const hasUpdatePermission = Boolean(user?.permissions?.includes(MERCHANT_ORDERS_UPDATE))
-  const isAdminLike =
-    user?.role === "ADMIN" ||
-    (user?.roles ?? []).includes("ADMIN") ||
-    (user?.roles ?? []).includes("super_admin") ||
-    (user?.rbacRoles ?? []).some((r) => r.slug === "admin" || r.slug === "super_admin")
-  const canConfirmAction = hasUpdatePermission || isAdminLike
+  const canConfirmAction = Boolean(user?.permissions?.includes(SHIPMENTS_UPDATE))
   const eligible = canConfirmCsForShipmentLine(line)
   const batchId = merchantOrderBatchId(line)
   const token = accessToken?.trim() ?? ""

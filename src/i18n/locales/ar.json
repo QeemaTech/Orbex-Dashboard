@@ -14,6 +14,7 @@
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
     "couriers": "المناديب",
+    "pickupCouriers": "مناديب الاستلام",
     "merchants": "التجار",
     "users": "المستخدمون",
     "collections": "التحصيل",
@@ -27,6 +28,35 @@
     "customerService": "خدمة العملاء",
     "csDashboard": "لوحة خدمة العملاء",
     "roles": "الأدوار"
+  },
+  "pickupCouriers": {
+    "title": "مناديب الاستلام",
+    "search": "بحث عن مندوب استلام",
+    "create": "إضافة مندوب استلام",
+    "edit": "تعديل",
+    "activate": "تفعيل",
+    "deactivate": "تعطيل",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "save": "حفظ",
+    "close": "إغلاق",
+    "nationalId": "الرقم القومي",
+    "vehicleType": "نوع المركبة",
+    "vehiclePlate": "رقم اللوحة",
+    "notes": "ملاحظات",
+    "columns": {
+      "name": "الاسم الكامل",
+      "phone": "الهاتف",
+      "warehouse": "المخزن",
+      "vehicle": "المركبة",
+      "active": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "feedback": {
+      "created": "تم إنشاء مندوب الاستلام",
+      "updated": "تم تحديث مندوب الاستلام",
+      "failed": "تعذر حفظ بيانات مندوب الاستلام"
+    }
   },
   "tracking": {
     "brandTitle": "تتبع Orbex",
@@ -63,7 +93,7 @@
     "columns": {
       "date": "تاريخ البيان",
       "warehouse": "المخزن",
-      "courier": "المندوب",
+      "courier": "مندوب التسليم",
       "zone": "المنطقة",
       "shipmentCount": "الشحنات",
       "totalCod": "الدفع عند الاستلام",
@@ -85,9 +115,10 @@
     "shipmentsDescription": "سطور الشحنات المدرجة في هذا البيان.",
     "fields": {
       "manifestDate": "تاريخ البيان",
+        "status": "الحالة",
       "warehouse": "المخزن",
       "governorate": "المحافظة",
-      "courier": "المندوب",
+      "courier": "مندوب التسليم",
       "zone": "منطقة التوصيل",
       "shipmentCount": "عدد الشحنات",
       "totalCod": "إجمالي الدفع عند الاستلام",
@@ -198,6 +229,7 @@
       "pickWarehouse": "اختر مخزنًا…",
       "submit": "إنشاء مهمة مخططة",
       "footerHint": "يجب أن تكون الدفعة والشحنة داخل المخزن. التسليم يتطلب تأكيد خدمة العملاء الصادر لهذه الشحنة.",
+      "manifestOnlyDelivery": "تخطيط التسليم يتم فقط عبر البيان. استخدم إنشاء بيان لبدء التسليم.",
       "success": "تم إنشاء المهمة المخططة ({{type}}). يمكنك مسح الخروج برقم التتبع.",
       "hintBatchNotInWarehouse": "دفعة طلب التاجر ليست داخل المخزن بعد (يجب أن تكون حالة التحويل داخل المخزن).",
       "hintLineNotInWarehouse": "الشحنة ليست في حالة داخل المخزن.",
@@ -609,8 +641,9 @@
       "address": "العنوان",
       "openLocationLink": "فتح رابط الموقع",
       "customerLocation": "موقع العميل",
-      "courier": "المندوب",
+      "courier": "مندوب التسليم",
       "status": "الحالة",
+      "zoneResolutionStatus": "حالة تحديد المنطقة",
       "actions": "إجراءات"
     },
     "actions": {
@@ -642,6 +675,9 @@
       "locationTextPlaceholder": "وصف أو إلصاق إحداثيات (مثال 30.04، 31.23)",
       "locationLinkLabel": "رابط الخرائط",
       "locationLinkPlaceholder": "https://www.google.com/maps?q=30.0444,31.2357",
+      "locationPreviewLabel": "معاينة الموقع",
+      "locationPreviewEmpty": "لم يتم اكتشاف إحداثيات صحيحة بعد.",
+      "previewMap": "معاينة الخريطة",
       "coordsHint": "يجب توفير الإحداثيات عبر رابط الخرائط أو الملاحظات أو الإحداثيات المحفوظة مسبقًا للعميل.",
       "cancel": "إلغاء",
       "submit": "تأكيد وحفظ الموقع",
@@ -956,7 +992,9 @@
       "allStatuses": "كل الحالات",
       "returnsOnly": "المرتجعات فقط",
       "filterReturnsByCourier": "المندوب (مرتجعات)",
+      "filterReturnsByPickupCourier": "مندوب الاستلام (مرتجعات)",
       "allCouriers": "كل المناديب",
+      "allPickupCouriers": "كل مناديب الاستلام",
       "unnamedCourier": "مندوب بلا اسم",
       "pickCourier": "اختر مندوبًا…",
       "courierIdPlaceholder": "معرّف المندوب",
@@ -965,13 +1003,23 @@
       "assignLegPickup": "أول ميل",
       "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}",
-      "tabOrders": "طلبات",
-      "tabShipments": "الشحنات",
+      "tabOrders": "الاستلام / النقل / الإرجاع",
+      "tabShipments": "التسليم (المنيفست)",
       "tabManifests": "البيانات"
     },
     "manifests": {
       "title": "بيانات التوصيل",
       "description": "إدارة بيانات التسليم حسب المنطقة والمندوب ثم القفل والإرسال.",
+      "create": {
+        "cta": "إنشاء بيان",
+        "title": "إنشاء بيان مندوب",
+        "description": "يتم تصفية الشحنات المؤهلة حسب تأكيد خدمة العملاء والمنطقة المحددة ثم تجميعها حسب المنطقة.",
+        "submit": "إنشاء",
+        "pickCourier": "اختر مندوب تسليم…",
+        "preview": "معاينة أرقام التتبع",
+        "empty": "لا توجد شحنات مؤهلة لإنشاء بيان.",
+        "success": "تم إنشاء البيان بنجاح."
+      },
       "searchShipmentPlaceholder": "ابحث بالشحنة أو العميل أو التاجر",
       "autoAssignTitle": "تعيين الشحنات تلقائيًا",
       "autoAssign": "تعيين تلقائي",
@@ -981,16 +1029,30 @@
       "courierDistribution": "توزيع الشحنات لكل مندوب",
       "shipments": "الشحنات",
       "zone": "المنطقة",
-      "courier": "المندوب",
+      "courier": "مندوب التسليم",
       "load": "الحمل",
       "allZones": "كل المناطق",
-      "allCouriers": "كل المناديب",
+      "allCouriers": "كل مناديب التسليم",
       "csConfirmed": "تأكيد خدمة العملاء",
       "assignedCourier": "المندوب المعين",
       "confirmLocation": "تأكيد الموقع",
       "locked": "وقت القفل",
       "dispatched": "وقت الإرسال",
       "actions": "الإجراءات",
+      "statusLabel": "الحالة",
+      "close": "إغلاق",
+      "closeSuccess": "تم إغلاق البيان.",
+      "status": {
+        "DRAFT": "مسودة",
+        "LOCKED": "مقفول",
+        "DISPATCHED": "مُرسل",
+        "CLOSED": "مغلق"
+      },
+      "dispatchConfirm": {
+        "title": "تأكيد الإرسال",
+        "body": "هل تريد إرسال البيان {{manifestId}} إلى المندوب {{courier}} بعدد {{shipmentCount}} شحنة؟",
+        "confirm": "تأكيد الإرسال"
+      },
       "lock": "قفل",
       "dispatch": "إرسال"
     },
@@ -1099,6 +1161,11 @@
       "READY_FOR_SETTLEMENT": "جاهز للتسوية",
       "SETTLED": "تمت التسوية",
       "ON_HOLD": "معلّق مؤقتًا"
+    },
+    "zoneResolutionStatus": {
+      "PENDING": "معلّق",
+      "RESOLVED": "تم التحديد",
+      "FAILED": "فشل التحديد"
     }
   },
   "merchants": {

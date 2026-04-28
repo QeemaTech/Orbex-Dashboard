@@ -57,6 +57,8 @@ export function RealtimeBridge() {
           void qc.invalidateQueries({ queryKey: ["warehouse-queue"] })
           void qc.invalidateQueries({ queryKey: ["warehouse-stats"] })
           void qc.invalidateQueries({ queryKey: ["courier-manifests"] })
+          void qc.invalidateQueries({ queryKey: ["courier-manifest", "detail"] })
+          void qc.invalidateQueries({ queryKey: ["courier-manifests-global"] })
           scheduleDashboardKpiInvalidate()
         }
         if (data.name === "kpi.updated") {

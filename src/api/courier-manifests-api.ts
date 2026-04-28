@@ -16,6 +16,7 @@ export type CourierManifestRow = {
   warehouseId: string
   deliveryZoneId: string
   manifestDate: string
+  status: "DRAFT" | "LOCKED" | "DISPATCHED" | "CLOSED"
   totalCod: string
   shipmentCount: number
   lockedAt: string | null
@@ -104,5 +105,34 @@ export function dispatchCourierManifest(params: {
     body: JSON.stringify(
       params.scannedOutAt ? { scannedOutAt: params.scannedOutAt } : {},
     ),
+  })
+}
+
+export function closeCourierManifest(params: {
+  token: string
+  manifestId: string
+}): Promise<CourierManifestRow> {
+  return apiFetch<CourierManifestRow>(`/api/courier-manifests/${params.manifestId}/close`, {
+    method: "POST",
+    token: params.token,
+  })
+}
+
+export function createCourierManifest(params: {
+  token: string
+  courierId: string
+  warehouseId: string
+  deliveryZoneId: string
+  manifestDate: string
+}): Promise<CourierManifestRow> {
+  return apiFetch<CourierManifestRow>("/api/courier-manifests", {
+    method: "POST",
+    token: params.token,
+    body: JSON.stringify({
+      courierId: params.courierId,
+      warehouseId: params.warehouseId,
+      deliveryZoneId: params.deliveryZoneId,
+      manifestDate: params.manifestDate,
+    }),
   })
 }

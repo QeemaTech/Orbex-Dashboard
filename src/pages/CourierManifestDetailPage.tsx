@@ -1,9 +1,10 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 
 import {
+  closeCourierManifest,
   dispatchCourierManifest,
   getCourierManifest,
   lockCourierManifest,
@@ -33,6 +34,10 @@ function formatMoney(raw: string): string {
   }).format(num)
 }
 
+function manifestStatusLabel(status: "DRAFT" | "LOCKED" | "DISPATCHED" | "CLOSED", t: (k: string) => string): string {
+  return t(`warehouse.manifests.status.${status}`)
+}
+
 export function CourierManifestDetailPage() {
   const { t, i18n } = useTranslation()
   const { accessToken, user } = useAuth()
@@ -53,6 +58,7 @@ export function CourierManifestDetailPage() {
 
   const canManageTransfer =
     user?.permissions?.includes("warehouses.manage_transfer") ?? false
+  const [dispatchConfirmOpen, setDispatchConfirmOpen] = useState(false)
 
   const lockMutation = useMutation({
     mutationFn: () => lockCourierManifest({ token, manifestId }),
@@ -82,8 +88,25 @@ export function CourierManifestDetailPage() {
     onError: (error) => showToast((error as Error).message, "error"),
   })
 
+  const closeMutation = useMutation({
+    mutationFn: () => closeCourierManifest({ token, manifestId }),
+    onSuccess: async () => {
+      showToast(t("warehouse.manifests.closeSuccess"), "success")
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["courier-manifest", "detail", token, manifestId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["courier-manifests"] }),
+      ])
+    },
+    onError: (error) => showToast((error as Error).message, "error"),
+  })
+
   const notApplicable = t("warehouse.notApplicable")
   const manifest = manifestQuery.data
+  const hasMissingCsConfirmation = Boolean(
+    manifest?.shipments.some((shipment) => !shipment.csConfirmedAt),
+  )
 
   const warehouseMismatch =
     !!warehouseId &&
@@ -141,6 +164,7 @@ export function CourierManifestDetailPage() {
                 <p><span className="font-medium">{t("manifestDetail.fields.zone")}:</span> {manifest.deliveryZone.name?.trim() || manifest.deliveryZone.id}</p>
                 <p><span className="font-medium">{t("manifestDetail.fields.shipmentCount")}:</span> {manifest.shipmentCount}</p>
                 <p><span className="font-medium">{t("manifestDetail.fields.totalCod")}:</span> {formatMoney(manifest.totalCod)}</p>
+                <p><span className="font-medium">{t("manifestDetail.fields.status")}:</span> {manifestStatusLabel(manifest.status, t)}</p>
                 <p><span className="font-medium">{t("manifestDetail.fields.lockedAt")}:</span> {manifest.lockedAt ? formatDateTime(manifest.lockedAt, locale) : notApplicable}</p>
                 <p><span className="font-medium">{t("manifestDetail.fields.dispatchedAt")}:</span> {manifest.dispatchedAt ? formatDateTime(manifest.dispatchedAt, locale) : notApplicable}</p>
               </CardContent>
@@ -157,7 +181,7 @@ export function CourierManifestDetailPage() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    disabled={!canManageTransfer || !!manifest.lockedAt || lockMutation.isPending}
+                    disabled={!canManageTransfer || manifest.status !== "DRAFT" || lockMutation.isPending}
                     onClick={() => lockMutation.mutate()}
                   >
                     {t("warehouse.manifests.lock")}
@@ -167,13 +191,34 @@ export function CourierManifestDetailPage() {
                     size="sm"
                     disabled={
                       !canManageTransfer ||
-                      !manifest.lockedAt ||
-                      !!manifest.dispatchedAt ||
+                      manifest.status !== "LOCKED" ||
+                      hasMissingCsConfirmation ||
                       dispatchMutation.isPending
                     }
-                    onClick={() => dispatchMutation.mutate()}
+                    title={
+                      hasMissingCsConfirmation
+                        ? t("warehouse.manifests.csConfirmed", {
+                            defaultValue:
+                              "All manifest shipments must be CS confirmed before dispatch.",
+                          })
+                        : undefined
+                    }
+                    onClick={() => setDispatchConfirmOpen(true)}
                   >
                     {t("warehouse.manifests.dispatch")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={
+                      !canManageTransfer ||
+                      manifest.status !== "DISPATCHED" ||
+                      closeMutation.isPending
+                    }
+                    onClick={() => closeMutation.mutate()}
+                  >
+                    {t("warehouse.manifests.close")}
                   </Button>
                 </div>
               </CardHeader>
@@ -208,6 +253,35 @@ export function CourierManifestDetailPage() {
                 </div>
               </CardContent>
             </Card>
+            {dispatchConfirmOpen ? (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="bg-card w-full max-w-md rounded-lg border p-4 shadow-lg">
+                  <h3 className="text-base font-semibold">{t("warehouse.manifests.dispatchConfirm.title")}</h3>
+                  <p className="text-muted-foreground mt-2 text-sm">
+                    {t("warehouse.manifests.dispatchConfirm.body", {
+                      manifestId: manifest.id,
+                      courier: manifest.courier.fullName?.trim() || manifest.courier.id,
+                      shipmentCount: String(manifest.shipmentCount),
+                    })}
+                  </p>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setDispatchConfirmOpen(false)}>
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={dispatchMutation.isPending}
+                      onClick={() => {
+                        setDispatchConfirmOpen(false)
+                        dispatchMutation.mutate()
+                      }}
+                    >
+                      {t("warehouse.manifests.dispatchConfirm.confirm")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>

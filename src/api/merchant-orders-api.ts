@@ -45,6 +45,7 @@ export type CsShipmentRow = {
   csConfirmedAt?: string | null
   /** User who confirmed the line at hub with customer location (CS flow only). */
   csConfirmedByUserId?: string | null
+  zoneResolutionStatus?: "PENDING" | "RESOLVED" | "FAILED" | null
   customerName: string
   phonePrimary: string
   phoneSecondary: string | null
@@ -128,6 +129,7 @@ export type ListShipmentsParams = {
   pageSize?: number
   merchantId?: string
   merchantName?: string
+  deliveryCourierId?: string
   assignedCourierId?: string
   courierName?: string
   unassignedOnly?: boolean
@@ -167,6 +169,7 @@ export async function listShipments(
     pageSize: p.pageSize ?? 20,
     merchantId: p.merchantId,
     merchantName: p.merchantName,
+    deliveryCourierId: p.deliveryCourierId ?? p.assignedCourierId,
     assignedCourierId: p.assignedCourierId,
     courierName: p.courierName,
     unassignedOnly: p.unassignedOnly ? "true" : undefined,
@@ -262,6 +265,7 @@ export type ShipmentOrderRow = {
   itemsCount?: number
   deliveryCourierId: string | null
   resolvedDeliveryZoneId?: string | null
+  zoneResolutionStatus?: "PENDING" | "RESOLVED" | "FAILED" | null
   deliveryCourier?: {
     id: string
     fullName: string | null

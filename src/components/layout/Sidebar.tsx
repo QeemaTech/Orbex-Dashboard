@@ -97,6 +97,7 @@ const adminNavConfig = [
   { to: "/merchant-orders/pending-confirmations", labelKey: "nav.merchantOrderConfirmations", icon: Boxes, end: false, perm: "merchant_orders.confirm" },
   { to: "/courier-manifests", labelKey: "nav.allCourierManifests", icon: Truck, end: false, perm: "courier_manifests.read_all" },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
+  { to: "/pickup-couriers", labelKey: "nav.pickupCouriers", icon: Truck, end: false, perm: "warehouses.read" },
   {
     to: "/delivery-zones",
     labelKey: "nav.deliveryZones",

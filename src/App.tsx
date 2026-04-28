@@ -34,6 +34,7 @@ import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseMerchantOrdersListPage } from "@/pages/WarehouseMerchantOrdersListPage"
 import { WarehouseShipmentsListPage } from "@/pages/WarehouseShipmentsListPage"
 import { WarehouseManifestsPreviewPage } from "@/pages/WarehouseManifestsPreviewPage"
+import { CreateCourierManifestPage } from "@/pages/CreateCourierManifestPage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { DeliveryZonesPage } from "@/pages/DeliveryZonesPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
@@ -49,6 +50,7 @@ import { CourierManifestDetailPage } from "@/pages/CourierManifestDetailPage"
 import { PackagingMaterialsPage } from "@/pages/PackagingMaterialsPage"
 import { PackagingMaterialRequestsPage } from "@/pages/PackagingMaterialRequestsPage"
 import { PackagingInventoryPage } from "@/pages/PackagingInventoryPage"
+import { PickupCouriersPage } from "@/pages/PickupCouriersPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -477,6 +479,19 @@ export default function App() {
           }
         />
         <Route
+          path="/pickup-couriers"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <PickupCouriersPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/warehouses"
           element={
             <Protected>
@@ -537,6 +552,19 @@ export default function App() {
                 requiredPermissions={["warehouses.read"]}
               >
                 <WarehouseManifestsPreviewPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests/create"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <CreateCourierManifestPage />
               </ProtectedRole>
             </Protected>
           }

@@ -32,7 +32,7 @@ import {
   type CourierManifestRow,
 } from "@/api/courier-manifests-api"
 import {
-  getWarehouseCouriers,
+  getWarehousePickupCouriers,
   getWarehouseSite,
   getWarehouseStats,
   getWarehouseZoneLinks,
@@ -288,6 +288,7 @@ export function WarehouseDetailPage() {
   const [manifestDate, setManifestDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [manifestCourierId, setManifestCourierId] = useState("")
   const [manifestZoneId, setManifestZoneId] = useState("")
+  const [dispatchConfirmManifest, setDispatchConfirmManifest] = useState<CourierManifestRow | null>(null)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [confirmDialogData, setConfirmDialogData] = useState<{
     merchantOrderId: string
@@ -436,7 +437,7 @@ export function WarehouseDetailPage() {
         transferStatus:
           transferStatusFilter === "" ? undefined : transferStatusFilter,
         returnsOnly,
-        courierId:
+        pickupCourierId:
           returnsOnly && returnsCourierFilterId.trim()
             ? returnsCourierFilterId.trim()
             : undefined,
@@ -454,7 +455,7 @@ export function WarehouseDetailPage() {
 
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
-    queryFn: () => getWarehouseCouriers({ token, warehouseId }),
+    queryFn: () => getWarehousePickupCouriers({ token, warehouseId }),
     enabled:
       !!token &&
       !accessDenied &&
@@ -1327,7 +1328,7 @@ export function WarehouseDetailPage() {
             {isMainHub && activeTab === "orders" && returnsOnly ? (
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-muted-foreground text-sm whitespace-nowrap">
-                  {t("warehouse.queue.filterReturnsByCourier")}
+                  {t("warehouse.queue.filterReturnsByPickupCourier")}
                 </label>
                 <select
                   className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 min-w-[12rem] rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
@@ -1337,7 +1338,7 @@ export function WarehouseDetailPage() {
                     setPage(1)
                   }}
                 >
-                  <option value="">{t("warehouse.queue.allCouriers")}</option>
+                  <option value="">{t("warehouse.queue.allPickupCouriers")}</option>
                   {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
                     <option key={c.id} value={c.id}>
                       {c.fullName?.trim() || t("warehouse.queue.unnamedCourier")}
@@ -1408,7 +1409,11 @@ export function WarehouseDetailPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {(manifestsQuery.data?.manifests ?? []).map((row: CourierManifestRow) => (
+                        {(manifestsQuery.data?.manifests ?? []).map((row: CourierManifestRow) => {
+                          const hasMissingCsConfirmation = row.shipments.some(
+                            (shipment) => !shipment.csConfirmedAt,
+                          )
+                          return (
                           <TableRow
                             key={row.id}
                             className="hover:bg-muted/50 cursor-pointer"
@@ -1443,18 +1448,60 @@ export function WarehouseDetailPage() {
                                   !canManageTransfer ||
                                   !row.lockedAt ||
                                   !!row.dispatchedAt ||
+                                  hasMissingCsConfirmation ||
                                   dispatchManifestMutation.isPending
                                 }
-                                onClick={() => dispatchManifestMutation.mutate(row.id)}
+                                title={
+                                  hasMissingCsConfirmation
+                                    ? t("warehouse.manifests.csConfirmed", {
+                                        defaultValue:
+                                          "All manifest shipments must be CS confirmed before dispatch.",
+                                      })
+                                    : undefined
+                                }
+                                onClick={() => setDispatchConfirmManifest(row)}
                               >
                                 {t("warehouse.manifests.dispatch")}
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))}
+                          )
+                        })}
                       </TableBody>
                     </Table>
                   </div>
+                  {dispatchConfirmManifest ? (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                      <div className="bg-card w-full max-w-md rounded-lg border p-4 shadow-lg">
+                        <h3 className="text-base font-semibold">{t("warehouse.manifests.dispatchConfirm.title")}</h3>
+                        <p className="text-muted-foreground mt-2 text-sm">
+                          {t("warehouse.manifests.dispatchConfirm.body", {
+                            manifestId: dispatchConfirmManifest.id,
+                            courier:
+                              dispatchConfirmManifest.courier.fullName?.trim() ||
+                              dispatchConfirmManifest.courier.id,
+                            shipmentCount: String(dispatchConfirmManifest.shipmentCount),
+                          })}
+                        </p>
+                        <div className="mt-4 flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => setDispatchConfirmManifest(null)}>
+                            {t("common.cancel")}
+                          </Button>
+                          <Button
+                            type="button"
+                            disabled={dispatchManifestMutation.isPending}
+                            onClick={() => {
+                              const manifestId = dispatchConfirmManifest.id
+                              setDispatchConfirmManifest(null)
+                              dispatchManifestMutation.mutate(manifestId)
+                            }}
+                          >
+                            {t("warehouse.manifests.dispatchConfirm.confirm")}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : isMainHub && activeTab === "orders" ? (
