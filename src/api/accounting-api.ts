@@ -138,6 +138,7 @@ export type MerchantBalanceRow = {
   totalCollected: string
   totalCommission: string
   totalShippingFees: string
+  totalPackagingFees: string
   remaining: string
 }
 
@@ -239,6 +240,7 @@ export type MerchantAccountSummary = {
     totalCollected: string
     totalCommission: string
     totalShippingFees: string
+    totalPackagingFees: string
     remaining: string
   }
   daily: Array<{
