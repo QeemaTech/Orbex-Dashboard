@@ -899,6 +899,13 @@ export type ImportOrdersParams = {
   regionId?: string | null
   notes?: string | null
   trackingNumber?: string | null
+  packagingMaterialRequest?: {
+    notes?: string | null
+    items: Array<{
+      packagingMaterialId: string
+      requestedQuantity: string | number
+    }>
+  } | null
 }
 
 /** `POST /api/merchant-orders/import-orders` returns 202 — rows queued for confirmation. */
@@ -933,6 +940,7 @@ export async function importOrdersFromExcel(
       regionId: p.regionId,
       notes: p.notes,
       trackingNumber: p.trackingNumber,
+      packagingMaterialRequest: p.packagingMaterialRequest ?? null,
     }),
   )
 

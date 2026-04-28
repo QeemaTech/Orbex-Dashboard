@@ -21,7 +21,7 @@ export function DashboardFooter() {
           aria-label="Qeema Tech - قيمة تك"
         >
           <img
-            src="/qeema-logo.svg"
+            src="/qeema letters.svg"
             alt=""
             className="h-7 w-auto object-contain dark:opacity-90"
           />

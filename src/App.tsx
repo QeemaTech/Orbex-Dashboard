@@ -46,6 +46,9 @@ import { DeliveryProofPage } from "@/pages/DeliveryProofPage"
 import { MerchantOrderPendingImportsPage } from "@/pages/MerchantOrderPendingImportsPage"
 import { AllCourierManifestsPage } from "@/pages/AllCourierManifestsPage"
 import { CourierManifestDetailPage } from "@/pages/CourierManifestDetailPage"
+import { PackagingMaterialsPage } from "@/pages/PackagingMaterialsPage"
+import { PackagingMaterialRequestsPage } from "@/pages/PackagingMaterialRequestsPage"
+import { PackagingInventoryPage } from "@/pages/PackagingInventoryPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -329,6 +332,45 @@ export default function App() {
                 requiredPermissions={["courier_manifests.read_all"]}
               >
                 <CourierManifestDetailPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/packaging-materials"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN", "MERCHANT"]}
+                requiredPermissions={["packaging_materials.read"]}
+              >
+                <PackagingMaterialsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/packaging-material-requests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN", "MERCHANT"]}
+                requiredPermissions={["packaging_material_requests.read_own"]}
+              >
+                <PackagingMaterialRequestsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/packaging-inventory"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["packaging_materials.read"]}
+              >
+                <PackagingInventoryPage />
               </ProtectedRole>
             </Protected>
           }
