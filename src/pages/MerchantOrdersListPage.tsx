@@ -1,13 +1,15 @@
-import { useQuery } from "@tanstack/react-query"
-import { Boxes } from "react-lucid"
-import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Boxes, Upload, Download, Loader2 } from "react-lucid"
+import { useCallback, useMemo, useState, useRef } from "react"
 import { useTranslation } from "react-i18next"
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 
 import {
   getDashboardKpis,
   listShipments,
   merchantOrderBatchId,
+  importOrdersFromExcel,
+  downloadImportTemplate,
 } from "@/api/merchant-orders-api"
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
@@ -32,7 +34,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { SelectMerchantImportModal } from "@/features/merchant-orders/components/SelectMerchantImportModal"
+import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
@@ -56,24 +66,20 @@ export function MerchantOrdersListPage() {
   const { t, i18n } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
-  const { warehouseId: warehouseIdParam } = useParams<{ warehouseId?: string }>()
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
   const queryClient = useQueryClient()
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const warehouseIdFilter = searchParams.get("warehouseId") ?? ""
-  const routeWarehouseId = warehouseIdParam?.trim() ?? ""
-  const isWarehouseScopedRoute = routeWarehouseId.length > 0
-  const warehouseId = isWarehouseScopedRoute ? routeWarehouseId : warehouseIdFilter
+  const warehouseId = searchParams.get("warehouseId") ?? ""
   const page = Number(searchParams.get("page") ?? "1") || 1
   const pageSize = Number(searchParams.get("pageSize") ?? "20") || 20
 
   const warehousesQuery = useQuery({
     queryKey: ["warehouse-sites-shipments", token],
     queryFn: () => listWarehouseSites(token),
-    enabled: !!token && user?.role === "ADMIN" && !isWarehouseScopedRoute,
+    enabled: !!token && user?.role === "ADMIN",
   })
 
   const listQueryKey = useMemo(
@@ -98,25 +104,7 @@ export function MerchantOrdersListPage() {
         assignedWarehouseId: warehouseId || undefined,
         expand: "merchant,courier",
       }),
-    enabled: !!token && !isWarehouseScopedRoute,
-  })
-
-  const warehouseOrdersQuery = useQuery({
-    queryKey: [
-      "warehouse-merchant-orders-list",
-      token,
-      routeWarehouseId,
-      page,
-      pageSize,
-    ] as const,
-    queryFn: () =>
-      listWarehouseOrders({
-        token,
-        page,
-        pageSize,
-        warehouseId: routeWarehouseId,
-      }),
-    enabled: !!token && isWarehouseScopedRoute,
+    enabled: !!token,
   })
 
   const kpiQuery = useQuery({
@@ -133,19 +121,18 @@ export function MerchantOrdersListPage() {
         recentTake: 8,
         assignedWarehouseId: warehouseId || undefined,
       }),
-    enabled: !!token && !isWarehouseScopedRoute,
+    enabled: !!token,
   })
 
   const setWarehouse = useCallback(
     (next: string) => {
-      if (isWarehouseScopedRoute) return
       const p = new URLSearchParams(searchParams)
       if (next) p.set("warehouseId", next)
       else p.delete("warehouseId")
       p.set("page", "1")
       setSearchParams(p)
     },
-    [isWarehouseScopedRoute, searchParams, setSearchParams],
+    [searchParams, setSearchParams],
   )
 
   const setPage = (n: number) => {
@@ -156,11 +143,7 @@ export function MerchantOrdersListPage() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(
-      ((isWarehouseScopedRoute
-        ? warehouseOrdersQuery.data?.total
-        : shipmentsQuery.data?.total) ?? 0) / pageSize,
-    ),
+    Math.ceil((shipmentsQuery.data?.total ?? 0) / pageSize),
   )
 
   const batchPipelineBreakdown = useMemo(() => {
@@ -197,9 +180,7 @@ export function MerchantOrdersListPage() {
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
-    : isWarehouseScopedRoute
-      ? `/warehouses/${encodeURIComponent(routeWarehouseId)}/merchant-orders`
-      : "/merchant-orders"
+    : "/merchant-orders"
 
   const onRowClick = (row: CsShipmentRow) => {
     const batchId = merchantOrderBatchId(row)
@@ -207,48 +188,18 @@ export function MerchantOrdersListPage() {
     void navigate(`${detailPrefix}/${encodeURIComponent(batchId)}`)
   }
 
-  const pendingImportsQuery = useQuery({
-    queryKey: ["merchant-order-pending-imports", token],
-    queryFn: () => listPendingMerchantOrderImports({ token }),
-    enabled: !!token && canViewPendingConfirmations && !isWarehouseScopedRoute,
-  })
-
-  const pendingRows = useMemo(() => {
-    if (!canViewPendingConfirmations || page !== 1) return []
-    return pendingImportsQuery.data?.items ?? []
-  }, [canViewPendingConfirmations, page, pendingImportsQuery.data?.items])
-
-  const totalRowsForPagination =
-    (isWarehouseScopedRoute
-      ? (warehouseOrdersQuery.data?.total ?? 0)
-      : (shipmentsQuery.data?.total ?? 0)) + pendingRows.length
-
-  const onDownloadTemplate = useCallback(async () => {
-    if (!token || isDownloadingTemplate) return
-    setImportFeedback(null)
-    setIsDownloadingTemplate(true)
-    try {
-      const blob = await downloadMerchantOrdersImportTemplate({ token })
-      const href = URL.createObjectURL(blob)
-      const anchor = document.createElement("a")
-      anchor.href = href
-      anchor.download = "order-import-template.xlsx"
-      document.body.appendChild(anchor)
-      anchor.click()
-      anchor.remove()
-      URL.revokeObjectURL(href)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t("merchantOrdersList.importGenericError")
-      setImportFeedback({ type: "error", message: msg })
-    } finally {
-      setIsDownloadingTemplate(false)
-    }
-  }, [isDownloadingTemplate, t, token])
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [selectedMerchant, setSelectedMerchant] = useState<string>("")
+  const [pickupDate, setPickupDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [importError, setImportError] = useState<string>("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const importMerchantId = merchantContext ? (user?.merchantId ?? "") : selectedMerchant
 
   const merchantsQuery = useQuery({
-    queryKey: ["merchants-import-options", token],
-    queryFn: () => listMerchants({ token, page: 1, pageSize: 100 }),
-    enabled: !!token && canImportMerchantOrders && !merchantContext,
+    queryKey: ["merchants-list", token],
+    queryFn: () => listMerchants({ token, pageSize: 100 }),
+    enabled: !!token && !merchantContext,
   })
 
   const importMutation = useMutation({
@@ -343,67 +294,36 @@ export function MerchantOrdersListPage() {
         </Card>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          {merchantContext || isWarehouseScopedRoute ? null : (
-            <div className="space-y-2">
-              <label
-                className="text-muted-foreground text-sm font-medium"
-                htmlFor="shipments-warehouse-filter"
-              >
-                {t("merchantOrdersList.filterWarehouse")}
-              </label>
-              <select
-                id="shipments-warehouse-filter"
-                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:w-[280px]"
-                value={warehouseId}
-                onChange={(e) => setWarehouse(e.target.value)}
-                disabled={warehousesQuery.isLoading}
-              >
-                <option value="">{t("merchantOrdersList.allWarehouses")}</option>
-                {(warehousesQuery.data?.warehouses ?? []).map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                    {w.governorate ? ` · ${w.governorate}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          {canImportMerchantOrders && !isWarehouseScopedRoute ? (
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx"
-                className="hidden"
-                onChange={(e) => {
-                  void onFileSelected(e)
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  void onDownloadTemplate()
-                }}
-                disabled={isDownloadingTemplate || isImporting}
-              >
-                {isDownloadingTemplate
-                  ? t("merchantOrdersList.downloadingTemplate")
-                  : t("merchantOrdersList.downloadTemplate")}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  void onImportClick()
-                }}
-                disabled={isImporting || isDownloadingTemplate}
-              >
-                {isImporting
-                  ? t("merchantOrdersList.importing")
-                  : t("merchantOrdersList.importExcel")}
-              </Button>
-            </div>
-          ) : null}
+          <div className="space-y-2">
+            <label className="text-muted-foreground text-sm font-medium" htmlFor="shipments-warehouse-filter">
+              {t("merchantOrdersList.filterWarehouse")}
+            </label>
+            <select
+              id="shipments-warehouse-filter"
+              className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:w-[280px]"
+              value={warehouseId}
+              onChange={(e) => setWarehouse(e.target.value)}
+              disabled={warehousesQuery.isLoading}
+            >
+              <option value="">{t("merchantOrdersList.allWarehouses")}</option>
+              {(warehousesQuery.data?.warehouses ?? []).map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                  {w.governorate ? ` · ${w.governorate}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="size-4" />
+              Download Template
+            </Button>
+            <Button onClick={handleImportClick}>
+              <Upload className="size-4" />
+              Import Orders
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -451,26 +371,17 @@ export function MerchantOrdersListPage() {
             <CardDescription>{t("merchantOrdersList.tableCardDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
-            {isWarehouseScopedRoute && warehouseOrdersQuery.error ? (
-              <p className="text-destructive text-sm">
-                {(warehouseOrdersQuery.error as Error).message}
-              </p>
-            ) : null}
-            {!isWarehouseScopedRoute && shipmentsQuery.error ? (
+            {shipmentsQuery.error ? (
               <p className="text-destructive text-sm">
                 {(shipmentsQuery.error as Error).message}
               </p>
             ) : null}
 
-            {isWarehouseScopedRoute && warehouseOrdersQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
-            ) : null}
-            {!isWarehouseScopedRoute && shipmentsQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">{t("merchantOrdersList.loading")}</p>
+            {shipmentsQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">{t(merchantOrdersLoadingKey)}</p>
             ) : null}
 
-            {(isWarehouseScopedRoute && warehouseOrdersQuery.data) ||
-            (!isWarehouseScopedRoute && shipmentsQuery.data) ? (
+            {shipmentsQuery.data ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
                 <Table>
                   <TableHeader>
@@ -654,3 +565,4 @@ export function MerchantOrdersListPage() {
     </Layout>
   )
 }
+

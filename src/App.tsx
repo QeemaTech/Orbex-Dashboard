@@ -15,8 +15,6 @@ import {
 } from "@/lib/auth-context"
 import { CsCouriersPage } from "@/features/customer-service/pages/CsCouriersPage"
 import { CsShipmentsListPage } from "@/features/customer-service/pages/CsShipmentsListPage"
-import { DashboardPage } from "@/pages/DashboardPage"
-import { WarehouseAdminDashboardPage } from "@/pages/WarehouseAdminDashboardPage"
 import { DashboardPage, WarehouseAdminDashboardPage } from "@/pages/DashboardPage"
 import { AccountsPage } from "@/pages/AccountsPage"
 import { AccountsBalancesPage } from "@/pages/AccountsBalancesPage"
@@ -40,7 +38,6 @@ import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { DeliveryZonesPage } from "@/pages/DeliveryZonesPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
 import { RealtimeBridge } from "@/lib/realtime"
-import { isWarehouseSiteAdmin, isWarehouseStaffRole } from "@/lib/warehouse-access"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { RolesPage } from "@/pages/RolesPage"
 import { SettingsPage } from "@/pages/SettingsPage"
@@ -101,37 +98,6 @@ function RootRedirect() {
   return <Navigate to={getDefaultDashboardRoute(user)} replace />
 }
 
-function DashboardEntryRoute() {
-  const { user } = useAuth()
-  if (!user) return <Navigate to="/login" replace />
-  if (isWarehouseStaffRole(user) && user.warehouseId) {
-    return (
-      <Navigate
-        to={`/warehouses/${encodeURIComponent(user.warehouseId)}/merchant-orders`}
-        replace
-      />
-    )
-  }
-  if (isWarehouseStaffRole(user) || isWarehouseSiteAdmin(user)) {
-    return isWarehouseSiteAdmin(user) ? (
-      <Navigate to="/warehouse-dashboard" replace />
-    ) : (
-      <Navigate to="/warehouse" replace />
-    )
-  }
-  return <DashboardPage />
-}
-
-function WarehouseAdminDashboardRoute() {
-  const { user } = useAuth()
-  if (!user) return <Navigate to="/login" replace />
-  const perms = user.permissions ?? []
-  const hasWarehouseAdminPermissions =
-    perms.includes("warehouses.manage") || perms.includes("warehouses.create")
-  if (!isWarehouseSiteAdmin(user) && !hasWarehouseAdminPermissions) {
-    return <Navigate to={getDefaultDashboardRoute(user)} replace />
-  }
-  return <WarehouseAdminDashboardPage />
 function MerchantSelfAccountRedirect() {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
@@ -198,15 +164,7 @@ export default function App() {
           path="/dashboard"
           element={
             <Protected>
-              <DashboardEntryRoute />
-            </Protected>
-          }
-        />
-        <Route
-          path="/warehouse-dashboard"
-          element={
-            <Protected>
-              <WarehouseAdminDashboardRoute />
+              <DashboardPage />
             </Protected>
           }
         />
@@ -503,14 +461,53 @@ export default function App() {
           }
         />
         <Route
-          path="/warehouses/:warehouseId/merchant-orders"
+          path="/warehouses/:warehouseId/orders"
           element={
             <Protected>
               <ProtectedRole
                 allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
                 requiredPermissions={["warehouses.read"]}
               >
-                <MerchantOrdersListPage />
+                <WarehouseMerchantOrdersListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/shipments"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseShipmentsListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <WarehouseManifestsPreviewPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests/:manifestId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read"]}
+              >
+                <CourierManifestDetailPage />
               </ProtectedRole>
             </Protected>
           }
