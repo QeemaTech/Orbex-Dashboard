@@ -15,7 +15,7 @@ import {
   markShipmentLabelPrinted,
   patchShipmentAssignedWarehouse,
 } from "@/api/shipments-api"
-import { listWarehouseSites } from "@/api/warehouse-api"
+import { getWarehousePickupCouriers, listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,14 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
 import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
@@ -93,6 +101,8 @@ export function MerchantOrderDetailsPage() {
       : user?.warehouseId ?? undefined
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("")
+  const [bulkReturnModalOpen, setBulkReturnModalOpen] = useState(false)
+  const [selectedPickupCourierId, setSelectedPickupCourierId] = useState("")
 
   const listQueryKey = useMemo(
     () => ["merchant-order", "detail", merchantOrderId, token] as const,
@@ -122,8 +132,8 @@ export function MerchantOrderDetailsPage() {
   const [isPrinting, setIsPrinting] = useState(false)
 
   const bulkReturnMut = useMutation({
-    mutationFn: () =>
-      bulkReturnRejectedToMerchant({ token, merchantOrderId }),
+    mutationFn: (pickupCourierId: string) =>
+      bulkReturnRejectedToMerchant({ token, merchantOrderId, pickupCourierId }),
     onSuccess: async (data) => {
       const c = data.created.length
       const s = data.skipped.length
@@ -141,6 +151,8 @@ export function MerchantOrderDetailsPage() {
           "success",
         )
       }
+      setBulkReturnModalOpen(false)
+      setSelectedPickupCourierId("")
       await qc.invalidateQueries({ queryKey: listQueryKey })
       await qc.invalidateQueries({
         queryKey: ["merchant-order", "shipments", merchantOrderId, token],
@@ -218,6 +230,16 @@ export function MerchantOrderDetailsPage() {
     queryKey: ["warehouse-sites", "assignment", token] as const,
     queryFn: () => listWarehouseSites(token),
     enabled: !!token && canEditWarehouseAssignment,
+  })
+  const assignedWarehouseId = q.data?.assignedWarehouse?.id ?? ""
+  const pickupCouriersQuery = useQuery({
+    queryKey: ["warehouse-pickup-couriers", token, assignedWarehouseId] as const,
+    queryFn: () =>
+      getWarehousePickupCouriers({
+        token,
+        warehouseId: assignedWarehouseId,
+      }),
+    enabled: Boolean(token && assignedWarehouseId && bulkReturnModalOpen),
   })
 
   const setWarehouseMut = useMutation({
@@ -348,7 +370,19 @@ export function MerchantOrderDetailsPage() {
                         type="button"
                         size="sm"
                         disabled={bulkReturnMut.isPending}
-                        onClick={() => bulkReturnMut.mutate()}
+                        onClick={() => {
+                          if (!assignedWarehouseId) {
+                            showToast(
+                              t("merchantOrders.detail.pickupCourierWarehouseRequired", {
+                                defaultValue:
+                                  "Assign a warehouse first, then choose pickup courier for bulk return.",
+                              }),
+                              "error",
+                            )
+                            return
+                          }
+                          setBulkReturnModalOpen(true)
+                        }}
                       >
                         {bulkReturnMut.isPending
                           ? t("common.saving", { defaultValue: "…" })
@@ -637,6 +671,79 @@ export function MerchantOrderDetailsPage() {
           </>
         ) : null}
       </div>
+      <Dialog
+        open={bulkReturnModalOpen}
+        onOpenChange={(open) => {
+          setBulkReturnModalOpen(open)
+          if (!open) setSelectedPickupCourierId("")
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t("merchantOrders.detail.bulkReturnPickupCourierTitle", {
+                defaultValue: "Choose pickup courier",
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("merchantOrders.detail.bulkReturnPickupCourierDescription", {
+                defaultValue:
+                  "Bulk return to merchant will create tasks and RETURN manifest(s) using this pickup courier.",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t("merchantOrders.detail.pickupCourier", { defaultValue: "Pickup courier" })}
+            </label>
+            <select
+              className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+              value={selectedPickupCourierId}
+              onChange={(e) => setSelectedPickupCourierId(e.target.value)}
+              disabled={pickupCouriersQuery.isLoading || bulkReturnMut.isPending}
+            >
+              <option value="">
+                {t("merchantOrders.detail.selectPickupCourier", {
+                  defaultValue: "Select pickup courier",
+                })}
+              </option>
+              {(pickupCouriersQuery.data?.couriers ?? []).map((courier) => (
+                <option key={courier.id} value={courier.id}>
+                  {courier.fullName?.trim() || "—"}
+                </option>
+              ))}
+            </select>
+            {pickupCouriersQuery.error ? (
+              <p className="text-destructive text-sm">
+                {(pickupCouriersQuery.error as Error).message}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBulkReturnModalOpen(false)}
+              disabled={bulkReturnMut.isPending}
+            >
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                bulkReturnMut.isPending ||
+                !selectedPickupCourierId ||
+                pickupCouriersQuery.isLoading
+              }
+              onClick={() => bulkReturnMut.mutate(selectedPickupCourierId)}
+            >
+              {bulkReturnMut.isPending
+                ? t("common.saving", { defaultValue: "…" })
+                : t("merchantOrders.detail.returnRejectedShipments")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </Layout>
   )

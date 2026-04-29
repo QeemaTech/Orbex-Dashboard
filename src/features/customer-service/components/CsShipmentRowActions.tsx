@@ -30,6 +30,7 @@ import {
 } from "@/features/customer-service/lib/whatsapp"
 import { CsConfirmedCustomerLocationMapButton } from "@/features/shipments/components/CsConfirmedCustomerLocationMapButton"
 import { ShipmentCsConfirmLocationDialog } from "@/features/shipments/components/ShipmentCsConfirmLocationDialog"
+import { useAuth } from "@/lib/auth-context"
 
 export type CsShipmentRowActionsLayout = "compact" | "inline"
 
@@ -47,6 +48,8 @@ export interface CsShipmentRowActionsProps {
   layout?: CsShipmentRowActionsLayout
 }
 
+const SHIPMENTS_UPDATE_PERMISSION = "shipments.update"
+
 export function CsShipmentRowActions({
   row,
   token,
@@ -59,6 +62,7 @@ export function CsShipmentRowActions({
   layout = "compact",
 }: CsShipmentRowActionsProps) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [csLineConfirmOpen, setCsLineConfirmOpen] = useState(false)
 
   const telCustomer = `tel:${row.phonePrimary}`
@@ -70,6 +74,9 @@ export function CsShipmentRowActions({
     transferStatus: row.transferStatus,
     csConfirmedAt: row.csConfirmedAt,
   })
+  const canManageShipmentLocation = Boolean(
+    user?.permissions?.includes(SHIPMENTS_UPDATE_PERMISSION),
+  )
   const batchId = merchantOrderBatchId(row)
   const hasCourierMenuItems =
     !!row.courier?.contactPhone || !!row.courier?.id
@@ -93,7 +100,7 @@ export function CsShipmentRowActions({
   }
 
   const confirmButton =
-    showConfirm && batchId ? (
+    canManageShipmentLocation && showConfirm && batchId ? (
       <Button
         type="button"
         size="sm"
@@ -106,7 +113,7 @@ export function CsShipmentRowActions({
     ) : null
 
   const customerMapPin =
-    showCustomerPinMap && customerPinCoords ? (
+    canManageShipmentLocation && showCustomerPinMap && customerPinCoords ? (
       <CsConfirmedCustomerLocationMapButton
         latitude={customerPinCoords.lat}
         longitude={customerPinCoords.lng}

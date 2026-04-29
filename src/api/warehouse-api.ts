@@ -1,4 +1,5 @@
 import { apiFetch } from "@/api/client"
+import { listPickupCouriers, type PickupCourierRow } from "@/api/pickup-couriers-api"
 
 /** Six pipeline bucket counts (hub-scoped). */
 export type WarehousePipelineCounts = {
@@ -210,6 +211,7 @@ type WarehouseOrdersParams = {
   resolvedDeliveryZoneId?: string
   transferStatus?: string
   returnsOnly?: boolean
+  pickupCourierId?: string
   courierId?: string
   warehouseId?: string
 }
@@ -224,6 +226,7 @@ type WarehouseQueueParams = {
   /** Comma-separated `ShipmentTransferStatus` values (query `transferStatusesIn`). */
   transferStatusesIn?: string
   returnsOnly?: boolean
+  pickupCourierId?: string
   courierId?: string
   /** Admin / warehouse admin: narrow queue to one hub */
   warehouseId?: string
@@ -290,7 +293,7 @@ export function listWarehouseQueue(
     transferStatus: params.transferStatus,
     transferStatusesIn: params.transferStatusesIn,
     returnsOnly: params.returnsOnly,
-    courierId: params.courierId,
+    pickupCourierId: params.pickupCourierId ?? params.courierId,
     warehouseId: params.warehouseId,
   })
   return apiFetch<WarehouseQueueResponse>(`/api/warehouse/queue${query}`, {
@@ -307,7 +310,7 @@ export function listWarehouseOrders(
     search: params.search,
     transferStatus: params.transferStatus,
     returnsOnly: params.returnsOnly,
-    courierId: params.courierId,
+    pickupCourierId: params.pickupCourierId ?? params.courierId,
     warehouseId: params.warehouseId,
   })
   return apiFetch<WarehouseOrdersResponse>(`/api/warehouse/orders${query}`, {
@@ -441,30 +444,17 @@ export function getWarehouseCouriers(params: {
   )
 }
 
-/** PATCH `/api/warehouse/shipments/:shipmentId/assignment` — assign pickup or delivery courier. */
-export function assignWarehouseShipment(params: {
+export function getWarehousePickupCouriers(params: {
   token: string
-  shipmentId: string
-  courierId: string
-  leg?: "pickup" | "delivery"
-  shipmentLineId?: string
-  note?: string | null
-}): Promise<unknown> {
-  return apiFetch(
-    `/api/warehouse/shipments/${encodeURIComponent(params.shipmentId)}/assignment`,
-    {
-      method: "PATCH",
-      token: params.token,
-      body: JSON.stringify({
-        courierId: params.courierId,
-        ...(params.shipmentLineId
-          ? { shipmentLineId: params.shipmentLineId }
-          : {}),
-        ...(params.leg ? { leg: params.leg } : {}),
-        ...(params.note !== undefined ? { note: params.note } : {}),
-      }),
-    },
-  )
+  warehouseId: string
+}): Promise<{ couriers: PickupCourierRow[] }> {
+  return listPickupCouriers({
+    token: params.token,
+    warehouseId: params.warehouseId,
+    isActive: true,
+    page: 1,
+    pageSize: 100,
+  }).then((r) => ({ couriers: r.pickupCouriers }))
 }
 
 export function receiveWarehouseReturn(params: {

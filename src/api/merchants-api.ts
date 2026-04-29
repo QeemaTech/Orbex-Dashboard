@@ -41,11 +41,13 @@ export async function listMerchants(params: {
   page?: number
   pageSize?: number
   accountStatus?: MerchantAccountStatus | ""
+  search?: string
 }): Promise<MerchantListResponse> {
   const query = qs({
     page: params.page ?? 1,
     pageSize: params.pageSize ?? 20,
     accountStatus: params.accountStatus || undefined,
+    search: params.search,
   })
   return apiFetch<MerchantListResponse>(`/api/users/merchants${query}`, {
     token: params.token,

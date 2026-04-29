@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next"
 import {
   deactivateDeliveryZone,
   deleteDeliveryZonePermanent,
+  getDeliveryZoneWarehouseLinks,
   listDeliveryZones,
   type DeliveryZoneRow,
 } from "@/api/delivery-zones-api"
@@ -29,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { DeliveryZoneFormDialog } from "@/features/delivery-zones/components/DeliveryZoneFormDialog"
+import { DeliveryZonesInspectMap } from "@/features/delivery-zones/components/DeliveryZonesInspectMap"
 import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
 
@@ -72,6 +74,7 @@ export function DeliveryZonesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create")
   const [editing, setEditing] = useState<DeliveryZoneRow | null>(null)
+  const [inspectedZoneId, setInspectedZoneId] = useState<string | null>(null)
 
   const zonesQuery = useQuery({
     queryKey: ["delivery-zones", token],
@@ -105,6 +108,14 @@ export function DeliveryZonesPage() {
   })
 
   const zones = zonesQuery.data?.zones ?? []
+  const inspectedZone =
+    zones.find((zone) => zone.id === inspectedZoneId) ?? zones[0] ?? null
+  const inspectLinksQuery = useQuery({
+    queryKey: ["delivery-zone-warehouses", token, inspectedZone?.id ?? ""],
+    queryFn: () => getDeliveryZoneWarehouseLinks(token, inspectedZone!.id),
+    enabled: !!token && !!inspectedZone?.id,
+  })
+  const mapsApiKey = String(import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "").trim()
 
   function openCreate() {
     setDialogMode("create")
@@ -139,6 +150,120 @@ export function DeliveryZonesPage() {
               ) : null}
             </CardHeader>
             <CardContent>
+              {mapsApiKey ? (
+                <div className="mb-4 space-y-3">
+                  <DeliveryZonesInspectMap
+                    apiKey={mapsApiKey}
+                    token={token}
+                    zones={zones}
+                    inspectedZoneId={inspectedZone?.id ?? null}
+                    onInspectZone={(id) => setInspectedZoneId(id)}
+                  />
+                  {inspectedZone ? (
+                    <div className="space-y-2 rounded-md border p-3 text-sm">
+                      <div className="grid gap-2 md:grid-cols-2">
+                      <p>
+                        <span className="text-muted-foreground">
+                          {t("deliveryZones.inspect.name", { defaultValue: "Zone" })}:
+                        </span>{" "}
+                        {inspectedZone.name ?? "—"}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">
+                          {t("deliveryZones.inspect.type", { defaultValue: "Type" })}:
+                        </span>{" "}
+                        {inspectedZone.geometryType ?? "CIRCLE"}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">
+                          {t("deliveryZones.inspect.governorate", {
+                            defaultValue: "Governorate",
+                          })}
+                          :
+                        </span>{" "}
+                        {inspectedZone.governorate}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">
+                          {t("deliveryZones.inspect.operational", {
+                            defaultValue: "Operational status",
+                          })}
+                          :
+                        </span>{" "}
+                        {inspectedZone.isActive
+                          ? t("deliveryZones.active")
+                          : t("deliveryZones.inactive")}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">
+                          {t("deliveryZones.inspect.radius", { defaultValue: "Radius" })}:
+                        </span>{" "}
+                        {inspectedZone.radiusMeters
+                          ? t("deliveryZones.radiusMeters", {
+                              m: inspectedZone.radiusMeters,
+                            })
+                          : "—"}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">
+                          {t("deliveryZones.inspect.linkedWarehouses", {
+                            defaultValue: "Linked warehouses",
+                          })}
+                          :
+                        </span>{" "}
+                        {(inspectLinksQuery.data?.deliveryWarehouses.length ?? 0) +
+                          (inspectLinksQuery.data?.pickupWarehouses.length ?? 0)}
+                      </p>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div>
+                          <p className="text-muted-foreground mb-1 text-xs">
+                            {t("deliveryZones.inspect.couriers", {
+                              defaultValue: "Assigned delivery couriers",
+                            })}
+                          </p>
+                          <ul className="space-y-1 text-xs">
+                            {(inspectedZone.couriers ?? []).length === 0 ? (
+                              <li>—</li>
+                            ) : (
+                              (inspectedZone.couriers ?? []).map((c) => (
+                                <li key={c.id}>
+                                  {c.fullName ?? c.id}
+                                  {c.contactPhone ? ` · ${c.contactPhone}` : ""}
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1 text-xs">
+                            {t("deliveryZones.inspect.warehouses", {
+                              defaultValue: "Linked warehouses",
+                            })}
+                          </p>
+                          <ul className="space-y-1 text-xs">
+                            {inspectLinksQuery.isLoading ? (
+                              <li>{t("deliveryZones.loading")}</li>
+                            ) : (inspectLinksQuery.data?.deliveryWarehouses.length ??
+                                0) +
+                                (inspectLinksQuery.data?.pickupWarehouses.length ??
+                                  0) ===
+                              0 ? (
+                              <li>—</li>
+                            ) : (
+                              [
+                                ...(inspectLinksQuery.data?.deliveryWarehouses ??
+                                  []),
+                                ...(inspectLinksQuery.data?.pickupWarehouses ?? []),
+                              ].map((w) => <li key={w.id}>{w.name}</li>)
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               {zonesQuery.isLoading ? (
                 <p className="text-muted-foreground text-sm">{t("deliveryZones.loading")}</p>
               ) : zones.length === 0 ? (
@@ -162,7 +287,10 @@ export function DeliveryZonesPage() {
                   </TableHeader>
                   <TableBody>
                     {zones.map((z) => (
-                      <TableRow key={z.id}>
+                      <TableRow
+                        key={z.id}
+                        onMouseEnter={() => setInspectedZoneId(z.id)}
+                      >
                         <TableCell className="font-medium">
                           {z.name ?? "—"}
                         </TableCell>
@@ -172,7 +300,9 @@ export function DeliveryZonesPage() {
                           {z.region ? `${z.region.name} (${z.region.code})` : "—"}
                         </TableCell>
                         <TableCell>
-                          {t("deliveryZones.radiusMeters", { m: z.radiusMeters })}
+                          {z.radiusMeters != null
+                            ? t("deliveryZones.radiusMeters", { m: z.radiusMeters })
+                            : "—"}
                         </TableCell>
                         <TableCell className="max-w-[16rem] align-top">
                           {renderZoneCouriersCell(z)}

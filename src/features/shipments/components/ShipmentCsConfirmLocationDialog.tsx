@@ -6,9 +6,11 @@ import { useTranslation } from "react-i18next"
 
 import { ApiError } from "@/api/client"
 import { confirmShipmentCustomerLocation } from "@/api/shipments-api"
+import { CustomerLocationMapPreviewDialog } from "@/components/shared/CustomerLocationMapPreviewDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  googleMapsSearchUrl,
   parseCoordinatesFromLocationInput,
   parseWarehouseLatLng,
 } from "@/features/customer-service/lib/location"
@@ -50,6 +52,7 @@ export function ShipmentCsConfirmLocationDialog({
   const [addressText, setAddressText] = useState("")
   const [locationText, setLocationText] = useState("")
   const [locationLink, setLocationLink] = useState("")
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -70,24 +73,29 @@ export function ShipmentCsConfirmLocationDialog({
       setAddressText(defaults.addressText)
       setLocationText(defaults.locationText)
       setLocationLink(defaults.locationLink)
+      setPreviewOpen(false)
     }
   }, [open, defaults])
 
+  const parsedCoords = useMemo(() => {
+    const trimmedLink = locationLink.trim()
+    const trimmedText = locationText.trim()
+    const fromLink = trimmedLink
+      ? parseCoordinatesFromLocationInput(trimmedLink)
+      : null
+    const fromText = trimmedText
+      ? parseCoordinatesFromLocationInput(trimmedText)
+      : null
+    const fromSaved = parseWarehouseLatLng(
+      initialLat != null ? String(initialLat) : null,
+      initialLng != null ? String(initialLng) : null,
+    )
+    return fromLink ?? fromText ?? fromSaved
+  }, [initialLat, initialLng, locationLink, locationText])
+
   const mut = useMutation({
     mutationFn: async () => {
-      const trimmedLink = locationLink.trim()
-      const trimmedText = locationText.trim()
-      const fromLink = trimmedLink
-        ? parseCoordinatesFromLocationInput(trimmedLink)
-        : null
-      const fromText = trimmedText
-        ? parseCoordinatesFromLocationInput(trimmedText)
-        : null
-      const fromSaved = parseWarehouseLatLng(
-        initialLat != null ? String(initialLat) : null,
-        initialLng != null ? String(initialLng) : null,
-      )
-      const coords = fromLink ?? fromText ?? fromSaved
+      const coords = parsedCoords
       if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) {
         throw new Error(t("cs.csLineConfirm.errors.needCoords"))
       }
@@ -119,6 +127,12 @@ export function ShipmentCsConfirmLocationDialog({
       showToast(msg, "error")
     },
   })
+  const canPreviewMap = Boolean(
+    parsedCoords &&
+      Number.isFinite(parsedCoords.lat) &&
+      Number.isFinite(parsedCoords.lng),
+  )
+  const previewHref = parsedCoords ? googleMapsSearchUrl(parsedCoords) : null
 
   if (!open || !portalTarget) return null
 
@@ -176,6 +190,42 @@ export function ShipmentCsConfirmLocationDialog({
             />
           </div>
 
+          <div className="space-y-2 rounded-md border p-3">
+            <p className="text-sm font-medium">
+              {t("cs.csLineConfirm.locationPreviewLabel", {
+                defaultValue: "Location preview",
+              })}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {canPreviewMap
+                ? `${parsedCoords!.lat.toFixed(6)}, ${parsedCoords!.lng.toFixed(6)}`
+                : t("cs.csLineConfirm.locationPreviewEmpty", {
+                    defaultValue: "No valid coordinates detected yet.",
+                  })}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!canPreviewMap}
+                onClick={() => setPreviewOpen(true)}
+              >
+                {t("cs.csLineConfirm.previewMap", { defaultValue: "Preview map" })}
+              </Button>
+              {previewHref ? (
+                <a
+                  className="text-primary inline-flex items-center text-sm underline"
+                  href={previewHref}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("cs.customerPinMap.openExternal")}
+                </a>
+              ) : null}
+            </div>
+          </div>
+
           <p className="text-muted-foreground text-xs">{t("cs.csLineConfirm.coordsHint")}</p>
         </div>
         <div className="flex justify-end gap-2 border-t px-4 py-3">
@@ -187,6 +237,12 @@ export function ShipmentCsConfirmLocationDialog({
           </Button>
         </div>
       </div>
+      <CustomerLocationMapPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        latitude={canPreviewMap ? String(parsedCoords!.lat) : null}
+        longitude={canPreviewMap ? String(parsedCoords!.lng) : null}
+      />
     </div>,
     portalTarget,
   )

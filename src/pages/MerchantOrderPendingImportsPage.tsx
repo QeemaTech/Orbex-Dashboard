@@ -141,15 +141,16 @@ export function MerchantOrderPendingImportsPage() {
   })
   const changeTypeLabel = (value: "INITIAL_UPLOAD" | "PICKUP_DATE_UPDATED" | "FILE_REPLACED") =>
     t(`merchantOrdersList.changeTypeValues.${value}`, { defaultValue: value })
+  const pendingPageTitle = isMerchant
+    ? t("merchantOrdersList.pendingPageTitleMerchant", { defaultValue: "Order confirmations" })
+    : t("merchantOrdersList.pendingPageTitle", { defaultValue: "Pending confirmations" })
 
   return (
-    <Layout title={t("merchantOrdersList.pendingPageTitle", { defaultValue: "Pending confirmations" })}>
+    <Layout title={pendingPageTitle}>
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>
-              {t("merchantOrdersList.pendingPageTitle", { defaultValue: "Pending confirmations" })}
-            </CardTitle>
+            <CardTitle>{pendingPageTitle}</CardTitle>
             <CardDescription>
               {t("merchantOrdersList.pendingDescription", {
                 defaultValue:
@@ -206,7 +207,7 @@ export function MerchantOrderPendingImportsPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" size="sm" variant="outline" onClick={() => setPreviewImportId(row.id)}>
-                    {t("common.preview", { defaultValue: "Preview" })}
+                    {t("merchantOrdersList.preview", { defaultValue: "Preview" })}
                   </Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => setVersionsImportId(row.id)}>
                     {t("merchantOrdersList.versionHistory", { defaultValue: "Version history" })}

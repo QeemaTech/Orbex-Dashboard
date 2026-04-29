@@ -22,6 +22,14 @@ function stopRowClick(e: MouseEvent<HTMLDivElement>) {
   e.stopPropagation()
 }
 
+function zoneResolutionLabel(
+  value: CsShipmentRow["zoneResolutionStatus"],
+  t: (key: string, options?: { defaultValue?: string }) => string,
+): string {
+  if (!value) return "—"
+  return t(`backend.zoneResolutionStatus.${value}`, { defaultValue: value })
+}
+
 export interface CsShipmentTableProps {
   rows: CsShipmentRow[]
   token: string
@@ -77,6 +85,7 @@ export function CsShipmentTable({
           <TableHead>{t("cs.table.customer")}</TableHead>
           <TableHead>{t("cs.table.phone")}</TableHead>
           <TableHead>{t("cs.table.status")}</TableHead>
+          <TableHead>{t("cs.table.zoneResolutionStatus", { defaultValue: "Zone resolution" })}</TableHead>
           <TableHead className="w-24">{t("cs.table.gpsLocation")}</TableHead>
           {showActions ? (
             <TableHead className="w-[1%] whitespace-nowrap text-end">
@@ -101,6 +110,7 @@ export function CsShipmentTable({
               <TableCell>
                 <ShipmentStatusBadge status={getPerspectiveStatusKey(perspective, row)} />
               </TableCell>
+              <TableCell>{zoneResolutionLabel(row.zoneResolutionStatus, t)}</TableCell>
               <TableCell>
                 <CoordinatesMapLink coordinates={coordinates} stopPropagation />
               </TableCell>

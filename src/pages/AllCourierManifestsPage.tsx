@@ -19,6 +19,10 @@ function formatDateTime(dateIso: string, locale: string): string {
   }).format(new Date(dateIso))
 }
 
+function manifestStatusLabel(status: "DRAFT" | "LOCKED" | "DISPATCHED" | "CLOSED", t: (k: string) => string): string {
+  return t(`warehouse.manifests.status.${status}`)
+}
+
 export function AllCourierManifestsPage() {
   const { t, i18n } = useTranslation()
   const { accessToken } = useAuth()
@@ -159,6 +163,7 @@ export function AllCourierManifestsPage() {
                     <TableHead>{t("manifestsGlobal.columns.zone")}</TableHead>
                     <TableHead>{t("manifestsGlobal.columns.shipmentCount")}</TableHead>
                     <TableHead>{t("manifestsGlobal.columns.totalCod")}</TableHead>
+                    <TableHead>{t("warehouse.manifests.statusLabel")}</TableHead>
                     <TableHead>{t("manifestsGlobal.columns.lockedAt")}</TableHead>
                     <TableHead>{t("manifestsGlobal.columns.dispatchedAt")}</TableHead>
                     <TableHead>{t("manifestsGlobal.columns.actions")}</TableHead>
@@ -179,6 +184,7 @@ export function AllCourierManifestsPage() {
                       <TableCell>{row.deliveryZone.name?.trim() || row.deliveryZone.id}</TableCell>
                       <TableCell>{row.shipmentCount}</TableCell>
                       <TableCell>{row.totalCod}</TableCell>
+                      <TableCell>{manifestStatusLabel(row.status, t)}</TableCell>
                       <TableCell>
                         {row.lockedAt ? formatDateTime(row.lockedAt, locale) : t("warehouse.notApplicable")}
                       </TableCell>

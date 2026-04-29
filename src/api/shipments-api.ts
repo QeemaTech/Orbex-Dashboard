@@ -247,6 +247,7 @@ export type ShipmentPlannedTaskType = "DELIVERY" | "TRANSFER" | "RETURN_TO_MERCH
 export type CreateShipmentPlannedTaskBody = {
   type: ShipmentPlannedTaskType
   assignedCourierId?: string | null
+  pickupCourierId?: string | null
   toWarehouseId?: string | null
 }
 
@@ -266,6 +267,9 @@ export async function createShipmentPlannedTask(p: {
   }
   if (p.body.assignedCourierId) {
     body.assignedCourierId = p.body.assignedCourierId
+  }
+  if (p.body.pickupCourierId) {
+    body.pickupCourierId = p.body.pickupCourierId
   }
   if (p.body.toWarehouseId) {
     body.toWarehouseId = p.body.toWarehouseId
@@ -304,6 +308,64 @@ export async function confirmShipmentCustomerLocation(p: {
       }),
     },
   )
+}
+
+export type WarehouseMovementManifestType = "TRANSFER" | "RETURN"
+export type WarehouseMovementManifestStatus = "DRAFT" | "LOCKED" | "DISPATCHED" | "CLOSED"
+
+export async function listWarehouseMovementManifests(p: {
+  token: string
+  warehouseId?: string
+  type?: WarehouseMovementManifestType
+  status?: WarehouseMovementManifestStatus
+  date?: string
+}): Promise<{
+  manifests: Array<{
+    id: string
+    type: WarehouseMovementManifestType
+    status: WarehouseMovementManifestStatus
+    fromWarehouseId: string
+    toWarehouseId: string | null
+    assignedPickupCourierId: string
+    createdAt: string
+    lineCount: number
+  }>
+}> {
+  const sp = new URLSearchParams()
+  if (p.warehouseId) sp.set("warehouseId", p.warehouseId)
+  if (p.type) sp.set("type", p.type)
+  if (p.status) sp.set("status", p.status)
+  if (p.date) sp.set("date", p.date)
+  return apiFetch(`/api/shipments/movement-manifests?${sp.toString()}`, { token: p.token })
+}
+
+export async function createWarehouseMovementManifest(p: {
+  token: string
+  body: {
+    type: WarehouseMovementManifestType
+    fromWarehouseId: string
+    toWarehouseId?: string | null
+    pickupCourierId: string
+    shipmentTaskIds: string[]
+  }
+}): Promise<{ manifestId: string; status: WarehouseMovementManifestStatus }> {
+  return apiFetch("/api/shipments/movement-manifests", {
+    method: "POST",
+    token: p.token,
+    body: JSON.stringify(p.body),
+  })
+}
+
+export async function patchWarehouseMovementManifestStatus(p: {
+  token: string
+  manifestId: string
+  status: Exclude<WarehouseMovementManifestStatus, "DRAFT">
+}): Promise<{ manifestId: string; status: WarehouseMovementManifestStatus }> {
+  return apiFetch(`/api/shipments/movement-manifests/${encodeURIComponent(p.manifestId)}/status`, {
+    method: "PATCH",
+    token: p.token,
+    body: JSON.stringify({ status: p.status }),
+  })
 }
 
 export async function patchShipmentFields(p: {

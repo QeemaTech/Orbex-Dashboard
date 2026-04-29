@@ -2,10 +2,12 @@ import { Boxes, ExternalLink, MessageSquareText, PhoneCall, Printer } from "luci
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
-import { uploadShipmentPaymentProof } from "@/api/shipments-api"
+import { uploadShipmentPaymentProof, createShipmentPlannedTask } from "@/api/shipments-api"
 import { apiUrl } from "@/api/client"
+import { getWarehousePickupCouriers, listWarehouseSites } from "@/api/warehouse-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { useAuth } from "@/lib/auth-context"
@@ -20,11 +22,11 @@ import {
   hasCsConfirmedCustomerLocationPin,
   resolveCustomerLatLng,
 } from "@/features/customer-service/lib/cs-line-customer-location"
-import { PlanShipmentWarehouseTask } from "@/features/shipments/components/PlanShipmentWarehouseTask"
 import { CsConfirmedCustomerLocationMapButton } from "@/features/shipments/components/CsConfirmedCustomerLocationMapButton"
 import { ShipmentCsConfirmButton } from "@/features/shipments/components/ShipmentCsConfirmButton"
 import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
 import { ShipmentTasksCard } from "@/features/shipments/components/ShipmentTasksCard"
+import { ShipmentZonePreviewDialog } from "@/features/shipments/components/ShipmentZonePreviewDialog"
 
 export type ShipmentDetailViewProps = {
   shipment: ShipmentOrderRow
@@ -35,6 +37,38 @@ export type ShipmentDetailViewProps = {
   variant?: "default" | "warehouse" | "cs"
   /** Hub opened in the URL (e.g. `/warehouses/:warehouseId/shipments/...`) when line hub fields are missing from API. */
   planTaskContextWarehouseId?: string
+  transferTaskApi?: IShipmentTransferTaskApi
+}
+
+export interface IShipmentTransferTaskApi {
+  createTransferTask(params: {
+    token: string
+    shipmentId: string
+    pickupCourierId: string
+    toWarehouseId: string
+  }): Promise<unknown>
+  listWarehouses(token: string): Promise<{
+    warehouses: Array<{ id: string; name: string; isActive: boolean }>
+  }>
+  listPickupCouriers(token: string, warehouseId: string): Promise<{
+    couriers: Array<{ id: string; fullName: string | null }>
+  }>
+}
+
+const shipmentTransferTaskApi: IShipmentTransferTaskApi = {
+  createTransferTask: ({ token, shipmentId, pickupCourierId, toWarehouseId }) =>
+    createShipmentPlannedTask({
+      token,
+      shipmentId,
+      body: {
+        type: "TRANSFER",
+        pickupCourierId,
+        toWarehouseId,
+      },
+    }),
+  listWarehouses: (token) => listWarehouseSites(token, { forTransferTask: true }),
+  listPickupCouriers: (token, warehouseId) =>
+    getWarehousePickupCouriers({ token, warehouseId }),
 }
 
 function resolveNumberLocale(language: string) {
@@ -78,9 +112,11 @@ export function ShipmentDetailView({
   merchantOrderShipmentsHref,
   variant = "default",
   planTaskContextWarehouseId,
+  transferTaskApi = shipmentTransferTaskApi,
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
   const { user, accessToken } = useAuth()
+  const queryClient = useQueryClient()
   const lineHubContextId =
     planTaskContextWarehouseId?.trim() || user?.warehouseId || undefined
   const locale = resolveNumberLocale(i18n.language)
@@ -94,6 +130,54 @@ export function ShipmentDetailView({
   const [proofFile, setProofFile] = useState<File | null>(null)
   const [proofUploading, setProofUploading] = useState(false)
   const [localProof, setLocalProof] = useState<typeof latestProof>(null)
+  const [zonePreviewOpen, setZonePreviewOpen] = useState(false)
+  const [targetWarehouseId, setTargetWarehouseId] = useState("")
+  const [pickupCourierId, setPickupCourierId] = useState("")
+  const canManageTransfer = Boolean(user?.permissions?.includes("warehouses.manage_transfer"))
+  const canCreateTransferTask = Boolean(accessToken && canManageTransfer && shipment.currentWarehouseId)
+
+  const warehousesQuery = useQuery({
+    queryKey: ["shipment", "transfer-task", "warehouses", accessToken],
+    queryFn: async () => transferTaskApi.listWarehouses(accessToken!),
+    enabled: canCreateTransferTask && Boolean(accessToken),
+    staleTime: 60_000,
+  })
+
+  const pickupCouriersQuery = useQuery({
+    queryKey: ["shipment", "transfer-task", "pickup-couriers", accessToken, shipment.currentWarehouseId],
+    queryFn: async () =>
+      transferTaskApi.listPickupCouriers(accessToken!, String(shipment.currentWarehouseId)),
+    enabled: canCreateTransferTask && Boolean(accessToken && shipment.currentWarehouseId),
+    staleTime: 30_000,
+  })
+
+  const createTransferMutation = useMutation({
+    mutationFn: async () =>
+      transferTaskApi.createTransferTask({
+        token: accessToken!,
+        shipmentId: shipment.id,
+        pickupCourierId,
+        toWarehouseId: targetWarehouseId,
+      }),
+    onSuccess: () => {
+      showToast(
+        t("shipments.tasks.transferCreated", { defaultValue: "Transfer task created successfully." }),
+        "success",
+      )
+      setTargetWarehouseId("")
+      setPickupCourierId("")
+      void queryClient.invalidateQueries({ queryKey: ["shipment", "detail", shipment.id, accessToken] })
+      void queryClient.invalidateQueries({ queryKey: ["shipment", "detail"] })
+    },
+    onError: (err) => {
+      showToast(
+        err instanceof Error
+          ? err.message
+          : t("shipments.tasks.transferCreateFailed", { defaultValue: "Failed to create transfer task." }),
+        "error",
+      )
+    },
+  })
 
   const currencyLocale = t("shipments.detail.currencyLocale", { defaultValue: "en-EG" })
   const formatDateTime = (iso: string | null | undefined): string => {
@@ -112,6 +196,9 @@ export function ShipmentDetailView({
   const sendTrackingDisabled = !hasPhone || !hasTracking || !accessToken
   const customerPinCoords = resolveCustomerLatLng(shipment)
   const showCustomerPinMap = hasCsConfirmedCustomerLocationPin(shipment)
+  const canOpenZonePreview =
+    shipment.resolvedDeliveryZoneId != null &&
+    customerPinCoords != null
 
   const sendTrackingTitle = !hasPhone
     ? t("cs.actions.whatsappDisabledHint")
@@ -207,6 +294,16 @@ export function ShipmentDetailView({
                   latitude={customerPinCoords.lat}
                   longitude={customerPinCoords.lng}
                 />
+              ) : null}
+              {canOpenZonePreview ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setZonePreviewOpen(true)}
+                >
+                  {t("deliveryZones.preview.open", { defaultValue: "Zone preview" })}
+                </Button>
               ) : null}
             </div>
             <dl className="space-y-2 sm:space-y-3 [&>div:nth-child(odd)]:bg-muted/30">
@@ -443,13 +540,90 @@ export function ShipmentDetailView({
               <p className="text-muted-foreground text-xs">{t("shipments.detail.warehouseHint")}</p>
             ) : null}
           </section>
+          {canCreateTransferTask ? (
+            <section className="space-y-3 rounded-md border p-4">
+              <h3 className="text-foreground text-sm font-semibold">
+                {t("shipments.tasks.planTransfer", { defaultValue: "Plan transfer task" })}
+              </h3>
+              <p className="text-muted-foreground text-xs">
+                {t("shipments.tasks.planTransferHint", {
+                  defaultValue: "Select destination warehouse and pickup courier, then create a TRANSFER task.",
+                })}
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="space-y-1">
+                  <span className="text-sm font-medium">
+                    {t("shipments.tasks.destinationWarehouse", { defaultValue: "Destination warehouse" })}
+                  </span>
+                  <select
+                    className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                    value={targetWarehouseId}
+                    onChange={(e) => setTargetWarehouseId(e.target.value)}
+                    disabled={warehousesQuery.isLoading}
+                  >
+                    <option value="">
+                      {t("shipments.tasks.selectWarehouse", { defaultValue: "Select warehouse" })}
+                    </option>
+                    {(warehousesQuery.data?.warehouses ?? [])
+                      .filter((w) => w.isActive && w.id !== shipment.currentWarehouseId)
+                      .map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label className="space-y-1">
+                  <span className="text-sm font-medium">
+                    {t("shipments.tasks.pickupCourier", { defaultValue: "Pickup courier" })}
+                  </span>
+                  <select
+                    className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                    value={pickupCourierId}
+                    onChange={(e) => setPickupCourierId(e.target.value)}
+                    disabled={pickupCouriersQuery.isLoading}
+                  >
+                    <option value="">
+                      {t("shipments.tasks.selectPickupCourier", { defaultValue: "Select pickup courier" })}
+                    </option>
+                    {(pickupCouriersQuery.data?.couriers ?? []).map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.fullName?.trim() || "—"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={
+                    !targetWarehouseId ||
+                    !pickupCourierId ||
+                    createTransferMutation.isPending
+                  }
+                  onClick={() => createTransferMutation.mutate()}
+                >
+                  {createTransferMutation.isPending
+                    ? t("shipments.tasks.creating", { defaultValue: "Creating..." })
+                    : t("shipments.tasks.createTransfer", { defaultValue: "Create transfer task" })}
+                </Button>
+              </div>
+            </section>
+          ) : null}
         </CardContent>
       </Card>
-
-      <PlanShipmentWarehouseTask
-        shipment={shipment}
-        contextWarehouseId={planTaskContextWarehouseId}
-      />
+      {customerPinCoords ? (
+        <ShipmentZonePreviewDialog
+          open={zonePreviewOpen}
+          onOpenChange={setZonePreviewOpen}
+          token={accessToken ?? ""}
+          resolvedDeliveryZoneId={shipment.resolvedDeliveryZoneId}
+          customerLat={Number(customerPinCoords.lat)}
+          customerLng={Number(customerPinCoords.lng)}
+        />
+      ) : null}
     </div>
   )
 }

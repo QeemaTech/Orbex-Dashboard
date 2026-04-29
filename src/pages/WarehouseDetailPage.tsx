@@ -31,8 +31,10 @@ import {
   lockCourierManifest,
   type CourierManifestRow,
 } from "@/api/courier-manifests-api"
+import { createShipmentPlannedTask } from "@/api/shipments-api"
+import type { PickupCourierRow } from "@/api/pickup-couriers-api"
 import {
-  getWarehouseCouriers,
+  getWarehousePickupCouriers,
   getWarehouseSite,
   getWarehouseStats,
   getWarehouseZoneLinks,
@@ -44,7 +46,6 @@ import {
   scanShipmentIn,
   scanShipmentOut,
   setWarehouseZoneLinks,
-  type WarehouseCourierRow,
   type WarehouseOrdersResponse,
   type WarehouseStandaloneShipmentRow,
 } from "@/api/warehouse-api"
@@ -288,6 +289,7 @@ export function WarehouseDetailPage() {
   const [manifestDate, setManifestDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [manifestCourierId, setManifestCourierId] = useState("")
   const [manifestZoneId, setManifestZoneId] = useState("")
+  const [dispatchConfirmManifest, setDispatchConfirmManifest] = useState<CourierManifestRow | null>(null)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [confirmDialogData, setConfirmDialogData] = useState<{
     merchantOrderId: string
@@ -353,10 +355,10 @@ export function WarehouseDetailPage() {
 
   /** Merchant-order queue + batch insight cards (main hub, orders tab only). */
   const merchantOrdersView = isMainHub && activeTab === "orders"
-  const manifestsView = false
+  const manifestsView = isMainHub && activeTab === "shipments"
   /** Standalone shipment list + shipment insight cards. */
   const shipmentsView =
-    hub != null && ((isMainHub && activeTab === "shipments") || !isMainHub)
+    hub != null && (!isMainHub || (isMainHub && !manifestsView))
   /** Site info, zones, sub-branches — hidden on manifests tab for main hubs. */
   const warehouseHubDetailsVisible = hub != null && (!isMainHub || merchantOrdersView)
   /** Zone-link data is still needed on manifests tab for zone filters. */
@@ -436,7 +438,7 @@ export function WarehouseDetailPage() {
         transferStatus:
           transferStatusFilter === "" ? undefined : transferStatusFilter,
         returnsOnly,
-        courierId:
+        pickupCourierId:
           returnsOnly && returnsCourierFilterId.trim()
             ? returnsCourierFilterId.trim()
             : undefined,
@@ -454,13 +456,13 @@ export function WarehouseDetailPage() {
 
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
-    queryFn: () => getWarehouseCouriers({ token, warehouseId }),
+    queryFn: () => getWarehousePickupCouriers({ token, warehouseId }),
     enabled:
       !!token &&
       !accessDenied &&
-      isMainHub &&
-      returnsOnly &&
-      activeTab === "orders",
+      (user?.permissions?.includes("warehouses.manage_transfer") ?? false) &&
+      !!warehouseId &&
+      ((isMainHub && returnsOnly && activeTab === "orders") || shipmentsView),
   })
 
   const standaloneQueryKey = useMemo(
@@ -712,6 +714,38 @@ export function WarehouseDetailPage() {
     onError: (error) => {
       showToast((error as Error).message, "error")
     },
+  })
+
+  const createTransferTaskMutation = useMutation({
+    mutationFn: (params: {
+      shipmentId: string
+      pickupCourierId: string
+      toWarehouseId: string
+    }) =>
+      createShipmentPlannedTask({
+        token,
+        shipmentId: params.shipmentId,
+        body: {
+          type: "TRANSFER",
+          pickupCourierId: params.pickupCourierId,
+          toWarehouseId: params.toWarehouseId,
+        },
+      }),
+    onSuccess: async () => {
+      showToast(
+        t("warehouse.feedback.transferTaskCreated", {
+          defaultValue: "Transfer task created successfully.",
+        }),
+        "success",
+      )
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["warehouse-standalone-shipments", token, warehouseId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["warehouse-orders", token] }),
+      ])
+    },
+    onError: (error) => showToast((error as Error).message, "error"),
   })
 
   const trackingMutation = useMutation({
@@ -1217,7 +1251,7 @@ export function WarehouseDetailPage() {
                     }`}
                     onClick={() => setActiveTab("orders")}
                   >
-                    {t("warehouse.queue.tabOrders")}
+                    {t("warehouse.queue.tabOrders", { defaultValue: "Transfer" })}
                   </button>
                   <button
                     type="button"
@@ -1228,7 +1262,7 @@ export function WarehouseDetailPage() {
                     }`}
                     onClick={() => setActiveTab("shipments")}
                   >
-                    {t("warehouse.queue.tabShipments")}
+                    {t("warehouse.queue.tabShipments", { defaultValue: "Delivery Manifest" })}
                   </button>
                 </div>
               ) : null}
@@ -1314,7 +1348,7 @@ export function WarehouseDetailPage() {
                     onChange={(e) => setManifestCourierId(e.target.value)}
                   >
                     <option value="">{t("warehouse.manifests.allCouriers")}</option>
-                    {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
+                    {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: PickupCourierRow) => (
                       <option key={c.id} value={c.id}>
                         {c.fullName?.trim() || t("warehouse.queue.unnamedCourier")}
                       </option>
@@ -1327,7 +1361,7 @@ export function WarehouseDetailPage() {
             {isMainHub && activeTab === "orders" && returnsOnly ? (
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-muted-foreground text-sm whitespace-nowrap">
-                  {t("warehouse.queue.filterReturnsByCourier")}
+                  {t("warehouse.queue.filterReturnsByPickupCourier")}
                 </label>
                 <select
                   className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 min-w-[12rem] rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
@@ -1337,8 +1371,8 @@ export function WarehouseDetailPage() {
                     setPage(1)
                   }}
                 >
-                  <option value="">{t("warehouse.queue.allCouriers")}</option>
-                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
+                  <option value="">{t("warehouse.queue.allPickupCouriers")}</option>
+                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: PickupCourierRow) => (
                     <option key={c.id} value={c.id}>
                       {c.fullName?.trim() || t("warehouse.queue.unnamedCourier")}
                     </option>
@@ -1408,7 +1442,11 @@ export function WarehouseDetailPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {(manifestsQuery.data?.manifests ?? []).map((row: CourierManifestRow) => (
+                        {(manifestsQuery.data?.manifests ?? []).map((row: CourierManifestRow) => {
+                          const hasMissingCsConfirmation = row.shipments.some(
+                            (shipment) => !shipment.csConfirmedAt,
+                          )
+                          return (
                           <TableRow
                             key={row.id}
                             className="hover:bg-muted/50 cursor-pointer"
@@ -1443,18 +1481,60 @@ export function WarehouseDetailPage() {
                                   !canManageTransfer ||
                                   !row.lockedAt ||
                                   !!row.dispatchedAt ||
+                                  hasMissingCsConfirmation ||
                                   dispatchManifestMutation.isPending
                                 }
-                                onClick={() => dispatchManifestMutation.mutate(row.id)}
+                                title={
+                                  hasMissingCsConfirmation
+                                    ? t("warehouse.manifests.csConfirmed", {
+                                        defaultValue:
+                                          "All manifest shipments must be CS confirmed before dispatch.",
+                                      })
+                                    : undefined
+                                }
+                                onClick={() => setDispatchConfirmManifest(row)}
                               >
                                 {t("warehouse.manifests.dispatch")}
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))}
+                          )
+                        })}
                       </TableBody>
                     </Table>
                   </div>
+                  {dispatchConfirmManifest ? (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                      <div className="bg-card w-full max-w-md rounded-lg border p-4 shadow-lg">
+                        <h3 className="text-base font-semibold">{t("warehouse.manifests.dispatchConfirm.title")}</h3>
+                        <p className="text-muted-foreground mt-2 text-sm">
+                          {t("warehouse.manifests.dispatchConfirm.body", {
+                            manifestId: dispatchConfirmManifest.id,
+                            courier:
+                              dispatchConfirmManifest.courier.fullName?.trim() ||
+                              dispatchConfirmManifest.courier.id,
+                            shipmentCount: String(dispatchConfirmManifest.shipmentCount),
+                          })}
+                        </p>
+                        <div className="mt-4 flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => setDispatchConfirmManifest(null)}>
+                            {t("common.cancel")}
+                          </Button>
+                          <Button
+                            type="button"
+                            disabled={dispatchManifestMutation.isPending}
+                            onClick={() => {
+                              const manifestId = dispatchConfirmManifest.id
+                              setDispatchConfirmManifest(null)
+                              dispatchManifestMutation.mutate(manifestId)
+                            }}
+                          >
+                            {t("warehouse.manifests.dispatchConfirm.confirm")}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : isMainHub && activeTab === "orders" ? (
@@ -1578,6 +1658,7 @@ export function WarehouseDetailPage() {
                         <TableHead>{t("warehouse.table.status")}</TableHead>
                         <TableHead>{t("warehouse.table.transferredFromWarehouse")}</TableHead>
                         <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
+                        <TableHead>{t("warehouse.manifests.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1606,6 +1687,55 @@ export function WarehouseDetailPage() {
                             {row.transferredFromWarehouseName ?? getNotApplicable()}
                           </TableCell>
                           <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={
+                                !canManageTransfer ||
+                                row.status !== "IN_WAREHOUSE" ||
+                                createTransferTaskMutation.isPending
+                              }
+                              onClick={() => {
+                                const pickupCourierId =
+                                  couriersForReturnsFilterQuery.data?.couriers?.[0]?.id ?? null
+                                const toWarehouseId =
+                                  row.transferTargetWarehouseId ??
+                                  hub?.mainBranchId ??
+                                  null
+                                if (!pickupCourierId) {
+                                  showToast(
+                                    t("warehouse.feedback.missingPickupCourier", {
+                                      defaultValue:
+                                        "No active pickup courier assigned to this warehouse.",
+                                    }),
+                                    "error",
+                                  )
+                                  return
+                                }
+                                if (!toWarehouseId) {
+                                  showToast(
+                                    t("warehouse.feedback.missingTransferDestination", {
+                                      defaultValue:
+                                        "Transfer destination warehouse is not configured for this shipment.",
+                                    }),
+                                    "error",
+                                  )
+                                  return
+                                }
+                                createTransferTaskMutation.mutate({
+                                  shipmentId: row.id,
+                                  pickupCourierId,
+                                  toWarehouseId,
+                                })
+                              }}
+                            >
+                              {t("warehouse.queue.createTransferTask", {
+                                defaultValue: "Create Transfer Task",
+                              })}
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

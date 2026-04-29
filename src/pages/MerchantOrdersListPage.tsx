@@ -14,6 +14,12 @@ import {
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { listMerchants } from "@/api/merchants-api"
+import { usePackagingMaterials } from "@/features/packaging-material/hooks/use-packaging-material"
+import {
+  PackagingRequestBuilder,
+} from "@/features/packaging-material/components/PackagingRequestBuilder"
+import type { PackagingRequestBuilderItem } from "@/features/packaging-material/types"
+import { createInitialBuilderRows } from "@/features/packaging-material/utils/request-builder.utils"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
@@ -192,6 +198,10 @@ export function MerchantOrdersListPage() {
   const [selectedMerchant, setSelectedMerchant] = useState<string>("")
   const [pickupDate, setPickupDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [includePackagingRequest, setIncludePackagingRequest] = useState(false)
+  const [packagingRequestNotes, setPackagingRequestNotes] = useState("")
+  const [packagingRequestRows, setPackagingRequestRows] =
+    useState<PackagingRequestBuilderItem[]>(createInitialBuilderRows())
   const [importError, setImportError] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const importMerchantId = merchantContext ? (user?.merchantId ?? "") : selectedMerchant
@@ -202,6 +212,12 @@ export function MerchantOrdersListPage() {
     enabled: !!token && !merchantContext,
   })
 
+  const packagingMaterialsQuery = usePackagingMaterials({
+    token,
+    page: 1,
+    pageSize: 200,
+  })
+
   const importMutation = useMutation({
     mutationFn: (file: File) =>
       importOrdersFromExcel({
@@ -209,6 +225,19 @@ export function MerchantOrdersListPage() {
         file,
         merchantId: importMerchantId || undefined,
         pickupDate,
+        packagingMaterialRequest: includePackagingRequest
+          ? {
+              notes: packagingRequestNotes || null,
+              items: packagingRequestRows
+                .filter(
+                  (row) => row.packagingMaterialId && Number(row.requestedQuantity) > 0,
+                )
+                .map((row) => ({
+                  packagingMaterialId: row.packagingMaterialId,
+                  requestedQuantity: row.requestedQuantity,
+                })),
+            }
+          : null,
       }),
     onSuccess: (data) => {
       showToast(
@@ -219,6 +248,9 @@ export function MerchantOrdersListPage() {
       setSelectedMerchant("")
       setPickupDate(new Date().toISOString().slice(0, 10))
       setSelectedFile(null)
+      setIncludePackagingRequest(false)
+      setPackagingRequestNotes("")
+      setPackagingRequestRows(createInitialBuilderRows())
       setImportError("")
       void queryClient.invalidateQueries({ queryKey: ["dashboard-merchant-pending-imports"] })
       void queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports"] })
@@ -272,6 +304,15 @@ export function MerchantOrdersListPage() {
     if (!selectedFile) {
       setImportError("Please select a file")
       return
+    }
+    if (includePackagingRequest) {
+      const validItems = packagingRequestRows.filter(
+        (row) => row.packagingMaterialId && Number(row.requestedQuantity) > 0,
+      )
+      if (validItems.length === 0) {
+        setImportError("Please add at least one packaging material item")
+        return
+      }
     }
     importMutation.mutate(selectedFile)
   }
@@ -537,6 +578,29 @@ export function MerchantOrdersListPage() {
                   Selected: {selectedFile.name}
                 </p>
               )}
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={includePackagingRequest}
+                  onChange={(event) => setIncludePackagingRequest(event.target.checked)}
+                />
+                Include Packaging Material Request
+              </label>
+              {includePackagingRequest ? (
+                <div className="space-y-3 rounded-md border p-3">
+                  <Input
+                    value={packagingRequestNotes}
+                    onChange={(event) => setPackagingRequestNotes(event.target.value)}
+                    placeholder="Packaging request notes (optional)"
+                  />
+                  <PackagingRequestBuilder
+                    materials={packagingMaterialsQuery.data?.materials ?? []}
+                    value={packagingRequestRows}
+                    onChange={setPackagingRequestRows}
+                    disabled={importMutation.isPending}
+                  />
+                </div>
+              ) : null}
               {importError && (
                 <p className="text-sm text-destructive">{importError}</p>
               )}

@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 
-import { getWarehouseCouriers, getWarehouseSite, listWarehouseOrders, type WarehouseCourierRow } from "@/api/warehouse-api"
+import { getWarehousePickupCouriers, getWarehouseSite, listWarehouseOrders } from "@/api/warehouse-api"
+import type { PickupCourierRow } from "@/api/pickup-couriers-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Button } from "@/components/ui/button"
@@ -65,7 +66,10 @@ export function WarehouseMerchantOrdersListPage() {
         search: search || undefined,
         transferStatus: transferStatusFilter === "" ? undefined : transferStatusFilter,
         returnsOnly,
-        courierId: returnsOnly && returnsCourierFilterId.trim() ? returnsCourierFilterId.trim() : undefined,
+        pickupCourierId:
+          returnsOnly && returnsCourierFilterId.trim()
+            ? returnsCourierFilterId.trim()
+            : undefined,
         warehouseId,
       }),
     enabled: !!token && !!warehouseId && !accessDenied && isMainHub,
@@ -74,7 +78,7 @@ export function WarehouseMerchantOrdersListPage() {
 
   const couriersForReturnsFilterQuery = useQuery({
     queryKey: ["warehouse-couriers-returns", token],
-    queryFn: () => getWarehouseCouriers({ token, warehouseId }),
+    queryFn: () => getWarehousePickupCouriers({ token, warehouseId }),
     enabled: !!token && returnsOnly && !accessDenied && isMainHub,
   })
 
@@ -156,7 +160,7 @@ export function WarehouseMerchantOrdersListPage() {
 
             {returnsOnly ? (
               <div className="flex flex-wrap items-center gap-2">
-                <label className="text-muted-foreground text-sm whitespace-nowrap">{t("warehouse.queue.filterReturnsByCourier")}</label>
+                <label className="text-muted-foreground text-sm whitespace-nowrap">{t("warehouse.queue.filterReturnsByPickupCourier")}</label>
                 <select
                   className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 min-w-[12rem] rounded-md border px-3 text-sm focus-visible:outline-none focus-visible:ring-1"
                   value={returnsCourierFilterId}
@@ -165,8 +169,8 @@ export function WarehouseMerchantOrdersListPage() {
                     setPage(1)
                   }}
                 >
-                  <option value="">{t("warehouse.queue.allCouriers")}</option>
-                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
+                  <option value="">{t("warehouse.queue.allPickupCouriers")}</option>
+                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: PickupCourierRow) => (
                     <option key={c.id} value={c.id}>
                       {c.fullName?.trim() || t("warehouse.queue.unnamedCourier")}
                     </option>

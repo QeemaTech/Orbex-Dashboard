@@ -9,7 +9,7 @@ import {
   Users,
   Warehouse,
 } from "react-lucid"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
@@ -97,6 +97,7 @@ const adminNavConfig = [
   { to: "/merchant-orders/pending-confirmations", labelKey: "nav.merchantOrderConfirmations", icon: Boxes, end: false, perm: "merchant_orders.confirm" },
   { to: "/courier-manifests", labelKey: "nav.allCourierManifests", icon: Truck, end: false, perm: "courier_manifests.read_all" },
   { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
+  { to: "/pickup-couriers", labelKey: "nav.pickupCouriers", icon: Truck, end: false, perm: "warehouses.read" },
   {
     to: "/delivery-zones",
     labelKey: "nav.deliveryZones",
@@ -120,6 +121,9 @@ const adminNavConfig = [
     perm: "accounts.read",
   },
   { to: "/warehouses", labelKey: "nav.warehouses", icon: Warehouse, end: true, perm: "warehouses.read" },
+  { to: "/packaging-materials", labelKey: "nav.packagingMaterials", icon: Package, end: false, perm: "packaging_materials.read" },
+  { to: "/packaging-material-requests", labelKey: "nav.packagingRequests", icon: Boxes, end: false, perm: "packaging_material_requests.read_own" },
+  { to: "/packaging-inventory", labelKey: "nav.packagingInventory", icon: Warehouse, end: false, perm: "packaging_materials.read" },
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const
 
@@ -133,7 +137,9 @@ const customerServiceNavConfig = [
 
 const merchantNavConfig = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true, perm: "dashboard.view" },
+  { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "merchant_orders.read" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
+  { to: "/packaging-material-requests", labelKey: "nav.packagingRequests", icon: Boxes, end: false, perm: "packaging_material_requests.read_own" },
   {
     to: "/merchant-orders/pending-confirmations",
     labelKey: "nav.merchantOrderConfirmations",
@@ -148,6 +154,11 @@ const merchantNavConfig = [
 export function Sidebar() {
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : false,
+  )
   const location = useLocation()
   const { open, setOpen } = useSidebar()
   const navigate = useNavigate()
@@ -156,6 +167,18 @@ export function Sidebar() {
   const perms = user?.permissions ?? []
   const token = accessToken ?? ""
   const isMerchant = isMerchantUser(user)
+  const isDarkMode = theme === "dark" || (theme === "system" && systemPrefersDark)
+  const sidebarLogoSrc = isDarkMode ? "/logo-dark.svg" : "/logo.svg"
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const handleChange = (event: MediaQueryListEvent) =>
+      setSystemPrefersDark(event.matches)
+    setSystemPrefersDark(mediaQuery.matches)
+    mediaQuery.addEventListener("change", handleChange)
+    return () => mediaQuery.removeEventListener("change", handleChange)
+  }, [])
 
   const hubId = useMemo(() => {
     if (!user) return null
@@ -263,7 +286,7 @@ export function Sidebar() {
       id="app-sidebar"
       aria-label={t("a11y.mainNav")}
       className={cn(
-        "nav-shell border-sidebar-border text-sidebar-foreground fixed top-0 start-0 z-50 flex h-dvh w-[min(286px,88vw)] flex-col border-e shadow-xl transition-transform duration-300 ease-out lg:w-[286px] lg:shadow-none",
+        "nav-shell border-sidebar-border text-sidebar-foreground fixed top-0 start-0 z-50 flex h-dvh w-[min(286px,88vw)] flex-col border-e pb-12 sm:pb-14 shadow-xl transition-transform duration-300 ease-out lg:w-[286px] lg:shadow-none",
         open
           ? "translate-x-0"
           : "max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full"
@@ -271,9 +294,9 @@ export function Sidebar() {
     >
       <div className="flex h-[76px] shrink-0 items-center border-b border-sidebar-border/90 px-5 sm:px-6">
         <img
-          src="/logo.svg"
+          src={sidebarLogoSrc}
           alt="Orbex"
-          className="h-9 w-auto object-contain"
+          className="h-12 w-auto object-contain"
           loading="eager"
         />
       </div>
