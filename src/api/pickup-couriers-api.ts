@@ -1,5 +1,8 @@
 import { apiFetch } from "@/api/client"
 
+const PICKUP_COURIERS_MIN_PAGE_SIZE = 1
+const PICKUP_COURIERS_MAX_PAGE_SIZE = 100
+
 export type PickupCourierRow = {
   id: string
   fullName: string
@@ -25,7 +28,14 @@ export function listPickupCouriers(params: {
 }): Promise<{ pickupCouriers: PickupCourierRow[]; total: number; page: number; pageSize: number }> {
   const sp = new URLSearchParams()
   if (params.page != null) sp.set("page", String(params.page))
-  if (params.pageSize != null) sp.set("pageSize", String(params.pageSize))
+  if (params.pageSize != null) {
+    // Keep frontend query values inside backend validation bounds.
+    const boundedPageSize = Math.min(
+      PICKUP_COURIERS_MAX_PAGE_SIZE,
+      Math.max(PICKUP_COURIERS_MIN_PAGE_SIZE, Math.trunc(params.pageSize)),
+    )
+    sp.set("pageSize", String(boundedPageSize))
+  }
   if (params.search?.trim()) sp.set("search", params.search.trim())
   if (params.warehouseId) sp.set("warehouseId", params.warehouseId)
   if (params.isActive !== undefined) sp.set("isActive", String(params.isActive))

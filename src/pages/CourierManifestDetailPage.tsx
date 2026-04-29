@@ -181,6 +181,15 @@ export function CourierManifestDetailPage() {
                     type="button"
                     size="sm"
                     variant="outline"
+                    disabled
+                    title={t("warehouse.manifests.optimizeRouteComingSoon")}
+                  >
+                    {t("warehouse.manifests.optimizeRoute")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
                     disabled={!canManageTransfer || manifest.status !== "DRAFT" || lockMutation.isPending}
                     onClick={() => lockMutation.mutate()}
                   >

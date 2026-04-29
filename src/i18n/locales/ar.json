@@ -1054,7 +1054,9 @@
         "confirm": "تأكيد الإرسال"
       },
       "lock": "قفل",
-      "dispatch": "إرسال"
+      "dispatch": "إرسال",
+      "optimizeRoute": "تحسين المسار",
+      "optimizeRouteComingSoon": "ميزة تحسين المسار ستتوفر قريباً."
     },
     "table": {
       "batchId": "معرف الدفعة",
@@ -1338,9 +1340,14 @@
       "regionNone": "بدون",
       "mapHint": "انقر على الخريطة لتحديد مركز المنطقة (الدبوس).",
       "mapNoKey": "عيّن VITE_GOOGLE_MAPS_API_KEY لتفعيل الخريطة التفاعلية؛ يمكنك إدخال الإحداثيات يدوياً.",
+      "geometryType": "نوع الشكل الهندسي",
+      "geometryPolygon": "مضلع (أساسي)",
+      "geometryCircle": "دائرة",
       "latitude": "خط العرض",
       "longitude": "خط الطول",
       "radiusLabel": "نصف القطر: {{m}} م",
+      "polygonHint": "عدد نقاط المضلع: {{points}} (الحد الأدنى 3). انقر على الخريطة لإضافة نقاط ثم اسحب الرؤوس للتعديل.",
+      "polygonRequired": "وضع المضلع يتطلب 3 نقاط على الأقل.",
       "courierCommissionFee": "عمولة المندوب لكل توصيل (جنيه)",
       "couriers": "المناديب",
       "courierInOtherZone": "معيّن حالياً في: {{zone}}",
@@ -1372,6 +1379,27 @@
       "deactivateFailed": "تعذّر تعطيل المنطقة.",
       "deletedPermanent": "تم حذف المنطقة نهائياً.",
       "deletePermanentFailed": "تعذّر حذف المنطقة."
+    },
+    "inspect": {
+      "name": "المنطقة",
+      "type": "نوع المنطقة",
+      "governorate": "المحافظة",
+      "operational": "الحالة التشغيلية",
+      "radius": "نصف القطر",
+      "linkedWarehouses": "المخازن المرتبطة",
+      "couriers": "مناديب التوصيل المعينون",
+      "warehouses": "المخازن المرتبطة",
+      "mainWarehouseMarker": "المخزن الرئيسي",
+      "subBranchWarehouseMarker": "الفرع الفرعي"
+    },
+    "preview": {
+      "title": "معاينة منطقة الشحنة",
+      "open": "معاينة المنطقة",
+      "resolvedZone": "منطقة التوصيل المحلولة",
+      "noMapKey": "مفتاح الخريطة غير متوفر.",
+      "mapFailed": "تعذر تحميل الخريطة.",
+      "mainWarehouseMarker": "المخزن الرئيسي",
+      "subBranchWarehouseMarker": "الفرع الفرعي"
     }
   },
   "settings": {

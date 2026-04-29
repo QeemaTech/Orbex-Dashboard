@@ -453,7 +453,7 @@ export function getWarehousePickupCouriers(params: {
     warehouseId: params.warehouseId,
     isActive: true,
     page: 1,
-    pageSize: 200,
+    pageSize: 100,
   }).then((r) => ({ couriers: r.pickupCouriers }))
 }
 

@@ -17,7 +17,7 @@ export type DeliveryZoneRow = {
   name: string | null
   latitude: string
   longitude: string
-  radiusMeters: number
+  radiusMeters: number | null
   governorate: string
   courierCommissionFee?: string
   areaZone: string | null
@@ -29,6 +29,8 @@ export type DeliveryZoneRow = {
   courierIds: string[]
   /** Populated by API with name/phone; falls back to ids if missing (older servers). */
   couriers?: DeliveryZoneCourierSummary[]
+  geometryType?: "CIRCLE" | "POLYGON"
+  polygonGeoJson?: unknown | null
 }
 
 export type CourierOptionRow = {
@@ -92,9 +94,11 @@ export async function listDeliveryZoneCourierOptions(token: string): Promise<{
 
 export type CreateDeliveryZoneBody = {
   name?: string | null
+  geometryType?: "CIRCLE" | "POLYGON"
+  polygonGeoJson?: unknown | null
   latitude: number
   longitude: number
-  radiusMeters: number
+  radiusMeters?: number | null
   governorate: string
   courierCommissionFee?: number
   areaZone?: string | null
@@ -116,9 +120,11 @@ export async function createDeliveryZone(
 
 export type PatchDeliveryZoneBody = {
   name?: string | null
+  geometryType?: "CIRCLE" | "POLYGON"
+  polygonGeoJson?: unknown | null
   latitude?: number
   longitude?: number
-  radiusMeters?: number
+  radiusMeters?: number | null
   governorate?: string
   courierCommissionFee?: number
   areaZone?: string | null

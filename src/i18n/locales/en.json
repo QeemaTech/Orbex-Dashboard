@@ -1081,7 +1081,9 @@
         "confirm": "Confirm dispatch"
       },
       "lock": "Lock",
-      "dispatch": "Dispatch"
+      "dispatch": "Dispatch",
+      "optimizeRoute": "Optimize Route",
+      "optimizeRouteComingSoon": "Route optimization is coming soon."
     },
     "table": {
       "batchId": "Batch ID",
@@ -1366,9 +1368,14 @@
       "regionNone": "None",
       "mapHint": "Click the map to set the zone center (pin).",
       "mapNoKey": "Set VITE_GOOGLE_MAPS_API_KEY to enable the interactive map; you can still enter coordinates below.",
+      "geometryType": "Geometry type",
+      "geometryPolygon": "Polygon (primary)",
+      "geometryCircle": "Circle",
       "latitude": "Latitude",
       "longitude": "Longitude",
       "radiusLabel": "Radius: {{m}} m",
+      "polygonHint": "Polygon points: {{points}} (minimum 3). Click map to add points, then drag vertices to edit.",
+      "polygonRequired": "Polygon mode requires at least 3 points.",
       "courierCommissionFee": "Courier commission per delivery (EGP)",
       "couriers": "Couriers",
       "courierInOtherZone": "Currently assigned to: {{zone}}",
@@ -1400,6 +1407,27 @@
       "deactivateFailed": "Could not deactivate zone.",
       "deletedPermanent": "Zone deleted permanently.",
       "deletePermanentFailed": "Could not delete zone."
+    },
+    "inspect": {
+      "name": "Zone",
+      "type": "Zone type",
+      "governorate": "Governorate",
+      "operational": "Operational status",
+      "radius": "Radius",
+      "linkedWarehouses": "Linked warehouses",
+      "couriers": "Assigned delivery couriers",
+      "warehouses": "Linked warehouses",
+      "mainWarehouseMarker": "Main warehouse",
+      "subBranchWarehouseMarker": "Sub-branch warehouse"
+    },
+    "preview": {
+      "title": "Shipment zone preview",
+      "open": "Zone preview",
+      "resolvedZone": "Resolved delivery zone",
+      "noMapKey": "Map key is missing.",
+      "mapFailed": "Map failed to load.",
+      "mainWarehouseMarker": "Main warehouse",
+      "subBranchWarehouseMarker": "Sub-branch warehouse"
     }
   },
   "settings": {

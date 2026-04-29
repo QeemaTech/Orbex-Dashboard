@@ -46,6 +46,21 @@ import {
 
 const DEFAULT_CENTER = { lat: 30.0444, lng: 31.2357 }
 
+function countPolygonPoints(geo: unknown): number {
+  if (!geo || typeof geo !== "object") return 0
+  const feature = geo as { type?: string; geometry?: unknown }
+  const source =
+    feature.type === "Feature" && feature.geometry ? feature.geometry : geo
+  if (!source || typeof source !== "object") return 0
+  const polygon = source as { type?: string; coordinates?: unknown }
+  if (polygon.type !== "Polygon" || !Array.isArray(polygon.coordinates)) return 0
+  const ring = polygon.coordinates[0]
+  if (!Array.isArray(ring)) return 0
+  const size = ring.filter((pair) => Array.isArray(pair) && pair.length >= 2).length
+  if (size <= 1) return 0
+  return size - 1
+}
+
 /** Persisted area/city: manual Arabic, or prefetched label, or English city key if geocoder never ran */
 function resolveAreaZoneForSave(
   areaZoneAr: string,
@@ -109,6 +124,8 @@ export function DeliveryZoneFormDialog({
   const [latitude, setLatitude] = useState(DEFAULT_CENTER.lat)
   const [longitude, setLongitude] = useState(DEFAULT_CENTER.lng)
   const [radiusMeters, setRadiusMeters] = useState(1500)
+  const [geometryType, setGeometryType] = useState<"CIRCLE" | "POLYGON">("CIRCLE")
+  const [polygonGeoJson, setPolygonGeoJson] = useState<unknown | null>(null)
   const [courierCommissionFee, setCourierCommissionFee] = useState("0")
   const [courierIds, setCourierIds] = useState<Set<string>>(() => new Set())
   const [isActive, setIsActive] = useState(true)
@@ -189,7 +206,9 @@ export function DeliveryZoneFormDialog({
       setRegionId(initial.regionId ?? "")
       setLatitude(Number.parseFloat(initial.latitude) || DEFAULT_CENTER.lat)
       setLongitude(Number.parseFloat(initial.longitude) || DEFAULT_CENTER.lng)
-      setRadiusMeters(initial.radiusMeters)
+      setRadiusMeters(initial.radiusMeters ?? 1500)
+      setGeometryType(initial.geometryType === "POLYGON" ? "POLYGON" : "CIRCLE")
+      setPolygonGeoJson(initial.polygonGeoJson ?? null)
       setCourierCommissionFee((initial.courierCommissionFee ?? "0").toString())
       setCourierIds(new Set(initial.courierIds))
       setIsActive(initial.isActive)
@@ -206,6 +225,8 @@ export function DeliveryZoneFormDialog({
       setLatitude(DEFAULT_CENTER.lat)
       setLongitude(DEFAULT_CENTER.lng)
       setRadiusMeters(1500)
+      setGeometryType("CIRCLE")
+      setPolygonGeoJson(null)
       setCourierCommissionFee("0")
       setCourierIds(new Set())
       setIsActive(true)
@@ -377,6 +398,10 @@ export function DeliveryZoneFormDialog({
       showToast(t("deliveryZones.form.governorateRequired"), "error")
       return
     }
+    if (geometryType === "POLYGON" && countPolygonPoints(polygonGeoJson) < 3) {
+      showToast(t("deliveryZones.form.polygonRequired"), "error")
+      return
+    }
 
     let areaZone: string | null = resolveAreaZoneForSave(
       areaZoneAr,
@@ -405,9 +430,11 @@ export function DeliveryZoneFormDialog({
 
     const body: CreateDeliveryZoneBody = {
       name: name.trim() || null,
+      geometryType,
+      polygonGeoJson: geometryType === "POLYGON" ? polygonGeoJson : null,
       latitude,
       longitude,
-      radiusMeters,
+      radiusMeters: geometryType === "CIRCLE" ? radiusMeters : null,
       governorate: governorateForApi,
       courierCommissionFee: Number(courierCommissionFee || "0"),
       areaZone,
@@ -624,6 +651,21 @@ export function DeliveryZoneFormDialog({
           </div>
 
           <div className="grid gap-2">
+            <label className="text-muted-foreground text-xs font-medium">
+              {t("deliveryZones.form.geometryType")}
+            </label>
+            <select
+              className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+              value={geometryType}
+              onChange={(e) => setGeometryType(e.target.value as "CIRCLE" | "POLYGON")}
+              disabled={!canWrite || busy}
+            >
+              <option value="POLYGON">{t("deliveryZones.form.geometryPolygon")}</option>
+              <option value="CIRCLE">{t("deliveryZones.form.geometryCircle")}</option>
+            </select>
+          </div>
+
+          <div className="grid gap-2">
             <span className="text-muted-foreground text-xs font-medium">
               {t("deliveryZones.form.mapHint")}
             </span>
@@ -631,12 +673,16 @@ export function DeliveryZoneFormDialog({
               <DeliveryZoneGoogleMap
                 ref={mapRef}
                 apiKey={mapsKey}
+                geometryType={geometryType}
                 center={center}
                 radiusMeters={radiusMeters}
+                polygonGeoJson={polygonGeoJson}
+                onPolygonGeoJsonChange={setPolygonGeoJson}
                 onCenterChange={(next) => {
                   setLatitude(next.lat)
                   setLongitude(next.lng)
                 }}
+                onRadiusMetersChange={setRadiusMeters}
               />
             ) : (
               <p className="text-muted-foreground text-xs">
@@ -695,6 +741,13 @@ export function DeliveryZoneFormDialog({
                 className="max-w-[8rem]"
               />
             </div>
+            {geometryType === "POLYGON" ? (
+              <p className="text-muted-foreground text-xs">
+                {t("deliveryZones.form.polygonHint", {
+                  points: countPolygonPoints(polygonGeoJson),
+                })}
+              </p>
+            ) : null}
 
             <div className="grid gap-1">
               <label className="text-muted-foreground text-xs">

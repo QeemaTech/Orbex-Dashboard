@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 
-import { getWarehousePickupCouriers, getWarehouseSite, listWarehouseOrders, type WarehouseCourierRow } from "@/api/warehouse-api"
+import { getWarehousePickupCouriers, getWarehouseSite, listWarehouseOrders } from "@/api/warehouse-api"
+import type { PickupCourierRow } from "@/api/pickup-couriers-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Button } from "@/components/ui/button"
@@ -169,7 +170,7 @@ export function WarehouseMerchantOrdersListPage() {
                   }}
                 >
                   <option value="">{t("warehouse.queue.allPickupCouriers")}</option>
-                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: WarehouseCourierRow) => (
+                  {(couriersForReturnsFilterQuery.data?.couriers ?? []).map((c: PickupCourierRow) => (
                     <option key={c.id} value={c.id}>
                       {c.fullName?.trim() || t("warehouse.queue.unnamedCourier")}
                     </option>

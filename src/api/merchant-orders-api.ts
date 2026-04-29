@@ -373,12 +373,17 @@ export async function getShipmentOrders(params: {
 export async function bulkReturnRejectedToMerchant(params: {
   token: string
   merchantOrderId: string
-}): Promise<{ created: string[]; skipped: string[] }> {
-  return apiFetch<{ created: string[]; skipped: string[] }>(
+  pickupCourierId: string
+}): Promise<{ created: string[]; skipped: string[]; createdTaskIds: string[]; manifestIds: string[] }> {
+  return apiFetch<{ created: string[]; skipped: string[]; createdTaskIds: string[]; manifestIds: string[] }>(
     `/api/merchant-orders/${encodeURIComponent(
       params.merchantOrderId,
     )}/bulk-return-to-merchant`,
-    { token: params.token, method: "POST" },
+    {
+      token: params.token,
+      method: "POST",
+      body: JSON.stringify({ pickupCourierId: params.pickupCourierId }),
+    },
   )
 }
 
