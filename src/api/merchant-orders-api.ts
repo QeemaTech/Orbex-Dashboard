@@ -41,6 +41,8 @@ export type CsShipmentRow = {
   trackingNumber: string | null
   /** Merchant-order batch pipeline — API field `transferStatus` on the parent `MerchantOrder`. */
   transferStatus?: string
+  /** Batch billing: whether customer payment is prepaid. */
+  shippingPaymentType?: string
   /** Line CS outbound confirmation timestamp when present on list/detail APIs. */
   csConfirmedAt?: string | null
   /** User who confirmed the line at hub with customer location (CS flow only). */
@@ -915,6 +917,7 @@ export type ImportOrdersParams = {
       requestedQuantity: string | number
     }>
   } | null
+  shippingPaymentType?: "NOT_PREPAID" | "PREPAID_SHIPPING" | "PREPAID_FULL"
 }
 
 /** `POST /api/merchant-orders/import-orders` returns 202 — rows queued for confirmation. */
@@ -950,6 +953,7 @@ export async function importOrdersFromExcel(
       notes: p.notes,
       trackingNumber: p.trackingNumber,
       packagingMaterialRequest: p.packagingMaterialRequest ?? null,
+      shippingPaymentType: p.shippingPaymentType ?? "NOT_PREPAID",
     }),
   )
 

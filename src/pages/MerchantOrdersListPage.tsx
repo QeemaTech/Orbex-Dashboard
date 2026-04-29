@@ -199,6 +199,9 @@ export function MerchantOrdersListPage() {
   const [pickupDate, setPickupDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [includePackagingRequest, setIncludePackagingRequest] = useState(false)
+  const [shippingPaymentType, setShippingPaymentType] = useState<
+    "NOT_PREPAID" | "PREPAID_SHIPPING" | "PREPAID_FULL"
+  >("NOT_PREPAID")
   const [packagingRequestNotes, setPackagingRequestNotes] = useState("")
   const [packagingRequestRows, setPackagingRequestRows] =
     useState<PackagingRequestBuilderItem[]>(createInitialBuilderRows())
@@ -225,6 +228,7 @@ export function MerchantOrdersListPage() {
         file,
         merchantId: importMerchantId || undefined,
         pickupDate,
+        shippingPaymentType,
         packagingMaterialRequest: includePackagingRequest
           ? {
               notes: packagingRequestNotes || null,
@@ -249,6 +253,7 @@ export function MerchantOrdersListPage() {
       setPickupDate(new Date().toISOString().slice(0, 10))
       setSelectedFile(null)
       setIncludePackagingRequest(false)
+      setShippingPaymentType("NOT_PREPAID")
       setPackagingRequestNotes("")
       setPackagingRequestRows(createInitialBuilderRows())
       setImportError("")
@@ -437,6 +442,11 @@ export function MerchantOrdersListPage() {
                       <TableHead className="text-end tabular-nums">
                         {t("merchantOrdersList.colTotalValue")}
                       </TableHead>
+                      <TableHead>
+                        {t("merchantOrdersList.colPaymentType", {
+                          defaultValue: "Payment",
+                        })}
+                      </TableHead>
                       <TableHead>{t("merchantOrdersList.colBatchPipelineStatus")}</TableHead>
                       <TableHead>{t("merchantOrdersList.colResolution")}</TableHead>
                     </TableRow>
@@ -460,7 +470,33 @@ export function MerchantOrdersListPage() {
                           {row.orderCount ?? "—"}
                         </TableCell>
                         <TableCell className="text-end tabular-nums">
-                          {formatEGP(row.totalShipmentValue ?? row.shipmentValue, locale)}
+                          {formatEGP(
+                            row.shippingPaymentType === "PREPAID_FULL"
+                              ? "0"
+                              : (row.totalShipmentValue ?? row.shipmentValue),
+                            locale,
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.shippingPaymentType === "PREPAID_FULL" ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {t("merchantOrdersList.prepaidFull", {
+                                defaultValue: "Prepaid (full)",
+                              })}
+                            </Badge>
+                          ) : row.shippingPaymentType === "PREPAID_SHIPPING" ? (
+                            <Badge variant="outline" className="text-xs">
+                              {t("merchantOrdersList.prepaidShipping", {
+                                defaultValue: "Prepaid (shipping)",
+                              })}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              {t("merchantOrdersList.notPrepaid", {
+                                defaultValue: "Not prepaid",
+                              })}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <MerchantBatchStatusWithWarehouse
@@ -563,6 +599,34 @@ export function MerchantOrdersListPage() {
                   value={pickupDate}
                   onChange={(e) => setPickupDate(e.target.value)}
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {t("merchantOrdersList.shippingPaymentType", {
+                    defaultValue: "Payment type",
+                  })}
+                </label>
+                <select
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  value={shippingPaymentType}
+                  onChange={(e) =>
+                    setShippingPaymentType(
+                      e.target.value as "NOT_PREPAID" | "PREPAID_SHIPPING" | "PREPAID_FULL",
+                    )
+                  }
+                >
+                  <option value="NOT_PREPAID">
+                    {t("merchantOrdersList.notPrepaid", { defaultValue: "Not prepaid" })}
+                  </option>
+                  <option value="PREPAID_SHIPPING">
+                    {t("merchantOrdersList.prepaidShipping", {
+                      defaultValue: "Prepaid (shipping)",
+                    })}
+                  </option>
+                  <option value="PREPAID_FULL">
+                    {t("merchantOrdersList.prepaidFull", { defaultValue: "Prepaid (full)" })}
+                  </option>
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Excel File</label>

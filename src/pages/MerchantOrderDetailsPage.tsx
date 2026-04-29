@@ -289,6 +289,9 @@ export function MerchantOrderDetailsPage() {
   const primaryLineStatusEvents = orders[0]?.statusEvents ?? []
   const ordersTotalValue = sumMoney(orders.map((p) => p.shipmentValue))
   const ordersTotalShipping = sumMoney(orders.map((p) => p.shippingFee))
+  const isPrepaidFull = q.data?.shippingPaymentType === "PREPAID_FULL"
+  const displayOrdersTotalValue = isPrepaidFull ? 0 : ordersTotalValue
+  const displayOrdersTotalShipping = isPrepaidFull ? 0 : ordersTotalShipping
   const orderCount =
     orders.length > 0 ? orders.length : (q.data?.orderCount ?? 0)
   const isMultiOrderBatch = orderCount > 1
@@ -436,9 +439,9 @@ export function MerchantOrderDetailsPage() {
                       </p>
                       <p>
                         <strong>{t("warehouse.table.totalValue")}:</strong>{" "}
-                        {ordersTotalValue == null
+                        {displayOrdersTotalValue == null
                           ? "—"
-                          : formatMoney(String(ordersTotalValue))}
+                          : formatMoney(String(displayOrdersTotalValue))}
                       </p>
                     </div>
                     <p className="text-muted-foreground text-sm">
@@ -533,17 +536,17 @@ export function MerchantOrderDetailsPage() {
                       </p>
                       <p>
                         <strong>{t("warehouse.table.totalValue")}:</strong>{" "}
-                        {ordersTotalValue == null
+                        {displayOrdersTotalValue == null
                           ? "—"
-                          : formatMoney(String(ordersTotalValue))}
+                          : formatMoney(String(displayOrdersTotalValue))}
                       </p>
                       <p>
                         <strong>{t("merchantOrders.detail.shippingFee")}:</strong>{" "}
                         {ordersSummaryQuery.isLoading
                           ? "…"
-                          : ordersTotalShipping == null
+                          : displayOrdersTotalShipping == null
                             ? "—"
-                            : formatMoney(String(ordersTotalShipping))}
+                            : formatMoney(String(displayOrdersTotalShipping))}
                       </p>
                       {isMultiOrderBatch ? null : (
                         <>
@@ -619,6 +622,7 @@ export function MerchantOrderDetailsPage() {
                   shipmentId={merchantOrderId}
                   warehouseId={isWarehouseRoute ? warehouseId : undefined}
                   mode={tableMode}
+                  isPrepaidFull={isPrepaidFull}
                 />
               </CardContent>
             </Card>
