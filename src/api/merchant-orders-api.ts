@@ -891,16 +891,37 @@ export async function patchShipmentAssignedWarehouse(params: {
   )
 }
 
-export type ImportOrdersParams = {
-  token: string
-  file: File
+export type MerchantOrderImportMeta = {
   merchantId?: string
   pickupDate: string
   regionId?: string | null
   notes?: string | null
-  trackingNumber?: string | null
+  pickupDate: string
 }
 
+export type MerchantOrderImportResponse = {
+  pendingImport: {
+    id: string
+  }
+  orderCount: number
+}
+
+export type PendingMerchantOrderImport = {
+  id: string
+  merchantId: string
+  merchantName: string
+  merchantPhone: string
+  merchantEmail: string | null
+  merchantBusinessName: string
+  merchantPickupAddress: string | null
+  merchantPickupGovernorate: string | null
+  fileName: string
+  rowCount: number
+  pickupDate: string
+  status: string
+  createdAt: string
+  createdByUserId: string | null
+  createdByName: string | null
 /** `POST /api/merchant-orders/import-orders` returns 202 — rows queued for confirmation. */
 export type ImportOrdersQueuedResponse = {
   pendingImport: {

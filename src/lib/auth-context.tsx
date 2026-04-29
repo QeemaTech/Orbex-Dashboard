@@ -216,8 +216,8 @@ export function isMerchantUser(user: AuthUser | null | undefined): boolean {
 export function getDefaultDashboardRoute(user: AuthUser | null | undefined): string {
   if (!user) return "/dashboard"
   if (user.role === "CUSTOMER_SERVICE") return "/cs/shipments"
-  if (isWarehouseStaff(user) && user.warehouseId) {
-    return `/warehouses/${encodeURIComponent(user.warehouseId)}`
+  if (isWarehouseSiteStaff(user) && user.warehouseId) {
+    return `/warehouses/${encodeURIComponent(user.warehouseId)}/merchant-orders`
   }
   if (isWarehouseStaff(user)) return "/warehouse"
   if (isWarehouseAdmin(user)) return "/dashboard/warehouse"

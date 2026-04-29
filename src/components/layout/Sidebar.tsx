@@ -20,7 +20,11 @@ import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { isMainBranch } from "@/lib/warehouse-utils"
-import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
+import {
+  isWarehouseSiteAdmin,
+  isWarehouseStaffRole,
+  isWarehouseSiteStaff,
+} from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
 
 type HubNavItem = {
@@ -157,6 +161,14 @@ export function Sidebar() {
   const token = accessToken ?? ""
   const isMerchant = isMerchantUser(user)
 
+  const hasPerm = (p?: string) => {
+    if (!p) return true
+    return perms.includes(p)
+  }
+  const hasWarehouseAdminPermissions =
+    hasPerm("warehouses.manage") || hasPerm("warehouses.create")
+  const isWarehouseAdminUser =
+    !!user && (isWarehouseSiteAdmin(user) || hasWarehouseAdminPermissions)
   const hubId = useMemo(() => {
     if (!user) return null
     if (isWarehouseAdmin(user)) return user.adminWarehouse?.id ?? null
@@ -210,10 +222,12 @@ export function Sidebar() {
           end: true,
           perm: undefined,
         },
-        {
-          to: "/settings",
-          labelKey: "nav.settings" as const,
-          icon: Settings,
+      ]
+      if (isMainHubForStaff) {
+        items.push({
+          to: `${base}/merchant-orders`,
+          labelKey: "nav.warehouseMerchantOrders",
+          icon: Boxes,
           end: false,
           perm: undefined,
         },
@@ -257,6 +271,37 @@ export function Sidebar() {
     logout()
     void navigate("/login", { replace: true })
   }
+  const navConfig =
+    user?.role === "CUSTOMER_SERVICE"
+      ? customerServiceNavConfig.filter(({ perm }) => hasPerm(perm))
+      : user && isWarehouseStaffRole(user)
+        ? warehouseStaffNav.filter(({ perm }) => hasPerm(perm))
+        : isWarehouseAdminUser
+          ? [
+              {
+                to: "/warehouse-dashboard",
+                labelKey: "nav.dashboard" as const,
+                icon: LayoutDashboard,
+                end: true,
+              },
+              {
+                to: "/warehouses",
+                labelKey: "nav.warehouses" as const,
+                icon: Warehouse,
+                end: true,
+                perm: hasPerm("warehouses.read")
+                  ? ("warehouses.read" as const)
+                  : ("warehouses.manage" as const),
+              },
+              {
+                to: "/delivery-zones",
+                labelKey: "nav.deliveryZones" as const,
+                icon: MapPin,
+                end: false,
+                perm: "delivery_zones.read" as const,
+              },
+            ].filter(({ perm }) => hasPerm(perm))
+          : adminNavConfig.filter(({ perm }) => hasPerm(perm))
 
   return (
     <aside
