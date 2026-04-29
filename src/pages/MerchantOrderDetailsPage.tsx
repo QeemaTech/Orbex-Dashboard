@@ -5,15 +5,20 @@ import { useTranslation } from "react-i18next"
 import { Link, useLocation, useParams } from "react-router-dom"
 
 import {
+  bulkReturnRejectedToMerchant,
+  finalizeMerchantOrderReturns,
   getShipmentById,
   getShipmentOrders,
-  patchShipmentAssignedWarehouse,
-  type CsShipmentRow,
 } from "@/api/merchant-orders-api"
-import { getShipmentLabelRaw, markShipmentLabelPrinted } from "@/api/shipments-api"
+import {
+  getShipmentLabelRaw,
+  markShipmentLabelPrinted,
+  patchShipmentAssignedWarehouse,
+} from "@/api/shipments-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -22,9 +27,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { CsAddLocationDialog } from "@/features/customer-service/components/CsAddLocationDialog"
-import { CsCourierMapDialog } from "@/features/customer-service/components/CsCourierMapDialog"
-import { CsShipmentRowActions } from "@/features/customer-service/components/CsShipmentRowActions"
 import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
@@ -34,7 +36,7 @@ import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labe
 import type { AuthUser } from "@/lib/auth-context"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
-import { isWarehouseSiteAdmin, isWarehouseSiteStaff } from "@/lib/warehouse-access"
+import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
 import { printerService } from "@/services/printer.service"
 import { showToast } from "@/lib/toast"
 
@@ -43,7 +45,7 @@ const INVALID_ROUTE_BATCH_ID = new Set(["", "undefined"])
 function resolvePerspective(user: AuthUser | null | undefined): DashboardPerspective {
   if (!user) return "operations"
   if (user.role === "ACCOUNTS") return "accounting"
-  if (isWarehouseSiteStaff(user) || isWarehouseSiteAdmin(user)) return "warehouse"
+  if (isWarehouseStaff(user) || isWarehouseAdmin(user)) return "warehouse"
   return "operations"
 }
 
@@ -90,10 +92,6 @@ export function MerchantOrderDetailsPage() {
       ? warehouseId.trim()
       : user?.warehouseId ?? undefined
 
-  const [mapOpen, setMapOpen] = useState(false)
-  const [mapCourierId, setMapCourierId] = useState<string | null>(null)
-  const [locationOpen, setLocationOpen] = useState(false)
-  const [locationRow, setLocationRow] = useState<CsShipmentRow | null>(null)
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("")
 
   const listQueryKey = useMemo(
@@ -114,13 +112,70 @@ export function MerchantOrderDetailsPage() {
     enabled: !!token && hasValidBatchId,
   })
 
-  const openMap = useCallback((courierId: string) => {
-    setMapCourierId(courierId)
-    setMapOpen(true)
-  }, [])
-
   const canPrintLabel = user?.permissions?.includes("shipments.label") ?? false
+  const canBulkReturnToMerchant =
+    (user?.permissions?.includes("warehouses.manage_transfer") ?? false) &&
+    !merchantContext
+  const canFinalizeReturnsPermission =
+    (user?.permissions?.includes("merchant_orders.finalize_returns") ?? false) &&
+    !merchantContext
   const [isPrinting, setIsPrinting] = useState(false)
+
+  const bulkReturnMut = useMutation({
+    mutationFn: () =>
+      bulkReturnRejectedToMerchant({ token, merchantOrderId }),
+    onSuccess: async (data) => {
+      const c = data.created.length
+      const s = data.skipped.length
+      if (s > 0 && c > 0) {
+        showToast(
+          t("merchantOrders.detail.returnRejectedPartial", {
+            created: c,
+            skipped: s,
+          }),
+          "success",
+        )
+      } else {
+        showToast(
+          t("merchantOrders.detail.returnRejectedSuccess", { count: c }),
+          "success",
+        )
+      }
+      await qc.invalidateQueries({ queryKey: listQueryKey })
+      await qc.invalidateQueries({
+        queryKey: ["merchant-order", "shipments", merchantOrderId, token],
+      })
+    },
+    onError: (err: Error) => {
+      showToast(
+        err.message || t("merchantOrders.detail.returnRejectedError"),
+        "error",
+      )
+    },
+  })
+
+  const finalizeReturnsMut = useMutation({
+    mutationFn: () => finalizeMerchantOrderReturns({ token, merchantOrderId }),
+    onSuccess: async (data) => {
+      showToast(
+        t("merchantOrders.detail.finalizeReturnsSuccess", {
+          finalized: data.finalizedCount,
+          skipped: data.skippedDeliveredCount,
+        }),
+        "success",
+      )
+      await qc.invalidateQueries({ queryKey: listQueryKey })
+      await qc.invalidateQueries({
+        queryKey: ["merchant-order", "shipments", merchantOrderId, token],
+      })
+    },
+    onError: (err: Error) => {
+      showToast(
+        err.message || t("merchantOrders.detail.finalizeReturnsError"),
+        "error",
+      )
+    },
+  })
 
   const handlePrintAllLabels = useCallback(async () => {
     const shipments = ordersSummaryQuery.data?.shipments
@@ -154,11 +209,6 @@ export function MerchantOrderDetailsPage() {
     }
   }, [t, token, ordersSummaryQuery.data, isPrinting])
 
-  const openAddLocation = useCallback((row: CsShipmentRow) => {
-    setLocationRow(row)
-    setLocationOpen(true)
-  }, [])
-
   const canEditWarehouseAssignment =
     (user?.permissions?.includes("merchant_orders.update") ??
       false) ||
@@ -173,9 +223,10 @@ export function MerchantOrderDetailsPage() {
   const setWarehouseMut = useMutation({
     mutationFn: async (warehouseId: string) => {
       const wid = warehouseId.trim()
+      const targetShipmentId = ordersSummaryQuery.data?.shipments?.[0]?.id ?? merchantOrderId
       return patchShipmentAssignedWarehouse({
         token,
-        shipmentId: merchantOrderId,
+        shipmentId: targetShipmentId,
         assignedWarehouseId: wid ? wid : null,
       })
     },
@@ -206,6 +257,13 @@ export function MerchantOrderDetailsPage() {
   }
 
   const orders = ordersSummaryQuery.data?.shipments ?? []
+  const canFinalizeReturns =
+    orders.length > 0 &&
+    orders.every(
+      (line) =>
+        line.status === "DELIVERED" ||
+        line.status === "OUT_FOR_RETURN_TO_MERCHANT",
+    )
   const primaryLineStatusEvents = orders[0]?.statusEvents ?? []
   const ordersTotalValue = sumMoney(orders.map((p) => p.shipmentValue))
   const ordersTotalShipping = sumMoney(orders.map((p) => p.shippingFee))
@@ -255,13 +313,63 @@ export function MerchantOrderDetailsPage() {
           <>
             <Card>
               <CardHeader>
-                <CardTitle className="flex flex-wrap items-center gap-2">
-                  <PackageCheck className="text-primary size-5 shrink-0" aria-hidden />
-                  {t("merchantOrders.detailTitle")}
-                </CardTitle>
-                <CardDescription>
-                  {t("merchantOrders.detail.batchSubtitle")}
-                </CardDescription>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <CardTitle className="flex flex-wrap items-center gap-2">
+                      <PackageCheck
+                        className="text-primary size-5 shrink-0"
+                        aria-hidden
+                      />
+                      {t("merchantOrders.detailTitle")}
+                    </CardTitle>
+                    <CardDescription>
+                      {t("merchantOrders.detail.batchSubtitle")}
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {q.data.isResolved ? (
+                      <Badge variant="default">
+                        {t("merchantOrders.detail.resolvedBadge")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">
+                        {t("merchantOrders.detail.notResolvedHint")}
+                      </Badge>
+                    )}
+                    {q.data.isFinished ? (
+                      <Badge variant="secondary">
+                        {t("merchantOrders.detail.finishedBadge")}
+                      </Badge>
+                    ) : null}
+                    {canBulkReturnToMerchant &&
+                    q.data.isResolved &&
+                    !q.data.isFinished ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={bulkReturnMut.isPending}
+                        onClick={() => bulkReturnMut.mutate()}
+                      >
+                        {bulkReturnMut.isPending
+                          ? t("common.saving", { defaultValue: "…" })
+                          : t("merchantOrders.detail.returnRejectedShipments")}
+                      </Button>
+                    ) : null}
+                    {canFinalizeReturnsPermission && canFinalizeReturns ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={finalizeReturnsMut.isPending}
+                        onClick={() => finalizeReturnsMut.mutate()}
+                      >
+                        {finalizeReturnsMut.isPending
+                          ? t("common.saving", { defaultValue: "…" })
+                          : t("merchantOrders.detail.finalizeReturns")}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {isWarehouseRoute ? (
@@ -439,15 +547,9 @@ export function MerchantOrderDetailsPage() {
                 )}
 
                 <div className="flex flex-wrap justify-center gap-3 border-border/60 border-t pt-4">
-                  <CsShipmentRowActions
-                    row={q.data}
-                    token={token}
-                    listQueryKey={[...listQueryKey]}
-                    onOpenMap={openMap}
-                    onOpenAddLocation={openAddLocation}
-                    showCustomerContact={!isMultiOrderBatch}
-                    layout="inline"
-                  />
+                  <p className="text-muted-foreground text-sm">
+                    {t("merchantOrders.detail.batchOrdersHint")}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -536,19 +638,6 @@ export function MerchantOrderDetailsPage() {
         ) : null}
       </div>
 
-      <CsCourierMapDialog
-        open={mapOpen}
-        onOpenChange={setMapOpen}
-        courierId={mapCourierId}
-        token={token}
-      />
-      <CsAddLocationDialog
-        open={locationOpen}
-        onOpenChange={setLocationOpen}
-        row={locationRow}
-        token={token}
-        listQueryKey={[...listQueryKey]}
-      />
     </Layout>
   )
 }

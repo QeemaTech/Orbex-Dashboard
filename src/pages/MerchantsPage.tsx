@@ -6,8 +6,11 @@ import { useSearchParams } from "react-router-dom"
 
 import {
   approveMerchant,
+  getMerchantPricing,
   listMerchants,
+  putMerchantPricing,
   type MerchantAccountStatus,
+  type MerchantZonePricing,
   type MerchantRow,
 } from "@/api/merchants-api"
 import { Layout } from "@/components/layout/Layout"
@@ -28,6 +31,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { listDeliveryZones } from "@/api/delivery-zones-api"
+import { showToast } from "@/lib/toast"
 import { useAuth } from "@/lib/auth-context"
 
 function merchantStatusBadgeClass(status: MerchantAccountStatus): string {
@@ -50,6 +56,8 @@ export function MerchantsPage() {
     | MerchantAccountStatus
     | ""
 
+  const merchantPricingId = searchParams.get("pricingMerchantId") ?? ""
+
   const listQueryKey = useMemo(
     () => ["merchants", token, page, pageSize, accountStatus] as const,
     [token, page, pageSize, accountStatus],
@@ -68,6 +76,36 @@ export function MerchantsPage() {
     },
   })
 
+  const zonesQuery = useQuery({
+    queryKey: ["delivery-zones", token] as const,
+    queryFn: () => listDeliveryZones(token, { isActive: true }),
+    enabled: !!token,
+  })
+
+  const merchantPricingQuery = useQuery({
+    queryKey: ["merchant-pricing", token, merchantPricingId] as const,
+    queryFn: () => getMerchantPricing({ token, merchantId: merchantPricingId }),
+    enabled: !!token && !!merchantPricingId,
+  })
+
+  const savePricingMutation = useMutation({
+    mutationFn: (body: {
+      merchantId: string
+      packagingDeliveryFee?: number
+      prices?: Array<{ deliveryZoneId: string; shippingFee: number }>
+    }) =>
+      putMerchantPricing({
+        token,
+        merchantId: body.merchantId,
+        packagingDeliveryFee: body.packagingDeliveryFee,
+        prices: body.prices,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["merchant-pricing", token] })
+      showToast(t("common.saved", "Saved"), "success")
+    },
+  })
+
   const setPage = (nextPage: number) => {
     const params = new URLSearchParams(searchParams)
     params.set("page", String(nextPage))
@@ -82,7 +120,27 @@ export function MerchantsPage() {
     setSearchParams(params)
   }
 
+  const openPricing = (merchantId: string) => {
+    const params = new URLSearchParams(searchParams)
+    params.set("pricingMerchantId", merchantId)
+    setSearchParams(params)
+  }
+
+  const closePricing = () => {
+    const params = new URLSearchParams(searchParams)
+    params.delete("pricingMerchantId")
+    setSearchParams(params)
+  }
+
   const totalPages = Math.max(1, Math.ceil((merchantsQuery.data?.total ?? 0) / pageSize))
+
+  const zoneRows = zonesQuery.data?.zones ?? []
+  const pricing: MerchantZonePricing | null = merchantPricingQuery.data ?? null
+  const priceByZone = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const p of pricing?.prices ?? []) m.set(p.deliveryZoneId, p.shippingFee)
+    return m
+  }, [pricing])
 
   return (
     <Layout title={t("merchants.pageTitle")}>
@@ -107,6 +165,105 @@ export function MerchantsPage() {
             <CardDescription>{t("merchants.tableCardDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
+            {merchantPricingId ? (
+              <Card className="border-border/80 shadow-sm">
+                <CardHeader className="border-border/60 border-b pb-4">
+                  <CardTitle className="text-base font-semibold">
+                    {t("merchants.pricing.title", "Merchant delivery pricing")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t(
+                      "merchants.pricing.subtitle",
+                      "Set shipping fee per delivery zone and packaging delivery fee for this merchant.",
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  {merchantPricingQuery.error ? (
+                    <p className="text-destructive text-sm">
+                      {(merchantPricingQuery.error as Error).message}
+                    </p>
+                  ) : null}
+                  {merchantPricingQuery.isLoading ? (
+                    <p className="text-muted-foreground text-sm">
+                      {t("common.loading", "Loading...")}
+                    </p>
+                  ) : null}
+
+                  {pricing ? (
+                    <div className="space-y-4">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium">
+                            {t(
+                              "merchants.pricing.packagingDeliveryFee",
+                              "Packaging delivery fee",
+                            )}
+                          </label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            defaultValue={pricing.packagingDeliveryFee}
+                            onBlur={(e) => {
+                              const v = Number(e.target.value)
+                              if (!Number.isFinite(v) || v < 0) return
+                              savePricingMutation.mutate({
+                                merchantId: merchantPricingId,
+                                packagingDeliveryFee: v,
+                              })
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-end justify-end">
+                          <Button type="button" variant="outline" onClick={closePricing}>
+                            {t("common.close", "Close")}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("deliveryZones.pageTitle", "Delivery zones")}</TableHead>
+                            <TableHead>
+                              {t("merchants.pricing.shippingFee", "Shipping fee")}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {zoneRows.map((z) => (
+                            <TableRow key={z.id}>
+                              <TableCell className="font-medium">
+                                {(z.name ?? "").trim()
+                                  ? z.name
+                                  : `${z.governorate}${z.areaZone ? ` - ${z.areaZone}` : ""}`}
+                              </TableCell>
+                              <TableCell className="w-[220px]">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  defaultValue={priceByZone.get(z.id) ?? ""}
+                                  placeholder="0"
+                                  onBlur={(e) => {
+                                    const v = Number(e.target.value)
+                                    if (!Number.isFinite(v) || v < 0) return
+                                    savePricingMutation.mutate({
+                                      merchantId: merchantPricingId,
+                                      prices: [{ deliveryZoneId: z.id, shippingFee: v }],
+                                    })
+                                  }}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+
             <div className="flex flex-wrap items-center gap-3">
               <label className="text-sm font-medium" htmlFor="merchant-status-filter">
                 {t("merchants.filters.status")}
@@ -172,17 +329,27 @@ export function MerchantsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={
-                              row.accountStatus !== "PENDING" ||
-                              approveMutation.isPending
-                            }
-                            onClick={() => approveMutation.mutate(row.merchantId)}
-                          >
-                            {t("merchants.actions.approve")}
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={
+                                row.accountStatus !== "PENDING" ||
+                                approveMutation.isPending
+                              }
+                              onClick={() => approveMutation.mutate(row.merchantId)}
+                            >
+                              {t("merchants.actions.approve")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openPricing(row.merchantId)}
+                            >
+                              {t("merchants.actions.pricing", "Pricing")}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))

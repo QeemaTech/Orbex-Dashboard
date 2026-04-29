@@ -10,7 +10,7 @@ import {
 
 import { loginRequest, meRequest } from "@/api/auth-api"
 import type { RbacRoleInfo } from "@/api/users-api"
-import { isWarehouseSiteAdmin, isWarehouseSiteStaff } from "@/lib/warehouse-access"
+import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
 
 export type UserRole =
   | "ADMIN"
@@ -28,11 +28,15 @@ export type AuthUser = {
   email: string
   fullName: string
   role: UserRole
-  merchantId?: string | null
   roles?: string[]
   rbacRoles?: RbacRoleInfo[]
   permissions?: string[]
   warehouseId: string | null
+  /** Operator assignment (Prisma `warehouse`); same as `assignedWarehouse` from API. */
+  warehouse?: { id: string; name: string } | null
+  assignedWarehouse?: { id: string; name: string } | null
+  /** `warehouse.admin_user_id` (Prisma `administeredWarehouse`); only source for hub admin UI. */
+  adminWarehouse?: { id: string; name: string } | null
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -79,12 +83,16 @@ function readStoredUser(): AuthUser | null {
 }
 
 function normalizeUser(u: AuthUser): AuthUser {
+  const wh = u.warehouse ?? u.assignedWarehouse ?? null
   return {
     ...u,
     merchantId: u.merchantId ?? null,
     roles: u.roles ?? (u.role ? [u.role] : []),
     permissions: u.permissions ?? [],
     rbacRoles: u.rbacRoles ?? [],
+    adminWarehouse: u.adminWarehouse === undefined ? null : u.adminWarehouse,
+    warehouse: u.warehouse === undefined ? wh : u.warehouse,
+    assignedWarehouse: u.assignedWarehouse === undefined ? wh : u.assignedWarehouse,
   }
 }
 
@@ -211,7 +219,7 @@ export function getDefaultDashboardRoute(user: AuthUser | null | undefined): str
   if (isWarehouseSiteStaff(user) && user.warehouseId) {
     return `/warehouses/${encodeURIComponent(user.warehouseId)}/merchant-orders`
   }
-  if (isWarehouseSiteStaff(user)) return "/warehouse"
-  if (isWarehouseSiteAdmin(user)) return "/warehouse"
+  if (isWarehouseStaff(user)) return "/warehouse"
+  if (isWarehouseAdmin(user)) return "/dashboard/warehouse"
   return "/dashboard"
 }

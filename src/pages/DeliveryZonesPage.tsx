@@ -63,11 +63,11 @@ export function DeliveryZonesPage() {
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
   const qc = useQueryClient()
-  const canWrite = Boolean(
-    user?.permissions?.includes("delivery_zones.create") ||
-    user?.permissions?.includes("delivery_zones.update") ||
-    user?.permissions?.includes("delivery_zones.delete"),
-  )
+  const canView = Boolean(user?.permissions?.includes("delivery_zones.read"))
+  const canCreate = Boolean(user?.permissions?.includes("delivery_zones.create"))
+  const canUpdate = Boolean(user?.permissions?.includes("delivery_zones.update"))
+  const canDelete = Boolean(user?.permissions?.includes("delivery_zones.delete"))
+  const canManageRows = canUpdate || canDelete
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create")

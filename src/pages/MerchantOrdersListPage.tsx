@@ -15,6 +15,7 @@ import { listMerchants } from "@/api/merchants-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -34,6 +35,7 @@ import {
 import { SelectMerchantImportModal } from "@/features/merchant-orders/components/SelectMerchantImportModal"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
+import { showToast } from "@/lib/toast"
 
 function resolveNumberLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
@@ -58,6 +60,7 @@ export function MerchantOrdersListPage() {
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
+  const queryClient = useQueryClient()
 
   const [searchParams, setSearchParams] = useSearchParams()
   const warehouseIdFilter = searchParams.get("warehouseId") ?? ""
@@ -162,7 +165,7 @@ export function MerchantOrdersListPage() {
 
   const batchPipelineBreakdown = useMemo(() => {
     const rows = kpiQuery.data?.transferStatusBreakdown ?? []
-    const priority = ["PENDING_CONFIRMATION", "PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
+    const priority = ["PENDING_PICKUP", "PICKED_UP", "IN_WAREHOUSE"]
     const rank = new Map(priority.map((status, idx) => [status, idx]))
     return [...rows].sort((a, b) => {
       const aRank = rank.get(String(a.transferStatus).toUpperCase()) ?? Number.MAX_SAFE_INTEGER
@@ -172,7 +175,25 @@ export function MerchantOrdersListPage() {
     })
   }, [kpiQuery.data?.transferStatusBreakdown])
   const totals = kpiQuery.data?.totals
+  const showKpiError = !!kpiQuery.error
+  const showKpiLoading = kpiQuery.isLoading
+  const showKpiEmpty = !showKpiLoading && !showKpiError && batchPipelineBreakdown.length === 0
   const merchantContext = isMerchantUser(user)
+  const merchantOrdersTitleKey = merchantContext
+    ? "merchantOrdersList.myOrders.pageTitle"
+    : "merchantOrdersList.pageTitle"
+  const merchantOrdersDescriptionKey = merchantContext
+    ? "merchantOrdersList.myOrders.description"
+    : "merchantOrdersList.description"
+  const merchantOrdersTableTitleKey = merchantContext
+    ? "merchantOrdersList.myOrders.tableCardTitle"
+    : "merchantOrdersList.tableCardTitle"
+  const merchantOrdersLoadingKey = merchantContext
+    ? "merchantOrdersList.myOrders.loading"
+    : "merchantOrdersList.loading"
+  const merchantOrdersKpiTitleKey = merchantContext
+    ? "merchantOrdersList.myOrders.kpiTotalMerchantOrders"
+    : "merchantOrdersList.kpiTotalMerchantOrders"
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
@@ -235,25 +256,39 @@ export function MerchantOrdersListPage() {
       importOrdersFromExcel({
         token,
         file,
-        merchantId: selectedMerchant || undefined,
+        merchantId: importMerchantId || undefined,
+        pickupDate,
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      showToast(
+        t("merchantOrdersList.importQueuedSuccess", { count: data.orderCount }),
+        "success",
+      )
       setIsImportModalOpen(false)
       setSelectedMerchant("")
+      setPickupDate(new Date().toISOString().slice(0, 10))
       setSelectedFile(null)
       setImportError("")
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-merchant-pending-imports"] })
+      void queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports"] })
       shipmentsQuery.refetch()
     },
     onError: (error: Error) => {
-      setImportError(error.message)
+      const msg = error.message || t("merchantOrdersList.importGenericError")
+      setImportError(msg)
+      showToast(msg, "error")
     },
   })
 
   const handleDownloadTemplate = async () => {
     try {
       await downloadImportTemplate(token)
-    } catch (error) {
-      setImportError("Failed to download template")
+      setImportError("")
+      showToast(t("merchantOrdersList.downloadTemplateSuccess"), "success")
+    } catch {
+      const msg = t("merchantOrdersList.downloadTemplateError")
+      setImportError(msg)
+      showToast(msg, "error")
     }
   }
 
@@ -275,6 +310,14 @@ export function MerchantOrdersListPage() {
   }
 
   const handleSubmitImport = () => {
+    if (!pickupDate) {
+      setImportError("Please select pickup date")
+      return
+    }
+    if (merchantContext && !importMerchantId) {
+      setImportError("Logged in merchant account is missing merchant id")
+      return
+    }
     if (!selectedFile) {
       setImportError("Please select a file")
       return
@@ -285,7 +328,7 @@ export function MerchantOrdersListPage() {
   const totalRowsForPagination = shipmentsQuery.data?.total ?? 0
 
   return (
-    <Layout title={t("merchantOrdersList.pageTitle")}>
+    <Layout title={t(merchantOrdersTitleKey)}>
       <div className="space-y-6">
         <Card className="from-primary/10 to-chart-2/10 border-primary/20 bg-gradient-to-br shadow-md">
           <CardHeader className="flex flex-row items-center gap-3 pb-2">
@@ -293,8 +336,8 @@ export function MerchantOrdersListPage() {
               <Boxes className="size-5" aria-hidden />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-lg">{t("merchantOrdersList.pageTitle")}</CardTitle>
-              <CardDescription>{t("merchantOrdersList.description")}</CardDescription>
+              <CardTitle className="text-lg">{t(merchantOrdersTitleKey)}</CardTitle>
+              <CardDescription>{t(merchantOrdersDescriptionKey)}</CardDescription>
             </div>
           </CardHeader>
         </Card>
@@ -365,28 +408,45 @@ export function MerchantOrdersListPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title={t("merchantOrdersList.kpiTotalMerchantOrders")}
+            title={t(merchantOrdersKpiTitleKey)}
             value={totals?.totalShipments ?? 0}
             icon={Boxes}
             accent="primary"
             hideTrend
           />
-          {batchPipelineBreakdown.slice(0, 3).map((row) => (
-            <StatCard
-              key={row.transferStatus}
-              title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
-              value={row.count}
-              icon={Boxes}
-              accent="success"
-              hideTrend
-            />
-          ))}
+          {showKpiLoading ? (
+            <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
+              {t("merchantOrdersList.kpiLoading")}
+            </div>
+          ) : null}
+          {showKpiError ? (
+            <div className="text-destructive rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
+              {t("merchantOrdersList.kpiLoadError")}
+            </div>
+          ) : null}
+          {!showKpiLoading && !showKpiError
+            ? batchPipelineBreakdown.slice(0, 3).map((row) => (
+                <StatCard
+                  key={row.transferStatus}
+                  title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
+                  value={row.count}
+                  icon={Boxes}
+                  accent="success"
+                  hideTrend
+                />
+              ))
+            : null}
+          {showKpiEmpty ? (
+            <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
+              {t("merchantOrdersList.kpiEmptyState")}
+            </div>
+          ) : null}
         </div>
 
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="border-border/60 border-b pb-4">
             <CardTitle className="text-base font-semibold">
-              {t("merchantOrdersList.tableCardTitle")}
+              {t(merchantOrdersTableTitleKey)}
             </CardTitle>
             <CardDescription>{t("merchantOrdersList.tableCardDescription")}</CardDescription>
           </CardHeader>
@@ -426,6 +486,7 @@ export function MerchantOrdersListPage() {
                         {t("merchantOrdersList.colTotalValue")}
                       </TableHead>
                       <TableHead>{t("merchantOrdersList.colBatchPipelineStatus")}</TableHead>
+                      <TableHead>{t("merchantOrdersList.colResolution")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -458,6 +519,24 @@ export function MerchantOrdersListPage() {
                             }
                             contextWarehouseId={user?.warehouseId}
                           />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {row.isResolved ? (
+                              <Badge variant="default" className="text-xs">
+                                {t("merchantOrdersList.badgeResolved")}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                {t("merchantOrdersList.badgeNotResolved")}
+                              </Badge>
+                            )}
+                            {row.isFinished ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {t("merchantOrdersList.badgeFinished")}
+                              </Badge>
+                            ) : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -496,6 +575,81 @@ export function MerchantOrdersListPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import Orders from Excel</DialogTitle>
+              <DialogDescription>
+                {merchantContext
+                  ? t("merchantOrdersList.importModalDescriptionMerchant")
+                  : t("merchantOrdersList.importModalDescriptionAdmin")}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {!merchantContext ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Merchant</label>
+                  <select
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    value={selectedMerchant}
+                    onChange={(e) => setSelectedMerchant(e.target.value)}
+                  >
+                    <option value="">Select a merchant (optional)</option>
+                    {(merchantsQuery.data?.merchants ?? []).map((m) => (
+                      <option key={m.merchantId} value={m.merchantId}>
+                        {m.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Pickup date</label>
+                <Input
+                  type="date"
+                  value={pickupDate}
+                  onChange={(e) => setPickupDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Excel File</label>
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleFileChange}
+                />
+              </div>
+              {selectedFile && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedFile.name}
+                </p>
+              )}
+              {importError && (
+                <p className="text-sm text-destructive">{importError}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsImportModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmitImport}
+                disabled={importMutation.isPending || !selectedFile}
+              >
+                {importMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  "Import"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   )

@@ -1,5 +1,9 @@
-import { apiFetch, apiFetchText } from "@/api/client"
-import type { ListShipmentsParams, ShipmentOrderRow } from "@/api/merchant-orders-api"
+import { apiFetch, apiFetchText, apiUrl } from "@/api/client"
+import type {
+  CsShipmentRow,
+  ListShipmentsParams,
+  ShipmentOrderRow,
+} from "@/api/merchant-orders-api"
 
 /** `GET /api/shipments/:id/label` — thermal label payload. */
 export type ShipmentLabelResponse = {
@@ -89,6 +93,59 @@ export async function getShipmentById(p: {
     `/api/shipments/${encodeURIComponent(p.shipmentId)}`,
     { token: p.token },
   )
+}
+
+export async function uploadShipmentPaymentProof(p: {
+  token: string
+  shipmentId: string
+  paymentMethod: "INSTAPAY" | "E_WALLET"
+  file: File
+}): Promise<{
+  id: string
+  shipmentId: string
+  paymentMethod: string
+  imageUrl: string
+  createdAt: string
+}> {
+  const formData = new FormData()
+  formData.append("file", p.file)
+  formData.append("paymentMethod", p.paymentMethod)
+
+  const response = await fetch(
+    apiUrl(`/api/shipments/${encodeURIComponent(p.shipmentId)}/payment-proof`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${p.token}`,
+      },
+      body: formData,
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({ error: "Upload failed" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : typeof errorBody === "object" &&
+            errorBody !== null &&
+            "message" in errorBody &&
+            typeof (errorBody as { message?: unknown }).message === "string"
+          ? (errorBody as { message: string }).message
+          : "Upload failed"
+    throw new Error(msg)
+  }
+
+  return (await response.json()) as {
+    id: string
+    shipmentId: string
+    paymentMethod: string
+    imageUrl: string
+    createdAt: string
+  }
 }
 
 /** Pending-label queue row: label JSON plus shipment id for raw print + mark-printed. */
@@ -224,6 +281,64 @@ export async function createShipmentPlannedTask(p: {
       method: "POST",
       token: p.token,
       body: JSON.stringify(body),
+    },
+  )
+}
+
+export async function confirmShipmentCustomerLocation(p: {
+  token: string
+  lineId: string
+  customerLat: number | string
+  customerLng: number | string
+  addressText?: string
+}): Promise<unknown> {
+  return apiFetch<unknown>(
+    `/api/shipments/${encodeURIComponent(p.lineId)}/confirm-customer-location`,
+    {
+      method: "POST",
+      token: p.token,
+      body: JSON.stringify({
+        customerLat: p.customerLat,
+        customerLng: p.customerLng,
+        ...(p.addressText !== undefined ? { addressText: p.addressText } : {}),
+      }),
+    },
+  )
+}
+
+export async function patchShipmentFields(p: {
+  token: string
+  shipmentId: string
+  addressText?: string
+  notes?: string | null
+  customerLat?: string
+  customerLng?: string
+}): Promise<CsShipmentRow> {
+  return apiFetch<CsShipmentRow>(`/api/shipments/${encodeURIComponent(p.shipmentId)}`, {
+    method: "PATCH",
+    token: p.token,
+    body: JSON.stringify({
+      ...(p.addressText !== undefined ? { addressText: p.addressText } : {}),
+      ...(p.notes !== undefined ? { notes: p.notes } : {}),
+      ...(p.customerLat !== undefined ? { customerLat: p.customerLat } : {}),
+      ...(p.customerLng !== undefined ? { customerLng: p.customerLng } : {}),
+    }),
+  })
+}
+
+export async function patchShipmentAssignedWarehouse(params: {
+  token: string
+  shipmentId: string
+  assignedWarehouseId: string | null
+}): Promise<CsShipmentRow> {
+  return apiFetch<CsShipmentRow>(
+    `/api/shipments/${encodeURIComponent(params.shipmentId)}/warehouse`,
+    {
+      method: "PATCH",
+      token: params.token,
+      body: JSON.stringify({
+        assignedWarehouseId: params.assignedWarehouseId,
+      }),
     },
   )
 }

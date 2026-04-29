@@ -14,6 +14,7 @@ export type MerchantRow = {
   phone: string
   email: string | null
   accountStatus: MerchantAccountStatus
+  packagingDeliveryFee?: string
   createdAt: string
   updatedAt: string
 }
@@ -58,5 +59,36 @@ export async function approveMerchant(params: {
   return apiFetch<MerchantRow>(`/api/users/merchants/${params.merchantId}/approval`, {
     method: "PATCH",
     token: params.token,
+  })
+}
+
+export type MerchantZonePricing = {
+  merchantId: string
+  packagingDeliveryFee: string
+  prices: Array<{ deliveryZoneId: string; shippingFee: string }>
+}
+
+export async function getMerchantPricing(params: {
+  token: string
+  merchantId: string
+}): Promise<MerchantZonePricing> {
+  return apiFetch<MerchantZonePricing>(`/api/users/merchants/${params.merchantId}/pricing`, {
+    token: params.token,
+  })
+}
+
+export async function putMerchantPricing(params: {
+  token: string
+  merchantId: string
+  packagingDeliveryFee?: number
+  prices?: Array<{ deliveryZoneId: string; shippingFee: number }>
+}): Promise<MerchantZonePricing> {
+  return apiFetch<MerchantZonePricing>(`/api/users/merchants/${params.merchantId}/pricing`, {
+    method: "PUT",
+    token: params.token,
+    body: JSON.stringify({
+      packagingDeliveryFee: params.packagingDeliveryFee,
+      prices: params.prices,
+    }),
   })
 }

@@ -207,6 +207,7 @@ type WarehouseOrdersParams = {
   page?: number
   pageSize?: number
   search?: string
+  resolvedDeliveryZoneId?: string
   transferStatus?: string
   returnsOnly?: boolean
   courierId?: string
@@ -316,10 +317,16 @@ export function listWarehouseOrders(
 
 export type WarehouseStandaloneShipmentRow = {
   id: string
+  merchantOrderId: string
   trackingNumber: string | null
   status: string
   customerName: string
   merchantName: string
+  resolvedDeliveryZoneId: string | null
+  deliveryZoneName: string | null
+  deliveryCourierId: string | null
+  deliveryCourierName: string | null
+  csConfirmedAt: string | null
   currentWarehouseId: string | null
   currentWarehouseName: string | null
   transferTargetWarehouseId: string | null
@@ -344,6 +351,7 @@ export function listWarehouseStandaloneShipments(
     page: params.page ?? 1,
     pageSize: params.pageSize ?? 20,
     search: params.search,
+    resolvedDeliveryZoneId: params.resolvedDeliveryZoneId,
     warehouseId: params.warehouseId,
   })
   return apiFetch<WarehouseStandaloneShipmentsResponse>(`/api/warehouse/sites/${params.warehouseId}/standalone-shipments${query}`, {
@@ -418,9 +426,15 @@ export { scanPayloadFromInput }
 
 export function getWarehouseCouriers(params: {
   token: string
+  warehouseId?: string
   regionId?: string
+  deliveryZoneId?: string
 }): Promise<{ couriers: WarehouseCourierRow[] }> {
-  const query = qs({ regionId: params.regionId })
+  const query = qs({
+    warehouseId: params.warehouseId,
+    regionId: params.regionId,
+    deliveryZoneId: params.deliveryZoneId,
+  })
   return apiFetch<{ couriers: WarehouseCourierRow[] }>(
     `/api/warehouse/couriers${query}`,
     { token: params.token },
@@ -483,10 +497,14 @@ export function getWarehouseTracking(params: {
   })
 }
 
-export function listWarehouseSites(token: string): Promise<{
+export function listWarehouseSites(
+  token: string,
+  options?: { forTransferTask?: boolean },
+): Promise<{
   warehouses: WarehouseSiteRow[]
 }> {
-  return apiFetch("/api/warehouse/sites", { token })
+  const query = options?.forTransferTask ? "?forTransferTask=true" : ""
+  return apiFetch(`/api/warehouse/sites${query}`, { token })
 }
 
 export function getWarehouseSite(

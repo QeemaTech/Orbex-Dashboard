@@ -43,6 +43,8 @@ export type CsShipmentRow = {
   transferStatus?: string
   /** Line CS outbound confirmation timestamp when present on list/detail APIs. */
   csConfirmedAt?: string | null
+  /** User who confirmed the line at hub with customer location (CS flow only). */
+  csConfirmedByUserId?: string | null
   customerName: string
   phonePrimary: string
   phoneSecondary: string | null
@@ -85,6 +87,10 @@ export type CsShipmentRow = {
   orderCount?: number
   /** Sum of line values in the batch. */
   totalShipmentValue?: string
+  /** All order lines have terminal delivery outcome and failed lines are at hub. */
+  isResolved?: boolean
+  /** Every line delivered or returned to merchant. */
+  isFinished?: boolean
   createdAt: string
   updatedAt: string
   statusEvents?: CsShipmentStatusEvent[]
@@ -246,6 +252,7 @@ export type ShipmentOrderRow = {
   shipmentValue: string
   shippingFee: string
   commissionFee: string
+  serviceFee?: string
   paymentMethod: string
   visaCommissionRate: string | null
   notes: string | null
@@ -254,6 +261,7 @@ export type ShipmentOrderRow = {
   weightGrams?: number
   itemsCount?: number
   deliveryCourierId: string | null
+  resolvedDeliveryZoneId?: string | null
   deliveryCourier?: {
     id: string
     fullName: string | null
@@ -267,6 +275,7 @@ export type ShipmentOrderRow = {
     contactPhone: string | null
   } | null
   csConfirmedAt: string | null
+  csConfirmedByUserId?: string | null
   scannedOutAt: string | null
   receivedByCustomer: boolean | null
   paymentCollected: boolean | null
@@ -333,6 +342,12 @@ export type ShipmentOrderRow = {
     } | null
     createdAt: string
   }>
+  paymentProofs?: Array<{
+    id: string
+    paymentMethod: string
+    imageUrl: string
+    createdAt: string
+  }>
 }
 
 export type ShipmentOrdersResponse = {
@@ -348,6 +363,50 @@ export async function getShipmentOrders(params: {
   return apiFetch<ShipmentOrdersResponse>(
     `/api/merchant-orders/${params.shipmentId}/orders`,
     { token: params.token },
+  )
+}
+
+export async function bulkReturnRejectedToMerchant(params: {
+  token: string
+  merchantOrderId: string
+}): Promise<{ created: string[]; skipped: string[] }> {
+  return apiFetch<{ created: string[]; skipped: string[] }>(
+    `/api/merchant-orders/${encodeURIComponent(
+      params.merchantOrderId,
+    )}/bulk-return-to-merchant`,
+    { token: params.token, method: "POST" },
+  )
+}
+
+export async function finalizeMerchantOrderReturns(params: {
+  token: string
+  merchantOrderId: string
+}): Promise<{
+  finalizedIds: string[]
+  skippedDeliveredIds: string[]
+  finalizedCount: number
+  skippedDeliveredCount: number
+}> {
+  return apiFetch<{
+    finalizedIds: string[]
+    skippedDeliveredIds: string[]
+    finalizedCount: number
+    skippedDeliveredCount: number
+  }>(
+    `/api/merchant-orders/${encodeURIComponent(params.merchantOrderId)}/finalize-returns`,
+    { token: params.token, method: "POST" },
+  )
+}
+
+export async function confirmShipmentReturn(params: {
+  token: string
+  shipmentLineId: string
+}): Promise<unknown> {
+  return apiFetch<unknown>(
+    `/api/shipments/${encodeURIComponent(
+      params.shipmentLineId,
+    )}/confirm-return`,
+    { token: params.token, method: "POST" },
   )
 }
 
@@ -765,19 +824,30 @@ export async function listShipmentTimeline(
   })
 }
 
-export async function confirmShipmentCs(
-  token: string,
-  shipmentId: string,
-  shipmentLineId: string,
-): Promise<void> {
-  await apiFetch<unknown>(`/api/merchant-orders/${shipmentId}/status`, {
-    method: "PATCH",
-    token,
-    body: JSON.stringify({
-      orderId: shipmentLineId,
-      toShipmentStatus: "IN_WAREHOUSE",
-    }),
-  })
+/**
+ * CS hub: confirm **delivery line** with customer GPS (batch must already be IN_WAREHOUSE).
+ * Not merchant pickup or warehouse scan-in — use only for the CS outbound confirmation step.
+ */
+export async function confirmShipmentCustomerLocation(p: {
+  token: string
+  merchantOrderId: string
+  lineId: string
+  customerLat: number | string
+  customerLng: number | string
+  addressText?: string
+}): Promise<unknown> {
+  return apiFetch<unknown>(
+    `/api/shipments/${encodeURIComponent(p.lineId)}/confirm-customer-location`,
+    {
+      method: "POST",
+      token: p.token,
+      body: JSON.stringify({
+        customerLat: p.customerLat,
+        customerLng: p.customerLng,
+        ...(p.addressText !== undefined ? { addressText: p.addressText } : {}),
+      }),
+    },
+  )
 }
 
 export type PatchShipmentFieldsParams = {
@@ -792,7 +862,7 @@ export type PatchShipmentFieldsParams = {
 export async function patchShipmentFields(
   p: PatchShipmentFieldsParams,
 ): Promise<CsShipmentRow> {
-  return apiFetch<CsShipmentRow>(`/api/merchant-orders/${p.shipmentId}`, {
+  return apiFetch<CsShipmentRow>(`/api/shipments/${encodeURIComponent(p.shipmentId)}`, {
     method: "PATCH",
     token: p.token,
     body: JSON.stringify({
@@ -810,7 +880,7 @@ export async function patchShipmentAssignedWarehouse(params: {
   assignedWarehouseId: string | null
 }): Promise<CsShipmentRow> {
   return apiFetch<CsShipmentRow>(
-    `/api/merchant-orders/${encodeURIComponent(params.shipmentId)}/warehouse`,
+    `/api/shipments/${encodeURIComponent(params.shipmentId)}/warehouse`,
     {
       method: "PATCH",
       token: params.token,
@@ -823,6 +893,7 @@ export async function patchShipmentAssignedWarehouse(params: {
 
 export type MerchantOrderImportMeta = {
   merchantId?: string
+  pickupDate: string
   regionId?: string | null
   notes?: string | null
   pickupDate: string
@@ -851,17 +922,35 @@ export type PendingMerchantOrderImport = {
   createdAt: string
   createdByUserId: string | null
   createdByName: string | null
+/** `POST /api/merchant-orders/import-orders` returns 202 — rows queued for confirmation. */
+export type ImportOrdersQueuedResponse = {
+  pendingImport: {
+    id: string
+    status: "PENDING_CONFIRMATION"
+    merchantId: string
+    merchantName: string
+    merchantPhone: string
+    merchantEmail: string | null
+    merchantBusinessName: string
+    merchantPickupAddress: string | null
+    merchantPickupGovernorate: string | null
+    rowCount: number
+    pickupDate: string
+    createdAt: string
+  }
+  orderCount: number
 }
 
 export async function importOrdersFromExcel(
   p: ImportOrdersParams,
-): Promise<ImportOrdersResponse> {
+): Promise<ImportOrdersQueuedResponse> {
   const formData = new FormData()
   formData.append("file", p.file)
   formData.append(
     "shipment",
     JSON.stringify({
       merchantId: p.merchantId || null,
+      pickupDate: p.pickupDate,
       regionId: p.regionId,
       notes: p.notes,
       trackingNumber: p.trackingNumber,
@@ -931,5 +1020,257 @@ export async function downloadImportTemplate(token: string): Promise<void> {
   link.click()
   document.body.removeChild(link)
   setTimeout(() => window.URL.revokeObjectURL(url), 100)
+}
+
+export type PendingMerchantOrderImportRow = {
+  id: string
+  merchantId: string
+  merchantName: string
+  merchantPhone: string
+  merchantEmail: string | null
+  merchantBusinessName: string
+  merchantPickupAddress: string | null
+  merchantPickupGovernorate: string | null
+  fileName: string
+  rowCount: number
+  pickupDate: string
+  status: "PENDING_CONFIRMATION"
+  createdAt: string
+  createdByUserId: string | null
+  createdByName: string | null
+}
+
+export type PendingMerchantOrderImportsResponse = {
+  items: PendingMerchantOrderImportRow[]
+}
+
+export type PendingMerchantOrderImportPreviewRow = {
+  customerName: string
+  phonePrimary: string
+  phoneSecondary?: string | null
+  addressText: string
+  allowOpenValue?: boolean
+  weightGrams: number
+  itemsCount: number
+  shipmentValue: string
+  shippingFee: string
+  paymentMethod: string
+  notes?: string | null
+  productType?: string | null
+  description?: string | null
+}
+
+export type PendingMerchantOrderImportPreviewResponse = {
+  pendingImportId: string
+  fileName: string
+  rowCount: number
+  pickupDate: string
+  rows: PendingMerchantOrderImportPreviewRow[]
+}
+
+export type PendingMerchantOrderImportVersionRow = {
+  id: string
+  versionNumber: number
+  changeType: "INITIAL_UPLOAD" | "PICKUP_DATE_UPDATED" | "FILE_REPLACED"
+  fileName: string
+  filePath: string | null
+  fileMimeType: string | null
+  fileSize: number | null
+  pickupDate: string
+  changedByUserId: string | null
+  changedByName: string | null
+  createdAt: string
+}
+
+export type PendingMerchantOrderImportVersionsResponse = {
+  items: PendingMerchantOrderImportVersionRow[]
+}
+
+export async function listPendingMerchantOrderImports(params: {
+  token: string
+}): Promise<PendingMerchantOrderImportsResponse> {
+  return apiFetch<PendingMerchantOrderImportsResponse>("/api/merchant-orders/pending-imports", {
+    token: params.token,
+  })
+}
+
+export async function getPendingMerchantOrderImportPreview(params: {
+  token: string
+  pendingImportId: string
+}): Promise<PendingMerchantOrderImportPreviewResponse> {
+  return apiFetch<PendingMerchantOrderImportPreviewResponse>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/preview`,
+    { token: params.token },
+  )
+}
+
+export async function downloadPendingMerchantOrderImportFile(params: {
+  token: string
+  pendingImportId: string
+  fileName?: string
+}): Promise<void> {
+  const response = await fetch(
+    apiUrl(
+      `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/file`,
+    ),
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${params.token}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Failed to download import file" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : "Failed to download import file"
+    throw new Error(msg)
+  }
+
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.setAttribute("download", params.fileName || "pending-import.xlsx")
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => window.URL.revokeObjectURL(url), 100)
+}
+
+export async function updatePendingMerchantOrderPickupDate(params: {
+  token: string
+  pendingImportId: string
+  pickupDate: string
+}): Promise<{ success: true; pickupDate: string }> {
+  return apiFetch<{ success: true; pickupDate: string }>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/pickup-date`,
+    {
+      method: "PATCH",
+      token: params.token,
+      body: JSON.stringify({ pickupDate: params.pickupDate }),
+    },
+  )
+}
+
+export async function updatePendingMerchantOrderImportFile(params: {
+  token: string
+  pendingImportId: string
+  file: File
+}): Promise<{ success: true; rowCount: number }> {
+  const form = new FormData()
+  form.append("file", params.file)
+  const response = await fetch(
+    apiUrl(`/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/file`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.token}`,
+      },
+      body: form,
+    },
+  )
+  const text = await response.text()
+  const data = text ? (JSON.parse(text) as unknown) : null
+  if (!response.ok) {
+    const msg =
+      data && typeof data === "object" && "error" in data && typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : "Failed to update import file"
+    throw new Error(msg)
+  }
+  return data as { success: true; rowCount: number }
+}
+
+export async function listPendingMerchantOrderImportVersions(params: {
+  token: string
+  pendingImportId: string
+}): Promise<PendingMerchantOrderImportVersionsResponse> {
+  return apiFetch<PendingMerchantOrderImportVersionsResponse>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/versions`,
+    {
+      token: params.token,
+    },
+  )
+}
+
+export async function downloadPendingMerchantOrderImportVersionFile(params: {
+  token: string
+  pendingImportId: string
+  versionId: string
+  fileName?: string
+}): Promise<void> {
+  const response = await fetch(
+    apiUrl(
+      `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/versions/${encodeURIComponent(params.versionId)}/file`,
+    ),
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${params.token}`,
+      },
+    },
+  )
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ error: "Failed to download version file" }))
+    const msg =
+      typeof errorBody === "object" &&
+      errorBody !== null &&
+      "error" in errorBody &&
+      typeof (errorBody as { error?: unknown }).error === "string"
+        ? (errorBody as { error: string }).error
+        : "Failed to download version file"
+    throw new Error(msg)
+  }
+
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.setAttribute("download", params.fileName || "pending-import-version.xlsx")
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => window.URL.revokeObjectURL(url), 100)
+}
+
+export async function confirmPendingMerchantOrderImport(params: {
+  token: string
+  pendingImportId: string
+}): Promise<void> {
+  await apiFetch<unknown>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/confirm`,
+    {
+      method: "POST",
+      token: params.token,
+    },
+  )
+}
+
+export async function rejectPendingMerchantOrderImport(params: {
+  token: string
+  pendingImportId: string
+  reason?: string | null
+}): Promise<void> {
+  await apiFetch<unknown>(
+    `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/reject`,
+    {
+      method: "POST",
+      token: params.token,
+      body: JSON.stringify({
+        reason: params.reason ?? null,
+      }),
+    },
+  )
 }
 
