@@ -30,6 +30,8 @@ type Props = {
   warehouseId?: string
   /** Warehouse hub: full columns including assignment. Other routes: read-only compact list. */
   mode?: "warehouse" | "compact"
+  /** Fully prepaid batches should not show any customer-collectable amount. */
+  isPrepaidFull?: boolean
 }
 
 /**
@@ -41,6 +43,7 @@ export function WarehouseShipmentOrdersTable({
   shipmentId,
   warehouseId: warehouseIdProp,
   mode = "warehouse",
+  isPrepaidFull = false,
 }: Props) {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -171,7 +174,7 @@ export function WarehouseShipmentOrdersTable({
                     <TableCell className="text-xs">
                       <BackendStatusBadge kind="orderPayment" value={p.paymentStatus} />
                     </TableCell>
-                    <TableCell>{formatMoney(p.shipmentValue)}</TableCell>
+                    <TableCell>{formatMoney(isPrepaidFull ? "0" : p.shipmentValue)}</TableCell>
                     {mode === "warehouse" ? (
                       <>
                         <TableCell className="text-xs">
