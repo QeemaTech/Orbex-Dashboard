@@ -248,23 +248,9 @@ export function MerchantOrdersListPage() {
         merchantId: importMerchantId || undefined,
         pickupDate,
         packagingMaterialRequestId,
+        shippingPaymentType,
       })
     },
-        shippingPaymentType,
-        packagingMaterialRequest: includePackagingRequest
-          ? {
-              notes: packagingRequestNotes || null,
-              items: packagingRequestRows
-                .filter(
-                  (row) => row.packagingMaterialId && Number(row.requestedQuantity) > 0,
-                )
-                .map((row) => ({
-                  packagingMaterialId: row.packagingMaterialId,
-                  requestedQuantity: row.requestedQuantity,
-                })),
-            }
-          : null,
-      }),
     onSuccess: (data) => {
       showToast(
         t("merchantOrdersList.importQueuedSuccess", { count: data.orderCount }),

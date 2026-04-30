@@ -956,6 +956,9 @@ export async function importOrdersFromExcel(
   if (p.packagingMaterialRequestId) {
     shipmentMeta.packagingMaterialRequestId = p.packagingMaterialRequestId
   }
+  if (p.shippingPaymentType) {
+    shipmentMeta.shippingPaymentType = p.shippingPaymentType
+  }
   formData.append(
     "shipment",
     JSON.stringify(shipmentMeta),
