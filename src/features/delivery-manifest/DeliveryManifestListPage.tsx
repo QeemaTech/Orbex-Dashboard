@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ManifestQuickActions } from "@/features/delivery-manifest/ManifestQuickActions"
-import { ManifestRouteMiniMap } from "@/features/delivery-manifest/components/ManifestRouteMiniMap"
+import { ManifestRoutePreviewModal } from "@/features/delivery-manifest/components/ManifestRoutePreviewModal"
 import { ManifestsTabsHeader } from "@/features/manifests/ManifestsTabsHeader"
 import { useAuth } from "@/lib/auth-context"
 import { hasPlatformWarehouseScope, isWarehouseStaff } from "@/lib/warehouse-access"
@@ -209,22 +209,27 @@ export function DeliveryManifestListPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <ManifestRouteMiniMap apiKey={apiKey} route={route} />
-                          <div className="flex flex-col gap-1">
-                            {isReady ? (
-                              <span className="bg-emerald-500/10 text-emerald-700 inline-flex w-fit rounded-full border border-emerald-500/25 px-2 py-0.5 text-xs">
-                                Suggested Route
-                              </span>
-                            ) : route?.status === "FAILED" ? (
-                              <span className="bg-amber-500/10 text-amber-700 inline-flex w-fit rounded-full border border-amber-500/25 px-2 py-0.5 text-xs">
-                                Route blocked
-                              </span>
-                            ) : (
-                              <span className="bg-muted text-muted-foreground inline-flex w-fit rounded-full border px-2 py-0.5 text-xs">
-                                Route pending
-                              </span>
-                            )}
-                          </div>
+                          <ManifestRoutePreviewModal
+                            apiKey={apiKey}
+                            route={route}
+                            isLoading={routesQuery.isLoading}
+                            error={routesQuery.error ? (routesQuery.error as Error).message : null}
+                            triggerLabel="Preview route"
+                            disabled={!route}
+                          />
+                          {isReady ? (
+                            <span className="bg-emerald-500/10 text-emerald-700 inline-flex w-fit rounded-full border border-emerald-500/25 px-2 py-0.5 text-xs">
+                              Suggested Route
+                            </span>
+                          ) : route?.status === "FAILED" ? (
+                            <span className="bg-amber-500/10 text-amber-700 inline-flex w-fit rounded-full border border-amber-500/25 px-2 py-0.5 text-xs">
+                              Route blocked
+                            </span>
+                          ) : (
+                            <span className="bg-muted text-muted-foreground inline-flex w-fit rounded-full border px-2 py-0.5 text-xs">
+                              Route pending
+                            </span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">{m.shipmentCount}</TableCell>
