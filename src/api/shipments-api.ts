@@ -388,6 +388,7 @@ export async function createWarehouseMovementManifest(p: {
   token: string
   body: {
     type: WarehouseMovementManifestType
+    transferDate: string
     fromWarehouseId: string
     toWarehouseId?: string | null
     pickupCourierId: string
