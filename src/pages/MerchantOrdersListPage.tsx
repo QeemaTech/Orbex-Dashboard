@@ -268,6 +268,12 @@ export function MerchantOrdersListPage() {
       void queryClient.invalidateQueries({ queryKey: ["dashboard-merchant-pending-imports"] })
       void queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports"] })
       shipmentsQuery.refetch()
+
+      // Import creates a "pending confirmation" batch (202). Redirect user to confirm it.
+      const pendingConfirmationsPath = location.pathname.startsWith("/cs/")
+        ? "/cs/merchant-orders/pending-confirmations"
+        : "/merchant-orders/pending-confirmations"
+      void navigate(pendingConfirmationsPath)
     },
     onError: (error: Error) => {
       const msg = error.message || t("merchantOrdersList.importGenericError")

@@ -706,6 +706,8 @@
       "locationPreviewEmpty": "No valid coordinates detected yet.",
       "previewMap": "Preview map",
       "coordsHint": "You must provide coordinates via the maps link, notes, or existing saved GPS on the customer.",
+      "shortLinkHint": "Google short links (maps.app.goo.gl) may not include coordinates. Open the link, then copy/paste the final Google Maps URL that contains “@lat,lng” or paste the coordinates directly.",
+      "resolvingLink": "Resolving maps link…",
       "cancel": "Cancel",
       "submit": "Confirm and save location",
       "submitting": "Confirming…",
