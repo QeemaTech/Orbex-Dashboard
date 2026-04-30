@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ManifestQuickActions } from "@/features/delivery-manifest/ManifestQuickActions"
 import { useAuth } from "@/lib/auth-context"
 import { hasPlatformWarehouseScope, isWarehouseStaff } from "@/lib/warehouse-access"
 
@@ -161,7 +162,7 @@ export function DeliveryManifestListPage() {
                     <TableHead className="text-right">Total COD</TableHead>
                     <TableHead>Locked</TableHead>
                     <TableHead>Dispatched</TableHead>
-                    <TableHead />
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -184,11 +185,14 @@ export function DeliveryManifestListPage() {
                       <TableCell className="text-sm">{m.lockedAt ? "Yes" : "—"}</TableCell>
                       <TableCell className="text-sm">{m.dispatchedAt ? "Yes" : "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button type="button" variant="outline" size="sm" asChild>
-                          <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/${m.id}`}>
-                            View
-                          </Link>
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <ManifestQuickActions token={token} manifest={m} canManage={canManage} />
+                          <Button type="button" variant="outline" size="sm" asChild>
+                            <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/${m.id}`}>
+                              View
+                            </Link>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
