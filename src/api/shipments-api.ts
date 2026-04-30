@@ -249,6 +249,7 @@ export type CreateShipmentPlannedTaskBody = {
   assignedCourierId?: string | null
   pickupCourierId?: string | null
   toWarehouseId?: string | null
+  transferDate?: string | null
 }
 
 /** `POST /api/shipments/:id/tasks` — `:id` is the shipment line id (`Shipment.id`). */
@@ -261,6 +262,7 @@ export async function createShipmentPlannedTask(p: {
   shipmentId: string
   type: string
   status: string
+  manifestId?: string | null
 }> {
   const body: Record<string, unknown> = {
     type: p.body.type,
@@ -274,11 +276,15 @@ export async function createShipmentPlannedTask(p: {
   if (p.body.toWarehouseId) {
     body.toWarehouseId = p.body.toWarehouseId
   }
+  if (p.body.transferDate) {
+    body.transferDate = p.body.transferDate
+  }
   return apiFetch<{
     taskId: string
     shipmentId: string
     type: string
     status: string
+    manifestId?: string | null
   }>(
     `/api/shipments/${encodeURIComponent(p.shipmentId)}/tasks`,
     {
@@ -324,6 +330,7 @@ export async function listWarehouseMovementManifests(p: {
     id: string
     type: WarehouseMovementManifestType
     status: WarehouseMovementManifestStatus
+    transferDate: string | null
     fromWarehouseId: string
     toWarehouseId: string | null
     assignedPickupCourierId: string
@@ -337,6 +344,44 @@ export async function listWarehouseMovementManifests(p: {
   if (p.status) sp.set("status", p.status)
   if (p.date) sp.set("date", p.date)
   return apiFetch(`/api/shipments/movement-manifests?${sp.toString()}`, { token: p.token })
+}
+
+export async function getWarehouseMovementManifestById(p: {
+  token: string
+  manifestId: string
+}): Promise<{
+  id: string
+  type: WarehouseMovementManifestType
+  status: WarehouseMovementManifestStatus
+  transferDate: string | null
+  fromWarehouseId: string
+  toWarehouseId: string | null
+  assignedPickupCourierId: string
+  fromWarehouse: { id: string; name: string; governorate: string } | null
+  toWarehouse: { id: string; name: string; governorate: string } | null
+  pickupCourier: { id: string; fullName: string | null; contactPhone: string | null } | null
+  createdAt: string
+  lockedAt: string | null
+  lockedById: string | null
+  dispatchedAt: string | null
+  dispatchedById: string | null
+  closedAt: string | null
+  closedById: string | null
+  lines: Array<{
+    id: string
+    shipmentId: string
+    shipmentTaskId: string
+    trackingNumber: string | null
+    shipmentStatus: string
+    taskType: string
+    taskStatus: string
+    fromWarehouseId: string | null
+    toWarehouseId: string | null
+  }>
+}> {
+  return apiFetch(`/api/shipments/movement-manifests/${encodeURIComponent(p.manifestId)}`, {
+    token: p.token,
+  })
 }
 
 export async function createWarehouseMovementManifest(p: {

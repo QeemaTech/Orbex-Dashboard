@@ -3,13 +3,19 @@ import { useMemo, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 
-import { listDeliveryManifests, type DeliveryManifestListRow } from "@/api/delivery-manifests-api"
+import {
+  getDeliveryManifestRoutesBatch,
+  listDeliveryManifests,
+  type DeliveryManifestListRow,
+} from "@/api/delivery-manifests-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ManifestQuickActions } from "@/features/delivery-manifest/ManifestQuickActions"
+import { ManifestRouteMiniMap } from "@/features/delivery-manifest/components/ManifestRouteMiniMap"
+import { ManifestsTabsHeader } from "@/features/manifests/ManifestsTabsHeader"
 import { useAuth } from "@/lib/auth-context"
 import { hasPlatformWarehouseScope, isWarehouseStaff } from "@/lib/warehouse-access"
 
@@ -71,6 +77,17 @@ export function DeliveryManifestListPage() {
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const apiKey = String(import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "")
+
+  const routesQuery = useQuery({
+    queryKey: ["delivery-manifests-routes-batch", token, items.map((i) => i.id).join(",")],
+    queryFn: async () =>
+      getDeliveryManifestRoutesBatch({ token, manifestIds: items.map((i) => i.id) }),
+    enabled: !!token && items.length > 0,
+    staleTime: 30000,
+  })
+
+  const routesById = routesQuery.data?.routes ?? {}
 
   const canManage = useMemo(() => {
     return (
@@ -88,29 +105,34 @@ export function DeliveryManifestListPage() {
   return (
     <Layout title={t("warehouse.manifests.title")}>
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-muted-foreground text-sm">
-            {t("warehouse.manifests.listDescription", {
-              defaultValue: "Browse delivery manifests across all statuses.",
-            })}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" asChild>
-              <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/workspace`}>
-                {t("warehouse.manifests.workspace", { defaultValue: "Workspace" })}
-              </Link>
-            </Button>
-            <Button
-              type="button"
-              asChild
-              disabled={!canManage}
-              title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
-            >
-              <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/workspace`}>
-                {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}
-              </Link>
-            </Button>
-          </div>
+        <ManifestsTabsHeader
+          warehouseId={warehouseId}
+          active="delivery"
+          rightSlot={
+            <>
+              <Button type="button" variant="outline" asChild>
+                <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/workspace`}>
+                  {t("warehouse.manifests.workspace", { defaultValue: "Workspace" })}
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                asChild
+                disabled={!canManage}
+                title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
+              >
+                <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/workspace`}>
+                  {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}
+                </Link>
+              </Button>
+            </>
+          }
+        />
+
+        <div className="text-muted-foreground text-sm">
+          {t("warehouse.manifests.listDescription", {
+            defaultValue: "Browse delivery manifests across all statuses.",
+          })}
         </div>
 
         <Card>
@@ -158,6 +180,7 @@ export function DeliveryManifestListPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>Courier</TableHead>
                     <TableHead>Zone</TableHead>
+                  <TableHead>Route</TableHead>
                     <TableHead className="text-right">Shipments</TableHead>
                     <TableHead className="text-right">Total COD</TableHead>
                     <TableHead>Locked</TableHead>
@@ -167,6 +190,10 @@ export function DeliveryManifestListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((m) => (
+                  (() => {
+                    const route = routesById[m.id]
+                    const isReady = route?.status === "READY"
+                    return (
                     <TableRow key={m.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">{m.manifestDate}</TableCell>
                       <TableCell>
@@ -179,6 +206,26 @@ export function DeliveryManifestListPage() {
                       </TableCell>
                       <TableCell className="max-w-[16rem] truncate">
                         {m.deliveryZone.name?.trim() || m.deliveryZone.id}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <ManifestRouteMiniMap apiKey={apiKey} route={route} />
+                          <div className="flex flex-col gap-1">
+                            {isReady ? (
+                              <span className="bg-emerald-500/10 text-emerald-700 inline-flex w-fit rounded-full border border-emerald-500/25 px-2 py-0.5 text-xs">
+                                Suggested Route
+                              </span>
+                            ) : route?.status === "FAILED" ? (
+                              <span className="bg-amber-500/10 text-amber-700 inline-flex w-fit rounded-full border border-amber-500/25 px-2 py-0.5 text-xs">
+                                Route blocked
+                              </span>
+                            ) : (
+                              <span className="bg-muted text-muted-foreground inline-flex w-fit rounded-full border px-2 py-0.5 text-xs">
+                                Route pending
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">{m.shipmentCount}</TableCell>
                       <TableCell className="text-right">{formatMoney(m.totalCod)}</TableCell>
@@ -195,10 +242,12 @@ export function DeliveryManifestListPage() {
                         </div>
                       </TableCell>
                     </TableRow>
+                    )
+                  })()
                   ))}
                   {!query.isLoading && items.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-muted-foreground py-8 text-center text-sm">
+                    <TableCell colSpan={10} className="text-muted-foreground py-8 text-center text-sm">
                         No manifests found.
                       </TableCell>
                     </TableRow>

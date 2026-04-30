@@ -27,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { ShipmentStatusBadge } from "@/features/customer-service/components/ShipmentStatusBadge"
 import {
   Dialog,
@@ -103,6 +104,9 @@ export function MerchantOrderDetailsPage() {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("")
   const [bulkReturnModalOpen, setBulkReturnModalOpen] = useState(false)
   const [selectedPickupCourierId, setSelectedPickupCourierId] = useState("")
+  const [bulkReturnTransferDate, setBulkReturnTransferDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  )
 
   const listQueryKey = useMemo(
     () => ["merchant-order", "detail", merchantOrderId, token] as const,
@@ -132,8 +136,13 @@ export function MerchantOrderDetailsPage() {
   const [isPrinting, setIsPrinting] = useState(false)
 
   const bulkReturnMut = useMutation({
-    mutationFn: (pickupCourierId: string) =>
-      bulkReturnRejectedToMerchant({ token, merchantOrderId, pickupCourierId }),
+    mutationFn: (input: { pickupCourierId: string; transferDate: string }) =>
+      bulkReturnRejectedToMerchant({
+        token,
+        merchantOrderId,
+        pickupCourierId: input.pickupCourierId,
+        transferDate: input.transferDate,
+      }),
     onSuccess: async (data) => {
       const c = data.created.length
       const s = data.skipped.length
@@ -719,6 +728,19 @@ export function MerchantOrderDetailsPage() {
               </p>
             ) : null}
           </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t("warehouse.pickupManifests.transferDate", {
+                defaultValue: "Transfer date",
+              })}
+            </label>
+            <Input
+              type="date"
+              value={bulkReturnTransferDate}
+              onChange={(e) => setBulkReturnTransferDate(e.target.value)}
+              disabled={bulkReturnMut.isPending}
+            />
+          </div>
           <DialogFooter>
             <Button
               type="button"
@@ -735,7 +757,12 @@ export function MerchantOrderDetailsPage() {
                 !selectedPickupCourierId ||
                 pickupCouriersQuery.isLoading
               }
-              onClick={() => bulkReturnMut.mutate(selectedPickupCourierId)}
+              onClick={() =>
+                bulkReturnMut.mutate({
+                  pickupCourierId: selectedPickupCourierId,
+                  transferDate: bulkReturnTransferDate,
+                })
+              }
             >
               {bulkReturnMut.isPending
                 ? t("common.saving", { defaultValue: "…" })
