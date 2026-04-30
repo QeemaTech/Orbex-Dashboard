@@ -20,6 +20,7 @@ import {
 } from "@/features/packaging-material/components/PackagingRequestBuilder"
 import type { PackagingRequestBuilderItem } from "@/features/packaging-material/types"
 import { createInitialBuilderRows } from "@/features/packaging-material/utils/request-builder.utils"
+import { createPackagingMaterialRequest } from "@/api/packaging-material-requests-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { StatCard } from "@/components/shared/StatCard"
@@ -219,26 +220,33 @@ export function MerchantOrdersListPage() {
   })
 
   const importMutation = useMutation({
-    mutationFn: (file: File) =>
-      importOrdersFromExcel({
+    mutationFn: async (file: File) => {
+      let packagingMaterialRequestId: string | undefined
+      if (includePackagingRequest) {
+        const created = await createPackagingMaterialRequest({
+          token,
+          body: {
+            merchantId: importMerchantId || undefined,
+            notes: packagingRequestNotes || null,
+            items: packagingRequestRows
+              .filter((row) => row.packagingMaterialId && Number(row.requestedQuantity) > 0)
+              .map((row) => ({
+                packagingMaterialId: row.packagingMaterialId,
+                requestedQuantity: row.requestedQuantity,
+              })),
+          },
+        })
+        packagingMaterialRequestId = created.request.id
+      }
+
+      return importOrdersFromExcel({
         token,
         file,
         merchantId: importMerchantId || undefined,
         pickupDate,
-        packagingMaterialRequest: includePackagingRequest
-          ? {
-              notes: packagingRequestNotes || null,
-              items: packagingRequestRows
-                .filter(
-                  (row) => row.packagingMaterialId && Number(row.requestedQuantity) > 0,
-                )
-                .map((row) => ({
-                  packagingMaterialId: row.packagingMaterialId,
-                  requestedQuantity: row.requestedQuantity,
-                })),
-            }
-          : null,
-      }),
+        packagingMaterialRequestId,
+      })
+    },
     onSuccess: (data) => {
       showToast(
         t("merchantOrdersList.importQueuedSuccess", { count: data.orderCount }),

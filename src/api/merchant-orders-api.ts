@@ -907,14 +907,7 @@ export type ImportOrdersParams = {
   pickupDate: string
   regionId?: string | null
   notes?: string | null
-  trackingNumber?: string | null
-  packagingMaterialRequest?: {
-    notes?: string | null
-    items: Array<{
-      packagingMaterialId: string
-      requestedQuantity: string | number
-    }>
-  } | null
+  packagingMaterialRequestId?: string
 }
 
 /** `POST /api/merchant-orders/import-orders` returns 202 — rows queued for confirmation. */
@@ -941,16 +934,20 @@ export async function importOrdersFromExcel(
 ): Promise<ImportOrdersQueuedResponse> {
   const formData = new FormData()
   formData.append("file", p.file)
+  const shipmentMeta: Record<string, unknown> = {
+    pickupDate: p.pickupDate,
+    regionId: p.regionId,
+    notes: p.notes,
+  }
+  if (p.merchantId) {
+    shipmentMeta.merchantId = p.merchantId
+  }
+  if (p.packagingMaterialRequestId) {
+    shipmentMeta.packagingMaterialRequestId = p.packagingMaterialRequestId
+  }
   formData.append(
     "shipment",
-    JSON.stringify({
-      merchantId: p.merchantId || null,
-      pickupDate: p.pickupDate,
-      regionId: p.regionId,
-      notes: p.notes,
-      trackingNumber: p.trackingNumber,
-      packagingMaterialRequest: p.packagingMaterialRequest ?? null,
-    }),
+    JSON.stringify(shipmentMeta),
   )
 
   const response = await fetch(apiUrl("/api/merchant-orders/import-orders"), {
