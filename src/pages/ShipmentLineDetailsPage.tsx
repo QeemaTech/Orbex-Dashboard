@@ -115,6 +115,8 @@ export function ShipmentLineDetailsPage() {
   if (isUuidParam && shipmentDetailQuery.isSuccess && shipmentDetailQuery.data) {
     const shipment = shipmentDetailQuery.data
     const merchantOrderId = encodeURIComponent(shipment.merchantOrderId)
+    const returnTo = searchParams.get("returnTo")?.trim() || ""
+    const returnLabel = searchParams.get("returnLabel")?.trim() || ""
     let backHref = `/merchant-orders/${merchantOrderId}`
     let merchantOrderDetailHref = `/merchant-orders/${merchantOrderId}`
     let merchantOrderShipmentsHref = `/shipments/${merchantOrderId}`
@@ -127,12 +129,16 @@ export function ShipmentLineDetailsPage() {
       merchantOrderDetailHref = `/cs/merchant-orders/${merchantOrderId}`
       merchantOrderShipmentsHref = `/cs/shipments/${merchantOrderId}`
     }
+
+    if (returnTo) {
+      backHref = returnTo
+    }
     return (
       <Layout title={t("shipments.detail.pageTitle")}>
         <ShipmentDetailView
           shipment={shipment}
           backHref={backHref}
-          backLabel={t("shipments.backToMerchantOrder")}
+          backLabel={returnLabel || t("shipments.backToMerchantOrder")}
           merchantOrderDetailHref={merchantOrderDetailHref}
           merchantOrderShipmentsHref={merchantOrderShipmentsHref}
           variant={isWarehouseRoute ? "warehouse" : isCsRoute ? "cs" : "default"}

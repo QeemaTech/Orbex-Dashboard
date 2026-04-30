@@ -33,8 +33,8 @@ import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseMerchantOrdersListPage } from "@/pages/WarehouseMerchantOrdersListPage"
 import { WarehouseShipmentsListPage } from "@/pages/WarehouseShipmentsListPage"
-import { WarehouseManifestsPreviewPage } from "@/pages/WarehouseManifestsPreviewPage"
-import { CreateCourierManifestPage } from "@/pages/CreateCourierManifestPage"
+import { DeliveryManifestListPage } from "@/features/delivery-manifest/DeliveryManifestListPage"
+import { DeliveryManifestWorkspacePage } from "@/features/delivery-manifest/DeliveryManifestWorkspacePage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
 import { DeliveryZonesPage } from "@/pages/DeliveryZonesPage"
 import { WarehousesPage } from "@/pages/WarehousesPage"
@@ -68,17 +68,32 @@ function Protected({ children }: { children: ReactNode }) {
 function ProtectedRole({
   allowed,
   requiredPermissions,
+  requiredAnyPermissions,
   children,
 }: {
   allowed: readonly UserRole[]
   requiredPermissions?: readonly string[]
+  requiredAnyPermissions?: readonly string[]
   children: ReactNode
 }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
-  const hasPermission =
+  const hasAllRequiredPermissions =
     requiredPermissions?.every((p) => user.permissions?.includes(p)) ?? false
-  if (!hasPermission && !allowed.includes(user.role)) {
+  const hasAnyRequiredPermission =
+    requiredAnyPermissions?.some((p) => user.permissions?.includes(p)) ?? false
+
+  const roleAllowed = allowed.includes(user.role)
+  const allReqSatisfied = requiredPermissions?.length ? hasAllRequiredPermissions : false
+  const anyReqSatisfied = requiredAnyPermissions?.length ? hasAnyRequiredPermission : false
+
+  const accessGranted =
+    roleAllowed ||
+    allReqSatisfied ||
+    anyReqSatisfied ||
+    (!allowed.length && !requiredPermissions?.length && !requiredAnyPermissions?.length)
+
+  if (!accessGranted) {
     return <Navigate to={getDefaultDashboardRoute(user)} replace />
   }
   return <>{children}</>
@@ -136,6 +151,19 @@ function RedirectWarehouseTransferShipmentsToDetail() {
   return (
     <Navigate
       to={`${warehouseMerchantOrderDetailPath(warehouseId, merchantOrderId)}#customer-orders`}
+      replace
+    />
+  )
+}
+
+function RedirectWarehouseManifestCreateToList() {
+  const { warehouseId = "" } = useParams<{ warehouseId: string }>()
+  if (!warehouseId) {
+    return <Navigate to="/warehouses" replace />
+  }
+  return (
+    <Navigate
+      to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/workspace`}
       replace
     />
   )
@@ -548,10 +576,29 @@ export default function App() {
           element={
             <Protected>
               <ProtectedRole
-                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
-                requiredPermissions={["warehouses.read"]}
+                allowed={[]}
+                requiredAnyPermissions={[
+                  "delivery_manifests.read",
+                  "delivery_manifests.read_all",
+                ]}
               >
-                <WarehouseManifestsPreviewPage />
+                <DeliveryManifestListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests/workspace"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={[]}
+                requiredAnyPermissions={[
+                  "delivery_manifests.read",
+                  "delivery_manifests.read_all",
+                ]}
+              >
+                <DeliveryManifestWorkspacePage />
               </ProtectedRole>
             </Protected>
           }
@@ -564,7 +611,7 @@ export default function App() {
                 allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
                 requiredPermissions={["warehouses.read"]}
               >
-                <CreateCourierManifestPage />
+                <RedirectWarehouseManifestCreateToList />
               </ProtectedRole>
             </Protected>
           }
