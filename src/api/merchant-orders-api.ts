@@ -956,6 +956,9 @@ export async function importOrdersFromExcel(
   if (p.packagingMaterialRequestId) {
     shipmentMeta.packagingMaterialRequestId = p.packagingMaterialRequestId
   }
+  if (p.shippingPaymentType) {
+    shipmentMeta.shippingPaymentType = p.shippingPaymentType
+  }
   formData.append(
     "shipment",
     JSON.stringify(shipmentMeta),
@@ -1029,6 +1032,7 @@ export async function downloadImportTemplate(token: string): Promise<void> {
 export type PendingMerchantOrderImportRow = {
   id: string
   merchantId: string
+  assignedWarehouseId: string | null
   merchantName: string
   merchantPhone: string
   merchantEmail: string | null
@@ -1251,12 +1255,14 @@ export async function downloadPendingMerchantOrderImportVersionFile(params: {
 export async function confirmPendingMerchantOrderImport(params: {
   token: string
   pendingImportId: string
+  pickupCourierId: string
 }): Promise<void> {
   await apiFetch<unknown>(
     `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/confirm`,
     {
       method: "POST",
       token: params.token,
+      body: JSON.stringify({ pickupCourierId: params.pickupCourierId }),
     },
   )
 }

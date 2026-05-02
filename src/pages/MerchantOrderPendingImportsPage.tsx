@@ -12,6 +12,7 @@ import {
   updatePendingMerchantOrderImportFile,
   updatePendingMerchantOrderPickupDate,
 } from "@/api/merchant-orders-api"
+import { getWarehousePickupCouriers } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +26,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -51,6 +53,8 @@ export function MerchantOrderPendingImportsPage() {
   const [pickupDateDraft, setPickupDateDraft] = useState("")
   const [fileImportId, setFileImportId] = useState<string | null>(null)
   const [replacementFile, setReplacementFile] = useState<File | null>(null)
+  const [confirmImportId, setConfirmImportId] = useState<string | null>(null)
+  const [confirmPickupCourierId, setConfirmPickupCourierId] = useState("")
 
   const pendingQuery = useQuery({
     queryKey: ["merchant-order-pending-imports", token],
@@ -59,9 +63,11 @@ export function MerchantOrderPendingImportsPage() {
   })
 
   const confirmMutation = useMutation({
-    mutationFn: (pendingImportId: string) =>
-      confirmPendingMerchantOrderImport({ token, pendingImportId }),
+    mutationFn: (params: { pendingImportId: string; pickupCourierId: string }) =>
+      confirmPendingMerchantOrderImport({ token, ...params }),
     onSuccess: async () => {
+      setConfirmImportId(null)
+      setConfirmPickupCourierId("")
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports", token] }),
         queryClient.invalidateQueries({ queryKey: ["admin-shipments-list"] }),
@@ -117,6 +123,20 @@ export function MerchantOrderPendingImportsPage() {
   const visibleItems = (pendingQuery.data?.items ?? []).filter((row) =>
     isMerchant ? !!merchantId && row.merchantId === merchantId : true,
   )
+  const confirmImportRow = useMemo(
+    () => visibleItems.find((r) => r.id === confirmImportId) ?? null,
+    [confirmImportId, visibleItems],
+  )
+  const confirmWarehouseId = confirmImportRow?.assignedWarehouseId ?? null
+  const confirmCouriersQuery = useQuery({
+    queryKey: ["pending-import-pickup-couriers", token, confirmWarehouseId],
+    queryFn: () =>
+      getWarehousePickupCouriers({
+        token,
+        warehouseId: confirmWarehouseId!,
+      }),
+    enabled: !!token && !!confirmWarehouseId && confirmImportId !== null,
+  })
   const selectedImport = useMemo(
     () => visibleItems.find((row) => row.id === previewImportId) ?? null,
     [previewImportId, visibleItems],
@@ -236,7 +256,10 @@ export function MerchantOrderPendingImportsPage() {
                       type="button"
                       size="sm"
                       disabled={isMutating}
-                      onClick={() => confirmMutation.mutate(row.id)}
+                      onClick={() => {
+                        setConfirmImportId(row.id)
+                        setConfirmPickupCourierId("")
+                      }}
                     >
                       {t("merchantOrdersList.confirmPending", { defaultValue: "Confirm" })}
                     </Button>
@@ -422,6 +445,101 @@ export function MerchantOrderPendingImportsPage() {
               {t("merchantOrdersList.updateExcelSheet", { defaultValue: "Update Excel sheet" })}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={confirmImportId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmImportId(null)
+            setConfirmPickupCourierId("")
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t("merchantOrdersList.confirmPickupCourierTitle", {
+                defaultValue: "Confirm import — pickup courier",
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("merchantOrdersList.confirmPickupCourierDescription", {
+                defaultValue:
+                  "Select the pickup courier for this batch. They will be assigned to the pickup task and used when building pickup manifests.",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          {!confirmWarehouseId ? (
+            <p className="text-destructive text-sm">
+              {t("merchantOrdersList.confirmRequiresWarehouse", {
+                defaultValue:
+                  "This merchant has no assigned warehouse. Assign a warehouse to the merchant before confirming.",
+              })}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t("merchantOrdersList.pickupCourier", { defaultValue: "Pickup courier" })}
+              </label>
+              <select
+                className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+                value={confirmPickupCourierId}
+                onChange={(e) => setConfirmPickupCourierId(e.target.value)}
+                disabled={confirmCouriersQuery.isLoading || confirmMutation.isPending}
+              >
+                <option value="">
+                  {t("merchantOrdersList.selectPickupCourier", {
+                    defaultValue: "Select pickup courier",
+                  })}
+                </option>
+                {(confirmCouriersQuery.data?.couriers ?? []).map((courier) => (
+                  <option key={courier.id} value={courier.id}>
+                    {courier.fullName?.trim() || "—"}
+                  </option>
+                ))}
+              </select>
+              {confirmCouriersQuery.error ? (
+                <p className="text-destructive text-sm">
+                  {(confirmCouriersQuery.error as Error).message}
+                </p>
+              ) : null}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setConfirmImportId(null)
+                setConfirmPickupCourierId("")
+              }}
+              disabled={confirmMutation.isPending}
+            >
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                confirmMutation.isPending ||
+                !confirmImportId ||
+                !confirmWarehouseId ||
+                !confirmPickupCourierId ||
+                confirmCouriersQuery.isLoading
+              }
+              onClick={() => {
+                if (!confirmImportId || !confirmPickupCourierId) return
+                confirmMutation.mutate({
+                  pendingImportId: confirmImportId,
+                  pickupCourierId: confirmPickupCourierId,
+                })
+              }}
+            >
+              {confirmMutation.isPending
+                ? t("common.saving", { defaultValue: "…" })
+                : t("merchantOrdersList.confirmImportSubmit", { defaultValue: "Confirm import" })}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Layout>

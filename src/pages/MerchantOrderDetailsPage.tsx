@@ -16,6 +16,11 @@ import {
   patchShipmentAssignedWarehouse,
 } from "@/api/shipments-api"
 import { getWarehousePickupCouriers, listWarehouseSites } from "@/api/warehouse-api"
+import {
+  completePickupTask,
+  getPickupTaskByMerchantOrder,
+  markPickupTaskPickedUp,
+} from "@/api/pickup-tasks-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +52,81 @@ import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-ord
 import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
 import { printerService } from "@/services/printer.service"
 import { showToast } from "@/lib/toast"
+
+type PickupTaskStatus = "PENDING" | "ASSIGNED" | "PICKED_UP" | "COMPLETED" | "CANCELLED"
+
+type PickupTaskData = {
+  id: string
+  status: PickupTaskStatus
+  assignedCourier: { id: string; fullName: string } | null
+  manifestId: string | null
+  transferDate: string
+}
+
+const pickupStatusVariant: Record<PickupTaskStatus, "default" | "secondary" | "outline" | "destructive"> = {
+  PENDING: "outline",
+  ASSIGNED: "default",
+  PICKED_UP: "secondary",
+  COMPLETED: "default",
+  CANCELLED: "destructive",
+}
+
+function InlinePickupTaskStatus({
+  pickupTask,
+  canUpdateStatus,
+  onMarkPickedUp,
+  onComplete,
+  isMarkingPickedUp,
+  isCompleting,
+}: {
+  pickupTask: PickupTaskData
+  canUpdateStatus: boolean
+  onMarkPickedUp: () => void
+  onComplete: () => void
+  isMarkingPickedUp: boolean
+  isCompleting: boolean
+}) {
+  const { t } = useTranslation()
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <Badge variant={pickupStatusVariant[pickupTask.status]}>
+        {pickupTask.status}
+      </Badge>
+      {pickupTask.assignedCourier && (
+        <span className="text-sm text-muted-foreground">
+          {pickupTask.assignedCourier.fullName}
+        </span>
+      )}
+      {pickupTask.manifestId && (
+        <span className="text-sm text-muted-foreground">
+          Manifest: {pickupTask.manifestId.slice(0, 8)}
+        </span>
+      )}
+      {canUpdateStatus && pickupTask.status === "ASSIGNED" && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onMarkPickedUp}
+          disabled={isMarkingPickedUp}
+        >
+          {isMarkingPickedUp ? "..." : t("pickupTasks.markPickedUp", { defaultValue: "Pick Up" })}
+        </Button>
+      )}
+      {canUpdateStatus && pickupTask.status === "PICKED_UP" && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onComplete}
+          disabled={isCompleting}
+        >
+          {isCompleting ? "..." : t("pickupTasks.complete", { defaultValue: "Done" })}
+        </Button>
+      )}
+    </span>
+  )
+}
 
 const INVALID_ROUTE_BATCH_ID = new Set(["", "undefined"])
 
@@ -119,6 +199,12 @@ export function MerchantOrderDetailsPage() {
   const ordersSummaryQuery = useQuery({
     queryKey: ["merchant-order", "shipments", merchantOrderId, token],
     queryFn: () => getShipmentOrders({ token, shipmentId: merchantOrderId }),
+    enabled: !!token && hasValidBatchId,
+  })
+
+  const pickupTaskQuery = useQuery({
+    queryKey: ["pickup-task", "by-merchant-order", merchantOrderId, token],
+    queryFn: () => getPickupTaskByMerchantOrder({ token, merchantOrderId }),
     enabled: !!token && hasValidBatchId,
   })
 
@@ -263,6 +349,28 @@ export function MerchantOrderDetailsPage() {
     },
     onError: (err: Error) => {
       showToast(err.message || "Failed to update warehouse", "error")
+    },
+  })
+
+  const markPickedUpMut = useMutation({
+    mutationFn: async (taskId: string) => markPickupTaskPickedUp({ token, id: taskId }),
+    onSuccess: async () => {
+      showToast(t("pickupTasks.markedPickedUp") || "Marked as picked up", "success")
+      await qc.invalidateQueries({ queryKey: ["pickup-task", "by-merchant-order", merchantOrderId] })
+    },
+    onError: (err: Error) => {
+      showToast(err.message || "Failed to mark as picked up", "error")
+    },
+  })
+
+  const completePickupMut = useMutation({
+    mutationFn: async (taskId: string) => completePickupTask({ token, id: taskId }),
+    onSuccess: async () => {
+      showToast(t("pickupTasks.completed") || "Pickup completed", "success")
+      await qc.invalidateQueries({ queryKey: ["pickup-task", "by-merchant-order", merchantOrderId] })
+    },
+    onError: (err: Error) => {
+      showToast(err.message || "Failed to complete pickup", "error")
     },
   })
 
@@ -527,6 +635,29 @@ export function MerchantOrderDetailsPage() {
                           }
                           contextWarehouseId={hubPageContextWarehouseId}
                         />
+                      </p>
+                      <p>
+                        <strong>{t("pickupTasks.title", { defaultValue: "Pickup Task" })}:</strong>{" "}
+                        {pickupTaskQuery.isLoading ? (
+                          "..."
+                        ) : pickupTaskQuery.data ? (
+                          <InlinePickupTaskStatus
+                            pickupTask={pickupTaskQuery.data}
+                            canUpdateStatus={
+                              user?.permissions?.includes("warehouses.manage_transfer") ?? false
+                            }
+                            onMarkPickedUp={() => {
+                              markPickedUpMut.mutate(pickupTaskQuery.data!.id)
+                            }}
+                            onComplete={() => {
+                              completePickupMut.mutate(pickupTaskQuery.data!.id)
+                            }}
+                            isMarkingPickedUp={markPickedUpMut.isPending}
+                            isCompleting={completePickupMut.isPending}
+                          />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </p>
                       <p>
                         <strong>{t("warehouse.table.orderCount")}:</strong>{" "}
