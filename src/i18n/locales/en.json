@@ -1224,7 +1224,18 @@
       "actions": "Actions"
     },
     "actions": {
-      "approve": "Approve"
+      "approve": "Approve",
+      "pricing": "Pricing"
+    },
+    "pricing": {
+      "title": "Merchant delivery pricing",
+      "subtitle": "Set shipping fee per delivery zone and packaging delivery fee for this merchant.",
+      "packagingDeliveryFee": "Packaging delivery fee",
+      "shippingFee": "Shipping fee",
+      "zonesColumn": "Delivery zone",
+      "loading": "Loading pricing…",
+      "saved": "Pricing saved.",
+      "close": "Close"
     },
     "pagination": {
       "summary": "{{total}} total · page {{page}}",
@@ -1495,6 +1506,20 @@
     "searching": "Searching…",
     "select": "Select…"
   },
+  "collections": {
+    "subtitle": "Live overview of COD payment status across shipments. Figures refresh automatically every 15 seconds.",
+    "totalShipments": "Shipments counted",
+    "shareOfTotal": "{{pct}}% of total",
+    "chartTitle": "Share by payment status",
+    "chartHint": "Hover a slice for the exact count.",
+    "empty": "No payment-status data yet.",
+    "loading": "Loading collection snapshot…",
+    "errorPrefix": "Could not load snapshot.",
+    "refresh": "Refresh",
+    "autoRefreshHint": "Auto-refreshes every 15s",
+    "openAccounts": "Accounts & settlements",
+    "openBalances": "Balances"
+  },
   "accounts": {
     "pageTitle": "Accounts",
     "subtitle": "Monitor settlements, courier balances, and merchant payouts.",
@@ -1513,7 +1538,7 @@
       "to": "To date",
       "apply": "Apply",
       "reset": "Reset",
-      "deliveredOnly": "Settlement actions are only available on the Delivered tab."
+      "deliveredOnly": "Each tab reflects a shipment lifecycle stage. Use Balances for account-level totals and payout flows."
     },
     "table": {
       "merchant": "Merchant",

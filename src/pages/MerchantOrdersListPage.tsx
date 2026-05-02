@@ -406,15 +406,15 @@ export function MerchantOrdersListPage() {
           ) : null}
           {!showKpiLoading && !showKpiError
             ? batchPipelineBreakdown.slice(0, 3).map((row) => (
-                <StatCard
-                  key={row.transferStatus}
-                  title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
-                  value={row.count}
-                  icon={Boxes}
-                  accent="success"
-                  hideTrend
-                />
-              ))
+              <StatCard
+                key={row.transferStatus}
+                title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
+                value={row.count}
+                icon={Boxes}
+                accent="success"
+                hideTrend
+              />
+            ))
             : null}
           {showKpiEmpty ? (
             <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
