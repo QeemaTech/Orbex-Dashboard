@@ -1556,7 +1556,21 @@
     },
     "merchantDetail": {
       "title": "حساب التاجر",
+      "subtitle": "مؤشرات الفترة، طلبات التصفية، وسجل الشحنات لهذا التاجر.",
+      "businessName": "النشاط التجاري",
+      "openBalances": "كل أرصدة التجار",
+      "summarySection": "ملخص الفترة",
       "period": "الفترة",
+      "periodPresets": {
+        "thisMonth": "هذا الشهر",
+        "lastMonth": "الشهر الماضي",
+        "last90Days": "آخر 90 يومًا",
+        "allTime": "المدة كلها"
+      },
+      "chartTitle": "المُحصّل مقابل الصافي (يوميًا)",
+      "chartCollected": "المُحصّل",
+      "chartNet": "الصافي",
+      "chartWindow": "عرض آخر {{count}} يومًا.",
       "totalShipments": "إجمالي الشحنات",
       "delivered": "تم التسليم",
       "settled": "مُصَفّاة",
@@ -1610,7 +1624,12 @@
       "requestTitle": "طلب تصفية",
       "requestHint": "إنشاء طلب تصفية للشحنات المسلّمة وغير المُصفّاة خلال الفترة المحددة.",
       "deliveryDeductionPercent": "خصم التوصيل (%)",
+      "deliveryDeductionNote": "النسبة تُحسب على المبلغ المتبقي بعد عمولة المنصّة، مصاريف الشحن، ورسوم التغليف (تُطابق «المتبقي للدفع» في نفس الفترة عند عدم وجود حجوزات أخرى).",
       "gross": "إجمالي المُحصّل",
+      "codFaceTotal": "مجموع قيم شحنات عند التسليم",
+      "payableBalance": "صافي المستحق للتاجر",
+      "poolBeforeDeduction": "المستحق بعد الطرح (قبل الخصم)",
+      "deductionPreview": "الخصم",
       "net": "صافي المستحق",
       "requestButton": "إرسال طلب التصفية",
       "requested": "تم إرسال طلب التصفية.",
@@ -1620,8 +1639,13 @@
       "period": "الفترة",
       "shipments": "الشحنات",
       "createdAt": "تاريخ الإنشاء",
-      "empty": "لا توجد طلبات تصفية بعد."
-      ,
+      "empty": "لا توجد طلبات تصفية بعد.",
+      "payoutStatuses": {
+        "PENDING": "معلّق",
+        "APPROVED": "موافَق عليه",
+        "REJECTED": "مرفوض",
+        "PAID": "مدفوع"
+      },
       "admin": {
         "title": "طلبات التصفية (إدارة)",
         "backToAccounts": "العودة للحسابات",

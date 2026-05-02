@@ -1584,7 +1584,21 @@
     },
     "merchantDetail": {
       "title": "Merchant account",
+      "subtitle": "Period metrics, settlement requests, and shipment ledger for this merchant.",
+      "businessName": "Business",
+      "openBalances": "All merchant balances",
+      "summarySection": "Period summary",
       "period": "Period",
+      "periodPresets": {
+        "thisMonth": "This month",
+        "lastMonth": "Last month",
+        "last90Days": "Last 90 days",
+        "allTime": "All time"
+      },
+      "chartTitle": "Collected vs net (daily)",
+      "chartCollected": "Collected",
+      "chartNet": "Net",
+      "chartWindow": "Showing the last {{count}} days.",
       "totalShipments": "Total shipments",
       "delivered": "Delivered",
       "settled": "Settled",
@@ -1638,7 +1652,12 @@
       "requestTitle": "Request settlement",
       "requestHint": "Create a settlement request for delivered, not-yet-settled shipments in the selected period.",
       "deliveryDeductionPercent": "Delivery deduction (%)",
+      "deliveryDeductionNote": "The percentage applies to payable balance after commission, shipping, and packaging charges (matches “Remaining payable” for this period when no other hold applies).",
       "gross": "Gross collected",
+      "codFaceTotal": "Delivered COD (shipment values)",
+      "payableBalance": "Net payable",
+      "poolBeforeDeduction": "Payable after fees",
+      "deductionPreview": "Deduction",
       "net": "Net payable",
       "requestButton": "Request settlement",
       "requested": "Settlement request submitted.",
@@ -1648,8 +1667,13 @@
       "period": "Period",
       "shipments": "Shipments",
       "createdAt": "Created",
-      "empty": "No settlement requests yet."
-      ,
+      "empty": "No settlement requests yet.",
+      "payoutStatuses": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "PAID": "Paid"
+      },
       "admin": {
         "title": "Settlement requests (admin)",
         "backToAccounts": "Back to accounts",

@@ -16,9 +16,52 @@ function socketIoBaseUrl(): string {
   return import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:5000"
 }
 
+/** Disable with `VITE_REALTIME=0` when the API has no Socket.IO (quieter local dev). */
+function realtimeEnabled(): boolean {
+  const v = import.meta.env.VITE_REALTIME
+  return v !== "0" && v !== "false"
+}
+
 type RealtimeEventPayload = {
   name: string
   payload?: { type?: string }
+}
+
+const DISCONNECT_DEBOUNCE_MS = 400
+
+let sharedSocket: Socket | null = null
+let bridgeSubscribers = 0
+let pendingDisconnectTimer: number | null = null
+
+function clearPendingDisconnect(): void {
+  if (pendingDisconnectTimer !== null && typeof window !== "undefined") {
+    window.clearTimeout(pendingDisconnectTimer)
+    pendingDisconnectTimer = null
+  }
+}
+
+function getOrCreateSharedSocket(): Socket {
+  clearPendingDisconnect()
+  if (!sharedSocket) {
+    sharedSocket = io(socketIoBaseUrl(), {
+      path: "/socket.io",
+      transports: ["websocket", "polling"],
+    })
+  }
+  return sharedSocket
+}
+
+function scheduleSharedSocketRelease(): void {
+  if (typeof window === "undefined") return
+  clearPendingDisconnect()
+  pendingDisconnectTimer = window.setTimeout(() => {
+    pendingDisconnectTimer = null
+    if (bridgeSubscribers <= 0 && sharedSocket) {
+      sharedSocket.removeAllListeners()
+      sharedSocket.disconnect()
+      sharedSocket = null
+    }
+  }, DISCONNECT_DEBOUNCE_MS)
 }
 
 export function RealtimeBridge() {
@@ -27,12 +70,10 @@ export function RealtimeBridge() {
   const dashboardInvalidateTimer = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!accessToken) return
+    if (!accessToken || !realtimeEnabled()) return
 
-    const socket: Socket = io(socketIoBaseUrl(), {
-      path: "/socket.io",
-      transports: ["websocket", "polling"],
-    })
+    bridgeSubscribers++
+    const socket = getOrCreateSharedSocket()
 
     const scheduleDashboardKpiInvalidate = () => {
       if (dashboardInvalidateTimer.current !== null) return
@@ -81,7 +122,8 @@ export function RealtimeBridge() {
 
     return () => {
       socket.off("event", onEvent)
-      socket.disconnect()
+      bridgeSubscribers = Math.max(0, bridgeSubscribers - 1)
+      scheduleSharedSocketRelease()
       if (dashboardInvalidateTimer.current !== null) {
         window.clearTimeout(dashboardInvalidateTimer.current)
         dashboardInvalidateTimer.current = null
