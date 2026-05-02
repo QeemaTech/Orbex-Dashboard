@@ -376,6 +376,7 @@ export async function bulkReturnRejectedToMerchant(params: {
   token: string
   merchantOrderId: string
   pickupCourierId: string
+  transferDate: string
 }): Promise<{ created: string[]; skipped: string[]; createdTaskIds: string[]; manifestIds: string[] }> {
   return apiFetch<{ created: string[]; skipped: string[]; createdTaskIds: string[]; manifestIds: string[] }>(
     `/api/merchant-orders/${encodeURIComponent(
@@ -384,7 +385,10 @@ export async function bulkReturnRejectedToMerchant(params: {
     {
       token: params.token,
       method: "POST",
-      body: JSON.stringify({ pickupCourierId: params.pickupCourierId }),
+      body: JSON.stringify({
+        pickupCourierId: params.pickupCourierId,
+        transferDate: params.transferDate,
+      }),
     },
   )
 }
@@ -956,6 +960,9 @@ export async function importOrdersFromExcel(
   if (p.packagingMaterialRequestId) {
     shipmentMeta.packagingMaterialRequestId = p.packagingMaterialRequestId
   }
+  if (p.shippingPaymentType) {
+    shipmentMeta.shippingPaymentType = p.shippingPaymentType
+  }
   formData.append(
     "shipment",
     JSON.stringify(shipmentMeta),
@@ -1029,6 +1036,7 @@ export async function downloadImportTemplate(token: string): Promise<void> {
 export type PendingMerchantOrderImportRow = {
   id: string
   merchantId: string
+  assignedWarehouseId: string | null
   merchantName: string
   merchantPhone: string
   merchantEmail: string | null
@@ -1251,12 +1259,14 @@ export async function downloadPendingMerchantOrderImportVersionFile(params: {
 export async function confirmPendingMerchantOrderImport(params: {
   token: string
   pendingImportId: string
+  pickupCourierId: string
 }): Promise<void> {
   await apiFetch<unknown>(
     `/api/merchant-orders/pending-imports/${encodeURIComponent(params.pendingImportId)}/confirm`,
     {
       method: "POST",
       token: params.token,
+      body: JSON.stringify({ pickupCourierId: params.pickupCourierId }),
     },
   )
 }

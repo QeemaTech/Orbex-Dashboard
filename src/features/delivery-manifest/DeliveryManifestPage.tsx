@@ -22,7 +22,7 @@ import { useAuth } from "@/lib/auth-context"
 import { hasPlatformWarehouseScope, isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
 
-import { CreateManifestModal } from "./CreateManifestModal"
+import CreateManifestModal from "./CreateManifestModal"
 
 function priorityClass(tier: EligibleShipmentRow["priorityTier"]): string {
   if (tier === "URGENT") return "bg-destructive/15 text-destructive border-destructive/30"

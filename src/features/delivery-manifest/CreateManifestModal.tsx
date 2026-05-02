@@ -231,3 +231,5 @@ export function CreateManifestModal({
     </Dialog>
   )
 }
+
+export default CreateManifestModal

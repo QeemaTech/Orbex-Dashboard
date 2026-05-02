@@ -86,6 +86,8 @@
     "subtitle": "Cross-warehouse manifest view for privileged users.",
     "tableTitle": "Manifests",
     "allWarehouses": "All warehouses",
+    "pickupDescription": "Browse pickup movement manifests (transfer/return) across warehouses.",
+    "pickupPermissionRequired": "Missing permission: warehouses.manage_transfer",
     "courierIdPlaceholder": "Filter by courier id",
     "zoneIdPlaceholder": "Filter by delivery zone id",
     "pagination": "Total {{total}} · page {{page}}",
@@ -316,6 +318,12 @@
     "pendingEmpty": "No pending imports.",
     "preview": "Preview",
     "confirmPending": "Confirm",
+    "confirmPickupCourierTitle": "Confirm import — pickup courier",
+    "confirmPickupCourierDescription": "Select the pickup courier for this batch. They will be assigned to the pickup task and used when building pickup manifests.",
+    "confirmRequiresWarehouse": "This merchant has no assigned warehouse. Assign a warehouse to the merchant before confirming.",
+    "pickupCourier": "Pickup courier",
+    "selectPickupCourier": "Select pickup courier",
+    "confirmImportSubmit": "Confirm import",
     "rejectPending": "Reject",
     "versionHistory": "Version history",
     "version": "Version",
@@ -1037,6 +1045,10 @@
       "tabManifests": "Manifests"
     },
     "manifests": {
+      "tabs": {
+        "deliveryCouriers": "Delivery couriers",
+        "pickupCouriers": "Pickup couriers"
+      },
       "title": "Courier manifests",
       "description": "Manage manifests by zone and courier, then lock and dispatch.",
       "create": {
@@ -1086,6 +1098,52 @@
       "dispatch": "Dispatch",
       "optimizeRoute": "Optimize Route",
       "optimizeRouteComingSoon": "Route optimization is coming soon."
+    },
+    "pickupManifests": {
+      "listTitle": "Pickup manifests",
+      "listDescription": "Browse pickup-courier movement manifests (transfer/return).",
+      "transferDate": "Transfer date",
+      "columns": {
+        "transferDate": "Transfer date",
+        "type": "Type",
+        "status": "Status",
+        "fromWarehouse": "From",
+        "toWarehouse": "To",
+        "pickupCourier": "Pickup courier",
+        "lines": "Lines",
+        "actions": "Actions"
+      },
+      "empty": "No pickup manifests found.",
+      "detailTitle": "Pickup manifest",
+      "detailTitleWithId": "Pickup manifest {{id}}",
+      "summaryTitle": "Summary",
+      "summaryDescription": "Movement manifest for pickup couriers (transfer/return).",
+      "fields": {
+        "type": "Type",
+        "status": "Status",
+        "transferDate": "Transfer date",
+        "createdAt": "Created",
+        "fromWarehouse": "From warehouse",
+        "toWarehouse": "To warehouse",
+        "pickupCourier": "Pickup courier",
+        "lockedAt": "Locked",
+        "dispatchedAt": "Dispatched",
+        "closedAt": "Closed"
+      },
+      "linesTitle": "Lines",
+      "linesDescription": "Shipments included in this pickup-courier movement manifest.",
+      "linesEmpty": "No lines found.",
+      "dispatchConfirm": {
+        "body": "Dispatch this pickup manifest and mark tasks IN_PROGRESS?"
+      },
+      "lineColumns": {
+        "tracking": "Tracking",
+        "shipmentStatus": "Shipment status",
+        "route": "Route",
+        "taskType": "Task type",
+        "taskStatus": "Task status",
+        "actions": "Actions"
+      }
     },
     "table": {
       "batchId": "Batch ID",
@@ -1492,9 +1550,12 @@
     }
   },
   "common": {
+    "all": "All",
     "edit": "Edit",
     "delete": "Delete",
     "loading": "Loading…",
+    "saved": "Saved.",
+    "back": "Back",
     "close": "Close",
     "system": "System",
     "cancel": "Cancel",
@@ -1504,6 +1565,9 @@
     "saving": "Saving…",
     "processing": "Processing…",
     "searching": "Searching…",
+    "clearFilters": "Clear filters",
+    "view": "View",
+    "open": "Open",
     "select": "Select…"
   },
   "collections": {

@@ -15,7 +15,8 @@ import { useAuth } from "@/lib/auth-context"
 import { hasPlatformWarehouseScope, isWarehouseStaff } from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
 
-import { CreateManifestModal } from "./CreateManifestModal"
+import CreateManifestModal from "./CreateManifestModal"
+import { ManifestsTabsHeader } from "@/features/manifests/ManifestsTabsHeader"
 
 function priorityClass(tier: EligibleShipmentRow["priorityTier"]): string {
   if (tier === "URGENT") return "bg-destructive/15 text-destructive border-destructive/30"
@@ -124,21 +125,20 @@ export function DeliveryManifestWorkspacePage() {
   return (
     <Layout title={t("warehouse.manifests.title")}>
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button type="button" variant="outline" asChild>
-            <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests`}>
-              {t("warehouse.manifests.listTitle", { defaultValue: "Manifests" })}
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            disabled={!canManage || selectedRows.length === 0}
-            onClick={() => setModalOpen(true)}
-            title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
-          >
-            {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}
-          </Button>
-        </div>
+        <ManifestsTabsHeader
+          warehouseId={warehouseId}
+          active="delivery"
+          rightSlot={
+            <Button
+              type="button"
+              disabled={!canManage || selectedRows.length === 0}
+              onClick={() => setModalOpen(true)}
+              title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
+            >
+              {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}
+            </Button>
+          }
+        />
 
         <Card>
           <CardHeader>

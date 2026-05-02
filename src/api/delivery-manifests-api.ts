@@ -111,6 +111,31 @@ export type DeliveryManifestDetail = {
   }>
 }
 
+export type LatLng = { lat: number; lng: number }
+
+export type ManifestRouteStop = {
+  order: number
+  shipmentId: string
+  lat: number
+  lng: number
+  address: string
+}
+
+export type ManifestRouteStatus = "READY" | "FAILED" | "PENDING" | (string & {})
+
+export type ManifestRoute = {
+  manifestId: string
+  status: ManifestRouteStatus
+  errorMessage?: string | null
+  warehouse?: (LatLng & { address?: string | null }) | null
+  orderedStops?: ManifestRouteStop[]
+  path?: LatLng[]
+}
+
+export type BatchManifestRoutesResponse = {
+  routes: Record<string, ManifestRoute>
+}
+
 function qs(params: Record<string, string | number | undefined>): string {
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
@@ -268,4 +293,25 @@ export async function closeDeliveryManifest(params: {
     `/api/delivery-manifests/${encodeURIComponent(params.manifestId)}/close`,
     { method: "POST", token: params.token },
   )
+}
+
+export async function getDeliveryManifestRoute(params: {
+  token: string
+  manifestId: string
+}): Promise<ManifestRoute> {
+  return apiFetch<ManifestRoute>(
+    `/api/delivery-manifests/${encodeURIComponent(params.manifestId)}/route`,
+    { token: params.token },
+  )
+}
+
+export async function getDeliveryManifestRoutesBatch(params: {
+  token: string
+  manifestIds: string[]
+}): Promise<BatchManifestRoutesResponse> {
+  return apiFetch<BatchManifestRoutesResponse>(`/api/delivery-manifests/routes/batch`, {
+    method: "POST",
+    token: params.token,
+    body: JSON.stringify({ manifestIds: params.manifestIds }),
+  })
 }
