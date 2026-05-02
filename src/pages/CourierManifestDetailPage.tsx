@@ -8,6 +8,7 @@ import {
   dispatchDeliveryManifest,
   getDispatchPreview,
   getDeliveryManifest,
+  getDeliveryManifestRoute,
   lockDeliveryManifest,
 } from "@/api/delivery-manifests-api"
 import { Layout } from "@/components/layout/Layout"
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { openDeliveryManifestPdf } from "@/features/delivery-manifest/delivery-manifest-print"
+import { ManifestRoutePanel } from "@/features/delivery-manifest/components/ManifestRoutePanel"
 import { useAuth } from "@/lib/auth-context"
 import { showToast } from "@/lib/toast"
 
@@ -60,6 +62,14 @@ export function CourierManifestDetailPage() {
     queryFn: () => getDeliveryManifest({ token, manifestId }),
     enabled: !!token && !!manifestId,
     refetchInterval: 15000,
+  })
+
+  const apiKey = String(import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "")
+  const routeQuery = useQuery({
+    queryKey: ["delivery-manifest", "route", token, manifestId],
+    queryFn: () => getDeliveryManifestRoute({ token, manifestId }),
+    enabled: !!token && !!manifestId,
+    refetchInterval: (q) => (q.state.data?.status === "PENDING" ? 5000 : 30000),
   })
 
   const canManageTransfer =
@@ -142,9 +152,7 @@ export function CourierManifestDetailPage() {
   return (
     <Layout
       title={
-        manifest
-          ? t("manifestDetail.pageTitleWithId", { id: manifest.id })
-          : t("manifestDetail.pageTitle")
+        t("manifestDetail.pageTitle")
       }
     >
       <div className="space-y-6">
@@ -191,6 +199,21 @@ export function CourierManifestDetailPage() {
                 <p><span className="font-medium">{t("manifestDetail.fields.status")}:</span> {manifestStatusLabel(manifest.status, t)}</p>
                 <p><span className="font-medium">{t("manifestDetail.fields.lockedAt")}:</span> {manifest.lockedAt ? formatDateTime(manifest.lockedAt, locale) : notApplicable}</p>
                 <p><span className="font-medium">{t("manifestDetail.fields.dispatchedAt")}:</span> {manifest.dispatchedAt ? formatDateTime(manifest.dispatchedAt, locale) : notApplicable}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Suggested Route</CardTitle>
+                <CardDescription>Auto-generated round-trip route from the warehouse.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ManifestRoutePanel
+                  apiKey={apiKey}
+                  route={routeQuery.data}
+                  isLoading={routeQuery.isLoading}
+                  error={routeQuery.error ? (routeQuery.error as Error).message : null}
+                />
               </CardContent>
             </Card>
 

@@ -650,6 +650,7 @@ export function WarehouseDetailPage() {
       shipmentId: string
       pickupCourierId: string
       toWarehouseId: string
+      transferDate: string
     }) =>
       createShipmentPlannedTask({
         token,
@@ -658,13 +659,20 @@ export function WarehouseDetailPage() {
           type: "TRANSFER",
           pickupCourierId: params.pickupCourierId,
           toWarehouseId: params.toWarehouseId,
+          transferDate: params.transferDate,
         },
       }),
-    onSuccess: async () => {
+    onSuccess: async (out) => {
+      const manifestId = out?.manifestId ?? null
       showToast(
-        t("warehouse.feedback.transferTaskCreated", {
-          defaultValue: "Transfer task created successfully.",
-        }),
+        manifestId
+          ? t("warehouse.feedback.transferManifestDispatched", {
+              defaultValue: "Transfer manifest dispatched. Manifest ID: {{id}}",
+              id: manifestId,
+            })
+          : t("warehouse.feedback.transferTaskCreated", {
+              defaultValue: "Transfer task created successfully.",
+            }),
         "success",
       )
       await Promise.all([
@@ -1507,6 +1515,7 @@ export function WarehouseDetailPage() {
                                   shipmentId: row.id,
                                   pickupCourierId,
                                   toWarehouseId,
+                                  transferDate: new Date().toISOString().slice(0, 10),
                                 })
                               }}
                             >

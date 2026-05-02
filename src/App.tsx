@@ -51,6 +51,8 @@ import { PackagingMaterialsPage } from "@/pages/PackagingMaterialsPage"
 import { PackagingMaterialRequestsPage } from "@/pages/PackagingMaterialRequestsPage"
 import { PackagingInventoryPage } from "@/pages/PackagingInventoryPage"
 import { PickupCouriersPage } from "@/pages/PickupCouriersPage"
+import { PickupCourierManifestsListPage } from "@/pages/PickupCourierManifestsListPage"
+import { PickupCourierManifestDetailPage } from "@/pages/PickupCourierManifestDetailPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -583,6 +585,32 @@ export default function App() {
                 ]}
               >
                 <DeliveryManifestListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests/pickup"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.manage_transfer"]}
+              >
+                <PickupCourierManifestsListPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/warehouses/:warehouseId/manifests/pickup/:movementManifestId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.manage_transfer"]}
+              >
+                <PickupCourierManifestDetailPage />
               </ProtectedRole>
             </Protected>
           }
