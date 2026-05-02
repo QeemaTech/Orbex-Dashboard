@@ -86,6 +86,8 @@
     "subtitle": "عرض شامل للبيانات عبر كل المخازن للمستخدمين المخولين.",
     "tableTitle": "البيانات",
     "allWarehouses": "كل المخازن",
+    "pickupDescription": "استعراض بيانات حركة مناديب الاستلام (نقل/إرجاع) عبر كل المخازن.",
+    "pickupPermissionRequired": "صلاحية مفقودة: warehouses.manage_transfer",
     "courierIdPlaceholder": "تصفية بمعرف المندوب",
     "zoneIdPlaceholder": "تصفية بمعرف منطقة التوصيل",
     "pagination": "الإجمالي {{total}} · صفحة {{page}}",
@@ -1014,6 +1016,10 @@
       "tabManifests": "البيانات"
     },
     "manifests": {
+      "tabs": {
+        "deliveryCouriers": "مناديب التوصيل",
+        "pickupCouriers": "مناديب الاستلام"
+      },
       "title": "بيانات التوصيل",
       "description": "إدارة بيانات التسليم حسب المنطقة والمندوب ثم القفل والإرسال.",
       "create": {
@@ -1063,6 +1069,52 @@
       "dispatch": "إرسال",
       "optimizeRoute": "تحسين المسار",
       "optimizeRouteComingSoon": "ميزة تحسين المسار ستتوفر قريباً."
+    },
+    "pickupManifests": {
+      "listTitle": "بيانات مناديب الاستلام",
+      "listDescription": "استعراض بيانات حركة مناديب الاستلام (نقل/إرجاع).",
+      "transferDate": "تاريخ التحويل",
+      "columns": {
+        "transferDate": "تاريخ التحويل",
+        "type": "النوع",
+        "status": "الحالة",
+        "fromWarehouse": "من",
+        "toWarehouse": "إلى",
+        "pickupCourier": "مندوب الاستلام",
+        "lines": "السطور",
+        "actions": "الإجراءات"
+      },
+      "empty": "لا توجد بيانات لمناديب الاستلام.",
+      "detailTitle": "بيان مندوب الاستلام",
+      "detailTitleWithId": "بيان مندوب الاستلام {{id}}",
+      "summaryTitle": "ملخص",
+      "summaryDescription": "بيان حركة لمناديب الاستلام (نقل/إرجاع).",
+      "fields": {
+        "type": "النوع",
+        "status": "الحالة",
+        "transferDate": "تاريخ التحويل",
+        "createdAt": "تاريخ الإنشاء",
+        "fromWarehouse": "من مخزن",
+        "toWarehouse": "إلى مخزن",
+        "pickupCourier": "مندوب الاستلام",
+        "lockedAt": "وقت القفل",
+        "dispatchedAt": "وقت الإرسال",
+        "closedAt": "وقت الإغلاق"
+      },
+      "linesTitle": "السطور",
+      "linesDescription": "الشحنات الموجودة داخل بيان حركة مندوب الاستلام.",
+      "linesEmpty": "لا توجد سطور.",
+      "dispatchConfirm": {
+        "body": "هل تريد إرسال هذا البيان وجعل المهام في حالة قيد التنفيذ؟"
+      },
+      "lineColumns": {
+        "tracking": "رقم التتبع",
+        "shipmentStatus": "حالة الشحنة",
+        "route": "المسار",
+        "taskType": "نوع المهمة",
+        "taskStatus": "حالة المهمة",
+        "actions": "الإجراءات"
+      }
     },
     "table": {
       "batchId": "معرف الدفعة",
@@ -1457,9 +1509,12 @@
     }
   },
   "common": {
+    "all": "الكل",
     "edit": "تعديل",
     "delete": "حذف",
     "loading": "جارٍ التحميل...",
+    "saved": "تم الحفظ.",
+    "back": "رجوع",
     "close": "إغلاق",
     "system": "نظامي",
     "cancel": "إلغاء",
@@ -1469,6 +1524,9 @@
     "saving": "جارٍ الحفظ...",
     "processing": "جارٍ المعالجة...",
     "searching": "جارٍ البحث...",
+    "clearFilters": "مسح الفلاتر",
+    "view": "عرض",
+    "open": "فتح",
     "select": "اختر…"
   },
   "accounts": {

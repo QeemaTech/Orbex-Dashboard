@@ -13,6 +13,7 @@ import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWith
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { showToast } from "@/lib/toast"
 import {
   openWhatsAppForOrder,
@@ -46,7 +47,8 @@ export interface IShipmentTransferTaskApi {
     shipmentId: string
     pickupCourierId: string
     toWarehouseId: string
-  }): Promise<unknown>
+    transferDate: string
+  }): Promise<{ taskId: string; manifestId?: string | null }>
   listWarehouses(token: string): Promise<{
     warehouses: Array<{ id: string; name: string; isActive: boolean }>
   }>
@@ -56,7 +58,7 @@ export interface IShipmentTransferTaskApi {
 }
 
 const shipmentTransferTaskApi: IShipmentTransferTaskApi = {
-  createTransferTask: ({ token, shipmentId, pickupCourierId, toWarehouseId }) =>
+  createTransferTask: ({ token, shipmentId, pickupCourierId, toWarehouseId, transferDate }) =>
     createShipmentPlannedTask({
       token,
       shipmentId,
@@ -64,6 +66,7 @@ const shipmentTransferTaskApi: IShipmentTransferTaskApi = {
         type: "TRANSFER",
         pickupCourierId,
         toWarehouseId,
+        transferDate,
       },
     }),
   listWarehouses: (token) => listWarehouseSites(token, { forTransferTask: true }),
@@ -133,6 +136,7 @@ export function ShipmentDetailView({
   const [zonePreviewOpen, setZonePreviewOpen] = useState(false)
   const [targetWarehouseId, setTargetWarehouseId] = useState("")
   const [pickupCourierId, setPickupCourierId] = useState("")
+  const [transferDate, setTransferDate] = useState(() => new Date().toISOString().slice(0, 10))
   const canManageTransfer = Boolean(user?.permissions?.includes("warehouses.manage_transfer"))
   const canCreateTransferTask = Boolean(accessToken && canManageTransfer && shipment.currentWarehouseId)
 
@@ -158,14 +162,24 @@ export function ShipmentDetailView({
         shipmentId: shipment.id,
         pickupCourierId,
         toWarehouseId: targetWarehouseId,
+        transferDate,
       }),
-    onSuccess: () => {
+    onSuccess: (out) => {
+      const manifestId = out?.manifestId ?? null
       showToast(
-        t("shipments.tasks.transferCreated", { defaultValue: "Transfer task created successfully." }),
+        manifestId
+          ? t("shipments.tasks.transferCreatedWithManifest", {
+              defaultValue: "Transfer manifest dispatched. Manifest ID: {{id}}",
+              id: manifestId,
+            })
+          : t("shipments.tasks.transferCreated", {
+              defaultValue: "Transfer task created successfully.",
+            }),
         "success",
       )
       setTargetWarehouseId("")
       setPickupCourierId("")
+      setTransferDate(new Date().toISOString().slice(0, 10))
       void queryClient.invalidateQueries({ queryKey: ["shipment", "detail", shipment.id, accessToken] })
       void queryClient.invalidateQueries({ queryKey: ["shipment", "detail"] })
     },
@@ -550,7 +564,7 @@ export function ShipmentDetailView({
                   defaultValue: "Select destination warehouse and pickup courier, then create a TRANSFER task.",
                 })}
               </p>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-3">
                 <label className="space-y-1">
                   <span className="text-sm font-medium">
                     {t("shipments.tasks.destinationWarehouse", { defaultValue: "Destination warehouse" })}
@@ -593,6 +607,18 @@ export function ShipmentDetailView({
                     ))}
                   </select>
                 </label>
+                <label className="space-y-1">
+                  <span className="text-sm font-medium">
+                    {t("warehouse.pickupManifests.transferDate", {
+                      defaultValue: "Transfer date",
+                    })}
+                  </span>
+                  <Input
+                    type="date"
+                    value={transferDate}
+                    onChange={(e) => setTransferDate(e.target.value)}
+                  />
+                </label>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -601,6 +627,7 @@ export function ShipmentDetailView({
                   disabled={
                     !targetWarehouseId ||
                     !pickupCourierId ||
+                    !transferDate ||
                     createTransferMutation.isPending
                   }
                   onClick={() => createTransferMutation.mutate()}

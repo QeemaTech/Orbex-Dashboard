@@ -376,6 +376,7 @@ export async function bulkReturnRejectedToMerchant(params: {
   token: string
   merchantOrderId: string
   pickupCourierId: string
+  transferDate: string
 }): Promise<{ created: string[]; skipped: string[]; createdTaskIds: string[]; manifestIds: string[] }> {
   return apiFetch<{ created: string[]; skipped: string[]; createdTaskIds: string[]; manifestIds: string[] }>(
     `/api/merchant-orders/${encodeURIComponent(
@@ -384,7 +385,10 @@ export async function bulkReturnRejectedToMerchant(params: {
     {
       token: params.token,
       method: "POST",
-      body: JSON.stringify({ pickupCourierId: params.pickupCourierId }),
+      body: JSON.stringify({
+        pickupCourierId: params.pickupCourierId,
+        transferDate: params.transferDate,
+      }),
     },
   )
 }
