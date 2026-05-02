@@ -117,7 +117,7 @@
     "shipmentsDescription": "Shipment lines included in this courier manifest.",
     "fields": {
       "manifestDate": "Manifest date",
-        "status": "Status",
+      "status": "Status",
       "warehouse": "Warehouse",
       "governorate": "Governorate",
       "courier": "Delivery courier",
@@ -365,7 +365,8 @@
       "sellingPrice": "Selling price",
       "minimumRequestQuantity": "Min request qty",
       "active": "Active",
-      "actions": "Actions"
+      "actions": "Actions",
+      "stock": "Stock (avail/res)"
     },
     "form": {
       "englishName": "English name",
@@ -376,6 +377,16 @@
       "minimumRequestQuantity": "Minimum request quantity",
       "defaultWarehouseId": "Default warehouse (optional)",
       "isActive": "Active"
+    },
+    "stock": {
+      "title": "Stock",
+      "warehouse": "Warehouse",
+      "selectWarehouse": "Select warehouse…",
+      "available": "Available",
+      "reserved": "Reserved",
+      "warehouseRequired": "Select a warehouse to set stock.",
+      "availableRequired": "Enter available quantity.",
+      "invalidQty": "Stock quantities must be 0 or more."
     }
   },
   "packagingRequests": {
@@ -771,7 +782,7 @@
     },
     "whatsappProductFallback": "Your order",
     "whatsappAddressFallback": "Not specified",
-    "whatsappBody": "Hi {{customerName}},\n\nWe are Orbex shipping. We will deliver your shipment.\n\n• Product: {{productDescription}}\n• Address: {{address}}\n• Total (incl. shipping): {{totalFormatted}}\n• Tracking: {{tracking}}\n\nTo confirm, reply with 1 and share your location on WhatsApp (send location from attachments). A courier will contact you to arrange time and address.\n\nIf you need to change time or address, the courier will call you.\n\nThank you for choosing Orbex.",
+    "whatsappBody": "Hi {{customerName}},\n\nWe are Orbex shipping. We will deliver your shipment.\n\n• Product: {{productDescription}}• Address: {{address}}• Total (incl. shipping): {{totalFormatted}}• Tracking: {{tracking}}\nTo confirm, reply with 1 and share your location on WhatsApp (send location from attachments). A courier will contact you to arrange time and address.\n\nIf you need to change time or address, the courier will call you.\n\nThank you for choosing Orbex.",
     "shipmentStatus": {
       "PENDING_ASSIGNMENT": "Pending assignment",
       "CONFIRMED_BY_CS": "Confirmed (CS)",
