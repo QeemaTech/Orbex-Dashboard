@@ -27,8 +27,8 @@ const t = makeT({
   "backend.shipmentCoreStatus.DELIVERED": "Delivered",
   "backend.shipmentSubStatus.NONE": "—",
   "backend.shipmentSubStatus.REJECTED": "Rejected",
-  "shipments.detail.timelineArrow": "→",
-  "shipments.detail.timelineStart": "START",
+  "merchantOrders.detail.timelineArrow": "→",
+  "merchantOrders.detail.timelineStart": "START",
 })
 
 assertEqual(shipmentSubStatusLabel(t, ""), "—")

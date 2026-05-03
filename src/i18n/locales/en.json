@@ -133,6 +133,14 @@
       "paymentMethod": "Payment method",
       "status": "Status",
       "csConfirmedAt": "CS confirmed at"
+    },
+    "executionColumns": {
+      "taskType": "Task type",
+      "from": "From",
+      "to": "To"
+    },
+    "executionTaskType": {
+      "DELIVERY": "Last-mile delivery"
     }
   },
   "deliveryProof": {
@@ -339,6 +347,10 @@
     "fileUnavailable": "File unavailable",
     "updatePickupDate": "Update pickup date",
     "updateExcelSheet": "Update Excel sheet",
+    "viewExcelSheet": "View Excel",
+    "colImportExcel": "Excel import",
+    "pendingPreviewTitle": "Excel preview",
+    "downloadOriginal": "Download original file",
     "myOrders": {
       "pageTitle": "My orders",
       "description": "My order batches — one row per batch. Use the warehouse filter to see hub-specific activity.",
@@ -1112,7 +1124,7 @@
     },
     "pickupManifests": {
       "listTitle": "Pickup manifests",
-      "listDescription": "Browse pickup-courier movement manifests (transfer/return).",
+      "listDescription": "Browse pickup-courier movement manifests (merchant pickup, hub transfer, return to merchant).",
       "transferDate": "Transfer date",
       "columns": {
         "transferDate": "Transfer date",
@@ -1121,14 +1133,14 @@
         "fromWarehouse": "From",
         "toWarehouse": "To",
         "pickupCourier": "Pickup courier",
-        "lines": "Lines",
+        "tasks": "Tasks",
         "actions": "Actions"
       },
       "empty": "No pickup manifests found.",
       "detailTitle": "Pickup manifest",
       "detailTitleWithId": "Pickup manifest {{id}}",
       "summaryTitle": "Summary",
-      "summaryDescription": "Movement manifest for pickup couriers (transfer/return).",
+      "summaryDescription": "Movement manifest for pickup couriers (merchant pickup, hub transfer, return to merchant).",
       "fields": {
         "type": "Type",
         "status": "Status",
@@ -1139,11 +1151,12 @@
         "pickupCourier": "Pickup courier",
         "lockedAt": "Locked",
         "dispatchedAt": "Dispatched",
-        "closedAt": "Closed"
+        "closedAt": "Closed",
+        "taskCount": "Tasks"
       },
-      "linesTitle": "Lines",
-      "linesDescription": "Shipments included in this pickup-courier movement manifest.",
-      "linesEmpty": "No lines found.",
+      "linesTitle": "Shipment tasks (hub)",
+      "linesDescription": "Per-shipment hub tasks on this movement manifest (TRANSFER / RETURN_TO_MERCHANT).",
+      "linesEmpty": "No shipment tasks on this manifest.",
       "dispatchConfirm": {
         "body": "Dispatch this pickup manifest and mark tasks IN_PROGRESS?"
       },
@@ -1154,6 +1167,56 @@
         "taskType": "Task type",
         "taskStatus": "Task status",
         "actions": "Actions"
+      },
+      "pickupStopsTitle": "Merchant pickup stops",
+      "tasksTitle": "Courier manifest tasks",
+      "tasksDescription": "Merchant batch pickups at merchant locations and per-shipment hub movements on this courier-day manifest.",
+      "routePreviewTitle": "Suggested route",
+      "routePreviewDescription": "Warehouse round-trip with merchant pickup stops and grouped return-to-merchant stops ordered for distance (straight-line path).",
+      "viewMerchantBatch": "Merchant batch details",
+      "pickupColumns": {
+        "merchant": "Merchant",
+        "address": "Pickup address",
+        "status": "Task status",
+        "order": "Merchant order",
+        "stopType": "Pickup type",
+        "shipments": "Shipments"
+      },
+      "movementManifestType": {
+        "PICKUP": "Merchant pickup",
+        "TRANSFER": "Hub transfer",
+        "RETURN": "Return to merchant"
+      },
+      "executionTaskType": {
+        "PICKUP": "Merchant pickup",
+        "TRANSFER": "Hub transfer",
+        "RETURN_TO_MERCHANT": "Return to merchant",
+        "DELIVERY": "Last-mile delivery"
+      },
+      "executionColumns": {
+        "taskType": "Task type",
+        "from": "From",
+        "to": "To",
+        "status": "Status",
+        "reference": "Reference",
+        "actions": "Actions"
+      },
+      "merchantBatchPickup": "Merchant batch pickup",
+      "batchHint": "{{count}} customer shipments in this batch",
+      "shipmentsCount": "{{count}} shipments",
+      "routeStopMarkerTitle": "{{merchant}} — {{count}} shipments",
+      "routeStopUnknownMerchant": "Merchant",
+      "returnGroup": {
+        "pageTitle": "Return to merchant",
+        "backToManifest": "Back to manifest",
+        "notFound": "This return stop was not found on the manifest.",
+        "summaryLine": "{{count}} shipment(s) returning to this merchant on this manifest.",
+        "shipmentsTitle": "Returned shipments",
+        "shipmentsDescription": "Open a line for scan history and shipment details.",
+        "colTracking": "Tracking",
+        "colShipmentStatus": "Shipment status",
+        "colTaskStatus": "Task status",
+        "previewLink": "Preview returned shipments"
       }
     },
     "table": {
@@ -1166,6 +1229,7 @@
       "orderCount": "Customer shipments",
       "totalValue": "Total value",
       "batchTransfer": "Transfer status",
+      "batchResolution": "Resolution",
       "pickupCourier": "Pickup courier",
       "batchPipelineStatus": "Batch pipeline status",
       "merchantOrderStatus": "Order status",

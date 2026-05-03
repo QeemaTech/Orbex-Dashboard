@@ -4,8 +4,10 @@ import { Check, Loader2 } from "lucide-react"
 
 import {
   createDeliveryManifest,
+  deliveryManifestDetailToListRow,
   getCourierSuggestions,
   type CourierSuggestion,
+  type DeliveryManifestListResponse,
   type EligibleShipmentRow,
 } from "@/api/delivery-manifests-api"
 import { Button } from "@/components/ui/button"
@@ -75,7 +77,7 @@ export function CreateManifestModal({
       if (!courierId) {
         throw new Error("Select a courier")
       }
-      await createDeliveryManifest({
+      return createDeliveryManifest({
         token,
         body: {
           warehouseId,
@@ -86,10 +88,37 @@ export function CreateManifestModal({
         },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (created) => {
       showToast("Manifest created as draft", "success")
+      const row = deliveryManifestDetailToListRow(created)
+      const prependIfDefaultView = (old: DeliveryManifestListResponse | undefined) => {
+        if (!old) return old
+        if (old.items.some((i) => i.id === row.id)) return old
+        return { ...old, items: [row, ...old.items], total: old.total + 1 }
+      }
+      queryClient.setQueriesData<DeliveryManifestListResponse>(
+        {
+          predicate: (q) => {
+            const k = q.queryKey
+            const kind = k[0]
+            if (kind !== "delivery-manifests-list" && kind !== "delivery-manifests-global") return false
+            if (k[1] !== token) return false
+            const page = k[6] as number
+            if (page !== 1) return false
+            if (String(k[3] ?? "") || String(k[4] ?? "") || String(k[5] ?? "")) return false
+            if (kind === "delivery-manifests-list" && k[2] !== warehouseId) return false
+            if (kind === "delivery-manifests-global") {
+              const wh = String(k[2] ?? "")
+              if (wh && wh !== warehouseId) return false
+            }
+            return true
+          },
+        },
+        prependIfDefaultView,
+      )
       await queryClient.invalidateQueries({ queryKey: ["delivery-manifest-eligible"] })
-      await queryClient.invalidateQueries({ queryKey: ["delivery-manifest-list"] })
+      await queryClient.invalidateQueries({ queryKey: ["delivery-manifests-list"] })
+      await queryClient.invalidateQueries({ queryKey: ["delivery-manifests-global"] })
       onCompleted()
       onOpenChange(false)
       setCourierId("")

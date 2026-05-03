@@ -5,11 +5,14 @@ import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 
 import {
+  downloadPendingMerchantOrderImportVersionFile,
   getDashboardKpis,
-  listShipments,
-  merchantOrderBatchId,
+  getPendingMerchantOrderImportPreview,
   importOrdersFromExcel,
   downloadImportTemplate,
+  listPendingMerchantOrderImportVersions,
+  listShipments,
+  merchantOrderBatchId,
 } from "@/api/merchant-orders-api"
 import type { CsShipmentRow } from "@/api/merchant-orders-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
@@ -184,6 +187,33 @@ export function MerchantOrdersListPage() {
   const merchantOrdersKpiTitleKey = merchantContext
     ? "merchantOrdersList.myOrders.kpiTotalMerchantOrders"
     : "merchantOrdersList.kpiTotalMerchantOrders"
+
+  const canViewImportExcel = Boolean(user?.permissions?.includes("merchant_orders.read"))
+  const [excelPreviewImportId, setExcelPreviewImportId] = useState<string | null>(null)
+  const [excelVersionsImportId, setExcelVersionsImportId] = useState<string | null>(null)
+
+  const excelPreviewQuery = useQuery({
+    queryKey: ["merchant-order-list-import-preview", token, excelPreviewImportId],
+    queryFn: () =>
+      getPendingMerchantOrderImportPreview({
+        token,
+        pendingImportId: excelPreviewImportId!,
+      }),
+    enabled: !!token && !!excelPreviewImportId,
+  })
+
+  const excelVersionsQuery = useQuery({
+    queryKey: ["merchant-order-list-import-versions", token, excelVersionsImportId],
+    queryFn: () =>
+      listPendingMerchantOrderImportVersions({
+        token,
+        pendingImportId: excelVersionsImportId!,
+      }),
+    enabled: !!token && !!excelVersionsImportId,
+  })
+
+  const changeTypeLabel = (value: "INITIAL_UPLOAD" | "PICKUP_DATE_UPDATED" | "FILE_REPLACED") =>
+    t(`merchantOrdersList.changeTypeValues.${value}`, { defaultValue: value })
 
   const detailPrefix = location.pathname.startsWith("/cs/")
     ? "/cs/merchant-orders"
@@ -463,6 +493,11 @@ export function MerchantOrdersListPage() {
                       </TableHead>
                       <TableHead>{t("merchantOrdersList.colBatchPipelineStatus")}</TableHead>
                       <TableHead>{t("merchantOrdersList.colResolution")}</TableHead>
+                      {canViewImportExcel ? (
+                        <TableHead className="text-end">
+                          {t("merchantOrdersList.colImportExcel", { defaultValue: "Excel import" })}
+                        </TableHead>
+                      ) : null}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -540,6 +575,45 @@ export function MerchantOrdersListPage() {
                             ) : null}
                           </div>
                         </TableCell>
+                        {canViewImportExcel ? (
+                          <TableCell
+                            className="text-end"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {row.importJobId ? (
+                              <div className="flex flex-wrap justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setExcelPreviewImportId(row.importJobId!)
+                                  }}
+                                >
+                                  {t("merchantOrdersList.viewExcelSheet", {
+                                    defaultValue: "View Excel",
+                                  })}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setExcelVersionsImportId(row.importJobId!)
+                                  }}
+                                >
+                                  {t("merchantOrdersList.versionHistory", {
+                                    defaultValue: "Version history",
+                                  })}
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -701,6 +775,138 @@ export function MerchantOrdersListPage() {
                 )}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={excelPreviewImportId !== null}
+          onOpenChange={(open) => !open && setExcelPreviewImportId(null)}
+        >
+          <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {t("merchantOrdersList.pendingPreviewTitle", { defaultValue: "Excel preview" })}
+              </DialogTitle>
+              <DialogDescription>
+                {excelPreviewQuery.data?.fileName ?? ""}
+              </DialogDescription>
+            </DialogHeader>
+            {excelPreviewQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">{t(merchantOrdersLoadingKey)}</p>
+            ) : null}
+            {excelPreviewQuery.error ? (
+              <p className="text-destructive text-sm">{(excelPreviewQuery.error as Error).message}</p>
+            ) : null}
+            {!excelPreviewQuery.isLoading && !excelPreviewQuery.error ? (
+              <div className="space-y-3">
+                <p className="text-muted-foreground text-sm">
+                  {(excelPreviewQuery.data?.rowCount ?? 0).toLocaleString()}{" "}
+                  {t("merchantOrdersList.colOrderCount", { defaultValue: "orders" })}
+                </p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        {t("merchantOrdersList.colCustomer", { defaultValue: "Customer" })}
+                      </TableHead>
+                      <TableHead>{t("merchantOrdersList.colPhone", { defaultValue: "Phone" })}</TableHead>
+                      <TableHead>
+                        {t("merchantOrdersList.colAddress", { defaultValue: "Address" })}
+                      </TableHead>
+                      <TableHead>
+                        {t("merchantOrdersList.colShipmentValue", { defaultValue: "Shipment value" })}
+                      </TableHead>
+                      <TableHead>
+                        {t("merchantOrdersList.colShippingFee", { defaultValue: "Shipping fee" })}
+                      </TableHead>
+                      <TableHead>
+                        {t("merchantOrdersList.colPaymentMethod", { defaultValue: "Payment method" })}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(excelPreviewQuery.data?.rows ?? []).map((item, idx) => (
+                      <TableRow key={`${idx}-${item.phonePrimary}`}>
+                        <TableCell className="truncate">{item.customerName}</TableCell>
+                        <TableCell className="truncate">{item.phonePrimary}</TableCell>
+                        <TableCell className="truncate">{item.addressText}</TableCell>
+                        <TableCell>{item.shipmentValue}</TableCell>
+                        <TableCell>{item.shippingFee}</TableCell>
+                        <TableCell>{item.paymentMethod}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={excelVersionsImportId !== null}
+          onOpenChange={(open) => !open && setExcelVersionsImportId(null)}
+        >
+          <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {t("merchantOrdersList.versionHistory", { defaultValue: "Version history" })}
+              </DialogTitle>
+            </DialogHeader>
+            {excelVersionsQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">{t(merchantOrdersLoadingKey)}</p>
+            ) : null}
+            {excelVersionsQuery.error ? (
+              <p className="text-destructive text-sm">{(excelVersionsQuery.error as Error).message}</p>
+            ) : null}
+            {!excelVersionsQuery.isLoading && !excelVersionsQuery.error ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("merchantOrdersList.version", { defaultValue: "Version" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.changeType", { defaultValue: "Change type" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.pickupDate", { defaultValue: "Pickup date" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.fileName", { defaultValue: "File" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.changedBy", { defaultValue: "Changed by" })}</TableHead>
+                    <TableHead>{t("merchantOrdersList.actions", { defaultValue: "Actions" })}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(excelVersionsQuery.data?.items ?? []).map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.versionNumber}</TableCell>
+                      <TableCell>{changeTypeLabel(item.changeType)}</TableCell>
+                      <TableCell>{new Date(item.pickupDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{item.fileName}</TableCell>
+                      <TableCell>{item.changedByName || "—"}</TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={!item.filePath}
+                          onClick={() =>
+                            excelVersionsImportId
+                              ? downloadPendingMerchantOrderImportVersionFile({
+                                  token,
+                                  pendingImportId: excelVersionsImportId,
+                                  versionId: item.id,
+                                  fileName: item.fileName,
+                                })
+                              : undefined
+                          }
+                        >
+                          {item.filePath
+                            ? t("merchantOrdersList.downloadOriginal", {
+                                defaultValue: "Download original file",
+                              })
+                            : t("merchantOrdersList.fileUnavailable", { defaultValue: "File unavailable" })}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : null}
           </DialogContent>
         </Dialog>
       </div>

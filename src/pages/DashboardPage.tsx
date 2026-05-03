@@ -47,6 +47,7 @@ import { listUsers } from "@/api/users-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { getDefaultDashboardRoute, isMerchantUser, useAuth } from "@/lib/auth-context"
+import { batchResolutionLabel } from "@/lib/warehouse-batch-resolution"
 import { isWarehouseAdmin } from "@/lib/warehouse-access"
 import { isMainBranch } from "@/lib/warehouse-utils"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
@@ -694,6 +695,7 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                     <TableHead>{t("dashboard.table.merchant")}</TableHead>
                     <TableHead>{t("dashboard.table.warehouse")}</TableHead>
                     <TableHead>{t("dashboard.table.merchantOrderBatchStatus")}</TableHead>
+                    <TableHead>{t("warehouse.table.batchResolution")}</TableHead>
                     <TableHead className="text-end">{t("dashboard.table.orderCount")}</TableHead>
                     <TableHead className="text-end">
                       {t("dashboard.table.batchValue")}
@@ -722,6 +724,9 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                           kind="merchantOrderBatch"
                           value={row.transferStatus ?? ""}
                         />
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {batchResolutionLabel(row, t)}
                       </TableCell>
                       <TableCell className="text-end tabular-nums">
                         {row.orderCount ?? "—"}

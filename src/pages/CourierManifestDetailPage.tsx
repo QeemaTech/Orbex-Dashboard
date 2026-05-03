@@ -144,6 +144,11 @@ export function CourierManifestDetailPage() {
     manifest.warehouseId !== warehouseId
 
   const totalRows = useMemo(() => manifest?.shipments ?? [], [manifest])
+  const deliveryFromFallback = useMemo(() => {
+    if (!manifest) return "—"
+    const w = manifest.warehouse
+    return [w.name, w.governorate?.trim()].filter(Boolean).join(" — ") || "—"
+  }, [manifest])
   const scannedOutCount = useMemo(
     () => (manifest?.shipments ?? []).filter((s) => s.status === "OUT_FOR_DELIVERY").length,
     [manifest],
@@ -304,9 +309,12 @@ export function CourierManifestDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto rounded-lg border">
-                  <Table className="min-w-[56rem]">
+                  <Table className="min-w-[72rem]">
                     <TableHeader>
                       <TableRow>
+                        <TableHead>{t("manifestDetail.executionColumns.taskType")}</TableHead>
+                        <TableHead>{t("manifestDetail.executionColumns.from")}</TableHead>
+                        <TableHead>{t("manifestDetail.executionColumns.to")}</TableHead>
                         <TableHead>{t("warehouse.table.trackingNumber")}</TableHead>
                         <TableHead>{t("manifestDetail.shipmentColumns.value")}</TableHead>
                         <TableHead>{t("manifestDetail.shipmentColumns.shippingFee")}</TableHead>
@@ -331,6 +339,17 @@ export function CourierManifestDetailPage() {
                             )
                           }}
                         >
+                          <TableCell className="align-top">
+                            <span className="inline-flex rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                              {t("manifestDetail.executionTaskType.DELIVERY")}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-[12rem] align-top text-sm">
+                            {row.fromLabel ?? deliveryFromFallback}
+                          </TableCell>
+                          <TableCell className="max-w-[16rem] align-top text-sm">
+                            {row.toLabel ?? (row.customer?.customerName?.trim() || notApplicable)}
+                          </TableCell>
                           <TableCell>
                             <Link
                               to={`/warehouses/${encodeURIComponent(warehouseId ?? manifest.warehouse.id)}/shipments/${encodeURIComponent(

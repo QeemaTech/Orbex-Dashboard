@@ -1,4 +1,5 @@
 import { apiFetch, apiFetchText, apiUrl } from "@/api/client"
+import type { ManifestRoute } from "@/api/delivery-manifests-api"
 import type {
   CsShipmentRow,
   ListShipmentsParams,
@@ -316,42 +317,103 @@ export async function confirmShipmentCustomerLocation(p: {
   )
 }
 
-export type WarehouseMovementManifestType = "TRANSFER" | "RETURN"
 export type WarehouseMovementManifestStatus = "DRAFT" | "LOCKED" | "DISPATCHED" | "CLOSED"
+
+export type MovementManifestTaskSummary = {
+  merchantPickupTasks: number
+  transferTasks: number
+  returnToMerchantTasks: number
+}
 
 export async function listWarehouseMovementManifests(p: {
   token: string
   warehouseId?: string
-  type?: WarehouseMovementManifestType
   status?: WarehouseMovementManifestStatus
   date?: string
 }): Promise<{
   manifests: Array<{
     id: string
-    type: WarehouseMovementManifestType
     status: WarehouseMovementManifestStatus
     transferDate: string | null
     fromWarehouseId: string
     toWarehouseId: string | null
     assignedPickupCourierId: string
     createdAt: string
-    lineCount: number
+    taskCount: number
+    taskSummary: MovementManifestTaskSummary
   }>
 }> {
   const sp = new URLSearchParams()
   if (p.warehouseId) sp.set("warehouseId", p.warehouseId)
-  if (p.type) sp.set("type", p.type)
   if (p.status) sp.set("status", p.status)
   if (p.date) sp.set("date", p.date)
   return apiFetch(`/api/shipments/movement-manifests?${sp.toString()}`, { token: p.token })
 }
+
+export type MovementManifestUnifiedTask =
+  | {
+      kind: "PICKUP_TASK"
+      id: string
+      taskType: "PICKUP"
+      status: string
+      fromLabel: string
+      toLabel: string
+      merchantOrderId: string
+      merchantId: string
+      pickupAddress: string
+      latitude: number | null
+      longitude: number | null
+      transferDate: string
+      merchantOrder: {
+        id: string
+        transferStatus: string
+        shipmentCount: number
+      } | null
+      from: { merchant: { id: string; displayName: string } | null }
+      to: { warehouse: { id: string; name: string; governorate: string } | null }
+    }
+  | {
+      kind: "SHIPMENT_TASK"
+      lineId: string
+      shipmentId: string
+      shipmentTaskId: string
+      taskType: string
+      taskStatus: string
+      trackingNumber: string | null
+      shipmentStatus: string
+      fromLabel: string
+      toLabel: string
+      from: { warehouse: { id: string; name: string; governorate: string } | null }
+      to: {
+        warehouse: { id: string; name: string; governorate: string } | null
+        merchant: { id: string; displayName: string } | null
+      }
+    }
+  | {
+      kind: "RETURN_TO_MERCHANT_GROUP"
+      merchantId: string
+      merchant: {
+        id: string
+        displayName: string
+        pickupAddressText: string | null
+      }
+      fromLabel: string
+      toLabel: string
+      shipments: Array<{
+        lineId: string
+        shipmentId: string
+        shipmentTaskId: string
+        trackingNumber: string | null
+        shipmentStatus: string
+        taskStatus: string
+      }>
+    }
 
 export async function getWarehouseMovementManifestById(p: {
   token: string
   manifestId: string
 }): Promise<{
   id: string
-  type: WarehouseMovementManifestType
   status: WarehouseMovementManifestStatus
   transferDate: string | null
   fromWarehouseId: string
@@ -367,6 +429,8 @@ export async function getWarehouseMovementManifestById(p: {
   dispatchedById: string | null
   closedAt: string | null
   closedById: string | null
+  taskSummary: MovementManifestTaskSummary
+  tasks: MovementManifestUnifiedTask[]
   lines: Array<{
     id: string
     shipmentId: string
@@ -377,6 +441,26 @@ export async function getWarehouseMovementManifestById(p: {
     taskStatus: string
     fromWarehouseId: string | null
     toWarehouseId: string | null
+    fromWarehouse: { id: string; name: string; governorate: string } | null
+    toWarehouse: { id: string; name: string; governorate: string } | null
+    returnToMerchant: { id: string; displayName: string } | null
+  }>
+  pickupTasks: Array<{
+    id: string
+    merchantOrderId: string
+    merchantId: string
+    pickupAddress: string
+    latitude: number | null
+    longitude: number | null
+    transferDate: string
+    status: string
+    warehouse: { id: string; name: string; governorate: string } | null
+    merchant: { id: string; displayName: string } | null
+    merchantOrder: {
+      id: string
+      transferStatus: string
+      shipmentCount: number
+    } | null
   }>
 }> {
   return apiFetch(`/api/shipments/movement-manifests/${encodeURIComponent(p.manifestId)}`, {
@@ -384,10 +468,19 @@ export async function getWarehouseMovementManifestById(p: {
   })
 }
 
+export async function getWarehouseMovementManifestRoutePreview(p: {
+  token: string
+  manifestId: string
+}): Promise<ManifestRoute> {
+  return apiFetch(
+    `/api/shipments/movement-manifests/${encodeURIComponent(p.manifestId)}/route-preview`,
+    { token: p.token },
+  )
+}
+
 export async function createWarehouseMovementManifest(p: {
   token: string
   body: {
-    type: WarehouseMovementManifestType
     transferDate: string
     fromWarehouseId: string
     toWarehouseId?: string | null

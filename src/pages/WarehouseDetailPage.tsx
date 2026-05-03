@@ -39,6 +39,7 @@ import {
   type WarehouseScanMode,
 } from "@/components/warehouse/WarehouseScanner"
 import { listDeliveryZones } from "@/api/delivery-zones-api"
+import { batchResolutionLabel } from "@/lib/warehouse-batch-resolution"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { Layout } from "@/components/layout/Layout"
 import {
@@ -1344,6 +1345,7 @@ export function WarehouseDetailPage() {
                         <TableHead>{t("warehouse.table.orderCount")}</TableHead>
                         <TableHead>{t("warehouse.table.totalValue")}</TableHead>
                         <TableHead>{t("warehouse.table.batchTransfer")}</TableHead>
+                        <TableHead>{t("warehouse.table.batchResolution")}</TableHead>
                         <TableHead>{t("warehouse.table.pickupCourier")}</TableHead>
                         <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
                       </TableRow>
@@ -1382,6 +1384,9 @@ export function WarehouseDetailPage() {
                             assignedWarehouseName={row.assignedWarehouse?.name}
                             contextWarehouseId={warehouseId}
                           />
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {batchResolutionLabel(row, t)}
                         </TableCell>
                         <TableCell className="text-sm">
                           {row.pickupCourier?.fullName ?? getNotApplicable()}
