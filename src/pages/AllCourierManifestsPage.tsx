@@ -19,7 +19,7 @@ import { ManifestQuickActions } from "@/features/delivery-manifest/ManifestQuick
 import { dedupePickupManifestsByCourierDay } from "@/features/manifests/dedupe-pickup-manifest-list"
 import { ManifestsTabsHeader } from "@/features/manifests/ManifestsTabsHeader"
 import { useAuth } from "@/lib/auth-context"
-import { hasPlatformWarehouseScope } from "@/lib/warehouse-access"
+import { canManageDeliveryManifests, hasPlatformWarehouseScope } from "@/lib/warehouse-access"
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat("en-EG", {
@@ -57,13 +57,7 @@ export function AllCourierManifestsPage() {
     permissions.includes("courier_manifests.read_all") ||
     hasPlatformWarehouseScope(user)
 
-  const canManage = useMemo(() => {
-    return (
-      permissions.includes("delivery_manifests.manage") ||
-      permissions.includes("warehouses.manage_transfer") ||
-      hasPlatformWarehouseScope(user)
-    )
-  }, [permissions, user])
+  const canManage = canManageDeliveryManifests(user)
   const canReadPickupManifests = permissions.includes("warehouses.manage_transfer")
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -172,6 +166,34 @@ export function AllCourierManifestsPage() {
     refetchInterval: 15000,
   })
 
+  const firstWarehouseId = (warehouseOptions[0]?.id ?? "").trim()
+
+  const browseWorkspaceWarehouseId = useMemo(() => {
+    if (warehouseId.trim()) return warehouseId.trim()
+    if (user?.warehouseId?.trim()) return user.warehouseId.trim()
+    if (firstWarehouseId) return firstWarehouseId
+    return ""
+  }, [warehouseId, user?.warehouseId, firstWarehouseId])
+
+  const createManifestWarehouseId = useMemo(() => {
+    if (warehouseId.trim()) return warehouseId.trim()
+    if (user?.warehouseId?.trim()) return user.warehouseId.trim()
+    if (firstWarehouseId && canManage) return firstWarehouseId
+    return ""
+  }, [warehouseId, user?.warehouseId, firstWarehouseId, canManage])
+
+  const browseWorkspaceHref = browseWorkspaceWarehouseId
+    ? `/warehouses/${encodeURIComponent(browseWorkspaceWarehouseId)}/manifests/workspace`
+    : ""
+  const createManifestHref = createManifestWarehouseId
+    ? `/warehouses/${encodeURIComponent(createManifestWarehouseId)}/manifests/workspace`
+    : ""
+
+  const managePermissionHint = t("warehouse.manifests.managePermissionHint", {
+    defaultValue:
+      "Missing permission: delivery_manifests.manage, courier_manifests.manage, or warehouses.manage_transfer.",
+  })
+
   const pickupManifestRows = useMemo(() => {
     const deduped = dedupePickupManifestsByCourierDay(pickupManifestsQuery.data?.manifests ?? [])
     const fromName = (id: string) => warehouseNameById.get(id)?.trim() || id
@@ -213,11 +235,63 @@ export function AllCourierManifestsPage() {
             defaultValue: "Missing permission: warehouses.manage_transfer",
           })}
           rightSlot={
-            <Button type="button" variant="outline" asChild>
-              <Link to="/warehouses">
-                {t("warehouse.detail.backToWarehouses", { defaultValue: "Warehouses" })}
-              </Link>
-            </Button>
+            <>
+              <Button type="button" variant="outline" asChild>
+                <Link to="/warehouses">
+                  {t("warehouse.detail.backToWarehouses", { defaultValue: "Warehouses" })}
+                </Link>
+              </Button>
+              {tab === "delivery" ? (
+                <>
+                  {browseWorkspaceHref ? (
+                    <Button type="button" variant="outline" asChild>
+                      <Link to={browseWorkspaceHref}>
+                        {t("warehouse.manifests.workspace", { defaultValue: "Workspace" })}
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled
+                      title={t("manifestsGlobal.workspaceNeedsWarehouse", {
+                        defaultValue:
+                          "Load warehouse list or choose a warehouse in the filter to open the manifest workspace.",
+                      })}
+                    >
+                      {t("warehouse.manifests.workspace", { defaultValue: "Workspace" })}
+                    </Button>
+                  )}
+                  {createManifestHref ? (
+                    <Button
+                      type="button"
+                      asChild
+                      disabled={!canManage}
+                      title={!canManage ? managePermissionHint : undefined}
+                    >
+                      <Link to={createManifestHref}>
+                        {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      disabled
+                      title={
+                        canManage
+                          ? t("manifestsGlobal.workspaceNeedsWarehouse", {
+                              defaultValue:
+                                "Load warehouse list or choose a warehouse in the filter to open the manifest workspace.",
+                            })
+                          : managePermissionHint
+                      }
+                    >
+                      {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}
+                    </Button>
+                  )}
+                </>
+              ) : null}
+            </>
           }
         />
 

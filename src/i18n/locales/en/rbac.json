@@ -144,6 +144,7 @@
     "delivery_manifests.read_all": { "label": "View delivery manifests across all warehouses", "category": "Warehouses" },
     "delivery_manifests.manage": { "label": "Create and dispatch delivery manifests", "category": "Warehouses" },
     "courier_manifests.read_all": { "label": "View courier manifests across all warehouses", "category": "Warehouses" },
+    "courier_manifests.manage": { "label": "Create and dispatch delivery manifests (global manifests)", "category": "Warehouses" },
     "warehouses.staff.manage": { "label": "Assign warehouse staff to sites", "category": "Warehouses" },
     "accounting.settlement_close": { "label": "Close settlements", "category": "Accounting" },
     "collections.read": { "label": "View collections", "category": "Accounting" },

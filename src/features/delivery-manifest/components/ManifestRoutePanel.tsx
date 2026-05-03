@@ -26,6 +26,9 @@ function normalizeStops(stops: ManifestRouteStop[] | undefined): ManifestRouteSt
     .map((s) => ({
       order: Number(s.order),
       shipmentId: String(s.shipmentId),
+      ...(typeof s.trackingNumber === "string" && s.trackingNumber.trim()
+        ? { trackingNumber: s.trackingNumber.trim() }
+        : {}),
       lat: Number(s.lat),
       lng: Number(s.lng),
       address: String(s.address ?? ""),
@@ -52,7 +55,7 @@ function pickupStopMarkerTitle(
   }
   if (s.label?.trim()) return s.label.trim()
   if (s.address?.trim()) return s.address.trim()
-  return s.shipmentId
+  return s.trackingNumber?.trim() || s.shipmentId
 }
 
 export const ManifestRoutePanel = memo(function ManifestRoutePanel({

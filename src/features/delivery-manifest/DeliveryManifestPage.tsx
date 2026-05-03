@@ -37,7 +37,9 @@ export function DeliveryManifestPage() {
   const token = accessToken ?? ""
   const permissions = user?.permissions ?? []
   const canReadAll =
-    permissions.includes("delivery_manifests.read_all") || hasPlatformWarehouseScope(user)
+    permissions.includes("delivery_manifests.read_all") ||
+    permissions.includes("courier_manifests.read_all") ||
+    hasPlatformWarehouseScope(user)
   const canReadLocal = permissions.includes("delivery_manifests.read")
 
   const [search, setSearch] = useState("")

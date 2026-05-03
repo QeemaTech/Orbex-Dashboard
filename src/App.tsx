@@ -349,7 +349,10 @@ export default function App() {
             <Protected>
               <ProtectedRole
                 allowed={[]}
-                requiredPermissions={["courier_manifests.read_all"]}
+                requiredAnyPermissions={[
+                  "courier_manifests.read_all",
+                  "delivery_manifests.read_all",
+                ]}
               >
                 <AllCourierManifestsPage />
               </ProtectedRole>

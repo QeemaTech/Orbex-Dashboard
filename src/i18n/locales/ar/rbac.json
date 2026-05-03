@@ -144,6 +144,7 @@
     "delivery_manifests.read_all": { "label": "عرض خطط التوزيع عبر كل المخازن", "category": "المخازن" },
     "delivery_manifests.manage": { "label": "إنشاء وإرسال خطط التوزيع", "category": "المخازن" },
     "courier_manifests.read_all": { "label": "عرض بيانات المندوبين عبر كل المخازن", "category": "المخازن" },
+    "courier_manifests.manage": { "label": "إنشاء وإرسال خطط التوزيع (عرض البوليصات الشامل)", "category": "المخازن" },
     "warehouses.staff.manage": { "label": "تعيين موظفي المخزن على المواقع", "category": "المخازن" },
     "accounting.settlement_close": { "label": "إغلاق التسويات", "category": "المحاسبة" },
     "collections.read": { "label": "عرض التحصيل", "category": "المحاسبة" },

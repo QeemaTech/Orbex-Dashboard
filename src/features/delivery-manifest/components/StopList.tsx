@@ -16,7 +16,7 @@ function stopHeading(s: ManifestRouteStop, t: (k: string, o?: Record<string, str
       : t("warehouse.pickupManifests.routeStopUnknownMerchant", { defaultValue: "Merchant" })
   }
   if (s.label?.trim()) return s.label.trim()
-  return s.shipmentId
+  return s.trackingNumber?.trim() || s.shipmentId
 }
 
 export function StopList({ stops, selectedOrder, onSelectOrder }: Props) {

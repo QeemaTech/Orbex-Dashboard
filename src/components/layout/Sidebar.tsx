@@ -271,6 +271,12 @@ export function Sidebar() {
         if (perms.includes("merchant_orders.confirm")) return true
         return isMerchantUser(user) && perms.includes("merchant_orders.read")
       }
+      if (item.to === "/courier-manifests") {
+        return (
+          perms.includes("courier_manifests.read_all") ||
+          perms.includes("delivery_manifests.read_all")
+        )
+      }
       return check(item.perm)
     })
   }, [user, isMainHub, perms, isMerchant])

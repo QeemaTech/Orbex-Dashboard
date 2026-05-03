@@ -10,6 +10,17 @@ export function hasPlatformWarehouseScope(user: AuthUser | null | undefined): bo
   return p.includes("users.write") || p.includes("settings.manage_system")
 }
 
+/** Matches delivery-manifest mutate routes (`authMutate`): create, lock, dispatch, close, etc. */
+export function canManageDeliveryManifests(user: AuthUser | null | undefined): boolean {
+  const p = user?.permissions ?? []
+  return (
+    p.includes("delivery_manifests.manage") ||
+    p.includes("courier_manifests.manage") ||
+    p.includes("warehouses.manage_transfer") ||
+    hasPlatformWarehouseScope(user)
+  )
+}
+
 /**
  * Hub site admin: `warehouse.admin_user_id` → `adminWarehouse` on `/me` / login.
  * Use {@link hasPlatformWarehouseScope} for RBAC platform access; do not use legacy `User.role`.

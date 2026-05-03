@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 
@@ -17,7 +17,11 @@ import { ManifestQuickActions } from "@/features/delivery-manifest/ManifestQuick
 import { ManifestRoutePreviewModal } from "@/features/delivery-manifest/components/ManifestRoutePreviewModal"
 import { ManifestsTabsHeader } from "@/features/manifests/ManifestsTabsHeader"
 import { useAuth } from "@/lib/auth-context"
-import { hasPlatformWarehouseScope, isWarehouseStaff } from "@/lib/warehouse-access"
+import {
+  canManageDeliveryManifests,
+  hasPlatformWarehouseScope,
+  isWarehouseStaff,
+} from "@/lib/warehouse-access"
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat("en-EG", {
@@ -41,7 +45,9 @@ export function DeliveryManifestListPage() {
   const token = accessToken ?? ""
   const permissions = user?.permissions ?? []
   const canReadAll =
-    permissions.includes("delivery_manifests.read_all") || hasPlatformWarehouseScope(user)
+    permissions.includes("delivery_manifests.read_all") ||
+    permissions.includes("courier_manifests.read_all") ||
+    hasPlatformWarehouseScope(user)
   const canReadLocal = permissions.includes("delivery_manifests.read")
   const accessDenied = !!user && !canReadAll && !canReadLocal
 
@@ -89,13 +95,7 @@ export function DeliveryManifestListPage() {
 
   const routesById = routesQuery.data?.routes ?? {}
 
-  const canManage = useMemo(() => {
-    return (
-      permissions.includes("delivery_manifests.manage") ||
-      permissions.includes("warehouses.manage_transfer") ||
-      hasPlatformWarehouseScope(user)
-    )
-  }, [permissions, user])
+  const canManage = canManageDeliveryManifests(user)
 
   if (accessDenied) return <Navigate to="/" replace />
   if (shouldForceOwnWarehouse) {
@@ -119,7 +119,14 @@ export function DeliveryManifestListPage() {
                 type="button"
                 asChild
                 disabled={!canManage}
-                title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
+                title={
+                  !canManage
+                    ? t("warehouse.manifests.managePermissionHint", {
+                        defaultValue:
+                          "Missing permission: delivery_manifests.manage, courier_manifests.manage, or warehouses.manage_transfer.",
+                      })
+                    : undefined
+                }
               >
                 <Link to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests/workspace`}>
                   {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}

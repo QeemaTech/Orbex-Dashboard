@@ -143,6 +143,7 @@ export type LatLng = { lat: number; lng: number }
 export type ManifestRouteStop = {
   order: number
   shipmentId: string
+  trackingNumber?: string | null
   lat: number
   lng: number
   address: string

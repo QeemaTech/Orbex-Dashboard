@@ -12,7 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
-import { hasPlatformWarehouseScope, isWarehouseStaff } from "@/lib/warehouse-access"
+import {
+  canManageDeliveryManifests,
+  hasPlatformWarehouseScope,
+  isWarehouseStaff,
+} from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
 
 import CreateManifestModal from "./CreateManifestModal"
@@ -31,12 +35,11 @@ export function DeliveryManifestWorkspacePage() {
   const token = accessToken ?? ""
   const permissions = user?.permissions ?? []
   const canReadAll =
-    permissions.includes("delivery_manifests.read_all") || hasPlatformWarehouseScope(user)
-  const canReadLocal = permissions.includes("delivery_manifests.read")
-  const canManage =
-    permissions.includes("delivery_manifests.manage") ||
-    permissions.includes("warehouses.manage_transfer") ||
+    permissions.includes("delivery_manifests.read_all") ||
+    permissions.includes("courier_manifests.read_all") ||
     hasPlatformWarehouseScope(user)
+  const canReadLocal = permissions.includes("delivery_manifests.read")
+  const canManage = canManageDeliveryManifests(user)
 
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -133,7 +136,14 @@ export function DeliveryManifestWorkspacePage() {
               type="button"
               disabled={!canManage || selectedRows.length === 0}
               onClick={() => setModalOpen(true)}
-              title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
+              title={
+                !canManage
+                  ? t("warehouse.manifests.managePermissionHint", {
+                      defaultValue:
+                        "Missing permission: delivery_manifests.manage, courier_manifests.manage, or warehouses.manage_transfer.",
+                    })
+                  : undefined
+              }
             >
               {t("warehouse.manifests.create.cta", { defaultValue: "Create manifest" })}
             </Button>

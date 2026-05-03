@@ -84,7 +84,14 @@ export function ManifestQuickActions({ token, manifest, canManage }: Props) {
         variant="outline"
         disabled={!canLock || lockMutation.isPending}
         onClick={() => lockMutation.mutate()}
-        title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
+        title={
+          !canManage
+            ? t("warehouse.manifests.managePermissionHint", {
+                defaultValue:
+                  "Missing permission: delivery_manifests.manage, courier_manifests.manage, or warehouses.manage_transfer.",
+              })
+            : undefined
+        }
       >
         {t("warehouse.manifests.lock", { defaultValue: "Lock" })}
       </Button>
@@ -94,7 +101,14 @@ export function ManifestQuickActions({ token, manifest, canManage }: Props) {
         size="sm"
         disabled={!canDispatch || dispatchMutation.isPending}
         onClick={() => setDispatchConfirmOpen(true)}
-        title={!canManage ? "Missing permission delivery_manifests.manage" : undefined}
+        title={
+          !canManage
+            ? t("warehouse.manifests.managePermissionHint", {
+                defaultValue:
+                  "Missing permission: delivery_manifests.manage, courier_manifests.manage, or warehouses.manage_transfer.",
+              })
+            : undefined
+        }
       >
         {t("warehouse.manifests.dispatch", { defaultValue: "Ready for scan-out" })}
       </Button>
