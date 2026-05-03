@@ -1224,9 +1224,6 @@
       "ordersSectionDescription": "التسليم والدفع والتتبع لكل شحنة في طلب التاجر هذا.",
       "jumpToOrders": "الانتقال إلى طلبات العملاء"
     },
-    "orders": {
-      "assignColumn": "تعيين مندوب"
-    },
     "shipment": {
       "otherLocationLabel": "في المخزن (موقع آخر)"
     },

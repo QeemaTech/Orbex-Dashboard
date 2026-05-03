@@ -1248,9 +1248,6 @@
       "ordersSectionDescription": "Delivery, payment, and tracking for each shipment in this merchant order.",
       "jumpToOrders": "Jump to customer shipments"
     },
-    "orders": {
-      "assignColumn": "Assign courier"
-    },
     "shipment": {
       "otherLocationLabel": "In Warehouse (Other Location)"
     },

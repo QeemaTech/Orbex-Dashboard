@@ -1,4 +1,3 @@
-import type { MouseEvent } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
@@ -8,7 +7,6 @@ import {
 } from "@/api/merchant-orders-api"
 import { BackendStatusBadge } from "@/components/shared/BackendStatusBadge"
 import { OrderDeliveryStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
-import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -20,7 +18,7 @@ import {
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
 
-const WAREHOUSE_COL_COUNT = 10
+const WAREHOUSE_COL_COUNT = 9
 const COMPACT_COL_COUNT = 6
 
 type Props = {
@@ -28,7 +26,7 @@ type Props = {
   shipmentId: string
   /** When set (warehouse merchant-order page), line detail opens with hub in URL for plan task context. */
   warehouseId?: string
-  /** Warehouse hub: full columns including assignment. Other routes: read-only compact list. */
+  /** Warehouse hub: full columns (address, product, courier). Other routes: read-only compact list. */
   mode?: "warehouse" | "compact"
   /** Fully prepaid batches should not show any customer-collectable amount. */
   isPrepaidFull?: boolean
@@ -36,7 +34,7 @@ type Props = {
 
 /**
  * Customer shipments under a merchant order (batch). Row click opens line detail.
- * Warehouse mode: assignment controls; clicks on the assign cell do not navigate.
+ * Warehouse mode: read-only courier name; manifest workflow uses the manifest pages.
  */
 export function WarehouseShipmentOrdersTable({
   token,
@@ -88,10 +86,6 @@ export function WarehouseShipmentOrdersTable({
     void navigate(`${ordersBase}/${encodeURIComponent(orderId)}`)
   }
 
-  const stopAssignClick = (e: MouseEvent<HTMLTableCellElement>) => {
-    e.stopPropagation()
-  }
-
   return (
     <div className="space-y-3">
       {ordersQuery.isLoading ? (
@@ -120,10 +114,7 @@ export function WarehouseShipmentOrdersTable({
                 <TableHead>{t("shipments.columns.paymentStatus")}</TableHead>
                 <TableHead>{t("cs.table.value", { defaultValue: "Value" })}</TableHead>
                 {mode === "warehouse" ? (
-                  <>
-                    <TableHead>{t("warehouse.table.courier", { defaultValue: "Courier" })}</TableHead>
-                    <TableHead>{t("warehouse.orders.assignColumn", { defaultValue: "Assign" })}</TableHead>
-                  </>
+                  <TableHead>{t("warehouse.table.courier", { defaultValue: "Courier" })}</TableHead>
                 ) : null}
               </TableRow>
             </TableHeader>
@@ -138,11 +129,7 @@ export function WarehouseShipmentOrdersTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                ordersQuery.data.shipments.map((p) => {
-                  const deliveryReady = Boolean(
-                    p.csConfirmedAt && p.resolvedDeliveryZoneId,
-                  )
-                  return (
+                ordersQuery.data.shipments.map((p) => (
                   <TableRow
                     key={p.id}
                     className="hover:bg-muted/50 cursor-pointer"
@@ -176,38 +163,12 @@ export function WarehouseShipmentOrdersTable({
                     </TableCell>
                     <TableCell>{formatMoney(isPrepaidFull ? "0" : p.shipmentValue)}</TableCell>
                     {mode === "warehouse" ? (
-                      <>
-                        <TableCell className="text-xs">
-                          {p.deliveryCourier?.fullName ?? "—"}
-                        </TableCell>
-                        <TableCell onClick={stopAssignClick}>
-                          <div className="flex min-w-[12rem] flex-col gap-1">
-                            <Button
-                              type="button"
-                              size="sm"
-                              className="h-8 text-xs"
-                              disabled={!deliveryReady || !hubContextWarehouseId}
-                              title={
-                                !deliveryReady
-                                  ? t("shipments.planTask.hintCsRequired")
-                                  : undefined
-                              }
-                              onClick={() => {
-                                if (!hubContextWarehouseId) return
-                                navigate(
-                                  `/warehouses/${encodeURIComponent(hubContextWarehouseId)}/manifests/create`,
-                                )
-                              }}
-                            >
-                              {t("warehouse.manifests.create.cta")}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </>
+                      <TableCell className="text-xs">
+                        {p.deliveryCourier?.fullName ?? "—"}
+                      </TableCell>
                     ) : null}
                   </TableRow>
-                  )
-                })
+                ))
               )}
             </TableBody>
           </Table>

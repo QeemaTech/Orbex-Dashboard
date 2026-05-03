@@ -477,8 +477,7 @@ export function WarehouseDetailPage() {
       !!warehouseId &&
       !accessDenied &&
       hub != null &&
-      ((isMainHub && activeTab === "shipments") ||
-        (hub.mainBranchId !== null)),
+      (shipmentsView || manifestsView),
     refetchInterval: 10000,
   })
 
