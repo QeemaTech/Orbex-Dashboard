@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Plus } from "react-lucid"
 
+import { listPackagingMaterialStock } from "@/api/packaging-material-stock-api"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,6 +32,7 @@ import { useAuth } from "@/lib/auth-context"
 import {
   useCreatePackagingMaterial,
   usePackagingMaterials,
+  useUpsertPackagingMaterialStock,
   useUpdatePackagingMaterial,
 } from "@/features/packaging-material/hooks/use-packaging-material"
 import {
@@ -57,6 +59,12 @@ type MaterialForm = {
   isActive: boolean
 }
 
+type StockForm = {
+  warehouseId: string
+  availableQuantity: string
+  reservedQuantity: string
+}
+
 function emptyForm(): MaterialForm {
   return {
     arabicName: "",
@@ -67,6 +75,14 @@ function emptyForm(): MaterialForm {
     minimumRequestQuantity: "",
     defaultWarehouseId: "",
     isActive: true,
+  }
+}
+
+function emptyStockForm(): StockForm {
+  return {
+    warehouseId: "",
+    availableQuantity: "",
+    reservedQuantity: "0",
   }
 }
 
@@ -84,6 +100,15 @@ export function PackagingMaterialsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<PackagingMaterial | null>(null)
   const [form, setForm] = useState<MaterialForm>(emptyForm)
+  const [stockForm, setStockForm] = useState<StockForm>(emptyStockForm)
+
+  // Lock stock warehouse to default warehouse on edit mode.
+  useEffect(() => {
+    if (!editing) return
+    if (!form.defaultWarehouseId) return
+    if (stockForm.warehouseId === form.defaultWarehouseId) return
+    setStockForm((prev) => ({ ...prev, warehouseId: form.defaultWarehouseId }))
+  }, [editing, form.defaultWarehouseId, stockForm.warehouseId])
 
   const materialsQuery = usePackagingMaterials({ token, page, pageSize, search })
   const warehousesQuery = useQuery({
@@ -91,8 +116,55 @@ export function PackagingMaterialsPage() {
     queryFn: () => listWarehouseSites(token),
     enabled: !!token,
   })
+
+  const stockAggQuery = useQuery({
+    queryKey: ["packaging-material-stock", "agg", token],
+    queryFn: async () => {
+      const pageSize = 200
+      const maxPages = 25
+      let page = 1
+      let total = 0
+      const all: Array<{
+        packagingMaterialId: string
+        availableQuantity: string
+        reservedQuantity: string
+      }> = []
+      while (page <= maxPages) {
+        const res = await listPackagingMaterialStock({ token, page, pageSize })
+        total = res.total
+        for (const row of res.stock) {
+          all.push({
+            packagingMaterialId: row.packagingMaterialId,
+            availableQuantity: row.availableQuantity,
+            reservedQuantity: row.reservedQuantity,
+          })
+        }
+        if (all.length >= total) break
+        page += 1
+      }
+      return { total, rows: all }
+    },
+    enabled: !!token && canRead,
+    staleTime: 20_000,
+  })
+
+  const stockByMaterialId = useMemo(() => {
+    const m = new Map<string, { available: number; reserved: number }>()
+    for (const r of stockAggQuery.data?.rows ?? []) {
+      const a = Number(r.availableQuantity)
+      const rv = Number(r.reservedQuantity)
+      const prev = m.get(r.packagingMaterialId) ?? { available: 0, reserved: 0 }
+      m.set(r.packagingMaterialId, {
+        available: prev.available + (Number.isFinite(a) ? a : 0),
+        reserved: prev.reserved + (Number.isFinite(rv) ? rv : 0),
+      })
+    }
+    return m
+  }, [stockAggQuery.data?.rows])
+
   const createMutation = useCreatePackagingMaterial(token)
   const updateMutation = useUpdatePackagingMaterial(token)
+  const upsertStockMutation = useUpsertPackagingMaterialStock(token)
 
   const rows = materialsQuery.data?.materials ?? []
   const total = materialsQuery.data?.total ?? 0
@@ -101,6 +173,7 @@ export function PackagingMaterialsPage() {
   function openCreate() {
     setEditing(null)
     setForm(emptyForm())
+    setStockForm(emptyStockForm())
     setModalOpen(true)
   }
 
@@ -116,6 +189,11 @@ export function PackagingMaterialsPage() {
       defaultWarehouseId: material.defaultWarehouseId ?? "",
       isActive: material.isActive,
     })
+    setStockForm({
+      warehouseId: material.defaultWarehouseId ?? "",
+      availableQuantity: "",
+      reservedQuantity: "0",
+    })
     setModalOpen(true)
   }
 
@@ -124,9 +202,31 @@ export function PackagingMaterialsPage() {
       showToast("Please fill required fields", "error")
       return
     }
+
+    const wantsStock =
+      stockForm.availableQuantity.trim().length > 0 ||
+      stockForm.reservedQuantity.trim().length > 0
+    if (wantsStock && !stockForm.warehouseId) {
+      showToast(t("packagingMaterials.stock.warehouseRequired"), "error")
+      return
+    }
+    if (wantsStock && stockForm.availableQuantity.trim().length === 0) {
+      showToast(t("packagingMaterials.stock.availableRequired"), "error")
+      return
+    }
+    if (wantsStock) {
+      const a = Number(stockForm.availableQuantity)
+      const r = Number(stockForm.reservedQuantity || "0")
+      if (!Number.isFinite(a) || a < 0 || !Number.isFinite(r) || r < 0) {
+        showToast(t("packagingMaterials.stock.invalidQty"), "error")
+        return
+      }
+    }
+
     try {
+      let saved: PackagingMaterial | null = null
       if (editing) {
-        await updateMutation.mutateAsync({
+        saved = await updateMutation.mutateAsync({
           id: editing.id,
           body: {
             ...form,
@@ -136,7 +236,7 @@ export function PackagingMaterialsPage() {
           },
         })
       } else {
-        await createMutation.mutateAsync({
+        saved = await createMutation.mutateAsync({
           arabicName: form.arabicName,
           englishName: form.englishName,
           unitType: form.unitType,
@@ -146,6 +246,16 @@ export function PackagingMaterialsPage() {
           defaultWarehouseId: form.defaultWarehouseId || null,
         })
       }
+
+      if (saved && wantsStock) {
+        await upsertStockMutation.mutateAsync({
+          warehouseId: stockForm.warehouseId,
+          packagingMaterialId: saved.id,
+          availableQuantity: stockForm.availableQuantity,
+          reservedQuantity: stockForm.reservedQuantity || "0",
+        })
+      }
+
       setModalOpen(false)
       showToast("Saved successfully", "success")
     } catch (error) {
@@ -200,6 +310,7 @@ export function PackagingMaterialsPage() {
                       <TableHead>{t("packagingMaterials.table.unitType")}</TableHead>
                       <TableHead>{t("packagingMaterials.table.sellingPrice")}</TableHead>
                       <TableHead>{t("packagingMaterials.table.minimumRequestQuantity")}</TableHead>
+                      <TableHead className="text-end">{t("packagingMaterials.table.stock")}</TableHead>
                       <TableHead>{t("packagingMaterials.table.active")}</TableHead>
                       <TableHead>{t("packagingMaterials.table.actions")}</TableHead>
                     </TableRow>
@@ -213,6 +324,19 @@ export function PackagingMaterialsPage() {
                         <TableCell>{row.unitType}</TableCell>
                         <TableCell>{row.sellingPrice}</TableCell>
                         <TableCell>{row.minimumRequestQuantity ?? "—"}</TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {stockAggQuery.isLoading ? (
+                            <span className="text-muted-foreground text-xs">
+                              {t("common.loading")}
+                            </span>
+                          ) : (
+                            (() => {
+                              const s = stockByMaterialId.get(row.id)
+                              if (!s) return "—"
+                              return `${s.available.toLocaleString()} / ${s.reserved.toLocaleString()}`
+                            })()
+                          )}
+                        </TableCell>
                         <TableCell>{row.isActive ? "Yes" : "No"}</TableCell>
                         <TableCell>
                           {canWrite ? (
@@ -262,73 +386,209 @@ export function PackagingMaterialsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input
-              value={form.englishName}
-              onChange={(event) => setForm((prev) => ({ ...prev, englishName: event.target.value }))}
-              placeholder={t("packagingMaterials.form.englishName")}
-            />
-            <Input
-              value={form.arabicName}
-              onChange={(event) => setForm((prev) => ({ ...prev, arabicName: event.target.value }))}
-              placeholder={t("packagingMaterials.form.arabicName")}
-            />
-            {editing ? (
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs font-medium">
+                {t("packagingMaterials.form.englishName")}
+              </label>
               <Input
-                value={form.sku}
-                onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))}
-                placeholder={t("packagingMaterials.form.sku")}
+                value={form.englishName}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, englishName: event.target.value }))
+                }
+                placeholder={t("packagingMaterials.form.englishName")}
+                autoComplete="off"
               />
+            </div>
+
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs font-medium">
+                {t("packagingMaterials.form.arabicName")}
+              </label>
+              <Input
+                value={form.arabicName}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, arabicName: event.target.value }))
+                }
+                placeholder={t("packagingMaterials.form.arabicName")}
+                dir="rtl"
+                autoComplete="off"
+              />
+            </div>
+
+            {editing ? (
+              <div className="grid gap-1 sm:col-span-2">
+                <label className="text-muted-foreground text-xs font-medium">
+                  {t("packagingMaterials.form.sku")}
+                </label>
+                <Input value={form.sku} readOnly aria-readonly />
+              </div>
             ) : null}
-            <select
-              className="border-input bg-background h-10 rounded-md border px-3 text-sm"
-              value={form.unitType}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, unitType: event.target.value as PackagingMaterialUnitType }))
-              }
-            >
-              {packagingMaterialUnitTypes.map((unitType) => (
-                <option key={unitType} value={unitType}>
-                  {unitType}
-                </option>
-              ))}
-            </select>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.sellingPrice}
-              onChange={(event) => setForm((prev) => ({ ...prev, sellingPrice: event.target.value }))}
-              placeholder={t("packagingMaterials.form.sellingPrice")}
-            />
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.minimumRequestQuantity}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, minimumRequestQuantity: event.target.value }))
-              }
-              placeholder={t("packagingMaterials.form.minimumRequestQuantity")}
-            />
-            <select
-              className="border-input bg-background h-10 rounded-md border px-3 text-sm"
-              value={form.defaultWarehouseId}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, defaultWarehouseId: event.target.value }))
-              }
-            >
-              <option value="">{t("packagingMaterials.form.defaultWarehouseId")}</option>
-              {(warehousesQuery.data?.warehouses ?? []).map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
-                </option>
-              ))}
-            </select>
-            <label className="flex items-center gap-2 text-sm">
+
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs font-medium">
+                {t("packagingMaterials.table.unitType")}
+              </label>
+              <select
+                className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                value={form.unitType}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    unitType: event.target.value as PackagingMaterialUnitType,
+                  }))
+                }
+              >
+                {packagingMaterialUnitTypes.map((unitType) => (
+                  <option key={unitType} value={unitType}>
+                    {unitType}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs font-medium">
+                {t("packagingMaterials.form.sellingPrice")}
+              </label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.sellingPrice}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, sellingPrice: event.target.value }))
+                }
+                placeholder={t("packagingMaterials.form.sellingPrice")}
+              />
+            </div>
+
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs font-medium">
+                {t("packagingMaterials.form.minimumRequestQuantity")}
+              </label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.minimumRequestQuantity}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    minimumRequestQuantity: event.target.value,
+                  }))
+                }
+                placeholder={t("packagingMaterials.form.minimumRequestQuantity")}
+              />
+            </div>
+
+            <div className="grid gap-1 sm:col-span-2">
+              <label className="text-muted-foreground text-xs font-medium">
+                {t("packagingMaterials.form.defaultWarehouseId")}
+              </label>
+              <select
+                className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                value={form.defaultWarehouseId}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, defaultWarehouseId: event.target.value }))
+                }
+              >
+                <option value="">{t("packagingMaterials.form.defaultWarehouseId")}</option>
+                {(warehousesQuery.data?.warehouses ?? []).map((warehouse) => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="border-border/60 rounded-lg border p-3">
+                <p className="text-foreground mb-2 text-sm font-semibold">
+                  {t("packagingMaterials.stock.title")}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-1 sm:col-span-2">
+                    <label className="text-muted-foreground text-xs font-medium">
+                      {t("packagingMaterials.stock.warehouse")}
+                    </label>
+                    {editing ? (
+                      <Input
+                        value={
+                          (warehousesQuery.data?.warehouses ?? []).find(
+                            (w) => w.id === (form.defaultWarehouseId || stockForm.warehouseId),
+                          )?.name ??
+                          ((form.defaultWarehouseId || stockForm.warehouseId) || "")
+                        }
+                        readOnly
+                        aria-readonly
+                        placeholder={t("packagingMaterials.form.defaultWarehouseId")}
+                      />
+                    ) : (
+                      <select
+                        className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                        value={stockForm.warehouseId}
+                        onChange={(event) =>
+                          setStockForm((prev) => ({ ...prev, warehouseId: event.target.value }))
+                        }
+                      >
+                        <option value="">{t("packagingMaterials.stock.selectWarehouse")}</option>
+                        {(warehousesQuery.data?.warehouses ?? []).map((warehouse) => (
+                          <option key={warehouse.id} value={warehouse.id}>
+                            {warehouse.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div className="grid gap-1">
+                    <label className="text-muted-foreground text-xs font-medium">
+                      {t("packagingMaterials.stock.available")}
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={stockForm.availableQuantity}
+                      onChange={(event) =>
+                        setStockForm((prev) => ({
+                          ...prev,
+                          availableQuantity: event.target.value,
+                        }))
+                      }
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="grid gap-1">
+                    <label className="text-muted-foreground text-xs font-medium">
+                      {t("packagingMaterials.stock.reserved")}
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={stockForm.reservedQuantity}
+                      onChange={(event) =>
+                        setStockForm((prev) => ({
+                          ...prev,
+                          reservedQuantity: event.target.value,
+                        }))
+                      }
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm sm:col-span-2">
               <input
                 type="checkbox"
                 checked={form.isActive}
-                onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, isActive: event.target.checked }))
+                }
               />
               {t("packagingMaterials.form.isActive")}
             </label>

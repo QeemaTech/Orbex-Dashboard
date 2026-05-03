@@ -5,6 +5,7 @@ import { X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import { ApiError } from "@/api/client"
+import { resolveMapsLink } from "@/api/maps-api"
 import { confirmShipmentCustomerLocation } from "@/api/shipments-api"
 import { CustomerLocationMapPreviewDialog } from "@/components/shared/CustomerLocationMapPreviewDialog"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,17 @@ import {
   parseWarehouseLatLng,
 } from "@/features/customer-service/lib/location"
 import { showToast } from "@/lib/toast"
+
+function normalizeUrlCandidate(value: string): string {
+  const compact = value.trim()
+  if (!compact) return compact
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(compact)) return compact
+  if (compact.startsWith("//")) return `https:${compact}`
+  if (/^(www\.)?(maps\.app\.goo\.gl|google\.[^/\s]+|maps\.[^/\s]+)/i.test(compact)) {
+    return `https://${compact}`
+  }
+  return compact
+}
 
 export type ShipmentCsConfirmLocationDialogProps = {
   open: boolean
@@ -54,6 +66,8 @@ export function ShipmentCsConfirmLocationDialog({
   const [locationLink, setLocationLink] = useState("")
   const [previewOpen, setPreviewOpen] = useState(false)
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
+  const [resolvedCoords, setResolvedCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [resolvingLink, setResolvingLink] = useState(false)
 
   useEffect(() => {
     setPortalTarget(document.body)
@@ -74,6 +88,7 @@ export function ShipmentCsConfirmLocationDialog({
       setLocationText(defaults.locationText)
       setLocationLink(defaults.locationLink)
       setPreviewOpen(false)
+      setResolvedCoords(null)
     }
   }, [open, defaults])
 
@@ -90,8 +105,53 @@ export function ShipmentCsConfirmLocationDialog({
       initialLat != null ? String(initialLat) : null,
       initialLng != null ? String(initialLng) : null,
     )
-    return fromLink ?? fromText ?? fromSaved
+    return fromLink ?? fromText ?? resolvedCoords ?? fromSaved
   }, [initialLat, initialLng, locationLink, locationText])
+
+  // Auto-resolve short / redirecting maps links on the server (browser can't due to CORS).
+  useEffect(() => {
+    if (!open) return
+    const raw = locationLink.trim()
+    if (!raw) {
+      setResolvedCoords(null)
+      return
+    }
+    // If we already can parse coordinates locally, don't resolve.
+    if (parseCoordinatesFromLocationInput(raw)) {
+      setResolvedCoords(null)
+      return
+    }
+    // Only resolve plausible URLs.
+    const candidate = normalizeUrlCandidate(raw)
+    if (!candidate) {
+      setResolvedCoords(null)
+      return
+    }
+
+    let cancelled = false
+    setResolvingLink(true)
+    void resolveMapsLink({ token, url: candidate })
+      .then((data) => {
+        if (cancelled) return
+        if (data.coords && Number.isFinite(data.coords.lat) && Number.isFinite(data.coords.lng)) {
+          setResolvedCoords({ lat: data.coords.lat, lng: data.coords.lng })
+        } else {
+          setResolvedCoords(null)
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        setResolvedCoords(null)
+      })
+      .finally(() => {
+        if (cancelled) return
+        setResolvingLink(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, locationLink, token])
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -133,6 +193,17 @@ export function ShipmentCsConfirmLocationDialog({
       Number.isFinite(parsedCoords.lng),
   )
   const previewHref = parsedCoords ? googleMapsSearchUrl(parsedCoords) : null
+  const externalRawLink = locationLink.trim()
+  const externalHref = externalRawLink ? normalizeUrlCandidate(externalRawLink) : null
+  const isGoogleShortLink = useMemo(() => {
+    if (!externalHref) return false
+    try {
+      const u = new URL(externalHref)
+      return /(^|\.)maps\.app\.goo\.gl$/i.test(u.hostname)
+    } catch {
+      return false
+    }
+  }, [externalHref])
 
   if (!open || !portalTarget) return null
 
@@ -222,11 +293,36 @@ export function ShipmentCsConfirmLocationDialog({
                 >
                   {t("cs.customerPinMap.openExternal")}
                 </a>
+              ) : externalHref ? (
+                <a
+                  className="text-primary inline-flex items-center text-sm underline"
+                  href={externalHref}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("cs.customerPinMap.openExternal")}
+                </a>
               ) : null}
             </div>
+            {resolvingLink && !canPreviewMap ? (
+              <p className="text-muted-foreground mt-2 text-xs">
+                {t("cs.csLineConfirm.resolvingLink", { defaultValue: "Resolving maps link…" })}
+              </p>
+            ) : null}
           </div>
 
-          <p className="text-muted-foreground text-xs">{t("cs.csLineConfirm.coordsHint")}</p>
+          <p className="text-muted-foreground text-xs">
+            {t("cs.csLineConfirm.coordsHint")}
+            {!canPreviewMap && isGoogleShortLink ? (
+              <>
+                {" "}
+                {t("cs.csLineConfirm.shortLinkHint", {
+                  defaultValue:
+                    "Google short links (maps.app.goo.gl) may not include coordinates. Open the link, then copy/paste the final Google Maps URL that contains “@lat,lng” or paste the coordinates directly.",
+                })}
+              </>
+            ) : null}
+          </p>
         </div>
         <div className="flex justify-end gap-2 border-t px-4 py-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

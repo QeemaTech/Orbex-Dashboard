@@ -189,7 +189,9 @@ export async function apiFetch<T>(
   const storedLocale = localStorage.getItem("i18nextLng") || "en"
   headers.set("Accept-Language", storedLocale)
   const storedAccess = localStorage.getItem(STORAGE_ACCESS)
-  const authToken = storedAccess ?? init?.token ?? null
+  // If a caller passes a token explicitly, it must win over any cached token.
+  // This prevents stale localStorage tokens from breaking requests like /api/auth/me.
+  const authToken = init?.token ?? storedAccess ?? null
   if (authToken) {
     headers.set("Authorization", `Bearer ${authToken}`)
   }
@@ -201,6 +203,7 @@ export async function apiFetch<T>(
       if (!retryHeaders.has("Content-Type")) {
         retryHeaders.set("Content-Type", "application/json")
       }
+      retryHeaders.set("Accept-Language", storedLocale)
       retryHeaders.set("Authorization", `Bearer ${nextToken}`)
       res = await fetch(apiUrl(path), { ...init, headers: retryHeaders })
     }
@@ -267,7 +270,8 @@ export async function apiFetchText(
   }
 
   const storedAccess = localStorage.getItem(STORAGE_ACCESS)
-  const authToken = storedAccess ?? init?.token ?? null
+  // Explicit caller token must win over cached token.
+  const authToken = init?.token ?? storedAccess ?? null
   if (authToken) {
     headers.set("Authorization", `Bearer ${authToken}`)
   }

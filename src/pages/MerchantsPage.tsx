@@ -102,7 +102,7 @@ export function MerchantsPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["merchant-pricing", token] })
-      showToast(t("common.saved", "Saved"), "success")
+      showToast(t("merchants.pricing.saved"), "success")
     },
   })
 
@@ -169,13 +169,10 @@ export function MerchantsPage() {
               <Card className="border-border/80 shadow-sm">
                 <CardHeader className="border-border/60 border-b pb-4">
                   <CardTitle className="text-base font-semibold">
-                    {t("merchants.pricing.title", "Merchant delivery pricing")}
+                    {t("merchants.pricing.title")}
                   </CardTitle>
                   <CardDescription>
-                    {t(
-                      "merchants.pricing.subtitle",
-                      "Set shipping fee per delivery zone and packaging delivery fee for this merchant.",
-                    )}
+                    {t("merchants.pricing.subtitle")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
@@ -186,7 +183,7 @@ export function MerchantsPage() {
                   ) : null}
                   {merchantPricingQuery.isLoading ? (
                     <p className="text-muted-foreground text-sm">
-                      {t("common.loading", "Loading...")}
+                      {t("merchants.pricing.loading")}
                     </p>
                   ) : null}
 
@@ -195,10 +192,7 @@ export function MerchantsPage() {
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div className="space-y-1">
                           <label className="text-sm font-medium">
-                            {t(
-                              "merchants.pricing.packagingDeliveryFee",
-                              "Packaging delivery fee",
-                            )}
+                            {t("merchants.pricing.packagingDeliveryFee")}
                           </label>
                           <Input
                             type="number"
@@ -216,7 +210,7 @@ export function MerchantsPage() {
                         </div>
                         <div className="flex items-end justify-end">
                           <Button type="button" variant="outline" onClick={closePricing}>
-                            {t("common.close", "Close")}
+                            {t("merchants.pricing.close")}
                           </Button>
                         </div>
                       </div>
@@ -224,9 +218,9 @@ export function MerchantsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{t("deliveryZones.pageTitle", "Delivery zones")}</TableHead>
+                            <TableHead>{t("merchants.pricing.zonesColumn")}</TableHead>
                             <TableHead>
-                              {t("merchants.pricing.shippingFee", "Shipping fee")}
+                              {t("merchants.pricing.shippingFee")}
                             </TableHead>
                           </TableRow>
                         </TableHeader>
@@ -347,7 +341,7 @@ export function MerchantsPage() {
                               variant="outline"
                               onClick={() => openPricing(row.merchantId)}
                             >
-                              {t("merchants.actions.pricing", "Pricing")}
+                              {t("merchants.actions.pricing")}
                             </Button>
                           </div>
                         </TableCell>

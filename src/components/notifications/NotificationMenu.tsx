@@ -3,6 +3,7 @@ import { Bell } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
+import { ApiError } from "@/api/client"
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -139,6 +140,10 @@ export function NotificationMenu({ token }: NotificationMenuProps) {
     queryFn: () => listNotifications(token!, { pageSize: 20 }),
     enabled: !!token,
     refetchInterval: 20_000,
+    retry(failureCount, err) {
+      if (err instanceof ApiError && err.status === 403) return false
+      return failureCount < 2
+    },
   })
 
   const unread = q.data?.notifications.filter((n) => !n.readAt) ?? []

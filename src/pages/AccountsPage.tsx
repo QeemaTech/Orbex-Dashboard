@@ -1,16 +1,14 @@
 import { useMemo, useState } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { Banknote, Filter as FilterIcon, RefreshCcw } from "lucide-react"
 
 import {
   listAccountingShipments,
-  settleAccountingShipment,
   type AccountingShipmentRow,
   type AccountingShipmentTab,
 } from "@/api/accounting-api"
-import { ApiError } from "@/api/client"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,7 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useAuth } from "@/lib/auth-context"
-import { showToast } from "@/lib/toast"
 import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
 import { cn } from "@/lib/utils"
 
@@ -78,7 +75,6 @@ export function AccountsPage() {
   const locale = resolveNumberLocale(i18n.language)
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
-  const queryClient = useQueryClient()
 
   const scopedWarehouseId = useMemo<string | undefined>(() => {
     if (!user) return undefined
@@ -86,11 +82,6 @@ export function AccountsPage() {
     if (isWarehouseStaff(user)) return user.warehouseId ?? undefined
     return undefined
   }, [user])
-
-  const canSettle = Boolean(
-    user?.permissions?.includes("accounts.settle_shipment") ||
-      user?.permissions?.includes("accounting.settlement_close"),
-  )
 
   const [tab, setTab] = useState<AccountingShipmentTab>("DELIVERED")
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(EMPTY_FILTERS)
@@ -121,21 +112,6 @@ export function AccountsPage() {
         pageSize: PAGE_SIZE,
       }),
     enabled: !!token,
-  })
-
-  const settleMutation = useMutation({
-    mutationFn: (shipmentId: string) => settleAccountingShipment(token, shipmentId),
-    onSuccess: () => {
-      showToast(t("accounts.feedback.settled"), "success")
-      void queryClient.invalidateQueries({ queryKey: ["accounting-shipments"] })
-    },
-    onError: (err) => {
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : t("accounts.feedback.settleFailed")
-      showToast(msg, "error")
-    },
   })
 
   function applyFilters() {
@@ -300,38 +276,25 @@ export function AccountsPage() {
                     </TableHead>
                     <TableHead>{t("accounts.table.paymentMethod")}</TableHead>
                     <TableHead>{t("accounts.table.paymentStatus")}</TableHead>
-                    <TableHead className="text-end">
-                      {t("accounts.table.actions")}
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {listQuery.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-muted-foreground py-6 text-center">
+                      <TableCell colSpan={8} className="text-muted-foreground py-6 text-center">
                         {t("common.loading")}
                       </TableCell>
                     </TableRow>
                   ) : null}
                   {!listQuery.isLoading && (listQuery.data?.items.length ?? 0) === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-muted-foreground py-6 text-center">
+                      <TableCell colSpan={8} className="text-muted-foreground py-6 text-center">
                         {t("accounts.table.empty")}
                       </TableCell>
                     </TableRow>
                   ) : null}
                   {(listQuery.data?.items ?? []).map((row) => (
-                    <AccountingRowView
-                      key={row.id}
-                      row={row}
-                      locale={locale}
-                      canSettle={canSettle && tab === "DELIVERED"}
-                      onSettle={() => settleMutation.mutate(row.id)}
-                      settleBusy={
-                        settleMutation.isPending &&
-                        settleMutation.variables === row.id
-                      }
-                    />
+                    <AccountingRowView key={row.id} row={row} locale={locale} />
                   ))}
                 </TableBody>
               </Table>
@@ -372,20 +335,9 @@ export function AccountsPage() {
 type AccountingRowProps = {
   row: AccountingShipmentRow
   locale: string
-  canSettle: boolean
-  onSettle: () => void
-  settleBusy: boolean
 }
 
-function AccountingRowView({
-  row,
-  locale,
-  canSettle,
-  onSettle,
-  settleBusy,
-}: AccountingRowProps) {
-  const { t } = useTranslation()
-  const isSettled = row.paymentStatus === "SETTLED"
+function AccountingRowView({ row, locale }: AccountingRowProps) {
   return (
     <TableRow>
       <TableCell>
@@ -432,24 +384,6 @@ function AccountingRowView({
       </TableCell>
       <TableCell>{row.paymentMethod}</TableCell>
       <TableCell>{row.paymentStatus}</TableCell>
-      <TableCell className="text-end">
-        {canSettle && !isSettled ? (
-          <Button
-            type="button"
-            size="sm"
-            onClick={onSettle}
-            disabled={settleBusy}
-          >
-            {settleBusy ? t("common.processing") : t("accounts.table.settle")}
-          </Button>
-        ) : isSettled ? (
-          <span className="text-success text-xs font-medium">
-            {t("accounts.table.settled")}
-          </span>
-        ) : (
-          <span className="text-muted-foreground text-xs">—</span>
-        )}
-      </TableCell>
     </TableRow>
   )
 }

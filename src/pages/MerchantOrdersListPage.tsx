@@ -298,6 +298,12 @@ export function MerchantOrdersListPage() {
       void queryClient.invalidateQueries({ queryKey: ["dashboard-merchant-pending-imports"] })
       void queryClient.invalidateQueries({ queryKey: ["merchant-order-pending-imports"] })
       shipmentsQuery.refetch()
+
+      // Import creates a "pending confirmation" batch (202). Redirect user to confirm it.
+      const pendingConfirmationsPath = location.pathname.startsWith("/cs/")
+        ? "/cs/merchant-orders/pending-confirmations"
+        : "/merchant-orders/pending-confirmations"
+      void navigate(pendingConfirmationsPath)
     },
     onError: (error: Error) => {
       const msg = error.message || t("merchantOrdersList.importGenericError")
@@ -430,15 +436,15 @@ export function MerchantOrdersListPage() {
           ) : null}
           {!showKpiLoading && !showKpiError
             ? batchPipelineBreakdown.slice(0, 3).map((row) => (
-                <StatCard
-                  key={row.transferStatus}
-                  title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
-                  value={row.count}
-                  icon={Boxes}
-                  accent="success"
-                  hideTrend
-                />
-              ))
+              <StatCard
+                key={row.transferStatus}
+                title={backendMerchantOrderBatchLabel(t, row.transferStatus)}
+                value={row.count}
+                icon={Boxes}
+                accent="success"
+                hideTrend
+              />
+            ))
             : null}
           {showKpiEmpty ? (
             <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm sm:col-span-1 lg:col-span-3">
