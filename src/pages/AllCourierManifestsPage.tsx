@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
-import { Link, Navigate } from "react-router-dom"
+import { Link, Navigate, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 
 import { listDeliveryManifests, type DeliveryManifestListRow } from "@/api/delivery-manifests-api"
@@ -8,7 +8,6 @@ import { listPickupCouriers } from "@/api/pickup-couriers-api"
 import {
   listWarehouseMovementManifests,
   type WarehouseMovementManifestStatus,
-  type WarehouseMovementManifestType,
 } from "@/api/shipments-api"
 import { listWarehouseSites, type WarehouseSiteRow } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
@@ -17,6 +16,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ManifestQuickActions } from "@/features/delivery-manifest/ManifestQuickActions"
+import { dedupePickupManifestsByCourierDay } from "@/features/manifests/dedupe-pickup-manifest-list"
+import { ManifestsTabsHeader } from "@/features/manifests/ManifestsTabsHeader"
 import { useAuth } from "@/lib/auth-context"
 import { hasPlatformWarehouseScope } from "@/lib/warehouse-access"
 
@@ -65,7 +66,22 @@ export function AllCourierManifestsPage() {
   }, [permissions, user])
   const canReadPickupManifests = permissions.includes("warehouses.manage_transfer")
 
-  const [tab, setTab] = useState<"delivery" | "pickup">("delivery")
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabFromUrl = searchParams.get("tab") === "pickup" ? "pickup" : "delivery"
+  const tab: "delivery" | "pickup" =
+    tabFromUrl === "pickup" && canReadPickupManifests ? "pickup" : "delivery"
+  const setTab = (next: "delivery" | "pickup") => {
+    if (next === "pickup" && !canReadPickupManifests) return
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev)
+        if (next === "pickup") p.set("tab", "pickup")
+        else p.delete("tab")
+        return p
+      },
+      { replace: true },
+    )
+  }
 
   const [warehouseId, setWarehouseId] = useState("")
   const [status, setStatus] = useState("")
@@ -75,7 +91,6 @@ export function AllCourierManifestsPage() {
   const pageSize = 20
 
   const [pickupWarehouseId, setPickupWarehouseId] = useState("")
-  const [pickupType, setPickupType] = useState<"" | WarehouseMovementManifestType>("")
   const [pickupStatus, setPickupStatus] = useState<"" | WarehouseMovementManifestStatus>("")
   const [pickupDate, setPickupDate] = useState("")
 
@@ -143,7 +158,6 @@ export function AllCourierManifestsPage() {
       "warehouse-movement-manifests-global",
       token,
       pickupWarehouseId,
-      pickupType,
       pickupStatus,
       pickupDate,
     ],
@@ -151,13 +165,35 @@ export function AllCourierManifestsPage() {
       listWarehouseMovementManifests({
         token,
         warehouseId: pickupWarehouseId || undefined,
-        type: pickupType || undefined,
         status: pickupStatus || undefined,
         date: pickupDate || undefined,
       }),
     enabled: !!token && canReadAll && canReadPickupManifests && tab === "pickup",
     refetchInterval: 15000,
   })
+
+  const pickupManifestRows = useMemo(() => {
+    const deduped = dedupePickupManifestsByCourierDay(pickupManifestsQuery.data?.manifests ?? [])
+    const fromName = (id: string) => warehouseNameById.get(id)?.trim() || id
+    const courierN = (id: string) => pickupCourierNameById.get(id)?.trim() || id
+    const day = (m: (typeof deduped)[0]) => m.transferDate ?? m.createdAt.slice(0, 10)
+    return [...deduped].sort((a, b) => {
+      const fa = fromName(a.fromWarehouseId).toLowerCase()
+      const fb = fromName(b.fromWarehouseId).toLowerCase()
+      if (fa !== fb) return fa.localeCompare(fb)
+      const ca = courierN(a.assignedPickupCourierId).toLowerCase()
+      const cb = courierN(b.assignedPickupCourierId).toLowerCase()
+      if (ca !== cb) return ca.localeCompare(cb)
+      const da = day(a)
+      const db = day(b)
+      if (da !== db) return db.localeCompare(da)
+      return b.createdAt.localeCompare(a.createdAt)
+    })
+  }, [
+    pickupManifestsQuery.data?.manifests,
+    warehouseNameById,
+    pickupCourierNameById,
+  ])
 
   const items = manifestsQuery.data?.items ?? []
   const total = manifestsQuery.data?.total ?? 0
@@ -169,49 +205,31 @@ export function AllCourierManifestsPage() {
   return (
     <Layout title={t("nav.allCourierManifests", { defaultValue: "Courier manifests" })}>
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-muted-foreground text-sm">
-            {tab === "delivery"
-              ? t("manifestsGlobal.listDescription", {
-                  defaultValue: "Browse delivery manifests across warehouses and dates.",
-                })
-              : t("manifestsGlobal.pickupDescription", {
-                  defaultValue: "Browse pickup movement manifests (transfer/return) across warehouses.",
-                })}
-          </div>
-          <Button type="button" variant="outline" asChild>
-            <Link to="/warehouses">{t("warehouse.detail.backToWarehouses", { defaultValue: "Warehouses" })}</Link>
-          </Button>
-        </div>
+        <ManifestsTabsHeader
+          active={tab}
+          onTabChange={setTab}
+          pickupDisabled={!canReadPickupManifests}
+          pickupDisabledTitle={t("manifestsGlobal.pickupPermissionRequired", {
+            defaultValue: "Missing permission: warehouses.manage_transfer",
+          })}
+          rightSlot={
+            <Button type="button" variant="outline" asChild>
+              <Link to="/warehouses">
+                {t("warehouse.detail.backToWarehouses", { defaultValue: "Warehouses" })}
+              </Link>
+            </Button>
+          }
+        />
 
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={tab === "delivery" ? "default" : "outline"}
-            onClick={() => setTab("delivery")}
-          >
-            {t("warehouse.manifests.tabs.deliveryCouriers", {
-              defaultValue: "Delivery couriers",
-            })}
-          </Button>
-          <Button
-            type="button"
-            variant={tab === "pickup" ? "default" : "outline"}
-            disabled={!canReadPickupManifests}
-            onClick={() => setTab("pickup")}
-            title={
-              !canReadPickupManifests
-                ? t("manifestsGlobal.pickupPermissionRequired", {
-                    defaultValue: "Missing permission: warehouses.manage_transfer",
-                  })
-                : undefined
-            }
-          >
-            {t("warehouse.manifests.tabs.pickupCouriers", {
-              defaultValue: "Pickup couriers",
-            })}
-          </Button>
-        </div>
+        <p className="text-muted-foreground text-sm">
+          {tab === "delivery"
+            ? t("manifestsGlobal.listDescription", {
+                defaultValue: "Browse delivery manifests across warehouses and dates.",
+              })
+            : t("manifestsGlobal.pickupDescription", {
+                defaultValue: "Browse pickup movement manifests (transfer/return) across warehouses.",
+              })}
+        </p>
 
         <Card>
           <CardHeader>
@@ -283,7 +301,7 @@ export function AllCourierManifestsPage() {
               </Button>
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-5">
+              <div className="grid gap-3 md:grid-cols-4">
                 <select
                   className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-xl border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                   value={pickupWarehouseId}
@@ -297,16 +315,6 @@ export function AllCourierManifestsPage() {
                       {w.name}
                     </option>
                   ))}
-                </select>
-
-                <select
-                  className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-xl border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  value={pickupType}
-                  onChange={(e) => setPickupType(e.target.value as "" | WarehouseMovementManifestType)}
-                >
-                  <option value="">{t("common.all", { defaultValue: "All" })}</option>
-                  <option value="TRANSFER">TRANSFER</option>
-                  <option value="RETURN">RETURN</option>
                 </select>
 
                 <select
@@ -328,7 +336,6 @@ export function AllCourierManifestsPage() {
                   variant="outline"
                   onClick={() => {
                     setPickupWarehouseId("")
-                    setPickupType("")
                     setPickupStatus("")
                     setPickupDate("")
                   }}
@@ -419,9 +426,6 @@ export function AllCourierManifestsPage() {
                         })}
                       </TableHead>
                       <TableHead>
-                        {t("warehouse.pickupManifests.columns.type", { defaultValue: "Type" })}
-                      </TableHead>
-                      <TableHead>
                         {t("warehouse.pickupManifests.columns.status", { defaultValue: "Status" })}
                       </TableHead>
                       <TableHead>
@@ -433,7 +437,7 @@ export function AllCourierManifestsPage() {
                         })}
                       </TableHead>
                       <TableHead className="text-right">
-                        {t("warehouse.pickupManifests.columns.lines", { defaultValue: "Lines" })}
+                        {t("warehouse.pickupManifests.columns.tasks", { defaultValue: "Tasks" })}
                       </TableHead>
                       <TableHead className="text-right">
                         {t("warehouse.pickupManifests.columns.actions", { defaultValue: "Actions" })}
@@ -441,7 +445,7 @@ export function AllCourierManifestsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(pickupManifestsQuery.data?.manifests ?? []).map((m) => {
+                    {pickupManifestRows.map((m) => {
                       const transferDate = m.transferDate ?? m.createdAt.slice(0, 10)
                       const fromName = warehouseNameById.get(m.fromWarehouseId) ?? m.fromWarehouseId
                       const toName = m.toWarehouseId
@@ -468,7 +472,6 @@ export function AllCourierManifestsPage() {
                             {fromName}
                           </TableCell>
                           <TableCell className="font-medium">{transferDate}</TableCell>
-                          <TableCell className="font-medium">{m.type}</TableCell>
                           <TableCell>
                             <span
                               className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${pickupStatusTone}`}
@@ -478,13 +481,11 @@ export function AllCourierManifestsPage() {
                           </TableCell>
                           <TableCell className="max-w-[16rem] truncate">{toName}</TableCell>
                           <TableCell className="max-w-[16rem] truncate">{courierName}</TableCell>
-                          <TableCell className="text-right">{m.lineCount}</TableCell>
+                          <TableCell className="text-right">{m.taskCount}</TableCell>
                           <TableCell className="text-right">
                             <Button type="button" variant="outline" size="sm" asChild>
                               <Link
-                                to={`/warehouses/${encodeURIComponent(
-                                  m.fromWarehouseId,
-                                )}/manifests/pickup/${encodeURIComponent(m.id)}`}
+                                to={`/courier-manifests/pickup/${encodeURIComponent(m.id)}`}
                               >
                                 {t("common.view", { defaultValue: "View" })}
                               </Link>
@@ -493,10 +494,9 @@ export function AllCourierManifestsPage() {
                         </TableRow>
                       )
                     })}
-                    {!pickupManifestsQuery.isLoading &&
-                    (pickupManifestsQuery.data?.manifests ?? []).length === 0 ? (
+                    {!pickupManifestsQuery.isLoading && pickupManifestRows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-muted-foreground py-8 text-center text-sm">
+                        <TableCell colSpan={7} className="text-muted-foreground py-8 text-center text-sm">
                           {t("warehouse.pickupManifests.empty", {
                             defaultValue: "No pickup manifests found.",
                           })}

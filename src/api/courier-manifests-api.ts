@@ -1,4 +1,5 @@
 import { apiFetch } from "@/api/client"
+import type { DeliveryManifestListRow } from "@/api/delivery-manifests-api"
 
 type CourierManifestShipment = {
   id: string
@@ -28,6 +29,23 @@ export type CourierManifestRow = {
   warehouse: { id: string; name: string; governorate: string }
   deliveryZone: { id: string; name: string | null; governorate: string }
   shipments: CourierManifestShipment[]
+}
+
+export function courierManifestRowToListRow(r: CourierManifestRow): DeliveryManifestListRow {
+  return {
+    id: r.id,
+    manifestDate: r.manifestDate,
+    plannedDispatchDate: null,
+    status: r.status,
+    shipmentCount: r.shipmentCount,
+    totalCod: Number.parseFloat(r.totalCod) || 0,
+    lockedAt: r.lockedAt,
+    dispatchedAt: r.dispatchedAt,
+    createdAt: r.createdAt,
+    courier: r.courier,
+    warehouse: r.warehouse,
+    deliveryZone: r.deliveryZone,
+  }
 }
 
 export type ListCourierManifestResponse = {

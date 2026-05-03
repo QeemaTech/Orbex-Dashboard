@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 import type { ManifestRouteStop } from "@/api/delivery-manifests-api"
 import { Button } from "@/components/ui/button"
 
@@ -7,7 +9,18 @@ type Props = {
   onSelectOrder?: (order: number) => void
 }
 
+function stopHeading(s: ManifestRouteStop, t: (k: string, o?: Record<string, string | number>) => string): string {
+  if (s.labelParts) {
+    return s.labelParts.merchantName?.trim()
+      ? s.labelParts.merchantName.trim()
+      : t("warehouse.pickupManifests.routeStopUnknownMerchant", { defaultValue: "Merchant" })
+  }
+  if (s.label?.trim()) return s.label.trim()
+  return s.shipmentId
+}
+
 export function StopList({ stops, selectedOrder, onSelectOrder }: Props) {
+  const { t } = useTranslation()
   if (!stops.length) return null
 
   return (
@@ -19,6 +32,13 @@ export function StopList({ stops, selectedOrder, onSelectOrder }: Props) {
           .sort((a, b) => a.order - b.order)
           .map((s) => {
             const selected = selectedOrder === s.order
+            const batchLine =
+              s.labelParts != null
+                ? t("warehouse.pickupManifests.shipmentsCount", {
+                    count: s.labelParts.shipmentCount,
+                    defaultValue: "{{count}} shipments",
+                  })
+                : null
             return (
               <Button
                 key={`${s.shipmentId}-${s.order}`}
@@ -32,7 +52,10 @@ export function StopList({ stops, selectedOrder, onSelectOrder }: Props) {
                     {s.order}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{s.shipmentId}</p>
+                    <p className="truncate text-sm font-medium">{stopHeading(s, t)}</p>
+                    {batchLine ? (
+                      <p className="text-muted-foreground text-xs font-medium">{batchLine}</p>
+                    ) : null}
                     <p className="text-muted-foreground line-clamp-2 text-xs">{s.address}</p>
                   </div>
                 </div>

@@ -133,6 +133,14 @@
       "paymentMethod": "طريقة الدفع",
       "status": "الحالة",
       "csConfirmedAt": "تأكيد خدمة العملاء"
+    },
+    "executionColumns": {
+      "taskType": "نوع المهمة",
+      "from": "من",
+      "to": "إلى"
+    },
+    "executionTaskType": {
+      "DELIVERY": "تسليم أخير"
     }
   },
   "deliveryProof": {
@@ -282,6 +290,10 @@
     "colOrderCount": "الشحنات",
     "colTotalValue": "القيمة الإجمالية",
     "colBatchPipelineStatus": "حالة مسار الدفعة",
+    "colResolution": "التسوية",
+    "badgeResolved": "تم التسوية",
+    "badgeNotResolved": "غير مسوّى",
+    "badgeFinished": "منتهٍ",
     "downloadTemplate": "تحميل القالب",
     "downloadTemplateSuccess": "تم تحميل القالب.",
     "downloadTemplateError": "تعذر تحميل القالب.",
@@ -321,6 +333,10 @@
     "fileUnavailable": "الملف غير متوفر",
     "updatePickupDate": "تحديث تاريخ الاستلام",
     "updateExcelSheet": "تحديث ملف Excel",
+    "viewExcelSheet": "عرض Excel",
+    "colImportExcel": "استيراد Excel",
+    "pendingPreviewTitle": "معاينة Excel",
+    "downloadOriginal": "تنزيل الملف الأصلي",
     "myOrders": {
       "pageTitle": "طلباتي",
       "description": "دفعات طلباتي — صف واحد لكل دفعة. صفِّ حسب المخزن لعرض نشاط المحور.",
@@ -1072,7 +1088,7 @@
     },
     "pickupManifests": {
       "listTitle": "بيانات مناديب الاستلام",
-      "listDescription": "استعراض بيانات حركة مناديب الاستلام (نقل/إرجاع).",
+      "listDescription": "استعراض بيانات حركة مناديب الاستلام (استلام من التاجر، نقل بين المخازن، إرجاع للتاجر).",
       "transferDate": "تاريخ التحويل",
       "columns": {
         "transferDate": "تاريخ التحويل",
@@ -1081,14 +1097,14 @@
         "fromWarehouse": "من",
         "toWarehouse": "إلى",
         "pickupCourier": "مندوب الاستلام",
-        "lines": "السطور",
+        "tasks": "المهام",
         "actions": "الإجراءات"
       },
       "empty": "لا توجد بيانات لمناديب الاستلام.",
       "detailTitle": "بيان مندوب الاستلام",
       "detailTitleWithId": "بيان مندوب الاستلام {{id}}",
       "summaryTitle": "ملخص",
-      "summaryDescription": "بيان حركة لمناديب الاستلام (نقل/إرجاع).",
+      "summaryDescription": "بيان حركة لمناديب الاستلام (استلام من التاجر، نقل بين المخازن، إرجاع للتاجر).",
       "fields": {
         "type": "النوع",
         "status": "الحالة",
@@ -1099,11 +1115,12 @@
         "pickupCourier": "مندوب الاستلام",
         "lockedAt": "وقت القفل",
         "dispatchedAt": "وقت الإرسال",
-        "closedAt": "وقت الإغلاق"
+        "closedAt": "وقت الإغلاق",
+        "taskCount": "المهام"
       },
-      "linesTitle": "السطور",
-      "linesDescription": "الشحنات الموجودة داخل بيان حركة مندوب الاستلام.",
-      "linesEmpty": "لا توجد سطور.",
+      "linesTitle": "مهام الشحن (المخزن)",
+      "linesDescription": "مهام الشحن لكل سطر على بيان الحركة (نقل / إرجاع للتاجر).",
+      "linesEmpty": "لا توجد مهام شحن على هذا البيان.",
       "dispatchConfirm": {
         "body": "هل تريد إرسال هذا البيان وجعل المهام في حالة قيد التنفيذ؟"
       },
@@ -1114,6 +1131,56 @@
         "taskType": "نوع المهمة",
         "taskStatus": "حالة المهمة",
         "actions": "الإجراءات"
+      },
+      "pickupStopsTitle": "نقاط استلام التاجر",
+      "tasksTitle": "مهام بيان المندوب",
+      "tasksDescription": "استلام دفعات من التجار وحركات الشحن بين المخازن في بيان نفس يوم المندوب.",
+      "routePreviewTitle": "المسار المقترح",
+      "routePreviewDescription": "جولة من المخزن مع محطات استلام من التاجر ومحطات إرجاع مجمّعة للتاجر مرتبة حسب المسافة (مسار تقريبي).",
+      "viewMerchantBatch": "تفاصيل دفعة التاجر",
+      "pickupColumns": {
+        "merchant": "التاجر",
+        "address": "عنوان الاستلام",
+        "status": "حالة المهمة",
+        "order": "طلب التاجر",
+        "stopType": "نوع الاستلام",
+        "shipments": "الشحنات"
+      },
+      "movementManifestType": {
+        "PICKUP": "استلام من التاجر",
+        "TRANSFER": "نقل بين المخازن",
+        "RETURN": "إرجاع للتاجر"
+      },
+      "executionTaskType": {
+        "PICKUP": "استلام من التاجر",
+        "TRANSFER": "نقل بين المخازن",
+        "RETURN_TO_MERCHANT": "إرجاع للتاجر",
+        "DELIVERY": "تسليم أخير"
+      },
+      "executionColumns": {
+        "taskType": "نوع المهمة",
+        "from": "من",
+        "to": "إلى",
+        "status": "الحالة",
+        "reference": "مرجع",
+        "actions": "إجراءات"
+      },
+      "merchantBatchPickup": "استلام دفعة من التاجر",
+      "batchHint": "{{count}} شحنة عميل في هذه الدفعة",
+      "shipmentsCount": "{{count}} شحنة",
+      "routeStopMarkerTitle": "{{merchant}} — {{count}} شحنة",
+      "routeStopUnknownMerchant": "التاجر",
+      "returnGroup": {
+        "pageTitle": "إرجاع للتاجر",
+        "backToManifest": "العودة إلى البيان",
+        "notFound": "لم يُعثر على محطة الإرجاع هذه في البيان.",
+        "summaryLine": "{{count}} شحنة إرجاع لهذا التاجر في هذا البيان.",
+        "shipmentsTitle": "شحنات الإرجاع",
+        "shipmentsDescription": "افتح السطر لسجل المسح وتفاصيل الشحنة.",
+        "colTracking": "التتبع",
+        "colShipmentStatus": "حالة الشحنة",
+        "colTaskStatus": "حالة المهمة",
+        "previewLink": "معاينة شحنات الإرجاع"
       }
     },
     "table": {
@@ -1126,6 +1193,7 @@
       "orderCount": "طلبات العملاء",
       "totalValue": "القيمة الإجمالية",
       "batchTransfer": "حالة التحويل",
+      "batchResolution": "تسوية الدفعة",
       "pickupCourier": "مندوب الاستلام",
       "batchPipelineStatus": "حالة مسار الدفعة",
       "lineDelivery": "تسليم السطر",

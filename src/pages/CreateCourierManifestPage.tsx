@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react"
-import { useMutation, useQueries, useQuery } from "@tanstack/react-query"
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 
-import { createCourierManifest } from "@/api/courier-manifests-api"
+import { courierManifestRowToListRow, createCourierManifest } from "@/api/courier-manifests-api"
+import type { DeliveryManifestListResponse } from "@/api/delivery-manifests-api"
 import {
   getWarehouseCouriers,
   getWarehouseSite,
@@ -31,6 +32,7 @@ type GroupRow = {
 export function CreateCourierManifestPage() {
   const { t } = useTranslation()
   const nav = useNavigate()
+  const queryClient = useQueryClient()
   const { warehouseId = "" } = useParams<{ warehouseId: string }>()
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
@@ -129,6 +131,35 @@ export function CreateCourierManifestPage() {
     },
     onSuccess: (created) => {
       showToast(t("warehouse.manifests.create.success"), "success")
+      const row = courierManifestRowToListRow(created)
+      const prependIfDefaultView = (old: DeliveryManifestListResponse | undefined) => {
+        if (!old) return old
+        if (old.items.some((i) => i.id === row.id)) return old
+        return { ...old, items: [row, ...old.items], total: old.total + 1 }
+      }
+      queryClient.setQueriesData<DeliveryManifestListResponse>(
+        {
+          predicate: (q) => {
+            const k = q.queryKey
+            const kind = k[0]
+            if (kind !== "delivery-manifests-list" && kind !== "delivery-manifests-global") return false
+            if (k[1] !== token) return false
+            const page = k[6] as number
+            if (page !== 1) return false
+            if (String(k[3] ?? "") || String(k[4] ?? "") || String(k[5] ?? "")) return false
+            if (kind === "delivery-manifests-list" && k[2] !== warehouseId) return false
+            if (kind === "delivery-manifests-global") {
+              const wh = String(k[2] ?? "")
+              if (wh && wh !== warehouseId) return false
+            }
+            return true
+          },
+        },
+        prependIfDefaultView,
+      )
+      void queryClient.invalidateQueries({ queryKey: ["delivery-manifests-list"] })
+      void queryClient.invalidateQueries({ queryKey: ["delivery-manifests-global"] })
+      void queryClient.invalidateQueries({ queryKey: ["manifest-candidates", token, warehouseId] })
       nav(`/warehouses/${encodeURIComponent(warehouseId)}/manifests/${encodeURIComponent(created.id)}`)
     },
     onError: (error) => showToast((error as Error).message, "error"),

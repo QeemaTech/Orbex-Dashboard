@@ -108,7 +108,34 @@ export type DeliveryManifestDetail = {
     paymentMethod: string
     status: string
     csConfirmedAt: string | null
+    taskType: "DELIVERY"
+    fromLabel: string
+    toLabel: string
+    customer: {
+      id: string
+      customerName: string
+      addressText: string
+      phonePrimary: string
+    } | null
   }>
+}
+
+/** Map create/detail payload to a list row for optimistic cache updates. */
+export function deliveryManifestDetailToListRow(d: DeliveryManifestDetail): DeliveryManifestListRow {
+  return {
+    id: d.id,
+    manifestDate: d.manifestDate,
+    plannedDispatchDate: d.plannedDispatchDate,
+    status: d.status as DeliveryManifestListRow["status"],
+    shipmentCount: d.shipmentCount,
+    totalCod: Number.parseFloat(d.totalCod) || 0,
+    lockedAt: d.lockedAt,
+    dispatchedAt: d.dispatchedAt,
+    createdAt: d.createdAt,
+    courier: d.courier,
+    warehouse: d.warehouse,
+    deliveryZone: d.deliveryZone,
+  }
 }
 
 export type LatLng = { lat: number; lng: number }
@@ -119,6 +146,13 @@ export type ManifestRouteStop = {
   lat: number
   lng: number
   address: string
+  /** Display label (e.g. merchant name for pickup manifests). */
+  label?: string
+  /** Movement-manifest pickup stops: compose localized title with {@link label}. */
+  labelParts?: {
+    merchantName: string | null
+    shipmentCount: number
+  }
 }
 
 export type ManifestRouteStatus = "READY" | "FAILED" | "PENDING" | (string & {})

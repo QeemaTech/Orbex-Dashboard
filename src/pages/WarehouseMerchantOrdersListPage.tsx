@@ -8,6 +8,7 @@ import type { PickupCourierRow } from "@/api/pickup-couriers-api"
 import { Layout } from "@/components/layout/Layout"
 import { MerchantBatchStatusWithWarehouse } from "@/components/shared/StatusWithWarehouseContext"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -195,6 +196,7 @@ export function WarehouseMerchantOrdersListPage() {
                     <TableHead>{t("warehouse.table.orderCount")}</TableHead>
                     <TableHead>{t("warehouse.table.totalValue")}</TableHead>
                     <TableHead>{t("warehouse.table.batchTransfer")}</TableHead>
+                    <TableHead>{t("warehouse.table.batchResolution")}</TableHead>
                     <TableHead>{t("warehouse.table.pickupCourier")}</TableHead>
                     <TableHead>{t("warehouse.table.updatedAt")}</TableHead>
                   </TableRow>
@@ -221,6 +223,24 @@ export function WarehouseMerchantOrdersListPage() {
                             assignedWarehouseName={row.assignedWarehouse?.name}
                             contextWarehouseId={warehouseId}
                           />
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <div className="flex flex-wrap gap-1">
+                            {row.isResolved ? (
+                              <Badge variant="default" className="text-xs">
+                                {t("merchantOrdersList.badgeResolved", { defaultValue: "Resolved" })}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                {t("merchantOrdersList.badgeNotResolved", { defaultValue: "Not resolved" })}
+                              </Badge>
+                            )}
+                            {row.isFinished ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {t("merchantOrdersList.badgeFinished", { defaultValue: "Done" })}
+                              </Badge>
+                            ) : null}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm">{row.pickupCourier?.fullName ?? getNotApplicable()}</TableCell>
                         <TableCell>{formatDateTime(row.updatedAt, locale)}</TableCell>

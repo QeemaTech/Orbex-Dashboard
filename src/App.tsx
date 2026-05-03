@@ -53,6 +53,7 @@ import { PackagingInventoryPage } from "@/pages/PackagingInventoryPage"
 import { PickupCouriersPage } from "@/pages/PickupCouriersPage"
 import { PickupCourierManifestsListPage } from "@/pages/PickupCourierManifestsListPage"
 import { PickupCourierManifestDetailPage } from "@/pages/PickupCourierManifestDetailPage"
+import { PickupManifestReturnGroupPage } from "@/pages/PickupManifestReturnGroupPage"
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -356,6 +357,32 @@ export default function App() {
           }
         />
         <Route
+          path="/courier-manifests/pickup/:movementManifestId/returns/:returnGroupKey"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.manage_transfer"]}
+              >
+                <PickupManifestReturnGroupPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/courier-manifests/pickup/:movementManifestId"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.manage_transfer"]}
+              >
+                <PickupCourierManifestDetailPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/courier-manifests/:manifestId"
           element={
             <Protected>
@@ -603,6 +630,19 @@ export default function App() {
           }
         />
         <Route
+          path="/warehouses/:warehouseId/manifests/pickup/:movementManifestId/returns/:returnGroupKey"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.manage_transfer"]}
+              >
+                <PickupManifestReturnGroupPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/warehouses/:warehouseId/manifests/pickup/:movementManifestId"
           element={
             <Protected>
@@ -669,7 +709,10 @@ export default function App() {
           path="/warehouses/:warehouseId/merchant-orders/:merchantOrderId/shipments"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredAnyPermissions={["warehouses.read", "warehouses.manage_transfer"]}
+              >
                 <RedirectWarehouseMerchantOrderShipmentsToDetail />
               </ProtectedRole>
             </Protected>
@@ -679,7 +722,10 @@ export default function App() {
           path="/warehouses/:warehouseId/merchant-orders/:merchantOrderId"
           element={
             <Protected>
-              <ProtectedRole allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredAnyPermissions={["warehouses.read", "warehouses.manage_transfer"]}
+              >
                 <MerchantOrderDetailsPage />
               </ProtectedRole>
             </Protected>
@@ -691,7 +737,7 @@ export default function App() {
             <Protected>
               <ProtectedRole
                 allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
-                requiredPermissions={["warehouses.manage_transfer"]}
+                requiredAnyPermissions={["warehouses.read", "warehouses.manage_transfer"]}
               >
                 <RedirectWarehouseTransferShipmentsToDetail />
               </ProtectedRole>
@@ -705,7 +751,7 @@ export default function App() {
 
               <ProtectedRole
                 allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
-                requiredPermissions={["warehouses.manage_transfer"]}
+                requiredAnyPermissions={["warehouses.read", "warehouses.manage_transfer"]}
               >
                 <MerchantOrderDetailsPage />
               </ProtectedRole>

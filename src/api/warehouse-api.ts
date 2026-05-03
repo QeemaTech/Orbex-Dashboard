@@ -180,6 +180,9 @@ export type WarehouseMerchantOrderRow = {
   } | null
   /** Batch hub assignment when returned by queue/orders APIs. */
   assignedWarehouse?: { id: string; name: string } | null
+  /** Same semantics as merchant-order detail (`computeMerchantOrderResolutionFlags`). */
+  isResolved: boolean
+  isFinished: boolean
 }
 
 export type WarehouseOrdersResponse = {

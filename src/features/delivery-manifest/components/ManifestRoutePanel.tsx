@@ -1,5 +1,6 @@
 import { memo, useMemo, useRef, useState } from "react"
 import { GoogleMap, Marker, Polyline } from "@react-google-maps/api"
+import { useTranslation } from "react-i18next"
 
 import type { LatLng, ManifestRoute, ManifestRouteStop } from "@/api/delivery-manifests-api"
 import { useGoogleMapsLoader } from "@/features/delivery-zones/hooks/useGoogleMapsLoader"
@@ -28,9 +29,30 @@ function normalizeStops(stops: ManifestRouteStop[] | undefined): ManifestRouteSt
       lat: Number(s.lat),
       lng: Number(s.lng),
       address: String(s.address ?? ""),
+      ...(s.label?.trim() ? { label: s.label.trim() } : {}),
+      ...(s.labelParts ? { labelParts: s.labelParts } : {}),
     }))
     .filter((s) => Number.isFinite(s.order) && Number.isFinite(s.lat) && Number.isFinite(s.lng))
     .sort((a, b) => a.order - b.order)
+}
+
+function pickupStopMarkerTitle(
+  s: ManifestRouteStop,
+  t: (k: string, o?: Record<string, string | number>) => string,
+): string {
+  if (s.labelParts) {
+    const merchant = s.labelParts.merchantName?.trim()
+      ? s.labelParts.merchantName.trim()
+      : t("warehouse.pickupManifests.routeStopUnknownMerchant", { defaultValue: "Merchant" })
+    return t("warehouse.pickupManifests.routeStopMarkerTitle", {
+      merchant,
+      count: s.labelParts.shipmentCount,
+      defaultValue: "{{merchant}} — {{count}} shipments",
+    })
+  }
+  if (s.label?.trim()) return s.label.trim()
+  if (s.address?.trim()) return s.address.trim()
+  return s.shipmentId
 }
 
 export const ManifestRoutePanel = memo(function ManifestRoutePanel({
@@ -39,6 +61,7 @@ export const ManifestRoutePanel = memo(function ManifestRoutePanel({
   isLoading,
   error,
 }: Props) {
+  const { t } = useTranslation()
   const { isLoaded } = useGoogleMapsLoader(apiKey)
   const mapRef = useRef<google.maps.Map | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<number | undefined>(undefined)
@@ -115,7 +138,7 @@ export const ManifestRoutePanel = memo(function ManifestRoutePanel({
               key={`${s.shipmentId}-${s.order}`}
               position={{ lat: s.lat, lng: s.lng }}
               label={{ text: String(s.order), color: "white", fontSize: "12px", fontWeight: "600" }}
-              title={s.address}
+              title={pickupStopMarkerTitle(s, t)}
               onClick={() => setSelectedOrder(s.order)}
             />
           ))}
