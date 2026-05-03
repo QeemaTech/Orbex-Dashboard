@@ -23,13 +23,16 @@ export function orderMovementManifestTasksByRoute(
       .filter((t): t is Extract<MovementManifestUnifiedTask, { kind: "PICKUP_TASK" }> => t.kind === "PICKUP_TASK")
       .map((t) => [t.id, t]),
   )
-  const returnGroupByStopId = new Map(
+  const returnGroupByStopId = new Map<
+    string,
+    Extract<MovementManifestUnifiedTask, { kind: "RETURN_TO_MERCHANT_GROUP" }>
+  >(
     nonTransfers
       .filter(
         (t): t is Extract<MovementManifestUnifiedTask, { kind: "RETURN_TO_MERCHANT_GROUP" }> =>
           t.kind === "RETURN_TO_MERCHANT_GROUP",
       )
-      .map((t) => [`return:${t.merchantId}`, t] as const),
+      .map((t) => [`return:${t.merchantId}`, t]),
   )
 
   const sortedStops = [...orderedStops].sort((a, b) => a.order - b.order)
