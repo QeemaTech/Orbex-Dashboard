@@ -4,6 +4,7 @@ import { Plus } from "react-lucid"
 
 import { listPackagingMaterialStock } from "@/api/packaging-material-stock-api"
 import { Layout } from "@/components/layout/Layout"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -63,6 +64,7 @@ type StockForm = {
   warehouseId: string
   availableQuantity: string
   reservedQuantity: string
+  minimumStockThreshold: string
 }
 
 function emptyForm(): MaterialForm {
@@ -83,6 +85,7 @@ function emptyStockForm(): StockForm {
     warehouseId: "",
     availableQuantity: "",
     reservedQuantity: "0",
+    minimumStockThreshold: "",
   }
 }
 
@@ -128,6 +131,7 @@ export function PackagingMaterialsPage() {
         packagingMaterialId: string
         availableQuantity: string
         reservedQuantity: string
+        isLowStock?: boolean
       }> = []
       while (page <= maxPages) {
         const res = await listPackagingMaterialStock({ token, page, pageSize })
@@ -137,6 +141,7 @@ export function PackagingMaterialsPage() {
             packagingMaterialId: row.packagingMaterialId,
             availableQuantity: row.availableQuantity,
             reservedQuantity: row.reservedQuantity,
+            isLowStock: row.isLowStock,
           })
         }
         if (all.length >= total) break
@@ -149,14 +154,19 @@ export function PackagingMaterialsPage() {
   })
 
   const stockByMaterialId = useMemo(() => {
-    const m = new Map<string, { available: number; reserved: number }>()
+    const m = new Map<string, { available: number; reserved: number; isLowStock: boolean }>()
     for (const r of stockAggQuery.data?.rows ?? []) {
       const a = Number(r.availableQuantity)
       const rv = Number(r.reservedQuantity)
-      const prev = m.get(r.packagingMaterialId) ?? { available: 0, reserved: 0 }
+      const prev = m.get(r.packagingMaterialId) ?? {
+        available: 0,
+        reserved: 0,
+        isLowStock: false,
+      }
       m.set(r.packagingMaterialId, {
         available: prev.available + (Number.isFinite(a) ? a : 0),
         reserved: prev.reserved + (Number.isFinite(rv) ? rv : 0),
+        isLowStock: prev.isLowStock || Boolean(r.isLowStock),
       })
     }
     return m
@@ -193,6 +203,7 @@ export function PackagingMaterialsPage() {
       warehouseId: material.defaultWarehouseId ?? "",
       availableQuantity: "",
       reservedQuantity: "0",
+      minimumStockThreshold: "",
     })
     setModalOpen(true)
   }
@@ -253,6 +264,9 @@ export function PackagingMaterialsPage() {
           packagingMaterialId: saved.id,
           availableQuantity: stockForm.availableQuantity,
           reservedQuantity: stockForm.reservedQuantity || "0",
+          ...(stockForm.minimumStockThreshold.trim() !== ""
+            ? { minimumStockThreshold: stockForm.minimumStockThreshold.trim() }
+            : {}),
         })
       }
 
@@ -333,7 +347,18 @@ export function PackagingMaterialsPage() {
                             (() => {
                               const s = stockByMaterialId.get(row.id)
                               if (!s) return "—"
-                              return `${s.available.toLocaleString()} / ${s.reserved.toLocaleString()}`
+                              return (
+                                <span className="inline-flex flex-wrap items-center justify-end gap-2">
+                                  <span>
+                                    {s.available.toLocaleString()} / {s.reserved.toLocaleString()}
+                                  </span>
+                                  {s.isLowStock ? (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Low
+                                    </Badge>
+                                  ) : null}
+                                </span>
+                              )
                             })()
                           )}
                         </TableCell>
@@ -576,6 +601,25 @@ export function PackagingMaterialsPage() {
                         }))
                       }
                       placeholder="0"
+                    />
+                  </div>
+
+                  <div className="grid gap-1 sm:col-span-2">
+                    <label className="text-muted-foreground text-xs font-medium">
+                      Low-stock threshold (optional, this hub/SKU)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={stockForm.minimumStockThreshold}
+                      onChange={(event) =>
+                        setStockForm((prev) => ({
+                          ...prev,
+                          minimumStockThreshold: event.target.value,
+                        }))
+                      }
+                      placeholder="Leave empty to clear"
                     />
                   </div>
                 </div>

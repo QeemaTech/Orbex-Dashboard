@@ -5,26 +5,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { PackagingRequestStatusStepper } from "@/features/packaging-material/components/PackagingRequestStatusStepper"
+import { PackagingRequestDetailsBody } from "@/features/packaging-material/components/PackagingRequestDetailsBody"
+import { PackagingRequestPaymentForm } from "@/features/packaging-material/components/PackagingRequestPaymentForm"
 import type { PackagingRequestDetails } from "@/features/packaging-material/types"
+import { canRecordPackagingRequestPayment } from "@/features/packaging-material/utils/packaging-material.utils"
+import type { AuthUser } from "@/lib/auth-context"
 
 export function PackagingRequestDetailsDrawer(props: {
   open: boolean
   onOpenChange: (open: boolean) => void
   data: PackagingRequestDetails | null
   isLoading?: boolean
+  token?: string
+  user?: AuthUser | null
 }) {
+  const showPayment =
+    !!props.token &&
+    !!props.data?.request.id &&
+    canRecordPackagingRequestPayment(props.user)
+
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Packaging request details</DialogTitle>
           <DialogDescription>
@@ -32,58 +34,16 @@ export function PackagingRequestDetailsDrawer(props: {
           </DialogDescription>
         </DialogHeader>
 
-        {props.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+        <PackagingRequestDetailsBody data={props.data} isLoading={props.isLoading} />
 
-        {props.data ? (
-          <div className="space-y-4">
-            <PackagingRequestStatusStepper status={props.data.request.status} />
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <p>
-                <span className="font-semibold">Status:</span> {props.data.request.status}
-              </p>
-              <p>
-                <span className="font-semibold">Estimated:</span>{" "}
-                {props.data.request.totalEstimatedCost}
-              </p>
-              <p>
-                <span className="font-semibold">Final:</span>{" "}
-                {props.data.request.totalFinalCost ?? "—"}
-              </p>
-              <p>
-                <span className="font-semibold">Merchant:</span>{" "}
-                {props.data.request.merchantName || props.data.request.merchantId}
-              </p>
-            </div>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Material SKU</TableHead>
-                    <TableHead>Requested</TableHead>
-                    <TableHead>Approved</TableHead>
-                    <TableHead>Delivered</TableHead>
-                    <TableHead>Subtotal</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {props.data.items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-mono text-xs">
-                        {item.packagingMaterialSku || item.packagingMaterialId}
-                      </TableCell>
-                      <TableCell>{item.requestedQuantity}</TableCell>
-                      <TableCell>{item.approvedQuantity ?? "—"}</TableCell>
-                      <TableCell>{item.deliveredQuantity ?? "—"}</TableCell>
-                      <TableCell>{item.subtotal}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+        {showPayment ? (
+          <PackagingRequestPaymentForm
+            token={props.token!}
+            requestId={props.data!.request.id}
+            request={props.data.request}
+          />
         ) : null}
       </DialogContent>
     </Dialog>
   )
 }
-

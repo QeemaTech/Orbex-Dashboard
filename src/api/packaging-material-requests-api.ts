@@ -22,6 +22,8 @@ export const packagingMaterialRequestStatuses = [
 
 export type PackagingMaterialRequestStatus = (typeof packagingMaterialRequestStatuses)[number]
 
+export type PackagingMaterialRequestPaymentStatus = "UNPAID" | "PAID"
+
 export type PackagingMaterialRequest = {
   id: string
   requestNumber: string
@@ -34,6 +36,20 @@ export type PackagingMaterialRequest = {
   createdById: string
   createdAt: string
   updatedAt: string
+  paymentStatus?: PackagingMaterialRequestPaymentStatus
+  invoiceReference?: string | null
+  paymentMethod?: string | null
+  paymentNotes?: string | null
+  paymentRecordedAt?: string | null
+  collectedAmount?: string
+  paymentRecordedById?: string | null
+  deliveredById?: string | null
+  deliveredAt?: string | null
+  receiverName?: string | null
+  receiverNotes?: string | null
+  proofAttachmentUrl?: string | null
+  linkedMerchantOrderCount?: number
+  linkedMerchantOrderIds?: string[]
 }
 
 export type PackagingMaterialRequestItem = {
@@ -51,6 +67,7 @@ export type PackagingMaterialRequestItem = {
 export type PackagingMaterialRequestDetailsResponse = {
   request: PackagingMaterialRequest
   items: PackagingMaterialRequestItem[]
+  allowedNextStatuses?: PackagingMaterialRequestStatus[]
 }
 
 export type ListPackagingMaterialRequestsParams = {
@@ -128,6 +145,80 @@ export async function patchPackagingMaterialRequestStatus(params: {
       method: "PATCH",
       token: params.token,
       body: JSON.stringify({ status: params.status }),
+    },
+  )
+}
+
+export type ApprovePackagingMaterialRequestLineInput = {
+  itemId: string
+  approvedQuantity: string | number
+}
+
+export async function approvePackagingMaterialRequestWithLines(params: {
+  token: string
+  id: string
+  items: ApprovePackagingMaterialRequestLineInput[]
+}): Promise<PackagingMaterialRequestDetailsResponse> {
+  return apiFetch<PackagingMaterialRequestDetailsResponse>(
+    `/api/packaging-materials/requests/${encodeURIComponent(params.id)}/approve`,
+    {
+      method: "POST",
+      token: params.token,
+      body: JSON.stringify({ items: params.items }),
+    },
+  )
+}
+
+export type DeliverPackagingMaterialRequestLineInput = {
+  itemId: string
+  deliveredQuantity: string | number
+}
+
+export async function deliverPackagingMaterialRequestWithDetails(params: {
+  token: string
+  id: string
+  receiverName?: string | null
+  receiverNotes?: string | null
+  proofAttachmentUrl?: string | null
+  items?: DeliverPackagingMaterialRequestLineInput[]
+}): Promise<PackagingMaterialRequestDetailsResponse> {
+  const body: Record<string, unknown> = {
+    receiverName: params.receiverName ?? null,
+    receiverNotes: params.receiverNotes ?? null,
+    proofAttachmentUrl: params.proofAttachmentUrl ?? null,
+  }
+  if (params.items && params.items.length > 0) {
+    body.items = params.items
+  }
+  return apiFetch<PackagingMaterialRequestDetailsResponse>(
+    `/api/packaging-materials/requests/${encodeURIComponent(params.id)}/deliver`,
+    {
+      method: "POST",
+      token: params.token,
+      body: JSON.stringify(body),
+    },
+  )
+}
+
+export async function patchPackagingMaterialRequestPayment(params: {
+  token: string
+  id: string
+  amount: string | number
+  invoiceReference?: string | null
+  paymentMethod?: string | null
+  paymentNotes?: string | null
+}): Promise<PackagingMaterialRequestDetailsResponse> {
+  return apiFetch<PackagingMaterialRequestDetailsResponse>(
+    `/api/packaging-materials/requests/${encodeURIComponent(params.id)}/payment`,
+    {
+      method: "PATCH",
+      token: params.token,
+      body: JSON.stringify({
+        amount: params.amount,
+        invoiceReference: params.invoiceReference ?? null,
+        paymentMethod: params.paymentMethod ?? null,
+        paymentNotes: params.paymentNotes ?? null,
+      }),
     },
   )
 }

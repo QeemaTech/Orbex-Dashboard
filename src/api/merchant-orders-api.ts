@@ -94,6 +94,10 @@ export type CsShipmentRow = {
   isResolved?: boolean
   /** Every line delivered or returned to merchant. */
   isFinished?: boolean
+  /** Batch linked packaging request id when confirmed with packaging. */
+  packagingMaterialRequestId?: string | null
+  packagingRequested?: boolean
+  packagingFee?: string | null
   createdAt: string
   updatedAt: string
   statusEvents?: CsShipmentStatusEvent[]
@@ -1050,6 +1054,13 @@ export type PendingMerchantOrderImportRow = {
   createdAt: string
   createdByUserId: string | null
   createdByName: string | null
+  hasPackagingMaterialRequest?: boolean
+  packagingMaterialRequestId?: string | null
+  packagingRequestSummary?: {
+    requestNumber: string
+    status: string
+    totalEstimatedCost: string
+  } | null
 }
 
 export type PendingMerchantOrderImportsResponse = {
@@ -1078,6 +1089,13 @@ export type PendingMerchantOrderImportPreviewResponse = {
   rowCount: number
   pickupDate: string
   rows: PendingMerchantOrderImportPreviewRow[]
+  hasPackagingMaterialRequest?: boolean
+  packagingMaterialRequestId?: string | null
+  packagingRequestSummary?: {
+    requestNumber: string
+    status: string
+    totalEstimatedCost: string
+  } | null
 }
 
 export type PendingMerchantOrderImportVersionRow = {

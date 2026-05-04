@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, PackageCheck, Printer } from "react-lucid"
-import { useCallback, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useLocation, useParams } from "react-router-dom"
 
@@ -10,11 +10,7 @@ import {
   getShipmentById,
   getShipmentOrders,
 } from "@/api/merchant-orders-api"
-import {
-  getShipmentLabelRaw,
-  markShipmentLabelPrinted,
-  patchShipmentAssignedWarehouse,
-} from "@/api/shipments-api"
+import { patchShipmentAssignedWarehouse } from "@/api/shipments-api"
 import { getWarehousePickupCouriers, listWarehouseSites } from "@/api/warehouse-api"
 import {
   completePickupTask,
@@ -44,6 +40,7 @@ import {
 } from "@/components/ui/dialog"
 import { getPerspectiveStatusKey } from "@/features/shipment-status/status-view-mappers"
 import type { DashboardPerspective } from "@/features/shipment-status/status-types"
+import { PackagingRequestPreviewModal } from "@/features/packaging-material/components/PackagingRequestPreviewModal"
 import { ShipmentTimeline } from "@/features/shipments/components/ShipmentTimeline"
 import { WarehouseShipmentOrdersTable } from "@/features/warehouse/components/WarehouseShipmentOrdersTable"
 import { formatShipmentStatusEventLine } from "@/features/warehouse/backend-labels"
@@ -51,7 +48,6 @@ import type { AuthUser } from "@/lib/auth-context"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { isWarehouseScopedMerchantOrderPath } from "@/lib/warehouse-merchant-order-routes"
 import { isWarehouseAdmin, isWarehouseStaff } from "@/lib/warehouse-access"
-import { printerService } from "@/services/printer.service"
 import { showToast } from "@/lib/toast"
 
 type PickupTaskStatus = "PENDING" | "ASSIGNED" | "PICKED_UP" | "COMPLETED" | "CANCELLED"
@@ -183,6 +179,7 @@ export function MerchantOrderDetailsPage() {
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("")
   const [bulkReturnModalOpen, setBulkReturnModalOpen] = useState(false)
+  const [packagingPreviewId, setPackagingPreviewId] = useState<string | null>(null)
   const [selectedPickupCourierId, setSelectedPickupCourierId] = useState("")
   const [bulkReturnTransferDate, setBulkReturnTransferDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
@@ -219,8 +216,6 @@ export function MerchantOrderDetailsPage() {
   const canFinalizeReturnsPermission =
     (user?.permissions?.includes("merchant_orders.finalize_returns") ?? false) &&
     !merchantContext
-  const [isPrinting, setIsPrinting] = useState(false)
-
   const bulkReturnMut = useMutation({
     mutationFn: (input: { pickupCourierId: string; transferDate: string }) =>
       bulkReturnRejectedToMerchant({
@@ -283,38 +278,6 @@ export function MerchantOrderDetailsPage() {
       )
     },
   })
-
-  const handlePrintAllLabels = useCallback(async () => {
-    const shipments = ordersSummaryQuery.data?.shipments
-    if (!shipments || shipments.length === 0) return
-    if (isPrinting) return
-
-    setIsPrinting(true)
-    try {
-      await printerService.connect()
-      let printed = 0
-
-      for (const shipment of shipments) {
-        if (!shipment.trackingNumber) continue
-        try {
-          const label = await getShipmentLabelRaw({ token, shipmentId: shipment.id })
-          if (label?.sbpl) {
-            await printerService.printShipmentLabel(label)
-            await markShipmentLabelPrinted({ token, shipmentId: shipment.id })
-            printed++
-          }
-        } catch {
-          console.error("Failed to print:", shipment.trackingNumber)
-        }
-      }
-
-      showToast(t("shipments.detail.labelsPrinted", { count: printed }), "success")
-    } catch (err) {
-      showToast((err as Error).message, "error")
-    } finally {
-      setIsPrinting(false)
-    }
-  }, [t, token, ordersSummaryQuery.data, isPrinting])
 
   const canEditWarehouseAssignment =
     (user?.permissions?.includes("merchant_orders.update") ??
@@ -418,6 +381,26 @@ export function MerchantOrderDetailsPage() {
     : isCsRoute
       ? "/cs/merchant-orders"
       : "/merchant-orders"
+
+  const bulkSheetPrintHref = useMemo(() => {
+    if (!hasValidBatchId) return ""
+    const enc = encodeURIComponent(merchantOrderId)
+    const returnTo = encodeURIComponent(`${location.pathname}${location.search}`)
+    const q = `returnTo=${returnTo}`
+    if (isCsRoute) return `/cs/merchant-orders/${enc}/print-labels?${q}`
+    if (isWarehouseRoute && warehouseId.trim()) {
+      return `/warehouses/${encodeURIComponent(warehouseId.trim())}/merchant-orders/${enc}/print-labels?${q}`
+    }
+    return `/merchant-orders/${enc}/print-labels?${q}`
+  }, [
+    hasValidBatchId,
+    merchantOrderId,
+    location.pathname,
+    location.search,
+    isCsRoute,
+    isWarehouseRoute,
+    warehouseId,
+  ])
 
   const tableMode = isWarehouseRoute ? "warehouse" : "compact"
 
@@ -526,6 +509,49 @@ export function MerchantOrderDetailsPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {q.data.packagingMaterialRequestId || q.data.packagingRequested ? (
+                  <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <span className="font-medium">
+                      {t("merchantOrdersList.linkedPackaging", {
+                        defaultValue: "Linked packaging request",
+                      })}
+                      :
+                    </span>
+                    {q.data.packagingMaterialRequestId ? (
+                      <>
+                        <Badge variant="secondary">
+                          {t("merchantOrdersList.packagingYes", { defaultValue: "Yes" })}
+                        </Badge>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setPackagingPreviewId(q.data.packagingMaterialRequestId!)}
+                        >
+                          {t("merchantOrdersList.viewPackagingRequest", { defaultValue: "View" })}
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {t("merchantOrdersList.packagingRequestedPending", {
+                          defaultValue: "Requested — link a request before confirm",
+                        })}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <span className="font-medium">
+                      {t("merchantOrdersList.linkedPackaging", {
+                        defaultValue: "Linked packaging request",
+                      })}
+                      :
+                    </span>
+                    <Badge variant="outline">
+                      {t("merchantOrdersList.packagingNo", { defaultValue: "No" })}
+                    </Badge>
+                  </div>
+                )}
                 {isWarehouseRoute ? (
                   <>
                     <div className="grid gap-2 md:grid-cols-2">
@@ -741,18 +767,28 @@ export function MerchantOrderDetailsPage() {
                     </CardDescription>
                   </div>
                   {canPrintLabel ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePrintAllLabels}
-                      disabled={isPrinting || !ordersSummaryQuery.data?.shipments.length}
-                    >
-                      <Printer className="mr-2 size-4" />
-                      {isPrinting
-                        ? t("common.printing", { defaultValue: "Printing..." })
-                        : t("shipments.detail.printAll", { defaultValue: "Print All Labels" })}
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                          !bulkSheetPrintHref || !ordersSummaryQuery.data?.shipments.length
+                        }
+                        onClick={() => {
+                          if (bulkSheetPrintHref) {
+                            window.open(
+                              bulkSheetPrintHref,
+                              "_blank",
+                              "noopener,noreferrer",
+                            )
+                          }
+                        }}
+                      >
+                        <Printer className="mr-2 size-4" aria-hidden />
+                        {t("shipments.detail.printAll", { defaultValue: "Print all labels" })}
+                      </Button>
+                    </div>
                   ) : null}
                 </div>
               </CardHeader>
@@ -763,6 +799,7 @@ export function MerchantOrderDetailsPage() {
                   warehouseId={isWarehouseRoute ? warehouseId : undefined}
                   mode={tableMode}
                   isPrepaidFull={isPrepaidFull}
+                  showAssignCourier={false}
                 />
               </CardContent>
             </Card>
@@ -907,6 +944,15 @@ export function MerchantOrderDetailsPage() {
         </DialogContent>
       </Dialog>
 
+      <PackagingRequestPreviewModal
+        open={packagingPreviewId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPackagingPreviewId(null)
+        }}
+        token={token}
+        requestId={packagingPreviewId}
+        user={user}
+      />
     </Layout>
   )
 }

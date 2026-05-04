@@ -39,6 +39,7 @@ import {
   type WarehouseScanMode,
 } from "@/components/warehouse/WarehouseScanner"
 import { listDeliveryZones } from "@/api/delivery-zones-api"
+import { WarehouseHubPackagingStockSection } from "@/features/warehouse/components/WarehouseHubPackagingStockSection"
 import { batchResolutionLabel } from "@/lib/warehouse-batch-resolution"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { Layout } from "@/components/layout/Layout"
@@ -499,6 +500,8 @@ export function WarehouseDetailPage() {
     user?.permissions?.includes("warehouses.scan_out") === true ||
     canManageTransfer ||
     user?.permissions?.includes("warehouses.manage") === true
+  const canReadPackagingStock =
+    user?.permissions?.includes("packaging_materials.read") ?? false
 
   const refreshData = useCallback(async () => {
     await Promise.all([
@@ -507,6 +510,9 @@ export function WarehouseDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["warehouse-stats", token] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-orders", token] }),
       queryClient.invalidateQueries({ queryKey: ["warehouse-standalone-shipments", token, warehouseId] }),
+      queryClient.invalidateQueries({
+        queryKey: ["warehouse-hub-packaging-stock", token, warehouseId],
+      }),
     ])
   }, [queryClient, token, warehouseId])
 
@@ -1054,6 +1060,10 @@ export function WarehouseDetailPage() {
               ))}
             </div>
           </div>
+        ) : null}
+
+        {!accessDenied && warehouseId.trim() && canReadPackagingStock ? (
+          <WarehouseHubPackagingStockSection token={token} warehouseId={warehouseId.trim()} />
         ) : null}
 
         {shipmentsView ? (
