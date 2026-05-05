@@ -25,6 +25,7 @@ import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
+import { MerchantOrderBulkLabelPrintPage } from "@/pages/MerchantOrderBulkLabelPrintPage"
 import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
 import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
 import { ShipmentLabelPrintPage } from "@/pages/ShipmentLabelPrintPage"
@@ -33,6 +34,7 @@ import { ShipmentLinesListPage } from "@/pages/ShipmentLinesListPage"
 import { WarehouseDetailPage } from "@/pages/WarehouseDetailPage"
 import { WarehouseMerchantOrdersListPage } from "@/pages/WarehouseMerchantOrdersListPage"
 import { WarehouseShipmentsListPage } from "@/pages/WarehouseShipmentsListPage"
+import { WarehousePackagingStockPage } from "@/pages/WarehousePackagingStockPage"
 import { DeliveryManifestListPage } from "@/features/delivery-manifest/DeliveryManifestListPage"
 import { DeliveryManifestWorkspacePage } from "@/features/delivery-manifest/DeliveryManifestWorkspacePage"
 import { WarehouseRedirectPage } from "@/pages/WarehouseRedirectPage"
@@ -258,6 +260,16 @@ export default function App() {
           element={
             <Protected>
               <MerchantOrderDetailsPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/merchant-orders/:merchantOrderId/print-labels"
+          element={
+            <Protected>
+              <ProtectedRole allowed={[]} requiredPermissions={["shipments.label"]}>
+                <MerchantOrderBulkLabelPrintPage />
+              </ProtectedRole>
             </Protected>
           }
         />
@@ -604,6 +616,19 @@ export default function App() {
           }
         />
         <Route
+          path="/warehouses/:warehouseId/packaging-stock"
+          element={
+            <Protected>
+              <ProtectedRole
+                allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
+                requiredPermissions={["warehouses.read", "packaging_materials.read"]}
+              >
+                <WarehousePackagingStockPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/warehouses/:warehouseId/manifests"
           element={
             <Protected>
@@ -735,6 +760,16 @@ export default function App() {
           }
         />
         <Route
+          path="/warehouses/:warehouseId/merchant-orders/:merchantOrderId/print-labels"
+          element={
+            <Protected>
+              <ProtectedRole allowed={[]} requiredPermissions={["shipments.label"]}>
+                <MerchantOrderBulkLabelPrintPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
           path="/warehouses/:warehouseId/transfers/:merchantOrderId/shipments"
           element={
             <Protected>
@@ -843,6 +878,16 @@ export default function App() {
                 requiredPermissions={["merchant_orders.read"]}
               >
                 <MerchantOrderDetailsPage />
+              </ProtectedRole>
+            </Protected>
+          }
+        />
+        <Route
+          path="/cs/merchant-orders/:merchantOrderId/print-labels"
+          element={
+            <Protected>
+              <ProtectedRole allowed={[]} requiredPermissions={["shipments.label"]}>
+                <MerchantOrderBulkLabelPrintPage />
               </ProtectedRole>
             </Protected>
           }

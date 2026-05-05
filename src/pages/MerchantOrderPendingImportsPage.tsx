@@ -14,6 +14,7 @@ import {
 } from "@/api/merchant-orders-api"
 import { getWarehousePickupCouriers } from "@/api/warehouse-api"
 import { Layout } from "@/components/layout/Layout"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -38,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { PackagingRequestPreviewModal } from "@/features/packaging-material/components/PackagingRequestPreviewModal"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 
 export function MerchantOrderPendingImportsPage() {
@@ -55,6 +57,7 @@ export function MerchantOrderPendingImportsPage() {
   const [replacementFile, setReplacementFile] = useState<File | null>(null)
   const [confirmImportId, setConfirmImportId] = useState<string | null>(null)
   const [confirmPickupCourierId, setConfirmPickupCourierId] = useState("")
+  const [packagingPreviewId, setPackagingPreviewId] = useState<string | null>(null)
 
   const pendingQuery = useQuery({
     queryKey: ["merchant-order-pending-imports", token],
@@ -224,6 +227,33 @@ export function MerchantOrderPendingImportsPage() {
                     })}
                   </p>
                   <p className="text-muted-foreground">{row.fileName}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-muted-foreground text-xs font-medium">
+                      {t("merchantOrdersList.packagingColumn", { defaultValue: "Packaging" })}:
+                    </span>
+                    {row.hasPackagingMaterialRequest ? (
+                      <>
+                        <Badge variant="secondary">
+                          {t("merchantOrdersList.packagingYes", { defaultValue: "Yes" })}
+                        </Badge>
+                        {row.packagingMaterialRequestId ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="link"
+                            className="h-auto px-1 py-0"
+                            onClick={() => setPackagingPreviewId(row.packagingMaterialRequestId!)}
+                          >
+                            {t("merchantOrdersList.viewPackagingRequest", { defaultValue: "View" })}
+                          </Button>
+                        ) : null}
+                      </>
+                    ) : (
+                      <Badge variant="outline">
+                        {t("merchantOrdersList.packagingNo", { defaultValue: "No" })}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" size="sm" variant="outline" onClick={() => setPreviewImportId(row.id)}>
@@ -296,6 +326,43 @@ export function MerchantOrderPendingImportsPage() {
           ) : null}
           {!previewQuery.isLoading && !previewQuery.error ? (
             <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <span className="font-medium">
+                  {t("merchantOrdersList.linkedPackaging", {
+                    defaultValue: "Linked packaging request",
+                  })}
+                  :
+                </span>
+                {previewQuery.data?.hasPackagingMaterialRequest ? (
+                  <>
+                    <Badge variant="secondary">
+                      {t("merchantOrdersList.packagingYes", { defaultValue: "Yes" })}
+                    </Badge>
+                    {previewQuery.data.packagingRequestSummary?.requestNumber ? (
+                      <span className="text-muted-foreground">
+                        ({previewQuery.data.packagingRequestSummary.requestNumber} ·{" "}
+                        {previewQuery.data.packagingRequestSummary.status})
+                      </span>
+                    ) : null}
+                    {previewQuery.data.packagingMaterialRequestId ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setPackagingPreviewId(previewQuery.data!.packagingMaterialRequestId!)
+                        }
+                      >
+                        {t("merchantOrdersList.viewPackagingRequest", { defaultValue: "View" })}
+                      </Button>
+                    ) : null}
+                  </>
+                ) : (
+                  <Badge variant="outline">
+                    {t("merchantOrdersList.packagingNo", { defaultValue: "No" })}
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 {(previewQuery.data?.rowCount ?? 0).toLocaleString()}{" "}
                 {t("merchantOrdersList.colOrderCount", { defaultValue: "orders" })}
@@ -542,6 +609,16 @@ export function MerchantOrderPendingImportsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PackagingRequestPreviewModal
+        open={packagingPreviewId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPackagingPreviewId(null)
+        }}
+        token={token}
+        requestId={packagingPreviewId}
+        user={user}
+      />
     </Layout>
   )
 }

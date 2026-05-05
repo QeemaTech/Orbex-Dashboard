@@ -1,6 +1,13 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import {
+  extractPlainTitle,
+  shouldAutoFitChildren,
+  TableCellAutoFit,
+} from "@/components/ui/table-cell-auto-fit"
+
+export type TableCellFit = "auto" | "text" | "off"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
@@ -40,7 +47,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
       data-slot="table-footer"
       className={cn(
         "bg-muted/50 border-t font-medium [&>tr]:last:border-b-0",
-        className
+        className,
       )}
       {...props}
     />
@@ -53,36 +60,80 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
       data-slot="table-row"
       className={cn(
         "data-[state=selected]:bg-muted border-b border-border/65 transition-all duration-200 hover:-translate-y-px hover:bg-primary/5",
-        className
+        className,
       )}
       {...props}
     />
   )
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+type TableHeadProps = React.ComponentProps<"th"> & {
+  cellFit?: TableCellFit
+}
+
+function TableHead({
+  className,
+  cellFit = "auto",
+  children,
+  ...props
+}: TableHeadProps) {
+  const useAutoFit =
+    cellFit === "text" || (cellFit === "auto" && shouldAutoFitChildren(children))
+
+  const inner = useAutoFit ? (
+    <TableCellAutoFit title={extractPlainTitle(children)}>
+      {children}
+    </TableCellAutoFit>
+  ) : (
+    <div className="min-w-0 w-full max-w-full">{children}</div>
+  )
+
   return (
     <th
       data-slot="table-head"
       className={cn(
-        "text-muted-foreground min-h-12 px-4 py-3 text-start align-middle text-xs font-semibold tracking-wide uppercase [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
+        "text-muted-foreground overflow-hidden min-h-12 px-4 py-3 text-start align-middle text-xs font-semibold tracking-wide uppercase [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className,
       )}
       {...props}
-    />
+    >
+      {inner}
+    </th>
   )
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+type TableCellProps = React.ComponentProps<"td"> & {
+  cellFit?: TableCellFit
+}
+
+function TableCell({
+  className,
+  cellFit = "auto",
+  children,
+  ...props
+}: TableCellProps) {
+  const useAutoFit =
+    cellFit === "text" || (cellFit === "auto" && shouldAutoFitChildren(children))
+
+  const inner = useAutoFit ? (
+    <TableCellAutoFit title={extractPlainTitle(children)}>
+      {children}
+    </TableCellAutoFit>
+  ) : (
+    <div className="min-w-0 w-full max-w-full">{children}</div>
+  )
+
   return (
     <td
       data-slot="table-cell"
       className={cn(
-        "px-4 py-3 text-start align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
+        "overflow-hidden px-4 py-3 text-start align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className,
       )}
       {...props}
-    />
+    >
+      {inner}
+    </td>
   )
 }
 

@@ -31,6 +31,7 @@ type HubNavItem = {
     | "nav.warehouseMerchantOrders"
     | "nav.warehouseStandaloneShipments"
     | "nav.warehouseManifests"
+    | "nav.warehousePackagingStock"
   icon: typeof Warehouse
   end: boolean
   perm?: string
@@ -66,6 +67,13 @@ function buildHubWarehouseNavItems(
       icon: Package,
       end: false,
       perm: "warehouses.read",
+    },
+    {
+      to: `${base}/packaging-stock`,
+      labelKey: "nav.warehousePackagingStock",
+      icon: Boxes,
+      end: false,
+      perm: "packaging_materials.read",
     },
     ...(isMainHub
       ? [

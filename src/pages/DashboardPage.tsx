@@ -48,6 +48,7 @@ import { listWarehouseSites } from "@/api/warehouse-api"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { getDefaultDashboardRoute, isMerchantUser, useAuth } from "@/lib/auth-context"
 import { batchResolutionLabel } from "@/lib/warehouse-batch-resolution"
+import { WarehouseHubPackagingStockSection } from "@/features/warehouse/components/WarehouseHubPackagingStockSection"
 import { isWarehouseAdmin } from "@/lib/warehouse-access"
 import { isMainBranch } from "@/lib/warehouse-utils"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
@@ -140,6 +141,9 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
       hasPermission(user, "dashboard.view"))
   const canListUsers = !!token && hasPermission(user, "users.read") && !isWhAdmin
   const canListWarehouses = !!token && hasPermission(user, "warehouses.read")
+  const canReadPackagingStock =
+    !!token && (user?.permissions?.includes("packaging_materials.read") ?? false)
+  const warehouseAdminHubId = user?.adminWarehouse?.id ?? null
 
   const warehousesPreview = useQuery({
     queryKey: ["dashboard-warehouse-sites", token, variant],
@@ -400,6 +404,10 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
               ) : null}
             </CardContent>
           </Card>
+        ) : null}
+
+        {isWhAdmin && warehouseAdminHubId && canReadPackagingStock ? (
+          <WarehouseHubPackagingStockSection token={token} warehouseId={warehouseAdminHubId} />
         ) : null}
 
         {canReadMerchantOrderKpis ? (

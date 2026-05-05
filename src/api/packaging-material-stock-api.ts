@@ -18,6 +18,8 @@ export type PackagingMaterialStockRow = {
   packagingMaterialId: string
   availableQuantity: string
   reservedQuantity: string
+  minimumStockThreshold?: string | null
+  isLowStock?: boolean
   lastUpdated: string
   warehouse: { id: string; name: string }
   packagingMaterial: Pick<
@@ -46,6 +48,7 @@ export type UpsertPackagingMaterialStockInput = {
   packagingMaterialId: string
   availableQuantity: string | number
   reservedQuantity?: string | number
+  minimumStockThreshold?: string | number | null
 }
 
 export async function listPackagingMaterialStock(

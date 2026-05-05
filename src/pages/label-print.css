@@ -256,7 +256,8 @@
     margin: 0;
   }
 
-  html, body {
+  html,
+  body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
@@ -306,4 +307,43 @@
     height: var(--label-height-px) !important;
     overflow: hidden !important;
   }
+
+  /* Bulk label route: allow multiple pages (not in last commit; keeps bulk print usable) */
+  html.label-print-bulk,
+  html.label-print-bulk body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .label-print-root.label-print-root--bulk {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    align-items: center;
+  }
+
+  .label-print-root--bulk .label-print-bulk-page {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .label-print-root--bulk .label-print-bulk-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
+.label-print-root--bulk {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 24px;
+  padding-top: 24px;
+  padding-bottom: 32px;
 }

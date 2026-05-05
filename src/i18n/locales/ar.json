@@ -10,6 +10,7 @@
     "warehouseMerchantOrders": "طلبات التجار بالمخزن",
     "warehouseStandaloneShipments": "شحنات المخزن",
     "warehouseManifests": "بيانات المندوبين",
+    "warehousePackagingStock": "مخزون التغليف",
     "orders": "الشحنات",
     "warehouse": "المخزن",
     "warehouseSites": "مواقع المخازن",
@@ -257,6 +258,9 @@
       }
     },
     "printLabel": "طباعة الملصق",
+    "label": {
+      "printPortraitHint": "اضبط الطابعة ونافذة الطباعة على حجم ورق/ملصق 102×152 مم ليطابق هذا الملصق. إذا كانت المعاينة خاطئة، جرّب تبديل الاتجاه (عمودي/أفقي) مرة مع مراقبة المعاينة."
+    },
     "labelPrinted": "تم إرسال الملصق للطابعة",
     "labelsPrinted": "تم طباعة {{count}} ملصقات",
     "printAll": "طباعة كل الملصقات",
@@ -618,7 +622,16 @@
       "currencyLocale": "ar-EG",
       "finalizeReturns": "إنهاء المرتجعات",
       "finalizeReturnsSuccess": "تم إنهاء {{finalized}} شحنة مرتجعة؛ {{skipped}} شحنة كانت مسلّمة بالفعل.",
-      "finalizeReturnsError": "تعذّر إنهاء مرتجعات طلب التاجر."
+      "finalizeReturnsError": "تعذّر إنهاء مرتجعات طلب التاجر.",
+      "printAllSheets": "طباعة كل الملصقات"
+    },
+    "bulkLabelPrint": {
+      "loading": "جاري تحميل الملصقات…",
+      "loadError": "تعذّر تحميل الملصقات.",
+      "none": "لا توجد ملصقات للطباعة (يلزم رقم تتبع لكل شحنة).",
+      "skippedNoTracking": "تم تخطي {{count}} شحنة (بدون تتبع).",
+      "partialFail": "فشل تحميل {{count}} ملصق.",
+      "noShipments": "لا توجد شحنات في طلب التاجر هذا."
     },
     "viewOrders": "عرض شحنات العملاء",
     "backToShipment": "العودة لطلب التاجر",
@@ -968,6 +981,20 @@
       "inWarehouse": "داخل المخزن",
       "partiallyDelivered": "دفعات مسلّمة جزئيًا",
       "delivered": "دفعات مسلّمة بالكامل"
+    },
+    "packagingStock": {
+      "title": "مخزون مواد التعبئة",
+      "description": "الكميات المتاحة والمحجوزة لهذا المركز (كل المواد التي لها سجل مخزون في هذا المخزن).",
+      "manageLink": "مواد التعبئة",
+      "loading": "جاري تحميل المخزون…",
+      "error": "تعذّر تحميل مخزون التعبئة.",
+      "empty": "لا توجد سجلات مخزون تعبئة لهذا المخزن بعد.",
+      "partialHint": "عرض {{shown}} من {{total}} سجلًا (تم بلوغ الحد). افتح «مواد التعبئة» لعرض أو تعديل الكل.",
+      "colMaterial": "المادة",
+      "colSku": "رمز SKU",
+      "colAvailable": "المتاح",
+      "colReserved": "المحجوز",
+      "colFree": "غير المحجوز"
     },
     "shipmentInsights": {
       "title": "الشحنات",

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Link } from "react-router-dom"
 import { Plus } from "react-lucid"
 
 import { Layout } from "@/components/layout/Layout"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -29,10 +31,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import {
+  canApprovePackagingRequestLines,
   canCreatePackagingRequests,
+  canDeliverPackagingRequest,
   canPatchPackagingRequestStatus,
   canReadAllPackagingRequests,
+  patchablePackagingNextStatuses,
 } from "@/features/packaging-material/utils/packaging-material.utils"
+import { PackagingRequestApproveDialog } from "@/features/packaging-material/components/PackagingRequestApproveDialog"
+import { PackagingRequestDeliverDialog } from "@/features/packaging-material/components/PackagingRequestDeliverDialog"
 import {
   useCreatePackagingMaterialRequest,
   usePackagingMaterialRequestById,
@@ -48,7 +55,10 @@ import {
   type PackagingRequestStepStatus,
 } from "@/features/packaging-material/types"
 import { PackagingRequestDetailsDrawer } from "@/features/packaging-material/components/PackagingRequestDetailsDrawer"
-import { packagingMaterialRequestStatuses } from "@/api/packaging-material-requests-api"
+import {
+  packagingMaterialRequestStatuses,
+  type PackagingMaterialRequestStatus,
+} from "@/api/packaging-material-requests-api"
 import { showToast } from "@/lib/toast"
 import { listMerchants, type MerchantRow } from "@/api/merchants-api"
 import { useQuery } from "@tanstack/react-query"
@@ -80,6 +90,10 @@ export function PackagingMaterialRequestsPage() {
 
   const [selectedRequestId, setSelectedRequestId] = useState("")
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [approveOpen, setApproveOpen] = useState(false)
+  const [approveRequestId, setApproveRequestId] = useState("")
+  const [deliverOpen, setDeliverOpen] = useState(false)
+  const [deliverRequestId, setDeliverRequestId] = useState("")
 
   const requestsQuery = usePackagingMaterialRequests({
     token,
@@ -95,6 +109,16 @@ export function PackagingMaterialRequestsPage() {
     token,
     requestId: selectedRequestId,
     enabled: detailsOpen && !!selectedRequestId,
+  })
+  const approveDetailsQuery = usePackagingMaterialRequestById({
+    token,
+    requestId: approveRequestId,
+    enabled: approveOpen && !!approveRequestId,
+  })
+  const deliverDetailsQuery = usePackagingMaterialRequestById({
+    token,
+    requestId: deliverRequestId,
+    enabled: deliverOpen && !!deliverRequestId,
   })
   const merchantUser = isMerchantUser(user)
   const merchantsQuery = useQuery({
@@ -118,6 +142,8 @@ export function PackagingMaterialRequestsPage() {
 
   const canCreate = canCreatePackagingRequests(user)
   const canPatchStatus = canPatchPackagingRequestStatus(user)
+  const canApproveLines = canApprovePackagingRequestLines(user)
+  const canDeliver = canDeliverPackagingRequest(user)
   const needsMerchantSelection = canCreate && !merchantUser
   const merchantsTotal = merchantsQuery.data?.total ?? 0
   const canLoadMoreMerchants = merchantOptions.length < merchantsTotal
@@ -273,6 +299,7 @@ export function PackagingMaterialRequestsPage() {
                       <TableHead>{t("packagingRequests.table.merchantId")}</TableHead>
                       <TableHead>{t("packagingRequests.table.status")}</TableHead>
                       <TableHead>{t("packagingRequests.table.estimatedCost")}</TableHead>
+                      <TableHead>Merchant order</TableHead>
                       <TableHead>{t("packagingRequests.table.createdAt")}</TableHead>
                       <TableHead>{t("packagingRequests.table.actions")}</TableHead>
                     </TableRow>
@@ -290,6 +317,28 @@ export function PackagingMaterialRequestsPage() {
                           <TableCell>{row.merchantName || row.merchantId}</TableCell>
                           <TableCell>{row.status}</TableCell>
                           <TableCell>{row.totalEstimatedCost}</TableCell>
+                          <TableCell>
+                            {(row.linkedMerchantOrderCount ?? 0) > 0 ? (
+                              <span className="flex flex-col gap-1">
+                                <Badge variant="secondary">Linked</Badge>
+                                {(row.linkedMerchantOrderIds ?? []).length > 0 ? (
+                                  <Link
+                                    className="text-primary text-xs underline"
+                                    to={`/merchant-orders/${encodeURIComponent(row.linkedMerchantOrderIds![0])}`}
+                                  >
+                                    Open batch
+                                  </Link>
+                                ) : null}
+                                {(row.linkedMerchantOrderCount ?? 0) > 1 ? (
+                                  <span className="text-muted-foreground text-xs">
+                                    +{(row.linkedMerchantOrderCount ?? 0) - 1} more
+                                  </span>
+                                ) : null}
+                              </span>
+                            ) : (
+                              <Badge variant="outline">Standalone</Badge>
+                            )}
+                          </TableCell>
                           <TableCell>{new Date(row.createdAt).toLocaleString()}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-2">
@@ -303,19 +352,45 @@ export function PackagingMaterialRequestsPage() {
                               >
                                 {t("packagingRequests.details")}
                               </Button>
+                              {canApproveLines && row.status === "PENDING" ? (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setApproveRequestId(row.id)
+                                    setApproveOpen(true)
+                                  }}
+                                >
+                                  Approve…
+                                </Button>
+                              ) : null}
+                              {canDeliver && row.status === "READY_FOR_DELIVERY" ? (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setDeliverRequestId(row.id)
+                                    setDeliverOpen(true)
+                                  }}
+                                >
+                                  Deliver…
+                                </Button>
+                              ) : null}
                               {canPatchStatus ? (
                                 <select
                                   className="border-input bg-background h-8 rounded border px-2 text-xs"
                                   defaultValue=""
                                   onChange={(event) => {
-                                    const nextStatus = event.target.value as PackagingRequestStepStatus
+                                    const nextStatus = event.target.value as PackagingMaterialRequestStatus
                                     if (!nextStatus) return
-                                    void onPatchStatus(row.id, nextStatus)
+                                    void onPatchStatus(row.id, nextStatus as PackagingRequestStepStatus)
                                     event.currentTarget.value = ""
                                   }}
                                 >
                                   <option value="">Set status…</option>
-                                  {packagingMaterialRequestStatuses.map((statusOption) => (
+                                  {patchablePackagingNextStatuses(row.status, user, {
+                                    merchantId: row.merchantId,
+                                  }).map((statusOption) => (
                                     <option key={statusOption} value={statusOption}>
                                       {statusOption}
                                     </option>
@@ -436,6 +511,30 @@ export function PackagingMaterialRequestsPage() {
         onOpenChange={setDetailsOpen}
         data={detailsQuery.data ?? null}
         isLoading={detailsQuery.isLoading}
+        token={token}
+        user={user}
+      />
+
+      <PackagingRequestApproveDialog
+        open={approveOpen}
+        onOpenChange={(open) => {
+          setApproveOpen(open)
+          if (!open) setApproveRequestId("")
+        }}
+        token={token}
+        requestId={approveRequestId}
+        items={approveDetailsQuery.data?.items}
+      />
+
+      <PackagingRequestDeliverDialog
+        open={deliverOpen}
+        onOpenChange={(open) => {
+          setDeliverOpen(open)
+          if (!open) setDeliverRequestId("")
+        }}
+        token={token}
+        requestId={deliverRequestId}
+        items={deliverDetailsQuery.data?.items}
       />
     </Layout>
   )

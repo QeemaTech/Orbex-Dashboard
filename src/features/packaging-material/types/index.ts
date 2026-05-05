@@ -51,6 +51,7 @@ export type PackagingRequestBuilderValidationResult = {
 export type PackagingRequestDetails = {
   request: PackagingMaterialRequest
   items: PackagingMaterialRequestItem[]
+  allowedNextStatuses?: PackagingMaterialRequestStatus[]
 }
 
 export type PackagingInventoryRow = PackagingMaterialStockRow

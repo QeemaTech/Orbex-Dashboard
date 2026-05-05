@@ -8,11 +8,16 @@ import {
   type UpdatePackagingMaterialInput,
 } from "@/api/packaging-materials-api"
 import {
+  approvePackagingMaterialRequestWithLines,
   createPackagingMaterialRequest,
+  deliverPackagingMaterialRequestWithDetails,
   getPackagingMaterialRequestById,
   listPackagingMaterialRequests,
+  patchPackagingMaterialRequestPayment,
   patchPackagingMaterialRequestStatus,
+  type ApprovePackagingMaterialRequestLineInput,
   type CreatePackagingMaterialRequestInput,
+  type DeliverPackagingMaterialRequestLineInput,
   type PackagingMaterialRequestStatus,
 } from "@/api/packaging-material-requests-api"
 import {
@@ -117,6 +122,66 @@ export function usePatchPackagingMaterialRequestStatus(token: string) {
   return useMutation({
     mutationFn: (input: { id: string; status: PackagingMaterialRequestStatus }) =>
       patchPackagingMaterialRequestStatus({ token, id: input.id, status: input.status }),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: ["packaging-material-requests"] })
+      void queryClient.invalidateQueries({
+        queryKey: ["packaging-material-request-by-id", token, data.request.id],
+      })
+    },
+  })
+}
+
+export function useApprovePackagingMaterialRequest(token: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string; items: ApprovePackagingMaterialRequestLineInput[] }) =>
+      approvePackagingMaterialRequestWithLines({ token, id: input.id, items: input.items }),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: ["packaging-material-requests"] })
+      void queryClient.invalidateQueries({
+        queryKey: ["packaging-material-request-by-id", token, data.request.id],
+      })
+    },
+  })
+}
+
+export function useDeliverPackagingMaterialRequest(token: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      id: string
+      receiverName?: string | null
+      receiverNotes?: string | null
+      proofAttachmentUrl?: string | null
+      items?: DeliverPackagingMaterialRequestLineInput[]
+    }) =>
+      deliverPackagingMaterialRequestWithDetails({
+        token,
+        id: input.id,
+        receiverName: input.receiverName,
+        receiverNotes: input.receiverNotes,
+        proofAttachmentUrl: input.proofAttachmentUrl,
+        items: input.items,
+      }),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: ["packaging-material-requests"] })
+      void queryClient.invalidateQueries({
+        queryKey: ["packaging-material-request-by-id", token, data.request.id],
+      })
+    },
+  })
+}
+
+export function usePatchPackagingMaterialRequestPayment(token: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      id: string
+      amount: string | number
+      invoiceReference?: string | null
+      paymentMethod?: string | null
+      paymentNotes?: string | null
+    }) => patchPackagingMaterialRequestPayment({ token, ...input }),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ["packaging-material-requests"] })
       void queryClient.invalidateQueries({

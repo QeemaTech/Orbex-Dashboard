@@ -13,6 +13,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { CsCourierMapDialog } from "@/features/customer-service/components/CsCourierMapDialog"
 import { useAuth } from "@/lib/auth-context"
 
@@ -107,26 +115,26 @@ export function CsCouriersPage() {
 
             {rows.length > 0 ? (
               <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
-                <table className="w-full min-w-[540px] text-sm">
-                  <thead className="bg-muted/40">
-                    <tr className="border-b">
-                      <th className="px-3 py-2 text-start font-medium">
+                <Table className="min-w-[540px]">
+                  <TableHeader className="bg-muted/40">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-sm font-medium normal-case tracking-normal">
                         {t("cs.couriers.table.name")}
-                      </th>
-                      <th className="px-3 py-2 text-start font-medium">
+                      </TableHead>
+                      <TableHead className="text-sm font-medium normal-case tracking-normal">
                         {t("cs.couriers.table.assignedCount")}
-                      </th>
-                      <th className="px-3 py-2 text-start font-medium">
+                      </TableHead>
+                      <TableHead className="text-sm font-medium normal-case tracking-normal">
                         {t("cs.couriers.table.location")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {rows.map((row) => (
-                      <tr key={row.courierId} className="border-b last:border-b-0">
-                        <td className="px-3 py-2">{row.courierName}</td>
-                        <td className="px-3 py-2">{row.assignedCount}</td>
-                        <td className="px-3 py-2">
+                      <TableRow key={row.courierId} className="hover:bg-transparent">
+                        <TableCell>{row.courierName}</TableCell>
+                        <TableCell>{row.assignedCount}</TableCell>
+                        <TableCell>
                           <Button
                             type="button"
                             size="icon"
@@ -138,11 +146,11 @@ export function CsCouriersPage() {
                           >
                             <MapPin className="size-5" aria-hidden />
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             ) : null}
           </CardContent>

@@ -10,6 +10,7 @@
     "warehouseMerchantOrders": "Warehouse merchant orders",
     "warehouseStandaloneShipments": "Warehouse shipments",
     "warehouseManifests": "Warehouse manifests",
+    "warehousePackagingStock": "Packaging stock",
     "orders": "Shipments",
     "warehouse": "Warehouse",
     "warehouseSites": "Warehouse sites",
@@ -271,9 +272,12 @@
       }
     },
     "printLabel": "Print label",
+    "label": {
+      "printPortraitHint": "Set printer and print dialog paper/label size to 102×152 mm to match this label. If the preview shows wrong strips or page count, toggle Layout (Portrait/Landscape) once while watching the preview."
+    },
     "labelPrinted": "Label sent to printer",
     "labelsPrinted": "Printed {{count}} labels",
-    "printAll": "Print All Labels",
+    "printAll": "Print all labels",
     "autoPrint": {
       "completed": "Printed {{count}} labels"
     }
@@ -641,7 +645,16 @@
       "returnRejectedError": "Could not create return tasks.",
       "finalizeReturns": "Finalize returns",
       "finalizeReturnsSuccess": "Finalized {{finalized}} shipment return(s); {{skipped}} already delivered.",
-      "finalizeReturnsError": "Could not finalize merchant order returns."
+      "finalizeReturnsError": "Could not finalize merchant order returns.",
+      "printAllSheets": "Print all labels"
+    },
+    "bulkLabelPrint": {
+      "loading": "Loading labels…",
+      "loadError": "Could not load labels.",
+      "none": "No printable labels (lines need a tracking number).",
+      "skippedNoTracking": "{{count}} line(s) skipped (no tracking).",
+      "partialFail": "{{count}} label(s) failed to load.",
+      "noShipments": "No shipments in this merchant order."
     },
     "viewOrders": "View shipments",
     "backToShipment": "Back to merchant order",
@@ -991,6 +1004,20 @@
       "inWarehouse": "At hub",
       "partiallyDelivered": "Partially delivered batches",
       "delivered": "Fully delivered batches"
+    },
+    "packagingStock": {
+      "title": "Packaging materials stock",
+      "description": "On-hand and reserved quantities for this hub (all materials with a stock row at this warehouse).",
+      "manageLink": "Packaging materials",
+      "loading": "Loading stock…",
+      "error": "Could not load packaging stock.",
+      "empty": "No packaging stock rows for this warehouse yet.",
+      "partialHint": "Showing {{shown}} of {{total}} rows (cap reached). Open Packaging materials to see or edit all.",
+      "colMaterial": "Material",
+      "colSku": "SKU",
+      "colAvailable": "Available",
+      "colReserved": "Reserved",
+      "colFree": "Unreserved"
     },
     "shipmentInsights": {
       "title": "Shipment lines",

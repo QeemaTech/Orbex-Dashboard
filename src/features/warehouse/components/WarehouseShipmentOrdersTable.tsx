@@ -18,7 +18,8 @@ import {
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
 
-const WAREHOUSE_COL_COUNT = 9
+const WAREHOUSE_COL_COUNT_FULL = 10
+const WAREHOUSE_COL_COUNT_NO_ASSIGN = 9
 const COMPACT_COL_COUNT = 6
 
 type Props = {
@@ -30,11 +31,13 @@ type Props = {
   mode?: "warehouse" | "compact"
   /** Fully prepaid batches should not show any customer-collectable amount. */
   isPrepaidFull?: boolean
+  /** When false and mode is warehouse, hides the manifest / assign courier column (e.g. merchant order batch detail). */
+  showAssignCourier?: boolean
 }
 
 /**
  * Customer shipments under a merchant order (batch). Row click opens line detail.
- * Warehouse mode: read-only courier name; manifest workflow uses the manifest pages.
+ * Warehouse mode: optional assignment column; clicks on the assign cell do not navigate.
  */
 export function WarehouseShipmentOrdersTable({
   token,
@@ -42,6 +45,7 @@ export function WarehouseShipmentOrdersTable({
   warehouseId: warehouseIdProp,
   mode = "warehouse",
   isPrepaidFull = false,
+  showAssignCourier = true,
 }: Props) {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -71,6 +75,11 @@ export function WarehouseShipmentOrdersTable({
   }
 
   if (!shipmentId) return null
+
+  const showAssignColumn = mode === "warehouse" && showAssignCourier
+  const warehouseColCount = showAssignCourier
+    ? WAREHOUSE_COL_COUNT_FULL
+    : WAREHOUSE_COL_COUNT_NO_ASSIGN
 
   const goToOrder = (orderId: string) => {
     if (
@@ -114,7 +123,12 @@ export function WarehouseShipmentOrdersTable({
                 <TableHead>{t("shipments.columns.paymentStatus")}</TableHead>
                 <TableHead>{t("cs.table.value", { defaultValue: "Value" })}</TableHead>
                 {mode === "warehouse" ? (
-                  <TableHead>{t("warehouse.table.courier", { defaultValue: "Courier" })}</TableHead>
+                  <>
+                    <TableHead>{t("warehouse.table.courier", { defaultValue: "Courier" })}</TableHead>
+                    {showAssignColumn ? (
+                      <TableHead>{t("warehouse.orders.assignColumn", { defaultValue: "Assign" })}</TableHead>
+                    ) : null}
+                  </>
                 ) : null}
               </TableRow>
             </TableHeader>
@@ -122,7 +136,7 @@ export function WarehouseShipmentOrdersTable({
               {ordersQuery.data.shipments.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={mode === "warehouse" ? WAREHOUSE_COL_COUNT : COMPACT_COL_COUNT}
+                    colSpan={mode === "warehouse" ? warehouseColCount : COMPACT_COL_COUNT}
                     className="text-muted-foreground text-center text-sm"
                   >
                     {t("shipments.empty")}
@@ -163,9 +177,36 @@ export function WarehouseShipmentOrdersTable({
                     </TableCell>
                     <TableCell>{formatMoney(isPrepaidFull ? "0" : p.shipmentValue)}</TableCell>
                     {mode === "warehouse" ? (
-                      <TableCell className="text-xs">
-                        {p.deliveryCourier?.fullName ?? "—"}
-                      </TableCell>
+                      <>
+                        <TableCell className="text-xs">
+                          {p.deliveryCourier?.fullName ?? "—"}
+                        </TableCell>
+                        {showAssignColumn ? (
+                          <TableCell onClick={stopAssignClick}>
+                            <div className="flex min-w-[12rem] flex-col gap-1">
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="h-8 text-xs"
+                                disabled={!deliveryReady || !hubContextWarehouseId}
+                                title={
+                                  !deliveryReady
+                                    ? t("shipments.planTask.hintCsRequired")
+                                    : undefined
+                                }
+                                onClick={() => {
+                                  if (!hubContextWarehouseId) return
+                                  navigate(
+                                    `/warehouses/${encodeURIComponent(hubContextWarehouseId)}/manifests/create`,
+                                  )
+                                }}
+                              >
+                                {t("warehouse.manifests.create.cta")}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        ) : null}
+                      </>
                     ) : null}
                   </TableRow>
                 ))
