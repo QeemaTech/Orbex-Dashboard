@@ -62,6 +62,7 @@ export function canCancelOwnPackagingRequest(user: AuthUser | null | undefined):
   return Boolean(user?.permissions?.includes("packaging_material_requests.cancel_own"))
 }
 
+/** @deprecated Prefer backend-driven `allowedNextStatuses`. */
 export function patchablePackagingNextStatuses(
   current: PackagingMaterialRequestStatus,
   user: AuthUser | null | undefined,

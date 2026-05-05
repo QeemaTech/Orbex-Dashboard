@@ -33,6 +33,7 @@ export type PackagingMaterial = {
   sellingPrice: string
   minimumRequestQuantity: string | null
   defaultWarehouseId: string | null
+  activeRequestsCount?: number
   isActive: boolean
   createdAt: string
   updatedAt: string

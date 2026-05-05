@@ -376,7 +376,7 @@ export function PackagingMaterialRequestsPage() {
                                   Deliver…
                                 </Button>
                               ) : null}
-                              {canPatchStatus ? (
+                              {canPatchStatus && (row.allowedNextStatuses ?? []).length > 0 ? (
                                 <select
                                   className="border-input bg-background h-8 rounded border px-2 text-xs"
                                   defaultValue=""
@@ -388,9 +388,7 @@ export function PackagingMaterialRequestsPage() {
                                   }}
                                 >
                                   <option value="">Set status…</option>
-                                  {patchablePackagingNextStatuses(row.status, user, {
-                                    merchantId: row.merchantId,
-                                  }).map((statusOption) => (
+                                  {(row.allowedNextStatuses ?? []).map((statusOption) => (
                                     <option key={statusOption} value={statusOption}>
                                       {statusOption}
                                     </option>

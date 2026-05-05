@@ -35,6 +35,7 @@ export type PackagingMaterialRequest = {
   merchantId: string
   merchantName: string | null
   status: PackagingMaterialRequestStatus
+  allowedNextStatuses?: PackagingMaterialRequestStatus[]
   notes: string | null
   totalEstimatedCost: string
   totalFinalCost: string | null
