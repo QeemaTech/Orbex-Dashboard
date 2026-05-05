@@ -167,7 +167,7 @@ export function MerchantOrderBulkLabelPrintPage() {
     return (
       <div className="label-print-root label-print-root--bulk no-print space-y-3 p-6 text-sm">
         <p>{msg}</p>
-        <Link className="underline" to={closeHref}>
+        <Link className="underline text-black" to={closeHref}>
           {t("shipments.label.close", { defaultValue: "Close" })}
         </Link>
       </div>
@@ -225,7 +225,7 @@ export function MerchantOrderBulkLabelPrintPage() {
             })}
           </p>
         ) : null}
-        <Link className="underline" to={closeHref}>
+        <Link className="underline text-black" to={closeHref}>
           {t("shipments.label.close", { defaultValue: "Close" })}
         </Link>
       </div>
@@ -238,13 +238,13 @@ export function MerchantOrderBulkLabelPrintPage() {
         <div className="flex flex-wrap justify-center gap-2">
           <button
             type="button"
-            className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm"
+            className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm text-black"
             onClick={printAll}
           >
             {t("shipments.label.printAgain", { defaultValue: "Print again" })}
           </button>
           <Link
-            className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm no-underline"
+            className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm text-black no-underline"
             to={closeHref}
           >
             {t("shipments.label.close", { defaultValue: "Close" })}

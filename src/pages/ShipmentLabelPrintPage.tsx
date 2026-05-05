@@ -116,13 +116,13 @@ export function ShipmentLabelPrintPage() {
       <div className="no-print mb-3 flex justify-center gap-2">
         <button
           type="button"
-          className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm"
+          className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm text-black"
           onClick={printAll}
         >
           {t("shipments.label.printAgain", { defaultValue: "Print again" })}
         </button>
         <Link
-          className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm no-underline"
+          className="rounded border border-neutral-400 bg-white px-3 py-1.5 text-sm text-black no-underline"
           to={closeHref}
         >
           {t("shipments.label.close", { defaultValue: "Close" })}
