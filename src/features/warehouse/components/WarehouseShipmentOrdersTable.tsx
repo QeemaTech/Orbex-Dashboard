@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table"
 import { isMerchantUser, useAuth } from "@/lib/auth-context"
 import { warehouseShipmentLineDetailPath } from "@/lib/warehouse-merchant-order-routes"
+import { Button } from "@/components/ui/button"
 
 const WAREHOUSE_COL_COUNT_FULL = 10
 const WAREHOUSE_COL_COUNT_NO_ASSIGN = 9
@@ -94,6 +95,12 @@ export function WarehouseShipmentOrdersTable({
     }
     void navigate(`${ordersBase}/${encodeURIComponent(orderId)}`)
   }
+
+  const stopAssignClick = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation()
+  }
+
+  const deliveryReady = true
 
   return (
     <div className="space-y-3">
