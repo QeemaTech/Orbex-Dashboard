@@ -2,15 +2,18 @@ import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { PackagingMaterialRequest } from "@/api/packaging-material-requests-api"
+import { packagingMaterialRequestPaymentMethods } from "@/api/packaging-material-requests-api"
 import { usePatchPackagingMaterialRequestPayment } from "@/features/packaging-material/hooks/use-packaging-material"
 import { showToast } from "@/lib/toast"
 
 const PAYMENT_METHOD_OPTIONS = [
   { value: "CASH", label: "Cash" },
-  { value: "VISA", label: "Card (Visa)" },
   { value: "INSTAPAY", label: "InstaPay" },
-  { value: "E_WALLET", label: "E-wallet" },
-] as const
+  { value: "VISA", label: "Card (Visa)" },
+] as const satisfies Array<{
+  value: (typeof packagingMaterialRequestPaymentMethods)[number]
+  label: string
+}>
 
 export function PackagingRequestPaymentForm(props: {
   token: string
@@ -19,9 +22,8 @@ export function PackagingRequestPaymentForm(props: {
   request?: PackagingMaterialRequest | null
 }) {
   const [amount, setAmount] = useState("")
-  const [invoiceReference, setInvoiceReference] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("")
-  const [paymentNotes, setPaymentNotes] = useState("")
+  const [notes, setNotes] = useState("")
   const mutation = usePatchPackagingMaterialRequestPayment(props.token)
 
   const balanceSummary = useMemo(() => {
@@ -40,13 +42,16 @@ export function PackagingRequestPaymentForm(props: {
       showToast("Enter a valid payment amount", "error")
       return
     }
+    if (!paymentMethod.trim()) {
+      showToast("Select a payment method", "error")
+      return
+    }
     try {
       await mutation.mutateAsync({
         id: props.requestId,
-        amount,
-        invoiceReference: invoiceReference.trim() || null,
-        paymentMethod: paymentMethod.trim() ? paymentMethod.trim() : null,
-        paymentNotes: paymentNotes.trim() || null,
+        collectedAmount: amount,
+        paymentMethod: paymentMethod.trim() as (typeof packagingMaterialRequestPaymentMethods)[number],
+        notes: notes.trim() || null,
       })
       setAmount("")
       showToast("Payment recorded", "success")
@@ -104,7 +109,7 @@ export function PackagingRequestPaymentForm(props: {
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
           >
-            <option value="">Not specified</option>
+            <option value="">Select…</option>
             {PAYMENT_METHOD_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
@@ -113,24 +118,11 @@ export function PackagingRequestPaymentForm(props: {
           </select>
         </div>
         <div className="grid gap-1 sm:col-span-2">
-          <label className="text-muted-foreground text-xs font-medium">
-            Invoice or receipt reference (optional)
-          </label>
-          <Input
-            placeholder="e.g. invoice #, bank ref, receipt id"
-            value={invoiceReference}
-            onChange={(e) => setInvoiceReference(e.target.value)}
-          />
-          <p className="text-muted-foreground text-xs">
-            Free text to match this payment to your accounting paperwork—not an internal system ID.
-          </p>
-        </div>
-        <div className="grid gap-1 sm:col-span-2">
           <label className="text-muted-foreground text-xs font-medium">Notes (optional)</label>
           <Input
             placeholder="Internal notes for finance / ops"
-            value={paymentNotes}
-            onChange={(e) => setPaymentNotes(e.target.value)}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
           />
         </div>
       </div>

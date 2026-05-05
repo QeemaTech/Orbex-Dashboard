@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -16,15 +16,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { PackagingMaterialRequestItem } from "@/api/packaging-material-requests-api"
+import {
+  packagingMaterialRequestPaymentMethods,
+  type PackagingMaterialRequest,
+  type PackagingMaterialRequestItem,
+} from "@/api/packaging-material-requests-api"
 import { useDeliverPackagingMaterialRequest } from "@/features/packaging-material/hooks/use-packaging-material"
 import { showToast } from "@/lib/toast"
+
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "CASH", label: "Cash" },
+  { value: "INSTAPAY", label: "InstaPay" },
+  { value: "VISA", label: "Card (Visa)" },
+] as const satisfies Array<{
+  value: (typeof packagingMaterialRequestPaymentMethods)[number]
+  label: string
+}>
 
 export function PackagingRequestDeliverDialog(props: {
   open: boolean
   onOpenChange: (open: boolean) => void
   token: string
   requestId: string
+  request?: PackagingMaterialRequest | null
   items: PackagingMaterialRequestItem[] | undefined
 }) {
   const mutation = useDeliverPackagingMaterialRequest(props.token)
@@ -32,6 +46,8 @@ export function PackagingRequestDeliverDialog(props: {
   const [receiverNotes, setReceiverNotes] = useState("")
   const [proofUrl, setProofUrl] = useState("")
   const [qtyByItemId, setQtyByItemId] = useState<Record<string, string>>({})
+  const [paymentMethod, setPaymentMethod] = useState("")
+  const [paymentNotes, setPaymentNotes] = useState("")
 
   useEffect(() => {
     if (!props.open || !props.items) return
@@ -44,10 +60,32 @@ export function PackagingRequestDeliverDialog(props: {
     setReceiverName("")
     setReceiverNotes("")
     setProofUrl("")
+    setPaymentMethod("")
+    setPaymentNotes("")
   }, [props.open, props.items])
+
+  const isUnpaid = props.request?.paymentStatus === "UNPAID"
+
+  const computedFinalTotal = useMemo(() => {
+    if (!props.items?.length) return null
+    let sum = 0
+    for (const it of props.items) {
+      const qRaw = qtyByItemId[it.id] ?? it.approvedQuantity ?? it.requestedQuantity
+      const q = Number(qRaw)
+      const price = Number(it.unitPriceSnapshot ?? 0)
+      if (!Number.isFinite(q) || q <= 0) return null
+      if (!Number.isFinite(price) || price < 0) return null
+      sum += q * price
+    }
+    return Math.round(sum * 100) / 100
+  }, [props.items, qtyByItemId])
 
   async function onConfirm() {
     if (!props.items?.length) return
+    if (isUnpaid && !paymentMethod.trim()) {
+      showToast("Select a payment method for collection", "error")
+      return
+    }
     try {
       await mutation.mutateAsync({
         id: props.requestId,
@@ -58,6 +96,17 @@ export function PackagingRequestDeliverDialog(props: {
           itemId: it.id,
           deliveredQuantity: qtyByItemId[it.id] ?? it.approvedQuantity ?? it.requestedQuantity,
         })),
+        ...(isUnpaid
+          ? {
+              deliveryPayment: {
+                paymentMethod: paymentMethod.trim() as (typeof packagingMaterialRequestPaymentMethods)[number],
+                ...(computedFinalTotal != null
+                  ? { collectedAmount: String(computedFinalTotal.toFixed(2)) }
+                  : {}),
+                ...(paymentNotes.trim() ? { notes: paymentNotes.trim() } : { notes: null }),
+              },
+            }
+          : {}),
       })
       showToast("Marked as delivered", "success")
       props.onOpenChange(false)
@@ -81,6 +130,48 @@ export function PackagingRequestDeliverDialog(props: {
           value={receiverNotes}
           onChange={(e) => setReceiverNotes(e.target.value)}
         />
+        {isUnpaid ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs font-medium">
+                Payment method (required)
+              </label>
+              <select
+                className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                <option value="">Select…</option>
+                {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-1">
+              <label className="text-muted-foreground text-xs font-medium">
+                Collected amount (auto)
+              </label>
+              <Input
+                readOnly
+                aria-readonly
+                value={computedFinalTotal != null ? computedFinalTotal.toFixed(2) : ""}
+                placeholder="—"
+              />
+            </div>
+            <div className="grid gap-1 sm:col-span-2">
+              <label className="text-muted-foreground text-xs font-medium">
+                Payment notes (optional)
+              </label>
+              <Input
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="e.g. received cash, collector name, reference…"
+              />
+            </div>
+          </div>
+        ) : null}
         {!props.items?.length ? (
           <p className="text-sm text-muted-foreground">No line items.</p>
         ) : (

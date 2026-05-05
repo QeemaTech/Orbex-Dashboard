@@ -24,6 +24,11 @@ export type PackagingMaterialRequestStatus = (typeof packagingMaterialRequestSta
 
 export type PackagingMaterialRequestPaymentStatus = "UNPAID" | "PAID"
 
+export const packagingMaterialRequestPaymentMethods = ["CASH", "INSTAPAY", "VISA"] as const
+
+export type PackagingMaterialRequestPaymentMethod =
+  (typeof packagingMaterialRequestPaymentMethods)[number]
+
 export type PackagingMaterialRequest = {
   id: string
   requestNumber: string
@@ -37,8 +42,7 @@ export type PackagingMaterialRequest = {
   createdAt: string
   updatedAt: string
   paymentStatus?: PackagingMaterialRequestPaymentStatus
-  invoiceReference?: string | null
-  paymentMethod?: string | null
+  paymentMethod?: PackagingMaterialRequestPaymentMethod | null
   paymentNotes?: string | null
   paymentRecordedAt?: string | null
   collectedAmount?: string
@@ -181,6 +185,11 @@ export async function deliverPackagingMaterialRequestWithDetails(params: {
   receiverNotes?: string | null
   proofAttachmentUrl?: string | null
   items?: DeliverPackagingMaterialRequestLineInput[]
+  deliveryPayment?: {
+    paymentMethod: PackagingMaterialRequestPaymentMethod
+    collectedAmount?: string | number
+    notes?: string | null
+  }
 }): Promise<PackagingMaterialRequestDetailsResponse> {
   const body: Record<string, unknown> = {
     receiverName: params.receiverName ?? null,
@@ -189,6 +198,9 @@ export async function deliverPackagingMaterialRequestWithDetails(params: {
   }
   if (params.items && params.items.length > 0) {
     body.items = params.items
+  }
+  if (params.deliveryPayment) {
+    body.deliveryPayment = params.deliveryPayment
   }
   return apiFetch<PackagingMaterialRequestDetailsResponse>(
     `/api/packaging-materials/requests/${encodeURIComponent(params.id)}/deliver`,
@@ -203,10 +215,9 @@ export async function deliverPackagingMaterialRequestWithDetails(params: {
 export async function patchPackagingMaterialRequestPayment(params: {
   token: string
   id: string
-  amount: string | number
-  invoiceReference?: string | null
-  paymentMethod?: string | null
-  paymentNotes?: string | null
+  collectedAmount: string | number
+  paymentMethod: PackagingMaterialRequestPaymentMethod
+  notes?: string | null
 }): Promise<PackagingMaterialRequestDetailsResponse> {
   return apiFetch<PackagingMaterialRequestDetailsResponse>(
     `/api/packaging-materials/requests/${encodeURIComponent(params.id)}/payment`,
@@ -214,10 +225,9 @@ export async function patchPackagingMaterialRequestPayment(params: {
       method: "PATCH",
       token: params.token,
       body: JSON.stringify({
-        amount: params.amount,
-        invoiceReference: params.invoiceReference ?? null,
-        paymentMethod: params.paymentMethod ?? null,
-        paymentNotes: params.paymentNotes ?? null,
+        collectedAmount: params.collectedAmount,
+        paymentMethod: params.paymentMethod,
+        notes: params.notes ?? null,
       }),
     },
   )

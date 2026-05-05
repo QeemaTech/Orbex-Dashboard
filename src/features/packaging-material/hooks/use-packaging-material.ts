@@ -18,6 +18,7 @@ import {
   type ApprovePackagingMaterialRequestLineInput,
   type CreatePackagingMaterialRequestInput,
   type DeliverPackagingMaterialRequestLineInput,
+  type PackagingMaterialRequestPaymentMethod,
   type PackagingMaterialRequestStatus,
 } from "@/api/packaging-material-requests-api"
 import {
@@ -154,6 +155,11 @@ export function useDeliverPackagingMaterialRequest(token: string) {
       receiverNotes?: string | null
       proofAttachmentUrl?: string | null
       items?: DeliverPackagingMaterialRequestLineInput[]
+      deliveryPayment?: {
+        paymentMethod: PackagingMaterialRequestPaymentMethod
+        collectedAmount?: string | number
+        notes?: string | null
+      }
     }) =>
       deliverPackagingMaterialRequestWithDetails({
         token,
@@ -162,6 +168,7 @@ export function useDeliverPackagingMaterialRequest(token: string) {
         receiverNotes: input.receiverNotes,
         proofAttachmentUrl: input.proofAttachmentUrl,
         items: input.items,
+        deliveryPayment: input.deliveryPayment,
       }),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ["packaging-material-requests"] })
@@ -177,10 +184,9 @@ export function usePatchPackagingMaterialRequestPayment(token: string) {
   return useMutation({
     mutationFn: (input: {
       id: string
-      amount: string | number
-      invoiceReference?: string | null
-      paymentMethod?: string | null
-      paymentNotes?: string | null
+      collectedAmount: string | number
+      paymentMethod: PackagingMaterialRequestPaymentMethod
+      notes?: string | null
     }) => patchPackagingMaterialRequestPayment({ token, ...input }),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ["packaging-material-requests"] })
