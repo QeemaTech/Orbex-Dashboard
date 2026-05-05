@@ -1,5 +1,9 @@
 import * as React from "react"
-import { useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
+import { Copy } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 const MIN_FONT_PX = 11
 const EPS = 1
@@ -113,6 +117,10 @@ type TableCellAutoFitProps = {
 
 export function TableCellAutoFit({ children, title }: TableCellAutoFitProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+  const lastOverflowRef = useRef<boolean | null>(null)
+  const [copied, setCopied] = useState(false)
+  const copyTimeoutRef = useRef<number | undefined>(undefined)
 
   useLayoutEffect(() => {
     const el = ref.current
@@ -147,6 +155,12 @@ export function TableCellAutoFit({ children, title }: TableCellAutoFitProps) {
         }
       }
       applySize(best)
+
+      const overflowNow = el.scrollWidth > el.clientWidth + EPS
+      if (lastOverflowRef.current !== overflowNow) {
+        lastOverflowRef.current = overflowNow
+        setIsOverflowing(overflowNow)
+      }
     }
 
     measure()
@@ -158,7 +172,16 @@ export function TableCellAutoFit({ children, title }: TableCellAutoFitProps) {
     }
   }, [children])
 
-  return (
+  useLayoutEffect(() => {
+    if (!copied) return
+    window.clearTimeout(copyTimeoutRef.current)
+    copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1200)
+    return () => window.clearTimeout(copyTimeoutRef.current)
+  }, [copied])
+
+  const canReveal = Boolean(title && isOverflowing)
+
+  const content = (
     <div
       ref={ref}
       className="min-w-0 w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap leading-normal [overflow-wrap:normal]"
@@ -166,6 +189,71 @@ export function TableCellAutoFit({ children, title }: TableCellAutoFitProps) {
     >
       {children}
     </div>
+  )
+
+  if (!canReveal) return content
+
+  const onCopy = async () => {
+    if (!title) return
+    try {
+      await navigator.clipboard.writeText(title)
+      setCopied(true)
+    } catch {
+      try {
+        const ta = document.createElement("textarea")
+        ta.value = title
+        ta.style.position = "fixed"
+        ta.style.left = "-9999px"
+        ta.style.top = "0"
+        document.body.appendChild(ta)
+        ta.focus()
+        ta.select()
+        document.execCommand("copy")
+        document.body.removeChild(ta)
+        setCopied(true)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="block w-full min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          aria-label="Show full cell content"
+        >
+          {content}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        side="bottom"
+        className="w-[min(36rem,calc(100vw-2rem))] max-w-[36rem]"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs"
+            onClick={onCopy}
+          >
+            <Copy className="size-3.5" />
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
+        <div className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words text-sm leading-relaxed">
+          {title}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
