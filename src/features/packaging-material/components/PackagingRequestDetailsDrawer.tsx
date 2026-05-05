@@ -40,7 +40,7 @@ export function PackagingRequestDetailsDrawer(props: {
           <PackagingRequestPaymentForm
             token={props.token!}
             requestId={props.data!.request.id}
-            request={props.data.request}
+            request={props.data!.request}
           />
         ) : null}
       </DialogContent>
