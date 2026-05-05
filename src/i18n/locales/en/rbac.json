@@ -159,7 +159,9 @@
     "delivery_zones.read": { "label": "View delivery zones", "category": "Delivery Zones" },
     "delivery_zones.create": { "label": "Create delivery zones", "category": "Delivery Zones" },
     "delivery_zones.update": { "label": "Update delivery zones", "category": "Delivery Zones" },
-    "delivery_zones.delete": { "label": "Delete delivery zones", "category": "Delivery Zones" }
+    "delivery_zones.delete": { "label": "Delete delivery zones", "category": "Delivery Zones" },
+    "packaging_materials.stock.read": { "label": "View packaging material stock", "category": "Packaging Materials" },
+    "packaging_materials.stock.write": { "label": "Manage packaging material stock (per warehouse)", "category": "Packaging Materials" }
   },
   "signedInAs": "You are signed in as {{email}}."
 }

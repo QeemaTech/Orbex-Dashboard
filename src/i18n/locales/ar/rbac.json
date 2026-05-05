@@ -159,7 +159,9 @@
     "delivery_zones.read": { "label": "عرض مناطق التوصيل", "category": "مناطق التوصيل" },
     "delivery_zones.create": { "label": "إنشاء مناطق التوصيل", "category": "مناطق التوصيل" },
     "delivery_zones.update": { "label": "تعديل مناطق التوصيل", "category": "مناطق التوصيل" },
-    "delivery_zones.delete": { "label": "حذف مناطق التوصيل", "category": "مناطق التوصيل" }
+    "delivery_zones.delete": { "label": "حذف مناطق التوصيل", "category": "مناطق التوصيل" },
+    "packaging_materials.stock.read": { "label": "عرض مخزون مواد التغليف", "category": "مواد التغليف" },
+    "packaging_materials.stock.write": { "label": "إدارة مخزون مواد التغليف (لكل مخزن)", "category": "مواد التغليف" }
   },
   "signedInAs": "أنت مسجّل الدخول كـ {{email}}."
 }

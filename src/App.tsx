@@ -442,7 +442,7 @@ export default function App() {
             <Protected>
               <ProtectedRole
                 allowed={["ADMIN", "WAREHOUSE", "WAREHOUSE_ADMIN"]}
-                requiredPermissions={["packaging_materials.read"]}
+                requiredPermissions={["packaging_materials.stock.read"]}
               >
                 <PackagingInventoryPage />
               </ProtectedRole>

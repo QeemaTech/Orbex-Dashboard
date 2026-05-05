@@ -10,6 +10,14 @@ export function canWritePackagingMaterials(user: AuthUser | null | undefined): b
   return Boolean(user?.permissions?.includes("packaging_materials.write"))
 }
 
+export function canReadPackagingMaterialStock(user: AuthUser | null | undefined): boolean {
+  return Boolean(user?.permissions?.includes("packaging_materials.stock.read"))
+}
+
+export function canWritePackagingMaterialStock(user: AuthUser | null | undefined): boolean {
+  return Boolean(user?.permissions?.includes("packaging_materials.stock.write"))
+}
+
 export function canCreatePackagingRequests(user: AuthUser | null | undefined): boolean {
   return Boolean(user?.permissions?.includes("packaging_material_requests.create"))
 }

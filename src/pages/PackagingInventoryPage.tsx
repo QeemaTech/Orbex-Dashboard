@@ -30,7 +30,10 @@ import {
   usePackagingMaterials,
   useUpsertPackagingMaterialStock,
 } from "@/features/packaging-material/hooks/use-packaging-material"
-import { canReadPackagingMaterials } from "@/features/packaging-material/utils/packaging-material.utils"
+import {
+  canReadPackagingMaterialStock,
+  canWritePackagingMaterialStock,
+} from "@/features/packaging-material/utils/packaging-material.utils"
 import { showToast } from "@/lib/toast"
 
 const LOW_STOCK_THRESHOLD = 10
@@ -52,7 +55,8 @@ export function PackagingInventoryPage() {
     reservedQuantity: "0",
   })
 
-  const canRead = canReadPackagingMaterials(user)
+  const canRead = canReadPackagingMaterialStock(user)
+  const canWrite = canWritePackagingMaterialStock(user)
 
   const stockQuery = usePackagingMaterialStock({
     token,
@@ -77,6 +81,10 @@ export function PackagingInventoryPage() {
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [pageSize, total])
 
   async function onSubmitStock() {
+    if (!canWrite) {
+      showToast("You do not have permission to manage stock", "error")
+      return
+    }
     if (!stockForm.warehouseId || !stockForm.packagingMaterialId) {
       showToast("Please select warehouse and material", "error")
       return
@@ -106,6 +114,10 @@ export function PackagingInventoryPage() {
   }
 
   function openAddStockDialog() {
+    if (!canWrite) {
+      showToast("You do not have permission to manage stock", "error")
+      return
+    }
     setStockDialogMode("add")
     setStockForm({
       warehouseId: warehouseId || "",
@@ -117,6 +129,10 @@ export function PackagingInventoryPage() {
   }
 
   function openUpdateStockDialog(row: (typeof rows)[number]) {
+    if (!canWrite) {
+      showToast("You do not have permission to manage stock", "error")
+      return
+    }
     setStockDialogMode("update")
     setStockForm({
       warehouseId: row.warehouseId,

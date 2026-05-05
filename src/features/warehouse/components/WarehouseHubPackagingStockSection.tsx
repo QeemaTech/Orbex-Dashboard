@@ -80,7 +80,7 @@ export function WarehouseHubPackagingStockSection(props: WarehouseHubPackagingSt
           <CardDescription>{t("warehouse.packagingStock.description")}</CardDescription>
         </div>
         <Link
-          to="/packaging-materials"
+          to="/packaging-inventory"
           className="text-primary text-sm font-medium underline-offset-4 hover:underline shrink-0"
         >
           {t("warehouse.packagingStock.manageLink")}
