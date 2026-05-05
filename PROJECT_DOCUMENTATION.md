@@ -140,7 +140,7 @@ Orbex-Dashboard/
 │   │   └── dashboard.ts              # TypeScript type definitions
 │   │
 │   ├── data/
-│   │   └── mockDashboard.ts          # Mock data for development
+│   │   └── (removed)                 # Dashboard uses backend data only
 │   │
 │   ├── assets/                       # Static assets
 │   ├── App.tsx                       # Main app component with routing
@@ -202,7 +202,6 @@ Orbex-Dashboard/
 **Environment Variables:**
 - `VITE_API_BASE_URL` - Backend API base URL (defaults to `http://127.0.0.1:5000`)
 - `VITE_WS_BASE_URL` - WebSocket URL (auto-converts from API URL if not set)
-- `VITE_DASHBOARD_SEED` - Enable dashboard seed data ("true"/"false")
 
 ### Real-Time Updates
 
@@ -604,8 +603,6 @@ npm run preview  # Preview production build
 
 ### Development Mock Data
 
-- Mock dashboard data available via `src/data/mockDashboard.ts`
-- Enabled with `VITE_DASHBOARD_SEED=true` environment variable
 
 ### Code Quality
 
@@ -718,7 +715,6 @@ Create `.env.local` or `.env`:
 ```bash
 VITE_API_BASE_URL=http://your-backend-url
 VITE_WS_BASE_URL=ws://your-websocket-url
-VITE_DASHBOARD_SEED=false
 ```
 
 ### Development
