@@ -391,6 +391,8 @@ export type MovementManifestUnifiedTask =
     }
   | {
       kind: "RETURN_TO_MERCHANT_GROUP"
+      /** Group identity: one return group per merchant order. */
+      merchantOrderId: string
       merchantId: string
       merchant: {
         id: string

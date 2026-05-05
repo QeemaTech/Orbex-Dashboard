@@ -9,7 +9,7 @@ function isTransferTask(
 
 /**
  * Reorders unified manifest tasks to match `orderedStops` from route preview (pickup task id and
- * `return:${merchantId}`). TRANSFER rows are not on the route; they are appended in original order.
+ * `returnOrder:${merchantOrderId}`). TRANSFER rows are not on the route; they are appended in original order.
  */
 export function orderMovementManifestTasksByRoute(
   tasks: MovementManifestUnifiedTask[],
@@ -32,7 +32,7 @@ export function orderMovementManifestTasksByRoute(
         (t): t is Extract<MovementManifestUnifiedTask, { kind: "RETURN_TO_MERCHANT_GROUP" }> =>
           t.kind === "RETURN_TO_MERCHANT_GROUP",
       )
-      .map((t) => [`return:${t.merchantId}`, t]),
+      .map((t) => [`returnOrder:${t.merchantOrderId}`, t]),
   )
 
   const sortedStops = [...orderedStops].sort((a, b) => a.order - b.order)
@@ -50,10 +50,10 @@ export function orderMovementManifestTasksByRoute(
       }
       continue
     }
-    if (sid.startsWith("return:")) {
+    if (sid.startsWith("returnOrder:")) {
       const g = returnGroupByStopId.get(sid)
-      if (g && !usedReturnGroup.has(g.merchantId)) {
-        usedReturnGroup.add(g.merchantId)
+      if (g && !usedReturnGroup.has(g.merchantOrderId)) {
+        usedReturnGroup.add(g.merchantOrderId)
         result.push(g)
       }
     }
@@ -63,7 +63,7 @@ export function orderMovementManifestTasksByRoute(
     if (t.kind === "PICKUP_TASK") {
       if (!usedPickup.has(t.id)) result.push(t)
     } else if (t.kind === "RETURN_TO_MERCHANT_GROUP") {
-      if (!usedReturnGroup.has(t.merchantId)) result.push(t)
+      if (!usedReturnGroup.has(t.merchantOrderId)) result.push(t)
     }
   }
 

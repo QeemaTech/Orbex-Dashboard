@@ -56,7 +56,7 @@ export function PickupManifestReturnGroupPage() {
   const { accessToken, user } = useAuth()
   const token = accessToken ?? ""
 
-  const returnGroupMerchantId = useMemo(() => {
+  const returnGroupMerchantOrderId = useMemo(() => {
     try {
       return decodeURIComponent(returnGroupKey)
     } catch {
@@ -102,12 +102,15 @@ export function PickupManifestReturnGroupPage() {
     { kind: "RETURN_TO_MERCHANT_GROUP" }
   > | null => {
     for (const task of manifest?.tasks ?? []) {
-      if (task.kind === "RETURN_TO_MERCHANT_GROUP" && task.merchantId === returnGroupMerchantId) {
+      if (
+        task.kind === "RETURN_TO_MERCHANT_GROUP" &&
+        task.merchantOrderId === returnGroupMerchantOrderId
+      ) {
         return task
       }
     }
     return null
-  }, [manifest?.tasks, returnGroupMerchantId])
+  }, [manifest?.tasks, returnGroupMerchantOrderId])
 
   const manifestListPath = isGlobalPickupDetail
     ? `/courier-manifests/pickup/${encodeURIComponent(movementManifestId)}`
@@ -117,7 +120,7 @@ export function PickupManifestReturnGroupPage() {
   if (shouldForceOwnWarehouse) {
     return (
       <Navigate
-        to={`/warehouses/${encodeURIComponent(user!.warehouseId!)}/manifests/pickup/${encodeURIComponent(movementManifestId)}/returns/${encodeURIComponent(returnGroupMerchantId)}`}
+        to={`/warehouses/${encodeURIComponent(user!.warehouseId!)}/manifests/pickup/${encodeURIComponent(movementManifestId)}/returns/${encodeURIComponent(returnGroupMerchantOrderId)}`}
         replace
       />
     )
@@ -133,7 +136,7 @@ export function PickupManifestReturnGroupPage() {
   ) {
     return (
       <Navigate
-        to={`/warehouses/${encodeURIComponent(user.warehouseId)}/manifests/pickup/${encodeURIComponent(movementManifestId)}/returns/${encodeURIComponent(returnGroupMerchantId)}`}
+        to={`/warehouses/${encodeURIComponent(user.warehouseId)}/manifests/pickup/${encodeURIComponent(movementManifestId)}/returns/${encodeURIComponent(returnGroupMerchantOrderId)}`}
         replace
       />
     )

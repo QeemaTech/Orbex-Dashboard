@@ -3,14 +3,14 @@
  */
 export function pickupManifestReturnGroupPath(p: {
   movementManifestId: string
-  /** `RETURN_TO_MERCHANT_GROUP.merchantId` (UUID or `orphan:${shipmentId}`). */
-  returnGroupMerchantId: string
+  /** `RETURN_TO_MERCHANT_GROUP.merchantOrderId` (UUID or `orphanOrder:${shipmentId}`). */
+  returnGroupMerchantOrderId: string
   /** When set, use warehouse-scoped URL; otherwise global courier-manifests pickup URL. */
   warehouseId: string | undefined
   isGlobalPickupContext: boolean
 }): string {
   const mid = encodeURIComponent(p.movementManifestId)
-  const gid = encodeURIComponent(p.returnGroupMerchantId)
+  const gid = encodeURIComponent(p.returnGroupMerchantOrderId)
   const wh = p.warehouseId?.trim()
   if (p.isGlobalPickupContext || !wh) {
     return `/courier-manifests/pickup/${mid}/returns/${gid}`

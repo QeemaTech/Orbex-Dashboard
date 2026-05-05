@@ -25,9 +25,10 @@ function mockPickup(id: string): MovementManifestUnifiedTask {
   }
 }
 
-function mockReturnGroup(merchantId: string): MovementManifestUnifiedTask {
+function mockReturnGroup(merchantOrderId: string, merchantId: string): MovementManifestUnifiedTask {
   return {
     kind: "RETURN_TO_MERCHANT_GROUP",
+    merchantOrderId,
     merchantId,
     merchant: { id: merchantId, displayName: "Shop", pickupAddressText: null },
     fromLabel: "Hub",
@@ -62,18 +63,18 @@ describe("orderMovementManifestTasksByRoute", () => {
     const tasks: MovementManifestUnifiedTask[] = [
       mockPickup("pt-a"),
       mockPickup("pt-b"),
-      mockReturnGroup("mer-ret"),
+      mockReturnGroup("mo-ret", "mer-ret"),
       mockTransfer("line-t"),
     ]
     const orderedStops: ManifestRouteStop[] = [
       stop(2, "pt-b"),
-      stop(1, "return:mer-ret"),
+      stop(1, "returnOrder:mo-ret"),
       stop(3, "pt-a"),
     ]
     const out = orderMovementManifestTasksByRoute(tasks, orderedStops)
     // Stops are processed in ascending `order` (1 → return, 2 → pt-b, 3 → pt-a)
-    expect(out.map((t) => (t.kind === "PICKUP_TASK" ? t.id : t.kind === "RETURN_TO_MERCHANT_GROUP" ? t.merchantId : t.lineId))).toEqual([
-      "mer-ret",
+    expect(out.map((t) => (t.kind === "PICKUP_TASK" ? t.id : t.kind === "RETURN_TO_MERCHANT_GROUP" ? t.merchantOrderId : t.lineId))).toEqual([
+      "mo-ret",
       "pt-b",
       "pt-a",
       "line-t",

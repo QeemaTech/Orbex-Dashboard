@@ -475,7 +475,7 @@ export function PickupCourierManifestDetailPage() {
                               task.kind === "PICKUP_TASK"
                                 ? `p-${task.id}`
                                 : task.kind === "RETURN_TO_MERCHANT_GROUP"
-                                  ? `g-${task.merchantId}`
+                                  ? `g-${task.merchantOrderId}`
                                   : `s-${task.lineId}`
                             }
                             className="hover:bg-muted/50"
@@ -534,7 +534,7 @@ export function PickupCourierManifestDetailPage() {
                                     <Link
                                       to={pickupManifestReturnGroupPath({
                                         movementManifestId,
-                                        returnGroupMerchantId: task.merchantId,
+                                        returnGroupMerchantOrderId: task.merchantOrderId,
                                         warehouseId: warehouseIdParam,
                                         isGlobalPickupContext: isGlobalPickupDetail,
                                       })}
@@ -569,7 +569,7 @@ export function PickupCourierManifestDetailPage() {
                                   <Link
                                     to={pickupManifestReturnGroupPath({
                                       movementManifestId,
-                                      returnGroupMerchantId: task.merchantId,
+                                      returnGroupMerchantOrderId: task.merchantOrderId,
                                       warehouseId: warehouseIdParam,
                                       isGlobalPickupContext: isGlobalPickupDetail,
                                     })}
