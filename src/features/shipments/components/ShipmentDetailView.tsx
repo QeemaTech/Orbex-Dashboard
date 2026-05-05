@@ -1,7 +1,7 @@
 import { Boxes, ExternalLink, MessageSquareText, PhoneCall, Printer } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import type { ShipmentOrderRow } from "@/api/merchant-orders-api"
@@ -118,6 +118,7 @@ export function ShipmentDetailView({
   transferTaskApi = shipmentTransferTaskApi,
 }: ShipmentDetailViewProps) {
   const { t, i18n } = useTranslation()
+  const location = useLocation()
   const { user, accessToken } = useAuth()
   const queryClient = useQueryClient()
   const lineHubContextId =
@@ -224,7 +225,8 @@ export function ShipmentDetailView({
 
   // Temporary fallback: use frontend label print page until network-direct printer path is stable.
   const openLegacyLabelPrint = () => {
-    const href = `/shipments/${encodeURIComponent(shipment.id)}/print`
+    const returnTo = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`)
+    const href = `/shipments/${encodeURIComponent(shipment.id)}/print?returnTo=${returnTo}`
     window.open(href, "_blank", "noopener,noreferrer")
   }
 
