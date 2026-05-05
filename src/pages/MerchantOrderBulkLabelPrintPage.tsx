@@ -7,6 +7,7 @@ import { getShipmentOrders } from "@/api/merchant-orders-api"
 import { getShipmentLabel, type ShipmentLabelResponse } from "@/api/shipments-api"
 import { ApiError } from "@/api/client"
 import { ShipmentLabelSheet } from "@/features/shipments/components/ShipmentLabelSheet"
+import { autoPrintWhenVisible } from "@/lib/auto-print"
 import { warehouseMerchantOrderDetailPath } from "@/lib/warehouse-merchant-order-routes"
 import { useAuth } from "@/lib/auth-context"
 
@@ -107,10 +108,13 @@ export function MerchantOrderBulkLabelPrintPage() {
 
   const autoPrintDoneRef = useRef(false)
   const readyLineIdsRef = useRef(new Set<string>())
+  const autoPrintCleanupRef = useRef<(() => void) | null>(null)
 
   useLayoutEffect(() => {
     readyLineIdsRef.current.clear()
     autoPrintDoneRef.current = false
+    autoPrintCleanupRef.current?.()
+    autoPrintCleanupRef.current = null
   }, [merchantOrderId, bulkQuery.dataUpdatedAt])
 
   const printAll = useCallback(() => {
@@ -124,13 +128,19 @@ export function MerchantOrderBulkLabelPrintPage() {
       if (n > 0 && readyLineIdsRef.current.size >= n && !autoPrintDoneRef.current) {
         autoPrintDoneRef.current = true
         const delay = 400 + Math.min(n * 80, 1200)
-        window.setTimeout(() => {
-          window.print()
-        }, delay)
+        autoPrintCleanupRef.current?.()
+        autoPrintCleanupRef.current = autoPrintWhenVisible({ delayMs: delay })
       }
     },
     [items.length],
   )
+
+  useLayoutEffect(() => {
+    return () => {
+      autoPrintCleanupRef.current?.()
+      autoPrintCleanupRef.current = null
+    }
+  }, [])
 
   if (!token) {
     return (

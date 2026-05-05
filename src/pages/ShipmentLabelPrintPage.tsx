@@ -7,6 +7,7 @@ import { getShipmentLabel } from "@/api/shipments-api"
 import { ApiError } from "@/api/client"
 import { ShipmentLabelSheet } from "@/features/shipments/components/ShipmentLabelSheet"
 import { useAuth } from "@/lib/auth-context"
+import { autoPrintWhenVisible } from "@/lib/auto-print"
 
 import "./label-print.css"
 
@@ -56,11 +57,8 @@ export function ShipmentLabelPrintPage() {
     if (!label || !barcodesDrawn || !shipmentId) return
     if (autoPrintDoneRef.current) return
     autoPrintDoneRef.current = true
-    const timer = window.setTimeout(() => {
-      printCurrentPage()
-    }, 400)
-    return () => window.clearTimeout(timer)
-  }, [label, barcodesDrawn, shipmentId, printCurrentPage])
+    return autoPrintWhenVisible({ delayMs: 400 })
+  }, [label, barcodesDrawn, shipmentId])
 
   if (!token) {
     return (

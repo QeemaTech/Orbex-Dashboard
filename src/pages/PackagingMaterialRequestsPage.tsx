@@ -534,6 +534,7 @@ export function PackagingMaterialRequestsPage() {
         }}
         token={token}
         requestId={deliverRequestId}
+        request={deliverDetailsQuery.data?.request}
         items={deliverDetailsQuery.data?.items}
       />
     </Layout>
