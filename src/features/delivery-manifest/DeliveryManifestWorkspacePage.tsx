@@ -275,7 +275,7 @@ export function DeliveryManifestWorkspacePage() {
                               priorityClass(row.priorityTier),
                             )}
                           >
-                            <DeliveryIcon className="size-3" aria-hidden />
+                            <DeliveryIcon size="1rem" className="size-4" aria-hidden />
                             {row.priorityTier}
                           </span>
                         </TableCell>

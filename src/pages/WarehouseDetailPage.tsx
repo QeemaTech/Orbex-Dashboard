@@ -264,7 +264,7 @@ export function WarehouseDetailPage() {
   const [lookupTrackingInput, setLookupTrackingInput] = useState("")
   const [returnDiscountInput, setReturnDiscountInput] = useState("")
   const [trackingResult, setTrackingResult] = useState<string>("")
-  const [activeTab, setActiveTab] = useState<"orders" | "shipments">("orders")
+  const [activeTab, setActiveTab] = useState<"orders" | "shipments" | "manifests">("orders")
   const [manifestZoneId, setManifestZoneId] = useState("")
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [confirmDialogData, setConfirmDialogData] = useState<{
@@ -331,12 +331,12 @@ export function WarehouseDetailPage() {
 
   /** Merchant-order queue + batch insight cards (main hub, orders tab only). */
   const merchantOrdersView = isMainHub && activeTab === "orders"
-  const manifestsView = isMainHub && activeTab === "shipments"
+  const manifestsView = isMainHub && activeTab === "manifests"
   /** Standalone shipment list + shipment insight cards. */
   const shipmentsView =
-    hub != null && (!isMainHub || (isMainHub && !manifestsView))
+    hub != null && (!isMainHub || activeTab === "shipments")
   /** Site info, zones, sub-branches — hidden on manifests tab for main hubs. */
-  const warehouseHubDetailsVisible = hub != null && (!isMainHub || merchantOrdersView)
+  const warehouseHubDetailsVisible = hub != null && (!isMainHub || !manifestsView)
   /** Zone-link data is still needed on manifests tab for zone filters. */
   const warehouseSiteDataEnabled = hub != null && (!isMainHub || merchantOrdersView || manifestsView)
 
@@ -1193,14 +1193,26 @@ export function WarehouseDetailPage() {
                   >
                     {t("warehouse.queue.tabOrders", { defaultValue: "Transfer" })}
                   </button>
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      activeTab === "shipments"
+                        ? "bg-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => {
+                      setActiveTab("shipments")
+                      setPage(1)
+                    }}
+                  >
+                    {t("warehouse.queue.tabShipments", { defaultValue: "Shipments" })}
+                  </button>
                   {canOpenManifests ? (
                     <Link
                       to={`/warehouses/${encodeURIComponent(warehouseId)}/manifests`}
                       className="text-muted-foreground hover:text-foreground rounded-md px-3 py-1 text-sm transition-colors"
                     >
-                      {t("warehouse.queue.tabShipments", {
-                        defaultValue: "Delivery Manifests",
-                      })}
+                      {t("warehouse.queue.tabManifests", { defaultValue: "Delivery Manifests" })}
                     </Link>
                   ) : null}
                 </div>

@@ -79,7 +79,7 @@ export function CsCouriersPage() {
         <Card className="from-primary/8 border-primary/15 bg-gradient-to-br via-card to-card shadow-md">
           <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
             <div className="bg-primary/12 text-primary flex size-14 shrink-0 items-center justify-center rounded-xl">
-              <DeliveryIcon className="size-7" aria-hidden />
+              <DeliveryIcon size="2.25rem" className="size-9" aria-hidden />
             </div>
             <div className="min-w-0 space-y-1">
               <CardTitle className="text-xl font-semibold tracking-tight">

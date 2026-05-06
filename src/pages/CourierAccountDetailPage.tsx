@@ -130,7 +130,7 @@ export function CourierAccountDetailPage() {
             </Link>
           </Button>
           <div className="flex items-center gap-2">
-            <DeliveryIcon className="text-primary size-5" aria-hidden />
+            <DeliveryIcon size="1.5rem" className="text-primary size-6" aria-hidden />
             <h1 className="text-xl font-semibold">
               {t("accounts.courierDetail.title")}
             </h1>

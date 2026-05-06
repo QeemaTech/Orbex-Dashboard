@@ -338,7 +338,14 @@ export function Sidebar() {
               )
             }}
           >
-            <Icon className="size-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden />
+            <Icon
+              className={
+                Icon === DeliveryIcon
+                  ? "size-[28px] shrink-0 transition-transform duration-200 group-hover:scale-110"
+                  : "size-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110"
+              }
+              aria-hidden
+            />
             {labelKey === "nav.merchantOrders" && isMerchant ? t("nav.myOrders") : t(labelKey)}
           </NavLink>
         ))}

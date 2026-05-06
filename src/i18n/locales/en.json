@@ -1091,8 +1091,8 @@
       "assignLegHint": "First mile = merchant to hub (before scan-in). Last mile = delivery from hub.",
       "pagination": "Total {{total}} · page {{page}}",
       "tabOrders": "Pickup / Transfer / Return",
-      "tabShipments": "Delivery (Manifest)",
-      "tabManifests": "Manifests"
+      "tabShipments": "Shipments",
+      "tabManifests": "Delivery Manifests"
     },
     "manifests": {
       "tabs": {

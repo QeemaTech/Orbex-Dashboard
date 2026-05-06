@@ -1068,8 +1068,8 @@
       "assignLegHint": "أول ميل = من التاجر إلى المخزن (قبل مسح الدخول). آخر ميل = التسليم من المخزن.",
       "pagination": "الإجمالي {{total}} · صفحة {{page}}",
       "tabOrders": "الاستلام / النقل / الإرجاع",
-      "tabShipments": "التسليم (المنيفست)",
-      "tabManifests": "البيانات"
+      "tabShipments": "الشحنات",
+      "tabManifests": "بيانات التوصيل"
     },
     "manifests": {
       "tabs": {
