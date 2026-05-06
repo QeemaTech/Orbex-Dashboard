@@ -9,6 +9,7 @@ import {
   Clock,
   RotateCcw,
   UserCheck,
+  Truck,
   ChevronDown,
 } from "lucide-react"
 import type { ComponentType } from "react"
@@ -133,6 +134,10 @@ function getStatusConfig(status: string) {
   return STATUS_CONFIG[status] ?? STATUS_CONFIG["PENDING_PICKUP"]
 }
 
+function isWarehouseTransferAssigned(event: ShipmentStatusEventPayload): boolean {
+  return event.toStatus === "ASSIGNED" && Boolean(event.fromWarehouse || event.toWarehouse)
+}
+
 function buildPrimaryLabel(
   event: ShipmentStatusEventPayload,
   t: TFunction,
@@ -189,6 +194,7 @@ export function ShipmentTimeline({ events, contextWarehouseId }: ShipmentTimelin
       status: event.toStatus,
       label: buildPrimaryLabel(event, t, contextWarehouseId),
       timestamp: event.createdAt,
+      isTransferAssigned: isWarehouseTransferAssigned(event),
     }))
   }, [events, t, contextWarehouseId])
 
@@ -207,7 +213,7 @@ export function ShipmentTimeline({ events, contextWarehouseId }: ShipmentTimelin
       <div className="flex w-full items-stretch gap-2 overflow-x-auto pb-2">
         {timelineItems.map((item, index) => {
           const config = getStatusConfig(item.status)
-          const Icon = config.icon
+          const Icon = item.isTransferAssigned ? Truck : config.icon
           const isLast = index === timelineItems.length - 1
 
           return (
@@ -264,7 +270,7 @@ export function ShipmentTimeline({ events, contextWarehouseId }: ShipmentTimelin
           <ol className="mt-3 space-y-3 text-sm">
             {events.map((event) => {
               const config = getStatusConfig(event.toStatus)
-              const Icon = config.icon
+              const Icon = isWarehouseTransferAssigned(event) ? Truck : config.icon
               const title = buildPrimaryLabel(event, t, contextWarehouseId)
               return (
                 <li key={event.id} className="flex gap-3 border-b border-border/50 pb-3 last:border-0 last:pb-0">
