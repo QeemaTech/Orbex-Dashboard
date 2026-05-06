@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next"
-import { Package, Truck, RotateCcw, Clock, CheckCircle, XCircle, Circle } from "lucide-react"
+import { Package, RotateCcw, Clock, CheckCircle, XCircle, Circle } from "lucide-react"
+import type { ComponentType } from "react"
 
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { cn } from "@/lib/utils"
 
 type ShipmentTask = {
@@ -22,8 +24,10 @@ type ShipmentTasksCardProps = {
   tasks: ShipmentTask[]
 }
 
-const TASK_TYPE_CONFIG: Record<string, { icon: typeof Package; labelKey: string; color: string }> = {
-  DELIVERY: { icon: Truck, labelKey: "shipments.tasks.typeDelivery", color: "text-blue-600" },
+type TaskIcon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>
+
+const TASK_TYPE_CONFIG: Record<string, { icon: TaskIcon; labelKey: string; color: string }> = {
+  DELIVERY: { icon: DeliveryIcon, labelKey: "shipments.tasks.typeDelivery", color: "text-blue-600" },
   TRANSFER: { icon: RotateCcw, labelKey: "shipments.tasks.typeTransfer", color: "text-purple-600" },
   RETURN_TO_MERCHANT: { icon: RotateCcw, labelKey: "shipments.tasks.typeReturn", color: "text-amber-600" },
 }
@@ -60,7 +64,7 @@ function formatTimestamp(iso: string, locale: string): string {
   }).format(d)
 }
 
-function getTaskTypeIcon(type: string): typeof Package {
+function getTaskTypeIcon(type: string): TaskIcon {
   return TASK_TYPE_CONFIG[type]?.icon ?? Package
 }
 

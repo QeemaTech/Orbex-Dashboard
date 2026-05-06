@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next"
-import { AlertTriangle, Check, Package, Truck, CircleDot, X } from "lucide-react"
+import { AlertTriangle, Check, Package, CircleDot, X } from "lucide-react"
+import type { ComponentType } from "react"
 
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { cn } from "@/lib/utils"
 
 export type TimelineStepVisual = "pending" | "active" | "complete" | "failed"
@@ -11,6 +13,8 @@ export type ShipmentTrackingTimelineProps = {
   /** Optional hub name shown next to the active “warehouse” step (public tracking has no id for “this warehouse”). */
   currentWarehouseName?: string | null
 }
+
+type TimelineIcon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>
 
 const WAREHOUSE_STATUSES = new Set([
   "PENDING_PICKUP",
@@ -82,7 +86,7 @@ function StepIcon({
   icon: Icon,
 }: {
   visual: TimelineStepVisual
-  icon: typeof Package
+  icon: TimelineIcon
 }) {
   return (
     <div
@@ -115,7 +119,7 @@ function TimelineStep({
   visual: TimelineStepVisual
   title: string
   description?: string
-  icon: typeof Package
+  icon: TimelineIcon
   isLast: boolean
 }) {
   return (
@@ -195,7 +199,7 @@ export function ShipmentTrackingTimeline({
             visual={outForDelivery}
             title={t("tracking.stepOutForDelivery")}
             description={t("tracking.stepOutHint")}
-            icon={Truck}
+            icon={DeliveryIcon}
             isLast={false}
           />
           <TimelineStep

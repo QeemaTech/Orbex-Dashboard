@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import { MapPin, Truck } from "react-lucid"
+import { MapPin } from "react-lucid"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { getDashboardKpis } from "@/api/merchant-orders-api"
 import { getWarehouseCouriers } from "@/api/warehouse-api"
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -78,7 +79,7 @@ export function CsCouriersPage() {
         <Card className="from-primary/8 border-primary/15 bg-gradient-to-br via-card to-card shadow-md">
           <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
             <div className="bg-primary/12 text-primary flex size-14 shrink-0 items-center justify-center rounded-xl">
-              <Truck className="size-7" aria-hidden />
+              <DeliveryIcon className="size-7" aria-hidden />
             </div>
             <div className="min-w-0 space-y-1">
               <CardTitle className="text-xl font-semibold tracking-tight">

@@ -2,10 +2,8 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 import {
-  CircleDot,
   Package,
   Warehouse,
-  Truck,
   CheckCircle,
   XCircle,
   Clock,
@@ -13,7 +11,9 @@ import {
   UserCheck,
   ChevronDown,
 } from "lucide-react"
+import type { ComponentType } from "react"
 
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { cn } from "@/lib/utils"
 import { orderDeliveryWarehouseHintLabel } from "@/lib/warehouse-location-hint"
 
@@ -44,9 +44,11 @@ function resolveDateLocale(language: string) {
   return language.startsWith("ar") ? "ar-EG" : "en-EG"
 }
 
+type TimelineIcon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>
+
 const STATUS_CONFIG: Record<
   string,
-  { icon: typeof CircleDot; labelKey: string; color: string; bgColor: string }
+  { icon: TimelineIcon; labelKey: string; color: string; bgColor: string }
 > = {
   PENDING_PICKUP: {
     icon: Package,
@@ -73,7 +75,7 @@ const STATUS_CONFIG: Record<
     bgColor: "bg-cyan-100",
   },
   OUT_FOR_DELIVERY: {
-    icon: Truck,
+    icon: DeliveryIcon,
     labelKey: "shipments.timeline.outForDelivery",
     color: "text-orange-600",
     bgColor: "bg-orange-100",
@@ -103,7 +105,7 @@ const STATUS_CONFIG: Record<
     bgColor: "bg-purple-100",
   },
   OUT_FOR_RETURN_TO_MERCHANT: {
-    icon: Truck,
+    icon: DeliveryIcon,
     labelKey: "shipments.timeline.outForReturnToMerchant",
     color: "text-violet-600",
     bgColor: "bg-violet-100",

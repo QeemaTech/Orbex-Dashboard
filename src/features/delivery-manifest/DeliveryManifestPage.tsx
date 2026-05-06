@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query"
 import { useCallback, useMemo, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { ClipboardList, Loader2, Package, Truck } from "lucide-react"
+import { ClipboardList, Loader2, Package } from "lucide-react"
 
 import { getEligibleShipments, type EligibleShipmentRow } from "@/api/delivery-manifests-api"
 import { getWarehouseZoneLinks } from "@/api/warehouse-api"
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -224,7 +225,7 @@ export function DeliveryManifestPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Available couriers</CardTitle>
-              <Truck className="text-muted-foreground h-4 w-4" />
+              <DeliveryIcon className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">

@@ -1,4 +1,4 @@
-import { LogOut, Settings, ShieldCheck, Sun, Moon, Monitor } from "lucide-react"
+import { FileText, LogOut, Settings, ShieldCheck, Sun, Moon, Monitor } from "lucide-react"
 import {
   Banknote,
   Boxes,
@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 
 import { getWarehouseSite } from "@/api/warehouse-api"
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { useSidebar } from "@/components/layout/sidebar-context"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
@@ -80,7 +81,7 @@ function buildHubWarehouseNavItems(
           {
             to: `${base}/manifests`,
             labelKey: "nav.warehouseManifests",
-            icon: Truck,
+            icon: FileText,
             end: false,
             perm: "warehouses.read",
           } satisfies HubNavItem,
@@ -103,8 +104,8 @@ const adminNavConfig = [
   { to: "/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
   { to: "/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
   { to: "/merchant-orders/pending-confirmations", labelKey: "nav.merchantOrderConfirmations", icon: Boxes, end: false, perm: "merchant_orders.confirm" },
-  { to: "/courier-manifests", labelKey: "nav.allCourierManifests", icon: Truck, end: false, perm: "courier_manifests.read_all" },
-  { to: "/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
+  { to: "/courier-manifests", labelKey: "nav.allCourierManifests", icon: FileText, end: false, perm: "courier_manifests.read_all" },
+  { to: "/couriers", labelKey: "nav.couriers", icon: DeliveryIcon, end: false, perm: "couriers.read" },
   { to: "/pickup-couriers", labelKey: "nav.pickupCouriers", icon: Truck, end: false, perm: "warehouses.read" },
   {
     to: "/delivery-zones",
@@ -139,7 +140,7 @@ const customerServiceNavConfig = [
   { to: "/cs/shipments", labelKey: "nav.shipments", icon: Package, end: false, perm: "shipments.read" },
   { to: "/cs/merchant-orders", labelKey: "nav.merchantOrders", icon: Boxes, end: false, perm: "merchant_orders.read" },
   { to: "/cs/merchant-orders/pending-confirmations", labelKey: "nav.merchantOrderConfirmations", icon: Boxes, end: false, perm: "merchant_orders.confirm" },
-  { to: "/cs/couriers", labelKey: "nav.couriers", icon: Truck, end: false, perm: "couriers.read" },
+  { to: "/cs/couriers", labelKey: "nav.couriers", icon: DeliveryIcon, end: false, perm: "couriers.read" },
   { to: "/settings", labelKey: "nav.settings", icon: Settings, end: false, perm: undefined },
 ] as const
 

@@ -2,13 +2,14 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeft, Truck } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
 import {
   getCourierAccountSummary,
   listAccountingShipments,
   type AccountingShipmentTab,
 } from "@/api/accounting-api"
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -129,7 +130,7 @@ export function CourierAccountDetailPage() {
             </Link>
           </Button>
           <div className="flex items-center gap-2">
-            <Truck className="text-primary size-5" aria-hidden />
+            <DeliveryIcon className="text-primary size-5" aria-hidden />
             <h1 className="text-xl font-semibold">
               {t("accounts.courierDetail.title")}
             </h1>

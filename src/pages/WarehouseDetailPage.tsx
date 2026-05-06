@@ -16,6 +16,7 @@ import {
   useParams,
 } from "react-router-dom"
 
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { createShipmentPlannedTask } from "@/api/shipments-api"
 import type { PickupCourierRow } from "@/api/pickup-couriers-api"
 import {
@@ -150,14 +151,6 @@ function WarehouseBoxIcon({ className, "aria-hidden": ariaHidden }: { className?
   )
 }
 
-function AssignmentTruckIcon({ className, "aria-hidden": ariaHidden }: { className?: string; "aria-hidden"?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
-      <path d="M3.75 4.5A2.25 2.25 0 0 0 1.5 6.75v8.5A2.25 2.25 0 0 0 3.75 17.5h.882a2.625 2.625 0 0 1 5.236 0h3.264a2.625 2.625 0 0 1 5.236 0h1.132a1.5 1.5 0 0 0 1.5-1.5V11.7a2.25 2.25 0 0 0-.45-1.35l-2.4-3.2A2.25 2.25 0 0 0 16.35 6.3H14.25v-1.8H3.75Zm10.5 4.05h2.1l1.8 2.4h-3.9v-2.4Zm-7 10.2a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25Zm8.5 0a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25Z" />
-    </svg>
-  )
-}
-
 // Define stat cards configuration outside component to avoid recreation
 const transferStatCards = [
   { 
@@ -169,7 +162,7 @@ const transferStatCards = [
   { 
     statKey: "assigned" as const, 
     titleI18nKey: "warehouse.hubStats.assigned", 
-    icon: AssignmentTruckIcon, 
+    icon: Truck, 
     accent: "primary" as const 
   },
   { 
@@ -215,7 +208,7 @@ const shipmentSnapshotStatusCards = [
   {
     status: "OUT_FOR_DELIVERY" as const,
     titleI18nKey: "warehouse.shipmentInsights.outForDelivery",
-    icon: Truck,
+    icon: DeliveryIcon,
     accent: "warning" as const,
   },
   {

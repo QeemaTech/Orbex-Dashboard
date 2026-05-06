@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query"
 import { useCallback, useMemo, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { ClipboardList, Loader2, Package, Truck } from "lucide-react"
+import { ClipboardList, Loader2, Package } from "lucide-react"
 
 import { getEligibleShipments, type EligibleShipmentRow } from "@/api/delivery-manifests-api"
 import { getWarehouseZoneLinks } from "@/api/warehouse-api"
+import DeliveryIcon from "@/components/icons/DeliveryIcon"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -106,7 +107,7 @@ export function DeliveryManifestWorkspacePage() {
     enabled: !!token && !!warehouseId && !accessDenied,
   })
 
-  const items = eligibleQuery.data?.items ?? []
+  const items = useMemo(() => eligibleQuery.data?.items ?? [], [eligibleQuery.data?.items])
   const total = eligibleQuery.data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
 
@@ -274,7 +275,7 @@ export function DeliveryManifestWorkspacePage() {
                               priorityClass(row.priorityTier),
                             )}
                           >
-                            <Truck className="size-3" aria-hidden />
+                            <DeliveryIcon className="size-3" aria-hidden />
                             {row.priorityTier}
                           </span>
                         </TableCell>
