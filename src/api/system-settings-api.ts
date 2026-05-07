@@ -16,6 +16,25 @@ export const VISA_COMMISSION_RATE_KEY = "visa_commission_rate"
 export const DEFAULT_COMMISSION_FEE_KEY = "default_commission_fee"
 export const CUSTOMER_SERVICE_FEE_RATE_KEY = "customer_service_fee_rate"
 export const SHIPPING_FEE_CONFIG_KEY = "shipping_fee_config"
+export const SUPPORT_INFO_KEY = "support_info"
+
+export type LocalizedText = { en: string; ar: string }
+
+export type SupportInfo = {
+  phone: string | null
+  whatsapp: string | null
+  email: string | null
+  website: string | null
+  address: LocalizedText
+  workingHours: LocalizedText
+  socialLinks: {
+    facebook?: string
+    instagram?: string
+    linkedin?: string
+    x?: string
+    tiktok?: string
+  }
+}
 
 export async function getSystemSetting<T>(token: string, key: string): Promise<{ key: string; value: T }> {
   return apiFetch<{ key: string; value: T }>(

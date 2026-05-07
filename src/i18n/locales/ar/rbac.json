@@ -161,7 +161,32 @@
     "delivery_zones.update": { "label": "تعديل مناطق التوصيل", "category": "مناطق التوصيل" },
     "delivery_zones.delete": { "label": "حذف مناطق التوصيل", "category": "مناطق التوصيل" },
     "packaging_materials.stock.read": { "label": "عرض مخزون مواد التغليف", "category": "مواد التغليف" },
-    "packaging_materials.stock.write": { "label": "إدارة مخزون مواد التغليف (لكل مخزن)", "category": "مواد التغليف" }
+    "packaging_materials.stock.write": { "label": "إدارة مخزون مواد التغليف (لكل مخزن)", "category": "مواد التغليف" },
+
+    "reference_data.banks.read": { "label": "عرض بيانات البنوك المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.banks.create": { "label": "إضافة بيانات البنوك المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.banks.update": { "label": "تعديل بيانات البنوك المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.banks.delete": { "label": "حذف بيانات البنوك المرجعية", "category": "البيانات المرجعية" },
+
+    "reference_data.product_types.read": { "label": "عرض بيانات أنواع المنتجات المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.product_types.create": { "label": "إضافة بيانات أنواع المنتجات المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.product_types.update": { "label": "تعديل بيانات أنواع المنتجات المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.product_types.delete": { "label": "حذف بيانات أنواع المنتجات المرجعية", "category": "البيانات المرجعية" },
+
+    "reference_data.sales_channels.read": { "label": "عرض بيانات قنوات البيع المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.sales_channels.create": { "label": "إضافة بيانات قنوات البيع المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.sales_channels.update": { "label": "تعديل بيانات قنوات البيع المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.sales_channels.delete": { "label": "حذف بيانات قنوات البيع المرجعية", "category": "البيانات المرجعية" },
+
+    "reference_data.business_sectors.read": { "label": "عرض بيانات قطاعات الأعمال المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.business_sectors.create": { "label": "إضافة بيانات قطاعات الأعمال المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.business_sectors.update": { "label": "تعديل بيانات قطاعات الأعمال المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.business_sectors.delete": { "label": "حذف بيانات قطاعات الأعمال المرجعية", "category": "البيانات المرجعية" },
+
+    "reference_data.governorates.read": { "label": "عرض بيانات المحافظات المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.governorates.create": { "label": "إضافة بيانات المحافظات المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.governorates.update": { "label": "تعديل بيانات المحافظات المرجعية", "category": "البيانات المرجعية" },
+    "reference_data.governorates.delete": { "label": "حذف بيانات المحافظات المرجعية", "category": "البيانات المرجعية" }
   },
   "signedInAs": "أنت مسجّل الدخول كـ {{email}}."
 }

@@ -161,7 +161,32 @@
     "delivery_zones.update": { "label": "Update delivery zones", "category": "Delivery Zones" },
     "delivery_zones.delete": { "label": "Delete delivery zones", "category": "Delivery Zones" },
     "packaging_materials.stock.read": { "label": "View packaging material stock", "category": "Packaging Materials" },
-    "packaging_materials.stock.write": { "label": "Manage packaging material stock (per warehouse)", "category": "Packaging Materials" }
+    "packaging_materials.stock.write": { "label": "Manage packaging material stock (per warehouse)", "category": "Packaging Materials" },
+
+    "reference_data.banks.read": { "label": "View banks reference data", "category": "Reference Data" },
+    "reference_data.banks.create": { "label": "Create banks reference data", "category": "Reference Data" },
+    "reference_data.banks.update": { "label": "Update banks reference data", "category": "Reference Data" },
+    "reference_data.banks.delete": { "label": "Delete banks reference data", "category": "Reference Data" },
+
+    "reference_data.product_types.read": { "label": "View product types reference data", "category": "Reference Data" },
+    "reference_data.product_types.create": { "label": "Create product types reference data", "category": "Reference Data" },
+    "reference_data.product_types.update": { "label": "Update product types reference data", "category": "Reference Data" },
+    "reference_data.product_types.delete": { "label": "Delete product types reference data", "category": "Reference Data" },
+
+    "reference_data.sales_channels.read": { "label": "View sales channels reference data", "category": "Reference Data" },
+    "reference_data.sales_channels.create": { "label": "Create sales channels reference data", "category": "Reference Data" },
+    "reference_data.sales_channels.update": { "label": "Update sales channels reference data", "category": "Reference Data" },
+    "reference_data.sales_channels.delete": { "label": "Delete sales channels reference data", "category": "Reference Data" },
+
+    "reference_data.business_sectors.read": { "label": "View business sectors reference data", "category": "Reference Data" },
+    "reference_data.business_sectors.create": { "label": "Create business sectors reference data", "category": "Reference Data" },
+    "reference_data.business_sectors.update": { "label": "Update business sectors reference data", "category": "Reference Data" },
+    "reference_data.business_sectors.delete": { "label": "Delete business sectors reference data", "category": "Reference Data" },
+
+    "reference_data.governorates.read": { "label": "View governorates reference data", "category": "Reference Data" },
+    "reference_data.governorates.create": { "label": "Create governorates reference data", "category": "Reference Data" },
+    "reference_data.governorates.update": { "label": "Update governorates reference data", "category": "Reference Data" },
+    "reference_data.governorates.delete": { "label": "Delete governorates reference data", "category": "Reference Data" }
   },
   "signedInAs": "You are signed in as {{email}}."
 }
