@@ -484,7 +484,9 @@
     "email": "Email",
     "password": "Password",
     "signIn": "Sign in",
-    "loginError": "Could not sign in. Check your credentials."
+    "loginError": "Could not sign in. Check your credentials.",
+    "pendingApproval": "Your account is pending approval.",
+    "notRegistered": "No account found for this email."
   },
   "notifications": {
     "title": "Notifications",

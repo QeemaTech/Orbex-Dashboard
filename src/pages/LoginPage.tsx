@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { getDefaultDashboardRoute, useAuth } from "@/lib/auth-context"
 
+const AUTH_ERROR_CODE = {
+  MerchantPendingApproval: "MERCHANT_PENDING_APPROVAL",
+  AccountNotRegistered: "ACCOUNT_NOT_REGISTERED",
+} as const
+
 export function LoginPage() {
   const { t } = useTranslation()
   const { user, login, loading } = useAuth()
@@ -30,8 +35,16 @@ export function LoginPage() {
       const loggedInUser = await login(email, password)
       nav(getDefaultDashboardRoute(loggedInUser), { replace: true })
     } catch (err) {
-      const msg =
-        err instanceof ApiError ? err.message : t("auth.loginError")
+      let msg = t("auth.loginError")
+      if (err instanceof ApiError) {
+        if (err.code === AUTH_ERROR_CODE.MerchantPendingApproval) {
+          msg = t("auth.pendingApproval")
+        } else if (err.code === AUTH_ERROR_CODE.AccountNotRegistered) {
+          msg = t("auth.notRegistered")
+        } else {
+          msg = err.message
+        }
+      }
       setError(msg)
     } finally {
       setPending(false)
