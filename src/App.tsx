@@ -25,6 +25,7 @@ import { CollectionsPage } from "@/pages/CollectionsPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MerchantsPage } from "@/pages/MerchantsPage"
 import { UsersPage } from "@/pages/UsersPage"
+import CouriersPage from "@/pages/CouriersPage"
 import { MerchantOrderBulkLabelPrintPage } from "@/pages/MerchantOrderBulkLabelPrintPage"
 import { MerchantOrderDetailsPage } from "@/pages/MerchantOrderDetailsPage"
 import { MerchantOrdersListPage } from "@/pages/MerchantOrdersListPage"
@@ -281,7 +282,7 @@ export default function App() {
                 allowed={["ADMIN"]}
                 requiredPermissions={["couriers.read"]}
               >
-                <CsCouriersPage />
+                <CouriersPage />
               </ProtectedRole>
             </Protected>
           }

@@ -59,6 +59,50 @@
       "failed": "Could not save pickup courier"
     }
   },
+  "couriers": {
+    "pageTitle": "Delivery Couriers",
+    "pageDescription": "Manage last-mile delivery couriers, their profiles, and assigned regions.",
+    "actions": {
+      "create": "Create courier",
+      "confirmDeactivate": "Are you sure you want to deactivate this courier? They will no longer be able to log in or be assigned to manifests."
+    },
+    "list": {
+      "title": "All couriers",
+      "description": "Showing {{count}} delivery couriers in the system.",
+      "searchPlaceholder": "Search by name, email, or phone...",
+      "empty": "No couriers found.",
+      "noRegions": "No regions assigned",
+      "cols": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "regions": "Assigned regions",
+        "status": "Status"
+      }
+    },
+    "form": {
+      "createTitle": "Create new courier",
+      "editTitle": "Edit courier profile",
+      "email": "Account email",
+      "fullName": "Full name",
+      "contactPhone": "Contact phone",
+      "password": "Password",
+      "passwordOptional": "Password (leave blank to keep current)",
+      "isActive": "Account active",
+      "documents": "Courier documents",
+      "profilePhotoUrl": "Profile photo URL",
+      "driverLicenseUrl": "Driver license URL",
+      "vehicleLicenseUrl": "Vehicle license URL",
+      "assignedRegions": "Assigned regions"
+    },
+    "feedback": {
+      "created": "Courier created successfully",
+      "updated": "Courier updated successfully",
+      "deactivated": "Courier deactivated",
+      "saveFailed": "Failed to save courier profile",
+      "actionFailed": "Action failed"
+    }
+  },
   "tracking": {
     "brandTitle": "Orbex tracking",
     "loading": "Loading tracking…",
