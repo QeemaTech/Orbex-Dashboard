@@ -114,3 +114,17 @@ export async function deactivateCourier(params: {
     token: params.token,
   })
 }
+
+export async function uploadCourierDocument(params: {
+  token: string
+  file: File
+}): Promise<{ url: string }> {
+  const formData = new FormData()
+  formData.append("file", params.file)
+
+  return apiFetch<{ url: string }>("/api/users/upload-doc", {
+    method: "POST",
+    token: params.token,
+    body: formData,
+  })
+}

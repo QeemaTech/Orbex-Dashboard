@@ -1645,7 +1645,57 @@
     "clearFilters": "مسح الفلاتر",
     "view": "عرض",
     "open": "فتح",
-    "select": "اختر…"
+    "select": "اختر…",
+    "uploading": "جاري الرفع",
+    "clickToUpload": "انقر للرفع",
+    "feedback": {
+      "uploadSuccess": "تم رفع الملف بنجاح",
+      "uploadFailed": "فشل الرفع"
+    }
+  },
+  "couriers": {
+    "pageTitle": "مناديب التوصيل",
+    "pageDescription": "إدارة مناديب التوصيل، ملفاتهم الشخصية، والمناطق المعينة لهم.",
+    "actions": {
+      "create": "إنشاء مندوب",
+      "confirmDeactivate": "هل أنت متأكد من تعطيل هذا المندوب؟ لن يتمكن من تسجيل الدخول أو التعيين في البيانات."
+    },
+    "list": {
+      "title": "كل المناديب",
+      "description": "عرض {{count}} مندوب توصيل في النظام.",
+      "searchPlaceholder": "بحث بالاسم أو البريد أو الهاتف...",
+      "empty": "لم يتم العثور على مناديب.",
+      "noRegions": "لا توجد مناطق معينة",
+      "cols": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "regions": "المناطق المعينة",
+        "status": "الحالة"
+      }
+    },
+    "form": {
+      "createTitle": "إنشاء مندوب جديد",
+      "editTitle": "تعديل ملف المندوب",
+      "email": "بريد الحساب",
+      "fullName": "الاسم الكامل",
+      "contactPhone": "هاتف التواصل",
+      "password": "كلمة المرور",
+      "passwordOptional": "كلمة المرور (اتركها فارغة للإبقاء على الحالية)",
+      "isActive": "الحساب نشط",
+      "documents": "وثائق المندوب",
+      "profilePhotoUrl": "الصورة الشخصية",
+      "driverLicenseUrl": "رخصة القيادة",
+      "vehicleLicenseUrl": "رخصة المركبة",
+      "assignedRegions": "المناطق المعينة"
+    },
+    "feedback": {
+      "created": "تم إنشاء المندوب بنجاح",
+      "updated": "تم تحديث المندوب بنجاح",
+      "deactivated": "تم تعطيل المندوب",
+      "saveFailed": "فشل حفظ ملف المندوب",
+      "actionFailed": "فشلت العملية"
+    }
   },
   "collections": {
     "subtitle": "لمحة حيّة عن حالة نقدية عند التسليم لجميع الشحنات؛ تُحدَّث القيم تلقائياً كل 15 ثانية.",

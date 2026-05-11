@@ -3,17 +3,12 @@ import { X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import {
-  createCourier,
-  updateCourier,
-  type CourierAdminRow,
-  type CreateCourierBody,
-  type UpdateCourierBody,
-} from "@/api/couriers-api"
+import { createCourier, updateCourier, uploadCourierDocument, type CourierAdminRow, type CreateCourierBody, type UpdateCourierBody } from "@/api/couriers-api"
 import { listRegionsCatalog } from "@/api/delivery-zones-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { showToast } from "@/lib/toast"
+import { Loader2, Upload, FileCheck, File as FileIcon } from "lucide-react"
 
 type CourierFormMode = "create" | "edit"
 
@@ -221,30 +216,30 @@ export function CourierFormDialog({
             </h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1">
-                <label className="text-xs font-medium">{t("couriers.form.profilePhotoUrl")}</label>
-                <Input
+                <FileUploader
+                  label={t("couriers.form.profilePhotoUrl")}
                   value={profilePhotoUrl}
-                  onChange={(e) => setProfilePhotoUrl(e.target.value)}
+                  token={token}
+                  onUpload={setProfilePhotoUrl}
                   disabled={isPending}
-                  placeholder="https://..."
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium">{t("couriers.form.driverLicenseUrl")}</label>
-                <Input
+                <FileUploader
+                  label={t("couriers.form.driverLicenseUrl")}
                   value={driverLicenseUrl}
-                  onChange={(e) => setDriverLicenseUrl(e.target.value)}
+                  token={token}
+                  onUpload={setDriverLicenseUrl}
                   disabled={isPending}
-                  placeholder="https://..."
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium">{t("couriers.form.vehicleLicenseUrl")}</label>
-                <Input
+                <FileUploader
+                  label={t("couriers.form.vehicleLicenseUrl")}
                   value={vehicleLicenseUrl}
-                  onChange={(e) => setVehicleLicenseUrl(e.target.value)}
+                  token={token}
+                  onUpload={setVehicleLicenseUrl}
                   disabled={isPending}
-                  placeholder="https://..."
                 />
               </div>
               <div className="flex items-center space-x-2 pt-6">
@@ -299,11 +294,103 @@ export function CourierFormDialog({
             >
               {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? t("common.saving") : t("common.save")}
+            <Button type="submit" disabled={isPending} className="min-w-[80px]">
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("common.saving")}
+                </>
+              ) : (
+                t("common.save")
+              )}
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+function FileUploader({
+  label,
+  value,
+  token,
+  onUpload,
+  disabled,
+}: {
+  label: string
+  value: string
+  token: string
+  onUpload: (url: string) => void
+  disabled?: boolean
+}) {
+  const [uploading, setUploading] = useState(false)
+  const { t } = useTranslation()
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const res = await uploadCourierDocument({ token, file })
+      onUpload(res.url)
+      showToast(t("common.feedback.uploadSuccess"), "success")
+    } catch (err) {
+      showToast(t("common.feedback.uploadFailed"), "error")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const fileName = value ? value.split("/").pop() : ""
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium">{label}</label>
+      <div className="relative group">
+        <input
+          type="file"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+          onChange={handleFileChange}
+          disabled={disabled || uploading}
+          accept="image/*,.pdf"
+        />
+        <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-background group-hover:border-primary transition-colors min-h-[40px]">
+          {uploading ? (
+            <>
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              <span className="text-xs text-muted-foreground italic truncate">
+                {t("common.uploading")}...
+              </span>
+            </>
+          ) : value ? (
+            <>
+              <FileCheck className="size-4 text-green-500" />
+              <span className="text-xs font-medium truncate flex-1">
+                {fileName}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-6 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onUpload("")
+                }}
+              >
+                <X className="size-3" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Upload className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="text-xs text-muted-foreground">
+                {t("common.clickToUpload")}
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -66,7 +66,7 @@ export async function publicApiFetch<T>(
   init?: RequestInit,
 ): Promise<T> {
   const headers = new Headers(init?.headers)
-  if (!headers.has("Content-Type")) {
+  if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
     headers.set("Content-Type", "application/json")
   }
   const storedLocale =
@@ -182,7 +182,7 @@ export async function apiFetch<T>(
   init?: RequestInit & { token?: string | null },
 ): Promise<T> {
   const headers = new Headers(init?.headers)
-  if (!headers.has("Content-Type")) {
+  if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
     headers.set("Content-Type", "application/json")
   }
   // Add Accept-Language header based on stored locale
@@ -200,7 +200,7 @@ export async function apiFetch<T>(
     const nextToken = await refreshAccessToken()
     if (nextToken) {
       const retryHeaders = new Headers(init?.headers)
-      if (!retryHeaders.has("Content-Type")) {
+      if (!retryHeaders.has("Content-Type") && !(init?.body instanceof FormData)) {
         retryHeaders.set("Content-Type", "application/json")
       }
       retryHeaders.set("Accept-Language", storedLocale)

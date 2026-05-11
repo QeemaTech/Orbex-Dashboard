@@ -90,9 +90,9 @@
       "passwordOptional": "Password (leave blank to keep current)",
       "isActive": "Account active",
       "documents": "Courier documents",
-      "profilePhotoUrl": "Profile photo URL",
-      "driverLicenseUrl": "Driver license URL",
-      "vehicleLicenseUrl": "Vehicle license URL",
+      "profilePhotoUrl": "Profile photo",
+      "driverLicenseUrl": "Driver license",
+      "vehicleLicenseUrl": "Vehicle license",
       "assignedRegions": "Assigned regions"
     },
     "feedback": {
@@ -1900,6 +1900,18 @@
         "markedPaid": "Request marked as paid.",
         "empty": "No requests."
       }
+    }
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "uploading": "Uploading",
+    "clickToUpload": "Click to upload",
+    "feedback": {
+      "uploadSuccess": "File uploaded successfully",
+      "uploadFailed": "Upload failed"
     }
   }
 }

@@ -46,7 +46,8 @@ import { showToast } from "@/lib/toast"
 
 export default function CouriersPage() {
   const { t } = useTranslation()
-  const { token } = useAuth()
+  const { accessToken } = useAuth()
+  const token = accessToken ?? ""
   const queryClient = useQueryClient()
 
   const [search, setSearch] = useState("")
@@ -61,7 +62,7 @@ export default function CouriersPage() {
     queryKey: ["couriers-admin-list", token, page, search],
     queryFn: () =>
       listCouriers({
-        token: token!,
+        token: token,
         page,
         pageSize,
         search: search.trim() || undefined,
@@ -70,7 +71,7 @@ export default function CouriersPage() {
   })
 
   const deactivateMut = useMutation({
-    mutationFn: (userId: string) => deactivateCourier({ token: token!, userId }),
+    mutationFn: (userId: string) => deactivateCourier({ token: token, userId }),
     onSuccess: () => {
       showToast(t("couriers.feedback.deactivated"), "success")
       queryClient.invalidateQueries({ queryKey: ["couriers-admin-list"] })
@@ -97,7 +98,7 @@ export default function CouriersPage() {
   const totalPages = Math.ceil(total / pageSize)
 
   return (
-    <Layout>
+    <Layout title={t("couriers.pageTitle")}>
       <div className="space-y-6 p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -273,7 +274,7 @@ export default function CouriersPage() {
         open={formOpen}
         mode={formMode}
         initial={selectedCourier}
-        token={token!}
+        token={token}
         onOpenChange={setFormOpen}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["couriers-admin-list"] })}
       />
