@@ -49,6 +49,7 @@
   --input: #d7d9df;
   --ring: #1f284d;
   --success: #14804a;
+  --success-foreground: #ffffff;
   --warning: #e42320;
   --error: #dc2626;
   --chart-1: #1f284d;
@@ -142,6 +143,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-error: var(--error);
 }

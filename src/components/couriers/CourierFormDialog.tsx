@@ -8,7 +8,7 @@ import { listRegionsCatalog } from "@/api/delivery-zones-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { showToast } from "@/lib/toast"
-import { Loader2, Upload, FileCheck, File as FileIcon } from "lucide-react"
+import { Loader2, Upload, FileCheck } from "lucide-react"
 
 type CourierFormMode = "create" | "edit"
 

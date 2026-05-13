@@ -298,6 +298,7 @@ export type ShipmentOrderRow = {
   transferStatus?: string
   /** Batch hub assignment when returned from shipment APIs. */
   assignedWarehouseId?: string | null
+  assignedWarehouse?: { id: string; name: string } | null
   /** Current warehouse where the shipment is located (from scan in/out operations). */
   currentWarehouseId?: string | null
   /** Populated when `currentWarehouseId` is set (list/detail/orders APIs). */

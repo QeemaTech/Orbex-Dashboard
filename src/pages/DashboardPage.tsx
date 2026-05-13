@@ -784,7 +784,7 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                         </TableCell>
                         <TableCell>
                           <BackendStatusBadge
-                            kind="shipment"
+                            kind="orderDelivery"
                             value={row.status ?? ""}
                           />
                         </TableCell>
