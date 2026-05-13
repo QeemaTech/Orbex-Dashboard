@@ -545,3 +545,36 @@ export async function patchShipmentAssignedWarehouse(params: {
     },
   )
 }
+
+export type MerchantDashboardTotals = {
+  delivered: number
+  rejected: number
+  postponed: number
+  delivery_processing: number
+}
+
+/** `GET /api/merchant/shipments/dashboard/totals` — counts for merchant perspective statuses. */
+export async function getMerchantDashboardTotals(p: {
+  token: string
+}): Promise<MerchantDashboardTotals> {
+  return apiFetch<MerchantDashboardTotals>("/api/merchant/shipments/dashboard/totals", {
+    token: p.token,
+  })
+}
+
+/** `GET /api/merchant/shipments/dashboard/recent` — paginated merchant recent shipments. */
+export async function listMerchantRecentShipments(
+  p: ListShipmentsParams,
+): Promise<ShipmentsListResponse> {
+  const query = qs({
+    page: p.page ?? 1,
+    pageSize: p.pageSize ?? 20,
+    status: p.status,
+    startDate: p.createdFrom,
+    endDate: p.createdTo,
+    expand: p.expand ?? "merchant,courier",
+  })
+  return apiFetch<ShipmentsListResponse>(`/api/merchant/shipments/dashboard/recent${query}`, {
+    token: p.token,
+  })
+}

@@ -56,6 +56,14 @@ export function PackagingRequestDetailsBody(props: {
             <span className="font-semibold">Receiver:</span> {request.receiverName}
           </p>
         ) : null}
+        <p className="flex items-center gap-2">
+          <span className="font-semibold">On-site packaging:</span>
+          {request.doPackaging ? (
+            <Badge variant="default">Yes — staff visit required</Badge>
+          ) : (
+            <Badge variant="outline">No</Badge>
+          )}
+        </p>
         <p className="flex flex-wrap items-center gap-2 sm:col-span-2">
           <span className="font-semibold">Merchant order:</span>
           {(request.linkedMerchantOrderCount ?? 0) > 0 ? (

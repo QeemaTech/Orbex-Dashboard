@@ -44,6 +44,10 @@ import {
 import { type InsightsPeriodConfig } from "@/api/system-settings-api"
 import { getUserSetting } from "@/api/user-settings-api"
 import { listUsers } from "@/api/users-api"
+import {
+  getMerchantDashboardTotals,
+  listMerchantRecentShipments,
+} from "@/api/shipments-api"
 import { listWarehouseSites } from "@/api/warehouse-api"
 import { backendMerchantOrderBatchLabel } from "@/features/warehouse/backend-labels"
 import { getDefaultDashboardRoute, isMerchantUser, useAuth } from "@/lib/auth-context"
@@ -137,7 +141,8 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
   /** Aligned with `GET /api/merchant-orders/dashboard/kpis` (`merchant_orders.read` or `dashboard.view`). */
   const canReadMerchantOrderKpis =
     !!token &&
-    (hasPermission(user, "merchant_orders.read") ||
+    (isMerchant ||
+      hasPermission(user, "merchant_orders.read") ||
       hasPermission(user, "dashboard.view"))
   const canListUsers = !!token && hasPermission(user, "users.read") && !isWhAdmin
   const canListWarehouses = !!token && hasPermission(user, "warehouses.read")
@@ -296,9 +301,21 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
     enabled: Boolean(token && showMerchantQuickTabs && quickActionsTab === "pending"),
   })
 
+  const merchantTotalsQuery = useQuery({
+    queryKey: ["dashboard-merchant-totals", token],
+    queryFn: () => getMerchantDashboardTotals({ token }),
+    enabled: !!token && isMerchant,
+  })
+
+  const merchantRecentQuery = useQuery({
+    queryKey: ["dashboard-merchant-recent", token, 1, 8],
+    queryFn: () => listMerchantRecentShipments({ token, page: 1, pageSize: 8 }),
+    enabled: !!token && isMerchant,
+  })
+
   const insightGridClass =
-    isWhAdmin
-      ? "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-3"
+    isWhAdmin || isMerchant
+      ? "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-4"
       : "grid gap-5 md:gap-6 md:grid-cols-2 xl:grid-cols-4"
 
   const warehouseViewAllTo =
@@ -318,42 +335,81 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
         ) : null}
         {canReadMerchantOrderKpis ? (
           <div className={insightGridClass}>
-            {canListUsers ? (
-              <StatCard
-                title={t("dashboard.adminStats.users")}
-                value={kpiPending ? "—" : userHeadline}
-                icon={Users}
-                accent="primary"
-                to={user?.role === "ADMIN" ? "/users" : undefined}
-                hideTrend
-              />
-            ) : null}
-            <StatCard
-              title={t("dashboard.adminStats.orders")}
-              value={kpiPending ? "—" : shipmentLinesHeadline}
-              icon={Boxes}
-              accent="warning"
-              to={statLinesTo}
-              hideTrend
-            />
-            <StatCard
-              title={isMerchant ? t("dashboard.myOrders.statsTotalShipments") : t("dashboard.adminStats.shipments")}
-              value={kpiPending ? "—" : merchantOrdersHeadline}
-              icon={Package}
-              accent="success"
-              to={statShipmentsTo}
-              hideTrend
-            />
-            {canListWarehouses && !isWhAdmin ? (
-              <StatCard
-                title={t("dashboard.adminStats.warehouses")}
-                value={kpiPending ? "—" : warehouseTotalAllTime}
-                icon={Warehouse}
-                accent="destructive"
-                to={statWarehousesTo}
-                hideTrend
-              />
-            ) : null}
+            {isMerchant ? (
+              <>
+                <StatCard
+                  title={t("dashboard.status.delivered")}
+                  value={merchantTotalsQuery.isLoading ? "—" : (merchantTotalsQuery.data?.delivered ?? 0)}
+                  icon={Package}
+                  accent="success"
+                  to="/shipments?status=delivered"
+                  hideTrend
+                />
+                <StatCard
+                  title={t("dashboard.status.rejected")}
+                  value={merchantTotalsQuery.isLoading ? "—" : (merchantTotalsQuery.data?.rejected ?? 0)}
+                  icon={Package}
+                  accent="destructive"
+                  to="/shipments?status=rejected"
+                  hideTrend
+                />
+                <StatCard
+                  title={t("dashboard.status.postponed")}
+                  value={merchantTotalsQuery.isLoading ? "—" : (merchantTotalsQuery.data?.postponed ?? 0)}
+                  icon={Package}
+                  accent="warning"
+                  to="/shipments?status=postponed"
+                  hideTrend
+                />
+                <StatCard
+                  title={t("dashboard.status.delivery_processing")}
+                  value={merchantTotalsQuery.isLoading ? "—" : (merchantTotalsQuery.data?.delivery_processing ?? 0)}
+                  icon={Boxes}
+                  accent="primary"
+                  to="/shipments?status=delivery_processing"
+                  hideTrend
+                />
+              </>
+            ) : (
+              <>
+                {canListUsers ? (
+                  <StatCard
+                    title={t("dashboard.adminStats.users")}
+                    value={kpiPending ? "—" : userHeadline}
+                    icon={Users}
+                    accent="primary"
+                    to={user?.role === "ADMIN" ? "/users" : undefined}
+                    hideTrend
+                  />
+                ) : null}
+                <StatCard
+                  title={t("dashboard.adminStats.orders")}
+                  value={kpiPending ? "—" : shipmentLinesHeadline}
+                  icon={Boxes}
+                  accent="warning"
+                  to={statLinesTo}
+                  hideTrend
+                />
+                <StatCard
+                  title={t("dashboard.adminStats.shipments")}
+                  value={kpiPending ? "—" : merchantOrdersHeadline}
+                  icon={Package}
+                  accent="success"
+                  to={statShipmentsTo}
+                  hideTrend
+                />
+                {canListWarehouses && !isWhAdmin ? (
+                  <StatCard
+                    title={t("dashboard.adminStats.warehouses")}
+                    value={kpiPending ? "—" : warehouseTotalAllTime}
+                    icon={Warehouse}
+                    accent="destructive"
+                    to={statWarehousesTo}
+                    hideTrend
+                  />
+                ) : null}
+              </>
+            )}
           </div>
         ) : null}
 
@@ -711,42 +767,76 @@ function DashboardContent({ variant }: { variant: DashboardVariant }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(kpiQuery.data?.recentShipments ?? []).map((row, idx) => (
-                    <TableRow
-                      key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => {
-                        const batchId = merchantOrderBatchId(row)
-                        if (!batchId) return
-                        void navigate(`/merchant-orders/${encodeURIComponent(batchId)}`)
-                      }}
-                    >
-                      <TableCell className="font-medium">
-                        {row.merchant?.displayName ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {row.assignedWarehouse?.name ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <BackendStatusBadge
-                          kind="merchantOrderBatch"
-                          value={row.transferStatus ?? ""}
-                        />
-                      </TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">
-                        {batchResolutionLabel(row, t)}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">
-                        {row.orderCount ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-end font-medium tabular-nums">
-                        {formatEGPFromDecimalString(
-                          row.totalShipmentValue ?? row.shipmentValue,
-                          locale,
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isMerchant ? (
+                    (merchantRecentQuery.data?.shipments ?? []).map((row, idx) => (
+                      <TableRow
+                        key={row.id || `row-${idx}`}
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => {
+                          void navigate(`/shipments/${encodeURIComponent(row.id)}`)
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          {row.customerName ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {row.assignedWarehouse?.name ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <BackendStatusBadge
+                            kind="shipment"
+                            value={row.status ?? ""}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {row.trackingNumber ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {row.itemsCount ?? 1}
+                        </TableCell>
+                        <TableCell className="text-end font-medium tabular-nums">
+                          {formatEGPFromDecimalString(row.shipmentValue, locale)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    (kpiQuery.data?.recentShipments ?? []).map((row, idx) => (
+                      <TableRow
+                        key={merchantOrderBatchId(row) || row.id || `row-${idx}`}
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => {
+                          const batchId = merchantOrderBatchId(row)
+                          if (!batchId) return
+                          void navigate(`/merchant-orders/${encodeURIComponent(batchId)}`)
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          {row.merchant?.displayName ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {row.assignedWarehouse?.name ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <BackendStatusBadge
+                            kind="merchantOrderBatch"
+                            value={row.transferStatus ?? ""}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {batchResolutionLabel(row, t)}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {row.orderCount ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-end font-medium tabular-nums">
+                          {formatEGPFromDecimalString(
+                            row.totalShipmentValue ?? row.shipmentValue,
+                            locale,
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

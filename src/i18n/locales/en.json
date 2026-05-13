@@ -575,6 +575,12 @@
       "rejected": "Rejected",
       "postponed": "Postponed"
     },
+    "status": {
+      "delivered": "Delivered",
+      "rejected": "Rejected",
+      "postponed": "Postponed",
+      "delivery_processing": "In progress"
+    },
     "adminStats": {
       "users": "Users",
       "shipments": "Merchant orders",

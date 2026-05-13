@@ -53,6 +53,8 @@ export type PackagingMaterialRequest = {
   receiverName?: string | null
   receiverNotes?: string | null
   proofAttachmentUrl?: string | null
+  /** When true, staff will visit the merchant's location to perform packaging. */
+  doPackaging: boolean
   linkedMerchantOrderCount?: number
   linkedMerchantOrderIds?: string[]
 }
@@ -93,6 +95,8 @@ export type ListPackagingMaterialRequestsResponse = {
 export type CreatePackagingMaterialRequestInput = {
   merchantId?: string
   notes?: string | null
+  /** When true, staff should visit the merchant's location to perform the packaging. */
+  doPackaging?: boolean
   items: Array<{
     packagingMaterialId: string
     requestedQuantity: string | number

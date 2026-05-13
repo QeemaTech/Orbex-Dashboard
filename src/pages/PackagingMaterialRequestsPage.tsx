@@ -81,6 +81,7 @@ export function PackagingMaterialRequestsPage() {
   const [merchantPage, setMerchantPage] = useState(1)
   const [merchantOptions, setMerchantOptions] = useState<MerchantRow[]>([])
   const [notes, setNotes] = useState("")
+  const [doPackaging, setDoPackaging] = useState(false)
   const [builderRows, setBuilderRows] = useState<PackagingRequestBuilderItem[]>(
     createInitialBuilderRows(),
   )
@@ -189,11 +190,13 @@ export function PackagingMaterialRequestsPage() {
       await createRequestMutation.mutateAsync({
         merchantId: needsMerchantSelection ? selectedMerchantId : undefined,
         notes: notes || null,
+        doPackaging,
         items,
       })
       setCreateModalOpen(false)
       setSelectedMerchantId("")
       setNotes("")
+      setDoPackaging(false)
       setBuilderRows(createInitialBuilderRows())
       setTouchedBuilderRows(new Set())
       setSubmitAttempted(false)
@@ -298,6 +301,7 @@ export function PackagingMaterialRequestsPage() {
                       <TableHead>{t("packagingRequests.table.merchantId")}</TableHead>
                       <TableHead>{t("packagingRequests.table.status")}</TableHead>
                       <TableHead>{t("packagingRequests.table.estimatedCost")}</TableHead>
+                      <TableHead>On-site packaging</TableHead>
                       <TableHead>Merchant order</TableHead>
                       <TableHead>{t("packagingRequests.table.createdAt")}</TableHead>
                       <TableHead>{t("packagingRequests.table.actions")}</TableHead>
@@ -316,6 +320,13 @@ export function PackagingMaterialRequestsPage() {
                           <TableCell>{row.merchantName || row.merchantId}</TableCell>
                           <TableCell>{row.status}</TableCell>
                           <TableCell>{row.totalEstimatedCost}</TableCell>
+                          <TableCell>
+                            {(row as any).doPackaging ? (
+                              <Badge variant="default">On-site ✓</Badge>
+                            ) : (
+                              <Badge variant="outline">No</Badge>
+                            )}
+                          </TableCell>
                           <TableCell>
                             {(row.linkedMerchantOrderCount ?? 0) > 0 ? (
                               <span className="flex flex-col gap-1">
@@ -477,6 +488,22 @@ export function PackagingMaterialRequestsPage() {
               onChange={(event) => setNotes(event.target.value)}
               placeholder={t("packagingRequests.form.notes")}
             />
+            <div className="flex items-center gap-3 rounded-md border px-4 py-3">
+              <input
+                id="do-packaging-checkbox"
+                type="checkbox"
+                checked={doPackaging}
+                onChange={(e) => setDoPackaging(e.target.checked)}
+                disabled={createRequestMutation.isPending}
+                className="size-4 accent-primary cursor-pointer"
+              />
+              <label
+                htmlFor="do-packaging-checkbox"
+                className="cursor-pointer select-none text-sm font-medium leading-none"
+              >
+                Send staff to perform packaging at merchant's location
+              </label>
+            </div>
             <PackagingRequestBuilder
               materials={materialsQuery.data?.materials ?? []}
               value={builderRows}
