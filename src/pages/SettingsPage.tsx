@@ -3,9 +3,11 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
+  ABOUT_APP_KEY,
   CUSTOMER_SERVICE_FEE_RATE_KEY,
   DEFAULT_COMMISSION_FEE_KEY,
   getSystemSetting,
+  type AboutApp,
   type SupportInfo,
   SHIPPING_FEE_CONFIG_KEY,
   SUPPORT_INFO_KEY,
@@ -16,6 +18,10 @@ import {
 import { listRegionsCatalog } from "@/api/delivery-zones-api"
 import { getUserSetting, putUserSetting } from "@/api/user-settings-api"
 import { ApiError, formatApiValidationDetails } from "@/api/client"
+import { KeyValueRowsEditor } from "@/components/settings/KeyValueRowsEditor"
+import { LocalizedFieldPair } from "@/components/settings/LocalizedFieldPair"
+import { LocalizedExtraFieldsEditor } from "@/components/settings/LocalizedExtraFieldsEditor"
+import { SettingsFormSection } from "@/components/settings/SettingsFormSection"
 import { Layout } from "@/components/layout/Layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,7 +33,21 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/lib/auth-context"
+import {
+  findDuplicateKeys,
+  isValidFieldKey,
+  keyValueRowsToRecord,
+  recordToKeyValueRows,
+  type KeyValueRow,
+} from "@/lib/key-value-rows"
+import {
+  extraFieldsToRows,
+  findDuplicateLocalizedLabels,
+  rowsToExtraFields,
+  type LocalizedExtraFieldRow,
+} from "@/lib/localized-extra-fields"
 import { showToast } from "@/lib/toast"
+
 import {
   type ReferenceDataCreateBody,
   type ReferenceDataRow,
@@ -136,12 +156,32 @@ export function SettingsPage() {
   const [supportAddressAr, setSupportAddressAr] = useState("")
   const [supportWorkingHoursEn, setSupportWorkingHoursEn] = useState("")
   const [supportWorkingHoursAr, setSupportWorkingHoursAr] = useState("")
-  const [supportFacebook, setSupportFacebook] = useState("")
-  const [supportInstagram, setSupportInstagram] = useState("")
-  const [supportLinkedin, setSupportLinkedin] = useState("")
-  const [supportX, setSupportX] = useState("")
-  const [supportTiktok, setSupportTiktok] = useState("")
+  const [supportSocialRows, setSupportSocialRows] = useState<KeyValueRow[]>([])
+  const [supportExtraRows, setSupportExtraRows] = useState<LocalizedExtraFieldRow[]>([])
+  const [supportSocialRowErrors, setSupportSocialRowErrors] = useState<
+    Record<string, { key?: string; value?: string }>
+  >({})
+  const [supportExtraRowErrors, setSupportExtraRowErrors] = useState<
+    Record<string, { keyEn?: string; keyAr?: string; valueEn?: string; valueAr?: string }>
+  >({})
   const [supportErrors, setSupportErrors] = useState<Record<string, string>>({})
+
+  const [aboutAppNameEn, setAboutAppNameEn] = useState("")
+  const [aboutAppNameAr, setAboutAppNameAr] = useState("")
+  const [aboutTaglineEn, setAboutTaglineEn] = useState("")
+  const [aboutTaglineAr, setAboutTaglineAr] = useState("")
+  const [aboutDescriptionEn, setAboutDescriptionEn] = useState("")
+  const [aboutDescriptionAr, setAboutDescriptionAr] = useState("")
+  const [aboutVersion, setAboutVersion] = useState("")
+  const [aboutTermsUrl, setAboutTermsUrl] = useState("")
+  const [aboutPrivacyUrl, setAboutPrivacyUrl] = useState("")
+  const [aboutCopyrightEn, setAboutCopyrightEn] = useState("")
+  const [aboutCopyrightAr, setAboutCopyrightAr] = useState("")
+  const [aboutExtraRows, setAboutExtraRows] = useState<LocalizedExtraFieldRow[]>([])
+  const [aboutExtraRowErrors, setAboutExtraRowErrors] = useState<
+    Record<string, { keyEn?: string; keyAr?: string; valueEn?: string; valueAr?: string }>
+  >({})
+  const [aboutErrors, setAboutErrors] = useState<Record<string, string>>({})
 
   const [activeTab, setActiveTab] = useState<"SETTINGS" | "SYSTEM_SETTINGS">("SETTINGS")
 
@@ -187,6 +227,11 @@ export function SettingsPage() {
   const supportInfoQuery = useQuery({
     queryKey: ["system-settings", SUPPORT_INFO_KEY, token],
     queryFn: () => getSystemSetting<SupportInfo>(token, SUPPORT_INFO_KEY),
+    enabled: !!token && canManageSystem,
+  })
+  const aboutAppQuery = useQuery({
+    queryKey: ["system-settings", ABOUT_APP_KEY, token],
+    queryFn: () => getSystemSetting<AboutApp>(token, ABOUT_APP_KEY),
     enabled: !!token && canManageSystem,
   })
 
@@ -274,12 +319,28 @@ export function SettingsPage() {
     setSupportAddressAr(v.address?.ar ?? "")
     setSupportWorkingHoursEn(v.workingHours?.en ?? "")
     setSupportWorkingHoursAr(v.workingHours?.ar ?? "")
-    setSupportFacebook(v.socialLinks?.facebook ?? "")
-    setSupportInstagram(v.socialLinks?.instagram ?? "")
-    setSupportLinkedin(v.socialLinks?.linkedin ?? "")
-    setSupportX(v.socialLinks?.x ?? "")
-    setSupportTiktok(v.socialLinks?.tiktok ?? "")
+    setSupportSocialRows(recordToKeyValueRows(v.socialLinks ?? {}))
+    setSupportExtraRows(extraFieldsToRows(v.extraFields))
+    setSupportSocialRowErrors({})
+    setSupportExtraRowErrors({})
   }, [supportInfoQuery.data?.value])
+  useEffect(() => {
+    const v = aboutAppQuery.data?.value
+    if (!v) return
+    setAboutAppNameEn(v.appName?.en ?? "")
+    setAboutAppNameAr(v.appName?.ar ?? "")
+    setAboutTaglineEn(v.tagline?.en ?? "")
+    setAboutTaglineAr(v.tagline?.ar ?? "")
+    setAboutDescriptionEn(v.description?.en ?? "")
+    setAboutDescriptionAr(v.description?.ar ?? "")
+    setAboutVersion(v.version ?? "")
+    setAboutTermsUrl(v.termsUrl ?? "")
+    setAboutPrivacyUrl(v.privacyUrl ?? "")
+    setAboutCopyrightEn(v.copyright?.en ?? "")
+    setAboutCopyrightAr(v.copyright?.ar ?? "")
+    setAboutExtraRows(extraFieldsToRows(v.extraFields))
+    setAboutExtraRowErrors({})
+  }, [aboutAppQuery.data?.value])
 
   useEffect(() => {
     if (!canManageSystem && activeTab === "SYSTEM_SETTINGS") {
@@ -416,7 +477,7 @@ export function SettingsPage() {
       return putSystemSetting(token, SUPPORT_INFO_KEY, value)
     },
     onSuccess: () => {
-      showToast(t("common.saved"), "success")
+      showToast(t("settings.support.saved"), "success")
       void queryClient.invalidateQueries({
         queryKey: ["system-settings", SUPPORT_INFO_KEY, token],
       })
@@ -431,8 +492,149 @@ export function SettingsPage() {
     },
   })
 
+  const saveAboutAppMutation = useMutation({
+    mutationFn: async (value: AboutApp) => putSystemSetting(token, ABOUT_APP_KEY, value),
+    onSuccess: () => {
+      showToast(t("settings.aboutApp.saved"), "success")
+      void queryClient.invalidateQueries({
+        queryKey: ["system-settings", ABOUT_APP_KEY, token],
+      })
+    },
+    onError: (e: Error) => {
+      if (e instanceof ApiError && e.status === 400 && e.details) {
+        const msg = formatApiValidationDetails(e.details)
+        showToast(msg || e.message || t("common.error"), "error")
+        return
+      }
+      showToast(e.message || t("settings.aboutApp.saveFailed"), "error")
+    },
+  })
+
   function hasPerm(key: string): boolean {
     return perms.includes(key)
+  }
+
+  function validateKeyValueRows(
+    rows: KeyValueRow[],
+    opts: {
+      reservedKeys?: Set<string>
+      requireUrlValues?: boolean
+    },
+  ): { rowErrors: Record<string, { key?: string; value?: string }>; valid: boolean } {
+    const rowErrors: Record<string, { key?: string; value?: string }> = {}
+    const seen = new Set<string>()
+
+    const isValidUrl = (v: string) => {
+      try {
+        new URL(v)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    for (const row of rows) {
+      const key = row.key.trim()
+      const value = row.value.trim()
+      if (!key && !value) continue
+
+      const issues: { key?: string; value?: string } = {}
+      if (!key) {
+        issues.key = t("settings.keyValue.keyRequired")
+      } else {
+        if (!isValidFieldKey(key)) issues.key = t("settings.keyValue.invalidKey")
+        if (opts.reservedKeys?.has(key)) issues.key = t("settings.keyValue.reservedKey")
+        const norm = key.toLowerCase()
+        if (seen.has(norm)) issues.key = t("settings.keyValue.duplicateKey")
+        seen.add(norm)
+      }
+      if (opts.requireUrlValues && value && !isValidUrl(value)) {
+        issues.value = t("common.invalid")
+      }
+      if (opts.requireUrlValues && key && !value) {
+        issues.value = t("settings.keyValue.valueRequired")
+      }
+      if (issues.key || issues.value) rowErrors[row.id] = issues
+    }
+
+    const dupes = findDuplicateKeys(rows)
+    if (dupes.length > 0) {
+      for (const row of rows) {
+        if (dupes.includes(row.key.trim())) {
+          rowErrors[row.id] = {
+            ...rowErrors[row.id],
+            key: t("settings.keyValue.duplicateKey"),
+          }
+        }
+      }
+    }
+
+    return { rowErrors, valid: Object.keys(rowErrors).length === 0 }
+  }
+
+  function validateLocalizedExtraFieldRows(
+    rows: LocalizedExtraFieldRow[],
+  ): {
+    rowErrors: Record<string, { keyEn?: string; keyAr?: string; valueEn?: string; valueAr?: string }>
+    valid: boolean
+  } {
+    const rowErrors: Record<
+      string,
+      { keyEn?: string; keyAr?: string; valueEn?: string; valueAr?: string }
+    > = {}
+
+    for (const row of rows) {
+      const keyEn = row.key.en.trim()
+      const keyAr = row.key.ar.trim()
+      const valueEn = row.value.en.trim()
+      const valueAr = row.value.ar.trim()
+      if (!keyEn && !keyAr && !valueEn && !valueAr) continue
+
+      const issues: { keyEn?: string; keyAr?: string; valueEn?: string; valueAr?: string } = {}
+      if (!keyEn && !keyAr) {
+        const msg = t("settings.keyValue.localizedLabelRequired")
+        issues.keyEn = msg
+        issues.keyAr = msg
+      }
+      if (!valueEn && !valueAr) {
+        const msg = t("settings.keyValue.localizedValueRequired")
+        issues.valueEn = msg
+        issues.valueAr = msg
+      }
+      if (issues.keyEn || issues.keyAr || issues.valueEn || issues.valueAr) {
+        rowErrors[row.id] = issues
+      }
+    }
+
+    const dupes = new Set(findDuplicateLocalizedLabels(rows))
+    for (const row of rows) {
+      if (dupes.has(row.id)) {
+        const msg = t("settings.keyValue.duplicateLabel")
+        rowErrors[row.id] = {
+          ...rowErrors[row.id],
+          keyEn: rowErrors[row.id]?.keyEn ?? msg,
+          keyAr: rowErrors[row.id]?.keyAr ?? msg,
+        }
+      }
+    }
+
+    return { rowErrors, valid: Object.keys(rowErrors).length === 0 }
+  }
+
+  function validateAboutAppDraft(draft: AboutApp): Record<string, string> {
+    const errs: Record<string, string> = {}
+    const isValidUrl = (v: string | null) => {
+      if (v == null) return true
+      try {
+        new URL(v)
+        return true
+      } catch {
+        return false
+      }
+    }
+    if (!isValidUrl(draft.termsUrl)) errs.termsUrl = t("common.invalid")
+    if (!isValidUrl(draft.privacyUrl)) errs.privacyUrl = t("common.invalid")
+    return errs
   }
 
   function validateSupportInfoDraft(draft: SupportInfo): Record<string, string> {
@@ -456,11 +658,6 @@ export function SettingsPage() {
     if (!isValidPhone(draft.whatsapp)) errs.whatsapp = t("common.invalid")
     if (!isValidEmail(draft.email)) errs.email = t("common.invalid")
     if (!isValidUrl(draft.website)) errs.website = t("common.invalid")
-    if (!isValidUrl(draft.socialLinks.facebook)) errs.facebook = t("common.invalid")
-    if (!isValidUrl(draft.socialLinks.instagram)) errs.instagram = t("common.invalid")
-    if (!isValidUrl(draft.socialLinks.linkedin)) errs.linkedin = t("common.invalid")
-    if (!isValidUrl(draft.socialLinks.x)) errs.x = t("common.invalid")
-    if (!isValidUrl(draft.socialLinks.tiktok)) errs.tiktok = t("common.invalid")
 
     return errs
   }
@@ -1051,10 +1248,10 @@ export function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Support Information</CardTitle>
-                <CardDescription>Manage customer-facing support contact details.</CardDescription>
+                <CardTitle>{t("settings.support.title")}</CardTitle>
+                <CardDescription>{t("settings.support.description")}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5">
                 {supportInfoQuery.isLoading ? (
                   <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
                 ) : null}
@@ -1062,172 +1259,184 @@ export function SettingsPage() {
                   <p className="text-destructive text-sm">{(supportInfoQuery.error as Error).message}</p>
                 ) : null}
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Contact</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="space-y-1">
+                <SettingsFormSection
+                  title={t("settings.support.contactTitle")}
+                  description={t("settings.support.contactDescription")}
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium" htmlFor="support-phone">
+                        {t("settings.support.phone")}
+                      </label>
                       <Input
+                        id="support-phone"
                         value={supportPhone}
                         onChange={(e) => {
                           setSupportPhone(e.target.value)
                           setSupportErrors((p) => ({ ...p, phone: "" }))
                         }}
-                        placeholder="Phone (+2010...)"
+                        placeholder={t("settings.support.phonePlaceholder")}
                       />
-                      {supportErrors.phone ? <p className="text-destructive text-xs">{supportErrors.phone}</p> : null}
+                      {supportErrors.phone ? (
+                        <p className="text-destructive text-xs">{supportErrors.phone}</p>
+                      ) : null}
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium" htmlFor="support-whatsapp">
+                        {t("settings.support.whatsapp")}
+                      </label>
                       <Input
+                        id="support-whatsapp"
                         value={supportWhatsapp}
                         onChange={(e) => {
                           setSupportWhatsapp(e.target.value)
                           setSupportErrors((p) => ({ ...p, whatsapp: "" }))
                         }}
-                        placeholder="WhatsApp (+2010...)"
+                        placeholder={t("settings.support.whatsappPlaceholder")}
                       />
                       {supportErrors.whatsapp ? (
                         <p className="text-destructive text-xs">{supportErrors.whatsapp}</p>
                       ) : null}
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium" htmlFor="support-email">
+                        {t("settings.support.email")}
+                      </label>
                       <Input
+                        id="support-email"
+                        type="email"
                         value={supportEmail}
                         onChange={(e) => {
                           setSupportEmail(e.target.value)
                           setSupportErrors((p) => ({ ...p, email: "" }))
                         }}
-                        placeholder="Email (support@...)"
+                        placeholder={t("settings.support.emailPlaceholder")}
                       />
-                      {supportErrors.email ? <p className="text-destructive text-xs">{supportErrors.email}</p> : null}
+                      {supportErrors.email ? (
+                        <p className="text-destructive text-xs">{supportErrors.email}</p>
+                      ) : null}
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium" htmlFor="support-website">
+                        {t("settings.support.website")}
+                      </label>
                       <Input
+                        id="support-website"
                         value={supportWebsite}
                         onChange={(e) => {
                           setSupportWebsite(e.target.value)
                           setSupportErrors((p) => ({ ...p, website: "" }))
                         }}
-                        placeholder="Website (https://...)"
+                        placeholder={t("settings.support.websitePlaceholder")}
                       />
                       {supportErrors.website ? (
                         <p className="text-destructive text-xs">{supportErrors.website}</p>
                       ) : null}
                     </div>
                   </div>
-                </div>
+                </SettingsFormSection>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Address</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Input
-                      value={supportAddressEn}
-                      onChange={(e) => setSupportAddressEn(e.target.value)}
-                      placeholder="Address (EN)"
-                    />
-                    <Input
-                      value={supportAddressAr}
-                      onChange={(e) => setSupportAddressAr(e.target.value)}
-                      placeholder="Address (AR)"
-                    />
-                  </div>
-                </div>
+                <SettingsFormSection
+                  title={t("settings.support.addressTitle")}
+                  description={t("settings.support.addressDescription")}
+                >
+                  <LocalizedFieldPair
+                    enLabel={t("settings.support.addressEn")}
+                    arLabel={t("settings.support.addressAr")}
+                    enValue={supportAddressEn}
+                    arValue={supportAddressAr}
+                    onEnChange={setSupportAddressEn}
+                    onArChange={setSupportAddressAr}
+                    enPlaceholder={t("settings.support.addressEnPlaceholder")}
+                    arPlaceholder={t("settings.support.addressArPlaceholder")}
+                  />
+                </SettingsFormSection>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Working hours</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Input
-                      value={supportWorkingHoursEn}
-                      onChange={(e) => setSupportWorkingHoursEn(e.target.value)}
-                      placeholder="Working hours (EN)"
-                    />
-                    <Input
-                      value={supportWorkingHoursAr}
-                      onChange={(e) => setSupportWorkingHoursAr(e.target.value)}
-                      placeholder="Working hours (AR)"
-                    />
-                  </div>
-                </div>
+                <SettingsFormSection
+                  title={t("settings.support.hoursTitle")}
+                  description={t("settings.support.hoursDescription")}
+                >
+                  <LocalizedFieldPair
+                    enLabel={t("settings.support.hoursEn")}
+                    arLabel={t("settings.support.hoursAr")}
+                    enValue={supportWorkingHoursEn}
+                    arValue={supportWorkingHoursAr}
+                    onEnChange={setSupportWorkingHoursEn}
+                    onArChange={setSupportWorkingHoursAr}
+                    enPlaceholder={t("settings.support.hoursEnPlaceholder")}
+                    arPlaceholder={t("settings.support.hoursArPlaceholder")}
+                  />
+                </SettingsFormSection>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Social links</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Input
-                        value={supportFacebook}
-                        onChange={(e) => {
-                          setSupportFacebook(e.target.value)
-                          setSupportErrors((p) => ({ ...p, facebook: "" }))
-                        }}
-                        placeholder="Facebook URL"
-                      />
-                      {supportErrors.facebook ? (
-                        <p className="text-destructive text-xs">{supportErrors.facebook}</p>
-                      ) : null}
-                    </div>
-                    <div className="space-y-1">
-                      <Input
-                        value={supportInstagram}
-                        onChange={(e) => {
-                          setSupportInstagram(e.target.value)
-                          setSupportErrors((p) => ({ ...p, instagram: "" }))
-                        }}
-                        placeholder="Instagram URL"
-                      />
-                      {supportErrors.instagram ? (
-                        <p className="text-destructive text-xs">{supportErrors.instagram}</p>
-                      ) : null}
-                    </div>
-                    <div className="space-y-1">
-                      <Input
-                        value={supportLinkedin}
-                        onChange={(e) => {
-                          setSupportLinkedin(e.target.value)
-                          setSupportErrors((p) => ({ ...p, linkedin: "" }))
-                        }}
-                        placeholder="LinkedIn URL"
-                      />
-                      {supportErrors.linkedin ? (
-                        <p className="text-destructive text-xs">{supportErrors.linkedin}</p>
-                      ) : null}
-                    </div>
-                    <div className="space-y-1">
-                      <Input
-                        value={supportX}
-                        onChange={(e) => {
-                          setSupportX(e.target.value)
-                          setSupportErrors((p) => ({ ...p, x: "" }))
-                        }}
-                        placeholder="X (Twitter) URL"
-                      />
-                      {supportErrors.x ? <p className="text-destructive text-xs">{supportErrors.x}</p> : null}
-                    </div>
-                    <div className="space-y-1">
-                      <Input
-                        value={supportTiktok}
-                        onChange={(e) => {
-                          setSupportTiktok(e.target.value)
-                          setSupportErrors((p) => ({ ...p, tiktok: "" }))
-                        }}
-                        placeholder="TikTok URL"
-                      />
-                      {supportErrors.tiktok ? (
-                        <p className="text-destructive text-xs">{supportErrors.tiktok}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
+                <SettingsFormSection
+                  title={t("settings.support.socialTitle")}
+                  description={t("settings.support.socialDescription")}
+                >
+                  <KeyValueRowsEditor
+                    rows={supportSocialRows}
+                    onChange={(rows) => {
+                      setSupportSocialRows(rows)
+                      setSupportSocialRowErrors({})
+                    }}
+                    keyLabel={t("settings.support.socialPlatform")}
+                    valueLabel={t("settings.support.socialUrl")}
+                    keyPlaceholder={t("settings.support.socialPlatformPlaceholder")}
+                    valuePlaceholder={t("settings.support.socialUrlPlaceholder")}
+                    addLabel={t("settings.support.addSocialLink")}
+                    exampleTitle={t("settings.support.socialExampleTitle")}
+                    exampleKey={t("settings.support.socialExampleKey")}
+                    exampleValue={t("settings.support.socialExampleValue")}
+                    rowErrors={supportSocialRowErrors}
+                    disabled={saveSupportInfoMutation.isPending}
+                  />
+                </SettingsFormSection>
+
+                <SettingsFormSection
+                  title={t("settings.support.extraTitle")}
+                  description={t("settings.support.extraDescription")}
+                >
+                  <LocalizedExtraFieldsEditor
+                    rows={supportExtraRows}
+                    onChange={(rows) => {
+                      setSupportExtraRows(rows)
+                      setSupportExtraRowErrors({})
+                    }}
+                    keyEnLabel={t("settings.support.extraLabelEn")}
+                    keyArLabel={t("settings.support.extraLabelAr")}
+                    valueEnLabel={t("settings.support.extraValueEn")}
+                    valueArLabel={t("settings.support.extraValueAr")}
+                    keyEnPlaceholder={t("settings.support.extraLabelEnPlaceholder")}
+                    keyArPlaceholder={t("settings.support.extraLabelArPlaceholder")}
+                    valueEnPlaceholder={t("settings.support.extraValueEnPlaceholder")}
+                    valueArPlaceholder={t("settings.support.extraValueArPlaceholder")}
+                    addLabel={t("settings.support.addExtraField")}
+                    exampleTitle={t("settings.support.extraExampleTitle")}
+                    exampleKeyEn={t("settings.support.extraExampleKeyEn")}
+                    exampleKeyAr={t("settings.support.extraExampleKeyAr")}
+                    exampleValueEn={t("settings.support.extraExampleValueEn")}
+                    exampleValueAr={t("settings.support.extraExampleValueAr")}
+                    rowErrors={supportExtraRowErrors}
+                    disabled={saveSupportInfoMutation.isPending}
+                  />
+                </SettingsFormSection>
 
                 <Button
                   type="button"
                   disabled={!token || saveSupportInfoMutation.isPending}
                   onClick={() => {
                     const toNull = (s: string) => {
-                      const t = s.trim()
-                      return t ? t : null
+                      const trimmed = s.trim()
+                      return trimmed ? trimmed : null
                     }
-                    const toOpt = (s: string) => {
-                      const t = s.trim()
-                      return t ? t : undefined
+                    const socialValidation = validateKeyValueRows(supportSocialRows, {
+                      requireUrlValues: true,
+                    })
+                    const extraValidation = validateLocalizedExtraFieldRows(supportExtraRows)
+                    setSupportSocialRowErrors(socialValidation.rowErrors)
+                    setSupportExtraRowErrors(extraValidation.rowErrors)
+                    if (!socialValidation.valid || !extraValidation.valid) {
+                      showToast(t("common.invalid"), "error")
+                      return
                     }
                     const draft: SupportInfo = {
                       phone: toNull(supportPhone),
@@ -1236,13 +1445,8 @@ export function SettingsPage() {
                       website: toNull(supportWebsite),
                       address: { en: supportAddressEn, ar: supportAddressAr },
                       workingHours: { en: supportWorkingHoursEn, ar: supportWorkingHoursAr },
-                      socialLinks: {
-                        facebook: toOpt(supportFacebook),
-                        instagram: toOpt(supportInstagram),
-                        linkedin: toOpt(supportLinkedin),
-                        x: toOpt(supportX),
-                        tiktok: toOpt(supportTiktok),
-                      },
+                      socialLinks: keyValueRowsToRecord(supportSocialRows),
+                      extraFields: rowsToExtraFields(supportExtraRows),
                     }
                     const errs = validateSupportInfoDraft(draft)
                     setSupportErrors(errs)
@@ -1254,6 +1458,157 @@ export function SettingsPage() {
                   }}
                 >
                   {saveSupportInfoMutation.isPending ? t("common.saving") : t("common.save")}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("settings.aboutApp.title")}</CardTitle>
+                <CardDescription>{t("settings.aboutApp.description")}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {aboutAppQuery.isLoading ? (
+                  <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+                ) : null}
+                {aboutAppQuery.error ? (
+                  <p className="text-destructive text-sm">{(aboutAppQuery.error as Error).message}</p>
+                ) : null}
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.appNameEn")}</label>
+                    <Input value={aboutAppNameEn} onChange={(e) => setAboutAppNameEn(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.appNameAr")}</label>
+                    <Input value={aboutAppNameAr} onChange={(e) => setAboutAppNameAr(e.target.value)} dir="rtl" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.taglineEn")}</label>
+                    <Input value={aboutTaglineEn} onChange={(e) => setAboutTaglineEn(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.taglineAr")}</label>
+                    <Input value={aboutTaglineAr} onChange={(e) => setAboutTaglineAr(e.target.value)} dir="rtl" />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.descriptionEn")}</label>
+                    <Input value={aboutDescriptionEn} onChange={(e) => setAboutDescriptionEn(e.target.value)} />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.descriptionAr")}</label>
+                    <Input value={aboutDescriptionAr} onChange={(e) => setAboutDescriptionAr(e.target.value)} dir="rtl" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.version")}</label>
+                    <Input
+                      value={aboutVersion}
+                      onChange={(e) => setAboutVersion(e.target.value)}
+                      placeholder="1.0.0"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.termsUrl")}</label>
+                    <Input
+                      value={aboutTermsUrl}
+                      onChange={(e) => {
+                        setAboutTermsUrl(e.target.value)
+                        setAboutErrors((p) => ({ ...p, termsUrl: "" }))
+                      }}
+                      placeholder="https://example.com/terms"
+                    />
+                    {aboutErrors.termsUrl ? (
+                      <p className="text-destructive text-xs">{aboutErrors.termsUrl}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.privacyUrl")}</label>
+                    <Input
+                      value={aboutPrivacyUrl}
+                      onChange={(e) => {
+                        setAboutPrivacyUrl(e.target.value)
+                        setAboutErrors((p) => ({ ...p, privacyUrl: "" }))
+                      }}
+                      placeholder="https://example.com/privacy"
+                    />
+                    {aboutErrors.privacyUrl ? (
+                      <p className="text-destructive text-xs">{aboutErrors.privacyUrl}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.copyrightEn")}</label>
+                    <Input value={aboutCopyrightEn} onChange={(e) => setAboutCopyrightEn(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("settings.aboutApp.copyrightAr")}</label>
+                    <Input value={aboutCopyrightAr} onChange={(e) => setAboutCopyrightAr(e.target.value)} dir="rtl" />
+                  </div>
+                </div>
+
+                <SettingsFormSection
+                  title={t("settings.aboutApp.extraTitle")}
+                  description={t("settings.aboutApp.extraDescription")}
+                >
+                  <LocalizedExtraFieldsEditor
+                    rows={aboutExtraRows}
+                    onChange={(rows) => {
+                      setAboutExtraRows(rows)
+                      setAboutExtraRowErrors({})
+                    }}
+                    keyEnLabel={t("settings.aboutApp.extraLabelEn")}
+                    keyArLabel={t("settings.aboutApp.extraLabelAr")}
+                    valueEnLabel={t("settings.aboutApp.extraValueEn")}
+                    valueArLabel={t("settings.aboutApp.extraValueAr")}
+                    keyEnPlaceholder={t("settings.aboutApp.extraLabelEnPlaceholder")}
+                    keyArPlaceholder={t("settings.aboutApp.extraLabelArPlaceholder")}
+                    valueEnPlaceholder={t("settings.aboutApp.extraValueEnPlaceholder")}
+                    valueArPlaceholder={t("settings.aboutApp.extraValueArPlaceholder")}
+                    addLabel={t("settings.aboutApp.addExtraField")}
+                    exampleTitle={t("settings.aboutApp.extraExampleTitle")}
+                    exampleKeyEn={t("settings.aboutApp.extraExampleKeyEn")}
+                    exampleKeyAr={t("settings.aboutApp.extraExampleKeyAr")}
+                    exampleValueEn={t("settings.aboutApp.extraExampleValueEn")}
+                    exampleValueAr={t("settings.aboutApp.extraExampleValueAr")}
+                    rowErrors={aboutExtraRowErrors}
+                    disabled={saveAboutAppMutation.isPending}
+                  />
+                </SettingsFormSection>
+
+                <Button
+                  type="button"
+                  disabled={!token || saveAboutAppMutation.isPending}
+                  onClick={() => {
+                    const toNull = (s: string) => {
+                      const trimmed = s.trim()
+                      return trimmed ? trimmed : null
+                    }
+                    const extraValidation = validateLocalizedExtraFieldRows(aboutExtraRows)
+                    setAboutExtraRowErrors(extraValidation.rowErrors)
+                    if (!extraValidation.valid) {
+                      showToast(t("common.invalid"), "error")
+                      return
+                    }
+                    const draft: AboutApp = {
+                      appName: { en: aboutAppNameEn.trim(), ar: aboutAppNameAr.trim() },
+                      tagline: { en: aboutTaglineEn.trim(), ar: aboutTaglineAr.trim() },
+                      description: { en: aboutDescriptionEn.trim(), ar: aboutDescriptionAr.trim() },
+                      version: toNull(aboutVersion),
+                      termsUrl: toNull(aboutTermsUrl),
+                      privacyUrl: toNull(aboutPrivacyUrl),
+                      copyright: { en: aboutCopyrightEn.trim(), ar: aboutCopyrightAr.trim() },
+                      extraFields: rowsToExtraFields(aboutExtraRows),
+                    }
+                    const errs = validateAboutAppDraft(draft)
+                    setAboutErrors(errs)
+                    if (Object.values(errs).some(Boolean)) {
+                      showToast(t("common.invalid"), "error")
+                      return
+                    }
+                    saveAboutAppMutation.mutate(draft)
+                  }}
+                >
+                  {saveAboutAppMutation.isPending ? t("common.saving") : t("common.save")}
                 </Button>
               </CardContent>
             </Card>
